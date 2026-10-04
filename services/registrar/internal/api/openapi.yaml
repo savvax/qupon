@@ -124,7 +124,30 @@ paths:
           description: not implemented yet
   /activity:
     get:
-      summary: Activity log (stub)
+      summary: Live activity feed (on-chain program events, ingested by polling)
+      parameters:
+        - name: limit
+          in: query
+          schema: {type: integer, default: 100, maximum: 500}
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: events in chain order, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: integer}
+                        ts: {type: integer}
+                        series_mint: {type: string, nullable: true}
+                        action_pda: {type: string, nullable: true}
+                        kind: {type: string}
+                        payload: {type: object}
+                        sig: {type: string}
+                        slot: {type: integer}
+                        seq: {type: integer}

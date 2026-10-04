@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/blendle/zapdriver v1.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -29,10 +30,12 @@ require (
 	github.com/streamingfast/logging v0.0.0-20250404134358-92b15d2fbd2e // indirect
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/ratelimit v0.3.1 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.55.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/term v0.45.0 // indirect
+	golang.org/x/time v0.14.0 // indirect
 	modernc.org/libc v1.77.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect

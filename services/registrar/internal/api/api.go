@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -44,6 +45,26 @@ func New(logger *slog.Logger, st *store.Store) http.Handler {
 		}
 		w.Header().Set("Content-Type", "application/yaml")
 		_, _ = w.Write(body)
+	})
+
+	r.Get("/activity", func(w http.ResponseWriter, r *http.Request) {
+		limit := 100
+		if v := r.URL.Query().Get("limit"); v != "" {
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 1 || n > 500 {
+				writeError(w, http.StatusBadRequest, "limit must be 1..500")
+				return
+			}
+			limit = n
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		events, err := st.ListActivity(ctx, limit)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"events": events})
 	})
 
 	return r

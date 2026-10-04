@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -12,8 +13,11 @@ import (
 	"syscall"
 	"time"
 
+	solana "github.com/solana-foundation/solana-go/v2"
+
 	"github.com/qupon-kz/qupon/services/registrar/internal/api"
 	"github.com/qupon-kz/qupon/services/registrar/internal/config"
+	"github.com/qupon-kz/qupon/services/registrar/internal/ingest"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -39,6 +43,16 @@ func run() error {
 		return err
 	}
 	defer func() { _ = st.Close() }()
+
+	// Event ingestion: poll the program's transactions into the activity feed.
+	if cfg.ProgramID != "" {
+		program, err := solana.PublicKeyFromBase58(cfg.ProgramID)
+		if err != nil {
+			return fmt.Errorf("parse program id %q: %w", cfg.ProgramID, err)
+		}
+		poller := ingest.NewPoller(cfg.RPCURL, program, st, logger)
+		go poller.Run(ctx)
+	}
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,

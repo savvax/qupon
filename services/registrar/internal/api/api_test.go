@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -48,6 +49,44 @@ func TestOpenAPI(t *testing.T) {
 	}
 	if ct := resp.Header.Get("Content-Type"); ct != "application/yaml" {
 		t.Fatalf("content-type = %q, want application/yaml", ct)
+	}
+}
+
+func TestActivity(t *testing.T) {
+	srv := httptest.NewServer(newTestServer(t))
+	defer srv.Close()
+
+	// fresh store: empty ordered feed
+	resp, err := http.Get(srv.URL + "/activity")
+	if err != nil {
+		t.Fatalf("get activity: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("activity status = %d, want 200", resp.StatusCode)
+	}
+	var out struct {
+		Events []store.Activity `json:"events"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(out.Events) != 0 {
+		t.Fatalf("events = %d, want 0 on a fresh store", len(out.Events))
+	}
+}
+
+func TestActivityLimit(t *testing.T) {
+	srv := httptest.NewServer(newTestServer(t))
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/activity?limit=nope")
+	if err != nil {
+		t.Fatalf("get activity: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("activity status = %d, want 400", resp.StatusCode)
 	}
 }
 
