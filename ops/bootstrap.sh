@@ -33,6 +33,9 @@ say "spl-token CLI, solana-verify (optional)"
 command -v spl-token >/dev/null || cargo install spl-token-cli --locked || true
 command -v solana-verify >/dev/null || cargo install solana-verify --locked || true
 
+say "mise pins (node 22, go 1.25, pnpm 9) if mise is present — avoids replacing a global node/go"
+if command -v mise >/dev/null; then (cd "$(dirname "$0")/.." && mise trust -q mise.toml && mise install); export PATH="$HOME/.local/share/mise/shims:$PATH"; fi
+
 say "node 22 + pnpm 9"
 if ! node --version 2>/dev/null | grep -q '^v22'; then
   if [ "$OS" = "Darwin" ]; then brew install node@22 && brew link --overwrite node@22; else

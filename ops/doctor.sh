@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Toolchain check. Exit non-zero if the pinned major versions are missing.
 set -uo pipefail
-export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.cargo/bin:$HOME/go/bin:/usr/local/go/bin:$PATH"
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/share/solana/install/active_release/bin:$HOME/.cargo/bin:$HOME/go/bin:/usr/local/go/bin:$PATH"
 ok=0
 v() { printf '  %-14s %s\n' "$1" "$2"; }
 S=$(solana --version 2>/dev/null | awk '{print $2}'); v solana "${S:-MISSING}"; [[ "$S" == 4.3.* ]] || { echo "  !! need Agave 4.3.x"; ok=1; }

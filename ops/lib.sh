@@ -2,6 +2,7 @@
 # Shared helpers for the Qupon agent orchestration. Source this file; do not run it.
 # Portable bash 4+/zsh-free; works on Linux and macOS (no flock dependency).
 
+export PATH="$HOME/.local/share/mise/shims:$HOME/.local/share/solana/install/active_release/bin:$HOME/.cargo/bin:$PATH"
 ROOT="${ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 TASKS="$ROOT/tasks"
 LOGS="$ROOT/logs"

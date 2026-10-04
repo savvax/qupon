@@ -2,7 +2,7 @@
 # Targets that touch the network/keys are NOT part of `verify`.
 SHELL := /usr/bin/env bash
 .DEFAULT_GOAL := help
-export PATH := $(HOME)/.local/share/solana/install/active_release/bin:$(HOME)/.cargo/bin:$(HOME)/go/bin:$(PATH)
+export PATH := $(HOME)/.local/share/mise/shims:$(HOME)/.local/share/solana/install/active_release/bin:$(HOME)/.cargo/bin:$(HOME)/go/bin:$(PATH)
 
 HAS_PROGRAM := $(wildcard programs/qupon_bonds/Cargo.toml)
 HAS_CRATE   := $(wildcard crates/entitlement/Cargo.toml)

@@ -22,6 +22,7 @@
 | Token ACL (sRFC-37) | program `TACLkU6CiCdkQN2MjoyDkVg2yAH9zkxiHDsiztQ52TP` (devnet) | NOT used in T0/T1 — our own Investor registry + thaw replaces it; mention as compatible roadmap |
 
 ## Gotchas
+- **Toolchain pins via mise** (macOS dev box): `mise.toml` pins node 22 / go 1.25 / pnpm 9; Makefile, `ops/lib.sh`, `ops/doctor.sh` put `~/.local/share/mise/shims` first on PATH. `ops/wallets.sh` needs bash ≥ 4 (`brew install bash`).
 - **Pausable blocks mint, burn and transfer.** Order for redemption: pay → `complete_action` (resume) → `retire_batch` (burn) → `close_series`.
 - **Permanent delegate burn**: use `burn_checked` with the series PDA as delegate signer; works on thawed accounts only.
 - **DefaultAccountState=Frozen**: ATAs are created frozen; `register_investor` thaws with the series PDA (freeze authority). Suspended investors are frozen again.
