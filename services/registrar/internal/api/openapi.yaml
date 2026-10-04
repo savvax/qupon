@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info:
+  title: Qupon registrar API
+  version: 0.1.0
+  description: |
+    Off-chain registrar service for the qupon_bonds corporate-actions engine.
+    Stub — handlers arrive with the reader/reconciler/executor/ISO tasks.
+paths:
+  /healthz:
+    get:
+      summary: Liveness + database check
+      responses:
+        "200":
+          description: service healthy
+        "503":
+          description: database unreachable
+  /openapi.yaml:
+    get:
+      summary: This document
+      responses:
+        "200":
+          description: OpenAPI YAML
+  /series:
+    get:
+      summary: List series (stub)
+      responses:
+        "501":
+          description: not implemented yet
+  /series/{mint}:
+    get:
+      summary: Series terms (stub)
+      parameters:
+        - {name: mint, in: path, required: true, schema: {type: string}}
+      responses:
+        "501":
+          description: not implemented yet
+  /series/{mint}/investors:
+    get:
+      summary: Holders of a series (stub)
+      parameters:
+        - {name: mint, in: path, required: true, schema: {type: string}}
+      responses:
+        "501":
+          description: not implemented yet
+  /series/{mint}/schedule:
+    get:
+      summary: Coupon schedule (stub)
+      parameters:
+        - {name: mint, in: path, required: true, schema: {type: string}}
+      responses:
+        "501":
+          description: not implemented yet
+  /series/{mint}/actions:
+    get:
+      summary: Corporate actions of a series (stub)
+      parameters:
+        - {name: mint, in: path, required: true, schema: {type: string}}
+      responses:
+        "501":
+          description: not implemented yet
+  /actions/{pda}:
+    get:
+      summary: Action detail (stub)
+      parameters:
+        - {name: pda, in: path, required: true, schema: {type: string}}
+      responses:
+        "501":
+          description: not implemented yet
+  /actions/{pda}/entitlements:
+    get:
+      summary: Entitlements of an action (stub)
+      parameters:
+        - {name: pda, in: path, required: true, schema: {type: string}}
+      responses:
+        "501":
+          description: not implemented yet
+  /actions/{pda}/reconcile:
+    get:
+      summary: Reconciliation report (stub)
+      parameters:
+        - {name: pda, in: path, required: true, schema: {type: string}}
+      responses:
+        "501":
+          description: not implemented yet
+  /actions/{pda}/advance:
+    post:
+      summary: Run the next action step through the executor (stub)
+      parameters:
+        - {name: pda, in: path, required: true, schema: {type: string}}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confirm: {type: boolean}
+      responses:
+        "501":
+          description: not implemented yet
+  /actions/{pda}/iso/seev031.xml:
+    get:
+      summary: ISO 20022 seev.031 notification (stub)
+      parameters:
+        - {name: pda, in: path, required: true, schema: {type: string}}
+      responses:
+        "501":
+          description: not implemented yet
+  /entitlements/{pda}/iso/seev036.xml:
+    get:
+      summary: ISO 20022 seev.036 instruction (stub)
+      parameters:
+        - {name: pda, in: path, required: true, schema: {type: string}}
+      responses:
+        "501":
+          description: not implemented yet
+  /actions/{pda}/notice:
+    get:
+      summary: KASE-style notice text (stub)
+      parameters:
+        - {name: pda, in: path, required: true, schema: {type: string}}
+        - {name: lang, in: query, schema: {type: string, enum: [en, ru]}}
+      responses:
+        "501":
+          description: not implemented yet
+  /activity:
+    get:
+      summary: Activity log (stub)
+      responses:
+        "501":
+          description: not implemented yet
