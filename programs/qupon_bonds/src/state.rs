@@ -163,6 +163,8 @@ pub struct CorporateAction {
     pub completed_at: i64,
     /// PCAL only: share of face redeemed, bps.
     pub factor_bps: u16,
+    /// Σ holder principal (REDM/MCAL/PCAL); escrow must hold total_net + total_tax + total_principal.
+    pub total_principal: u64,
     pub reserved: [u8; 64],
 }
 

@@ -78,6 +78,8 @@ pub struct ActionAnnounced {
     pub kind: u8,
     pub mandatory: u8,
     pub corp_id: [u8; 16],
+    /// COAF (ISO OffclCorpActnEvtId), may be empty.
+    pub official_id: [u8; 16],
     pub record_at: i64,
     pub payment_at: i64,
     pub period_start: i64,
@@ -86,6 +88,12 @@ pub struct ActionAnnounced {
     pub rate_bps: u32,
     pub per_unit_gross: u64,
     pub per_unit_principal: u64,
+    pub factor_bps: u16,
+    pub cash_mint: Pubkey,
+    pub escrow: Pubkey,
+    pub proposal_new_rate_bps: u32,
+    pub proposal_new_maturity: i64,
+    pub voting_ends_at: i64,
     pub slot: u64,
     pub timestamp: i64,
 }

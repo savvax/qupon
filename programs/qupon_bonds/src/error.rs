@@ -63,6 +63,8 @@ pub enum QuponError {
     UnsupportedDayCount,
     #[msg("Invalid parameter")]
     InvalidParams,
+    #[msg("Not every snapshotted holder has been paid in full")]
+    PaymentsIncomplete,
 }
 
 /// Map the pure math crate's errors onto program errors (orphan rule forbids `From`).

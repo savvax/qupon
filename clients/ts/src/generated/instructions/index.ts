@@ -6,9 +6,17 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './announceAction.js';
+export * from './cancelAction.js';
+export * from './completeAction.js';
+export * from './finalizeSnapshot.js';
+export * from './fundAction.js';
 export * from './initSeries.js';
 export * from './issueUnits.js';
+export * from './payBatch.js';
 export * from './registerInvestor.js';
 export * from './reinstateInvestor.js';
+export * from './snapshotBatch.js';
+export * from './strikeRecord.js';
 export * from './subscribe.js';
 export * from './suspendInvestor.js';

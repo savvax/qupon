@@ -60,8 +60,9 @@ pub struct InitSeries<'info> {
         bump
     )]
     pub series: Box<Account<'info, Series>>,
+    /// `init_if_needed`: a pre-created ATA for the (predictable) series PDA must not block init_series.
     #[account(
-        init,
+        init_if_needed,
         payer = registrar,
         associated_token::mint = cash_mint,
         associated_token::authority = series,

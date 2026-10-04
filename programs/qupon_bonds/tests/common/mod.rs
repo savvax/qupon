@@ -664,18 +664,98 @@ impl Env {
         )
     }
 
-    /// Register holders and issue them `units` each (issuer allocation). Returns owners sorted ascending.
-    pub fn holders(&mut self, b: &Bond, units: &[u64]) -> Vec<(Pubkey, u64)> {
+    /// Register holders (tax rate per holder) and issue them `units` each. Returns keypairs sorted by pubkey.
+    pub fn holders_with_tax(&mut self, b: &Bond, holdings: &[(u64, u16)]) -> Vec<(Keypair, u64)> {
         let issuer = self.issuer.insecure_clone();
         let mut out = vec![];
-        for &u in units {
-            let owner = Keypair::new().pubkey();
-            self.register(b, &owner).expect("register");
-            let ix = self.issue_ix(b, &issuer.pubkey(), &owner, u);
+        for &(u, tax) in holdings {
+            let owner = Keypair::new();
+            let mut ix = self.register_ix(b, &self.registrar.pubkey(), &owner.pubkey());
+            ix.data = qupon_bonds::instruction::RegisterInvestor {
+                kyc: qupon_bonds::KycParams {
+                    tax_rate_bps: tax,
+                    ..kyc()
+                },
+            }
+            .data();
+            self.send(&[ix], &[]).expect("register");
+            let ix = self.issue_ix(b, &issuer.pubkey(), &owner.pubkey(), u);
             self.send(&[ix], &[&issuer]).expect("issue");
             out.push((owner, u));
         }
-        out.sort_by_key(|(o, _)| *o);
+        out.sort_by_key(|(k, _)| k.pubkey());
         out
+    }
+
+    pub fn holders(&mut self, b: &Bond, units: &[u64]) -> Vec<(Keypair, u64)> {
+        let h: Vec<(u64, u16)> = units.iter().map(|&u| (u, 0)).collect();
+        self.holders_with_tax(b, &h)
+    }
+
+    pub fn fund_ix(&mut self, b: &Bond, funder: &Pubkey, index: u32, amount: u64) -> Instruction {
+        let action = action_pda(&b.series, index);
+        self.action_ix(
+            qupon_bonds::instruction::FundAction { amount }.data(),
+            qupon_bonds::accounts::FundAction {
+                funder: *funder,
+                series: b.series,
+                action,
+                cash_mint: b.cash,
+                funder_cash: ata(funder, &b.cash, &b.cash_tp),
+                escrow: ata(&action, &b.cash, &b.cash_tp),
+                cash_token_program: b.cash_tp,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    /// `pay_batch` over `owners` (each owner's Entitlement, Investor and cash ATA).
+    pub fn pay_ix(&self, b: &Bond, index: u32, owners: &[Pubkey]) -> Instruction {
+        use anchor_lang::solana_program::instruction::AccountMeta;
+        let action = action_pda(&b.series, index);
+        let mut metas = qupon_bonds::accounts::PayBatch {
+            authority: self.registrar.pubkey(),
+            series: b.series,
+            action,
+            cash_mint: b.cash,
+            escrow: ata(&action, &b.cash, &b.cash_tp),
+            tax_vault: ata(&b.series, &b.cash, &b.cash_tp),
+            cash_token_program: b.cash_tp,
+        }
+        .to_account_metas(None);
+        for o in owners {
+            metas.push(AccountMeta::new(entitlement_pda(&action, o), false));
+            metas.push(AccountMeta::new_readonly(investor_pda(&b.series, o), false));
+            metas.push(AccountMeta::new(ata(o, &b.cash, &b.cash_tp), false));
+        }
+        self.action_ix(qupon_bonds::instruction::PayBatch {}.data(), metas)
+    }
+
+    pub fn complete_ix(&self, b: &Bond, index: u32) -> Instruction {
+        self.action_ix(
+            qupon_bonds::instruction::CompleteAction {}.data(),
+            qupon_bonds::accounts::CompleteAction {
+                authority: self.registrar.pubkey(),
+                series: b.series,
+                action: action_pda(&b.series, index),
+                mint: b.mint,
+                bond_token_program: spl_token_2022::ID,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    /// Announce INTR #1, reach the record date, strike, snapshot every holder, finalize.
+    pub fn intr_snapshotted(&mut self, b: &Bond, owners: &[Pubkey]) {
+        let now = self.now();
+        let ix = self.announce_ix(b, &self.registrar.pubkey(), intr_args(now));
+        self.send(&[ix], &[]).expect("announce");
+        self.set_clock(now + 60);
+        let ix = self.strike_ix(b, &self.registrar.pubkey(), 0);
+        self.send(&[ix], &[]).expect("strike");
+        let ix = self.snapshot_ix(b, 0, owners);
+        self.send(&[ix], &[]).expect("snapshot");
+        let ix = self.finalize_snapshot_ix(b, 0);
+        self.send(&[ix], &[]).expect("finalize");
     }
 }

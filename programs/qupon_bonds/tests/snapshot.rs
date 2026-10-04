@@ -13,7 +13,11 @@ use solana_signer::Signer;
 fn struck() -> (Env, Bond, Vec<(anchor_lang::prelude::Pubkey, u64)>) {
     let mut env = Env::new();
     let b = env.setup_bond();
-    let holders = env.holders(&b, &[10, 25, 65]);
+    let holders: Vec<_> = env
+        .holders(&b, &[10, 25, 65])
+        .iter()
+        .map(|(k, u)| (k.pubkey(), *u))
+        .collect();
     let now = env.now();
     let ix = env.announce_ix(&b, &env.registrar.pubkey(), intr_args(now));
     env.send(&[ix], &[]).expect("announce");
@@ -167,4 +171,80 @@ fn batch_limits() {
     let n = ix.accounts.len();
     ix.accounts[n - 1].pubkey = wrong;
     assert_err(env.send(&[ix], &[]), QuponError::InvalidParams);
+}
+
+#[test]
+fn snapshot_review_paths() {
+    // Duplicate holder in one batch is counted once; non-operator crank refused; paying agent allowed.
+    let (mut env, b, holders) = struck();
+    let a0 = holders[0].0;
+    let mut ix = env.snapshot_ix(&b, 0, &[a0]);
+    let mallory = Keypair::new();
+    env.svm.airdrop(&mallory.pubkey(), 1_000_000_000).unwrap();
+    ix.accounts[0].pubkey = mallory.pubkey();
+    assert_err(env.send(&[ix], &[&mallory]), QuponError::Unauthorized);
+
+    let mut ix = env.snapshot_ix(&b, 0, &[a0, a0]);
+    let pa = env.paying_agent.insecure_clone();
+    ix.accounts[0].pubkey = pa.pubkey();
+    env.send(&[ix], &[&pa]).expect("paying agent cranks");
+    let a: CorporateAction = env.account(&action_pda(&b.series, 0));
+    assert_eq!(
+        (a.holders_snapshotted, a.units_snapshotted),
+        (1, holders[0].1)
+    );
+}
+
+#[test]
+fn finalize_requires_holders_and_meeting_opens_voting() {
+    // No units outstanding: nothing to snapshot → NothingToDo.
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let now = env.now();
+    let ix = env.announce_ix(&b, &env.registrar.pubkey(), intr_args(now));
+    env.send(&[ix], &[]).expect("announce");
+    env.set_clock(now + 60);
+    let ix = env.strike_ix(&b, &env.registrar.pubkey(), 0);
+    env.send(&[ix], &[]).expect("strike");
+    let ix = env.finalize_snapshot_ix(&b, 0);
+    assert_err(env.send(&[ix], &[]), QuponError::NothingToDo);
+
+    // BMET: finalize_snapshot opens voting.
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let owners: Vec<_> = env
+        .holders(&b, &[10, 25])
+        .iter()
+        .map(|(k, _)| k.pubkey())
+        .collect();
+    let now = env.now();
+    let args = qupon_bonds::AnnounceArgs {
+        kind: 4,
+        mandatory: 1,
+        corp_id: corp_id("QPNb1-BMET-0001"),
+        proposal_new_rate_bps: 1200,
+        voting_ends_at: now + 180,
+        period_start_ymd: 0,
+        period_end_ymd: 0,
+        period_start_ts: 0,
+        period_end_ts: 0,
+        accrual_days: 0,
+        rate_bps: 0,
+        ..intr_args(now)
+    };
+    let ix = env.announce_ix(&b, &env.issuer.pubkey(), args);
+    let issuer = env.issuer.insecure_clone();
+    env.send(&[ix], &[&issuer]).expect("BMET");
+    env.set_clock(now + 60);
+    let ix = env.strike_ix(&b, &env.registrar.pubkey(), 0);
+    env.send(&[ix], &[]).expect("strike");
+    let ix = env.snapshot_ix(&b, 0, &owners);
+    env.send(&[ix], &[]).expect("snapshot");
+    let ix = env.finalize_snapshot_ix(&b, 0);
+    env.send(&[ix], &[]).expect("finalize");
+    let a: CorporateAction = env.account(&action_pda(&b.series, 0));
+    assert_eq!(
+        (a.status, a.units_snapshotted, a.total_gross),
+        (ActionStatus::VotingOpen as u8, 35, 0)
+    );
 }

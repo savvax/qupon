@@ -61,8 +61,9 @@ pub struct AnnounceAction<'info> {
     )]
     pub action: Box<Account<'info, CorporateAction>>,
     pub cash_mint: Box<InterfaceAccount<'info, Mint>>,
+    /// `init_if_needed`: anyone can pre-create the ATA of the (predictable) next action PDA; that must not block announcements.
     #[account(
-        init,
+        init_if_needed,
         payer = authority,
         associated_token::mint = cash_mint,
         associated_token::authority = action,
@@ -105,7 +106,29 @@ pub fn handle_announce_action(ctx: Context<AnnounceAction>, a: AnnounceArgs) -> 
             a.proposal_new_rate_bps > 0 || a.proposal_new_maturity > 0,
             QuponError::InvalidParams
         );
+        // No cash fields on a meeting; a proposed rate above 100% or a maturity in the past is nonsense.
+        require!(
+            a.rate_bps == 0
+                && a.accrual_days == 0
+                && a.factor_bps == 0
+                && a.period_start_ts == 0
+                && a.period_end_ts == 0
+                && a.proposal_new_rate_bps <= u32::from(BPS_DENOMINATOR),
+            QuponError::InvalidParams
+        );
+        require!(
+            a.proposal_new_maturity == 0 || a.proposal_new_maturity > now,
+            QuponError::InvalidDates
+        );
     } else {
+        require!(
+            a.proposal_new_rate_bps == 0 && a.proposal_new_maturity == 0 && a.voting_ends_at == 0,
+            QuponError::InvalidParams
+        );
+        require!(
+            a.factor_bps == 0 || kind == ActionKind::PartialRedemption,
+            QuponError::InvalidParams
+        );
         let dc = DayCount::try_from(series.day_count).map_err(math_err)?;
         let start = civil_matches(a.period_start_ymd, a.period_start_ts)?;
         let end = civil_matches(a.period_end_ymd, a.period_end_ts)?;
@@ -203,6 +226,13 @@ pub fn handle_announce_action(ctx: Context<AnnounceAction>, a: AnnounceArgs) -> 
         rate_bps: act.rate_bps,
         per_unit_gross,
         per_unit_principal,
+        official_id: act.official_id,
+        factor_bps: act.factor_bps,
+        cash_mint: act.cash_mint,
+        escrow: act.escrow,
+        proposal_new_rate_bps: act.proposal_new_rate_bps,
+        proposal_new_maturity: act.proposal_new_maturity,
+        voting_ends_at: act.voting_ends_at,
         slot: clock.slot,
         timestamp: clock.unix_timestamp,
     });

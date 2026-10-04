@@ -6,7 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
-import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getStructDecoder, getStructEncoder, getU16Decoder, getU16Encoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type EncodedAccount, type FetchAccountConfig, type FetchAccountsConfig, type FixedSizeCodec, type FixedSizeDecoder, type FixedSizeEncoder, type MaybeAccount, type MaybeEncodedAccount, type ReadonlyUint8Array } from '@solana/kit';
+import { assertAccountExists, assertAccountsExist, combineCodec, decodeAccount, fetchEncodedAccount, fetchEncodedAccounts, fixDecoderSize, fixEncoderSize, getAddressDecoder, getAddressEncoder, getBytesDecoder, getBytesEncoder, getI64Decoder, getI64Encoder, getOptionDecoder, getOptionEncoder, getStructDecoder, getStructEncoder, getU16Decoder, getU16Encoder, getU32Decoder, getU32Encoder, getU64Decoder, getU64Encoder, getU8Decoder, getU8Encoder, transformEncoder, type Account, type Address, type Codec, type Decoder, type EncodedAccount, type Encoder, type FetchAccountConfig, type FetchAccountsConfig, type MaybeAccount, type MaybeEncodedAccount, type Option, type OptionOrNullable, type ReadonlyUint8Array } from '@solana/kit';
 
 export const SERIES_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([240, 97, 8, 183, 139, 77, 250, 162]);
 
@@ -24,7 +24,9 @@ dayCount: number; issueDate: bigint; maturityDate: bigint; nextCouponDate: bigin
 /** [`SeriesStatus`]. */
 status: number; totalIssued: bigint; actionCount: number; quorumBps: number; approvalBps: number; 
 /** ATA of the series PDA for `cash_mint`. */
-taxVault: Address; reserved: ReadonlyUint8Array;  };
+taxVault: Address; 
+/** The one non-final corporate action (statuses other than Completed/Cancelled), if any. */
+openAction: Option<Address>; reserved: ReadonlyUint8Array;  };
 
 export type SeriesArgs = { bump: number; mint: Address; cashMint: Address; registrar: Address; issuer: Address; payingAgent: Address; isin: ReadonlyUint8Array; 
 /** Zero-padded ASCII. */
@@ -38,20 +40,22 @@ dayCount: number; issueDate: number | bigint; maturityDate: number | bigint; nex
 /** [`SeriesStatus`]. */
 status: number; totalIssued: number | bigint; actionCount: number; quorumBps: number; approvalBps: number; 
 /** ATA of the series PDA for `cash_mint`. */
-taxVault: Address; reserved: ReadonlyUint8Array;  };
+taxVault: Address; 
+/** The one non-final corporate action (statuses other than Completed/Cancelled), if any. */
+openAction: OptionOrNullable<Address>; reserved: ReadonlyUint8Array;  };
 
 /** Gets the encoder for {@link SeriesArgs} account data. */
-export function getSeriesEncoder(): FixedSizeEncoder<SeriesArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['bump', getU8Encoder()], ['mint', getAddressEncoder()], ['cashMint', getAddressEncoder()], ['registrar', getAddressEncoder()], ['issuer', getAddressEncoder()], ['payingAgent', getAddressEncoder()], ['isin', fixEncoderSize(getBytesEncoder(), 12)], ['ticker', fixEncoderSize(getBytesEncoder(), 16)], ['faceValue', getU64Encoder()], ['couponRateBps', getU32Encoder()], ['frequency', getU8Encoder()], ['dayCount', getU8Encoder()], ['issueDate', getI64Encoder()], ['maturityDate', getI64Encoder()], ['nextCouponDate', getI64Encoder()], ['periodStart', getI64Encoder()], ['status', getU8Encoder()], ['totalIssued', getU64Encoder()], ['actionCount', getU32Encoder()], ['quorumBps', getU16Encoder()], ['approvalBps', getU16Encoder()], ['taxVault', getAddressEncoder()], ['reserved', fixEncoderSize(getBytesEncoder(), 64)]]), (value) => ({ ...value, discriminator: SERIES_DISCRIMINATOR }));
+export function getSeriesEncoder(): Encoder<SeriesArgs> {
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['bump', getU8Encoder()], ['mint', getAddressEncoder()], ['cashMint', getAddressEncoder()], ['registrar', getAddressEncoder()], ['issuer', getAddressEncoder()], ['payingAgent', getAddressEncoder()], ['isin', fixEncoderSize(getBytesEncoder(), 12)], ['ticker', fixEncoderSize(getBytesEncoder(), 16)], ['faceValue', getU64Encoder()], ['couponRateBps', getU32Encoder()], ['frequency', getU8Encoder()], ['dayCount', getU8Encoder()], ['issueDate', getI64Encoder()], ['maturityDate', getI64Encoder()], ['nextCouponDate', getI64Encoder()], ['periodStart', getI64Encoder()], ['status', getU8Encoder()], ['totalIssued', getU64Encoder()], ['actionCount', getU32Encoder()], ['quorumBps', getU16Encoder()], ['approvalBps', getU16Encoder()], ['taxVault', getAddressEncoder()], ['openAction', getOptionEncoder(getAddressEncoder())], ['reserved', fixEncoderSize(getBytesEncoder(), 64)]]), (value) => ({ ...value, discriminator: SERIES_DISCRIMINATOR }));
 }
 
 /** Gets the decoder for {@link Series} account data. */
-export function getSeriesDecoder(): FixedSizeDecoder<Series> {
-    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['bump', getU8Decoder()], ['mint', getAddressDecoder()], ['cashMint', getAddressDecoder()], ['registrar', getAddressDecoder()], ['issuer', getAddressDecoder()], ['payingAgent', getAddressDecoder()], ['isin', fixDecoderSize(getBytesDecoder(), 12)], ['ticker', fixDecoderSize(getBytesDecoder(), 16)], ['faceValue', getU64Decoder()], ['couponRateBps', getU32Decoder()], ['frequency', getU8Decoder()], ['dayCount', getU8Decoder()], ['issueDate', getI64Decoder()], ['maturityDate', getI64Decoder()], ['nextCouponDate', getI64Decoder()], ['periodStart', getI64Decoder()], ['status', getU8Decoder()], ['totalIssued', getU64Decoder()], ['actionCount', getU32Decoder()], ['quorumBps', getU16Decoder()], ['approvalBps', getU16Decoder()], ['taxVault', getAddressDecoder()], ['reserved', fixDecoderSize(getBytesDecoder(), 64)]]);
+export function getSeriesDecoder(): Decoder<Series> {
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['bump', getU8Decoder()], ['mint', getAddressDecoder()], ['cashMint', getAddressDecoder()], ['registrar', getAddressDecoder()], ['issuer', getAddressDecoder()], ['payingAgent', getAddressDecoder()], ['isin', fixDecoderSize(getBytesDecoder(), 12)], ['ticker', fixDecoderSize(getBytesDecoder(), 16)], ['faceValue', getU64Decoder()], ['couponRateBps', getU32Decoder()], ['frequency', getU8Decoder()], ['dayCount', getU8Decoder()], ['issueDate', getI64Decoder()], ['maturityDate', getI64Decoder()], ['nextCouponDate', getI64Decoder()], ['periodStart', getI64Decoder()], ['status', getU8Decoder()], ['totalIssued', getU64Decoder()], ['actionCount', getU32Decoder()], ['quorumBps', getU16Decoder()], ['approvalBps', getU16Decoder()], ['taxVault', getAddressDecoder()], ['openAction', getOptionDecoder(getAddressDecoder())], ['reserved', fixDecoderSize(getBytesDecoder(), 64)]]);
 }
 
 /** Gets the codec for {@link Series} account data. */
-export function getSeriesCodec(): FixedSizeCodec<SeriesArgs, Series> {
+export function getSeriesCodec(): Codec<SeriesArgs, Series> {
     return combineCodec(getSeriesEncoder(), getSeriesDecoder());
 }
 
@@ -97,8 +101,4 @@ export async function fetchAllMaybeSeries(
 ): Promise<MaybeAccount<Series>[]> {
   const maybeAccounts = await fetchEncodedAccounts(rpc, addresses, config);
   return maybeAccounts.map((maybeAccount) => decodeSeries(maybeAccount));
-}
-
-export function getSeriesSize(): number {
-  return 356;
 }

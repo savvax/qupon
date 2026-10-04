@@ -178,3 +178,40 @@ fn redemption_and_early_call_figures() {
         "100,000 x 10% x 47/360 = 1,305.56 -> 1,306"
     );
 }
+
+#[test]
+fn precreated_escrow_does_not_block_announce() {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let next = action_pda(&b.series, 0);
+    let grief = anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent(
+        &env.registrar.pubkey(), &next, &b.cash, &b.cash_tp,
+    );
+    env.send(&[grief], &[])
+        .expect("anyone can create the next escrow ATA");
+    let now = env.now();
+    let ix = env.announce_ix(&b, &env.registrar.pubkey(), intr_args(now));
+    env.send(&[ix], &[]).expect("announce still works");
+}
+
+#[test]
+fn meeting_and_cash_fields_do_not_mix() {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let now = env.now();
+    let mut a = intr_args(now);
+    a.factor_bps = 2500; // only PCAL carries a factor
+    let ix = env.announce_ix(&b, &env.registrar.pubkey(), a);
+    assert_err(env.send(&[ix], &[]), QuponError::InvalidParams);
+
+    let bmet = qupon_bonds::AnnounceArgs {
+        kind: 4,
+        mandatory: 1,
+        proposal_new_rate_bps: 1200,
+        voting_ends_at: now + 180,
+        ..intr_args(now) // still carries the coupon's period and rate → rejected
+    };
+    let ix = env.announce_ix(&b, &env.issuer.pubkey(), bmet);
+    let issuer = env.issuer.insecure_clone();
+    assert_err(env.send(&[ix], &[&issuer]), QuponError::InvalidParams);
+}

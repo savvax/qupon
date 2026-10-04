@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { decodeSeries, getSeriesSize, SERIES_DISCRIMINATOR } from "./generated/accounts/series.js";
+import { decodeSeries, SERIES_DISCRIMINATOR } from "./generated/accounts/series.js";
 import { QUPON_PROGRAM_ID } from "./index.js";
 
 // Raw Series account (incl. 8-byte Anchor discriminator) exported from a LiteSVM
@@ -30,9 +30,11 @@ describe("generated Series decoder (Codama)", () => {
     expect(series.actionCount).toBe(0);
     expect(series.quorumBps).toBe(5000);
     expect(series.approvalBps).toBe(6667);
+    expect(series.openAction).toEqual({ __option: "None" });
   });
 
-  it("layout is fixed-size and matches the fixture length", () => {
-    expect(data).toHaveLength(getSeriesSize());
+  it("account is allocated at max size (Option<Pubkey> open_action reserves 33 bytes)", () => {
+    // 8 discriminator + Series::INIT_SPACE; open_action is variable-length in Borsh, so the size is not fixed.
+    expect(data).toHaveLength(389);
   });
 });

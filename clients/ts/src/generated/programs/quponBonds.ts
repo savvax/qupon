@@ -8,17 +8,18 @@
 
 import { assertIsInstructionWithAccounts, containsBytes, extendClient, fixEncoderSize, getBytesEncoder, SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT, SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION, SOLANA_ERROR__PROGRAM_CLIENTS__UNRECOGNIZED_INSTRUCTION_TYPE, SolanaError, type Address, type ClientWithRpc, type ClientWithTransactionPlanning, type ClientWithTransactionSending, type ExtendedClient, type GetAccountInfoApi, type GetMultipleAccountsApi, type Instruction, type InstructionWithData, type ReadonlyUint8Array } from '@solana/kit';
 import { addSelfFetchFunctions, addSelfPlanAndSendFunctions, type SelfFetchFunctions, type SelfPlanAndSendFunctions } from '@solana/program-client-core';
-import { getInvestorCodec, getSeriesCodec, type Investor, type InvestorArgs, type Series, type SeriesArgs } from '../accounts/index.js';
-import { getInitSeriesInstructionAsync, getIssueUnitsInstruction, getRegisterInvestorInstructionAsync, getReinstateInvestorInstruction, getSubscribeInstructionAsync, getSuspendInvestorInstruction, parseInitSeriesInstruction, parseIssueUnitsInstruction, parseRegisterInvestorInstruction, parseReinstateInvestorInstruction, parseSubscribeInstruction, parseSuspendInvestorInstruction, type InitSeriesAsyncInput, type IssueUnitsInput, type ParsedInitSeriesInstruction, type ParsedIssueUnitsInstruction, type ParsedRegisterInvestorInstruction, type ParsedReinstateInvestorInstruction, type ParsedSubscribeInstruction, type ParsedSuspendInvestorInstruction, type RegisterInvestorAsyncInput, type ReinstateInvestorInput, type SubscribeAsyncInput, type SuspendInvestorInput } from '../instructions/index.js';
+import { getCorporateActionCodec, getInvestorCodec, getSeriesCodec, type CorporateAction, type CorporateActionArgs, type Investor, type InvestorArgs, type Series, type SeriesArgs } from '../accounts/index.js';
+import { getAnnounceActionInstructionAsync, getCancelActionInstruction, getCompleteActionInstruction, getFinalizeSnapshotInstruction, getFundActionInstruction, getInitSeriesInstructionAsync, getIssueUnitsInstruction, getPayBatchInstruction, getRegisterInvestorInstructionAsync, getReinstateInvestorInstruction, getSnapshotBatchInstruction, getStrikeRecordInstruction, getSubscribeInstructionAsync, getSuspendInvestorInstruction, parseAnnounceActionInstruction, parseCancelActionInstruction, parseCompleteActionInstruction, parseFinalizeSnapshotInstruction, parseFundActionInstruction, parseInitSeriesInstruction, parseIssueUnitsInstruction, parsePayBatchInstruction, parseRegisterInvestorInstruction, parseReinstateInvestorInstruction, parseSnapshotBatchInstruction, parseStrikeRecordInstruction, parseSubscribeInstruction, parseSuspendInvestorInstruction, type AnnounceActionAsyncInput, type CancelActionInput, type CompleteActionInput, type FinalizeSnapshotInput, type FundActionInput, type InitSeriesAsyncInput, type IssueUnitsInput, type ParsedAnnounceActionInstruction, type ParsedCancelActionInstruction, type ParsedCompleteActionInstruction, type ParsedFinalizeSnapshotInstruction, type ParsedFundActionInstruction, type ParsedInitSeriesInstruction, type ParsedIssueUnitsInstruction, type ParsedPayBatchInstruction, type ParsedRegisterInvestorInstruction, type ParsedReinstateInvestorInstruction, type ParsedSnapshotBatchInstruction, type ParsedStrikeRecordInstruction, type ParsedSubscribeInstruction, type ParsedSuspendInvestorInstruction, type PayBatchInput, type RegisterInvestorAsyncInput, type ReinstateInvestorInput, type SnapshotBatchInput, type StrikeRecordInput, type SubscribeAsyncInput, type SuspendInvestorInput } from '../instructions/index.js';
 import { findInvestorPda, findSeriesPda } from '../pdas/index.js';
 
 export const QUPON_BONDS_PROGRAM_ADDRESS = 'QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd' as Address<'QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd'>;
 
-export enum QuponBondsAccount { Investor, Series }
+export enum QuponBondsAccount { CorporateAction, Investor, Series }
 
 export function identifyQuponBondsAccount(account: { data: ReadonlyUint8Array } | ReadonlyUint8Array): QuponBondsAccount {
     const data = 'data' in account ? account.data : account;
-    if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([174, 129, 17, 83, 36, 116, 26, 196])), 0)) { return QuponBondsAccount.Investor; }
+    if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([144, 225, 182, 199, 4, 234, 12, 32])), 0)) { return QuponBondsAccount.CorporateAction; }
+if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([174, 129, 17, 83, 36, 116, 26, 196])), 0)) { return QuponBondsAccount.Investor; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([240, 97, 8, 183, 139, 77, 250, 162])), 0)) { return QuponBondsAccount.Series; }
     throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT, { accountData: data, programName: "quponBonds" });
 }
@@ -48,24 +49,40 @@ if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Arr
     throw new Error('The provided event could not be identified as a quponBonds event.');
 }
 
-export enum QuponBondsInstruction { InitSeries, IssueUnits, RegisterInvestor, ReinstateInvestor, Subscribe, SuspendInvestor }
+export enum QuponBondsInstruction { AnnounceAction, CancelAction, CompleteAction, FinalizeSnapshot, FundAction, InitSeries, IssueUnits, PayBatch, RegisterInvestor, ReinstateInvestor, SnapshotBatch, StrikeRecord, Subscribe, SuspendInvestor }
 
 export function identifyQuponBondsInstruction(instruction: { data: ReadonlyUint8Array } | ReadonlyUint8Array): QuponBondsInstruction {
     const data = 'data' in instruction ? instruction.data : instruction;
-    if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([178, 100, 202, 203, 208, 38, 105, 209])), 0)) { return QuponBondsInstruction.InitSeries; }
+    if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([60, 158, 46, 83, 68, 236, 19, 172])), 0)) { return QuponBondsInstruction.AnnounceAction; }
+if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([228, 144, 170, 146, 66, 88, 133, 128])), 0)) { return QuponBondsInstruction.CancelAction; }
+if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([180, 164, 246, 107, 80, 245, 248, 34])), 0)) { return QuponBondsInstruction.CompleteAction; }
+if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([164, 5, 101, 146, 139, 235, 67, 48])), 0)) { return QuponBondsInstruction.FinalizeSnapshot; }
+if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([254, 42, 57, 244, 127, 99, 74, 178])), 0)) { return QuponBondsInstruction.FundAction; }
+if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([178, 100, 202, 203, 208, 38, 105, 209])), 0)) { return QuponBondsInstruction.InitSeries; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([39, 120, 190, 191, 225, 131, 155, 248])), 0)) { return QuponBondsInstruction.IssueUnits; }
+if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([94, 138, 173, 194, 252, 142, 7, 53])), 0)) { return QuponBondsInstruction.PayBatch; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([95, 16, 66, 212, 152, 123, 136, 173])), 0)) { return QuponBondsInstruction.RegisterInvestor; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([19, 131, 250, 196, 189, 48, 173, 13])), 0)) { return QuponBondsInstruction.ReinstateInvestor; }
+if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([40, 134, 194, 137, 156, 228, 195, 215])), 0)) { return QuponBondsInstruction.SnapshotBatch; }
+if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([92, 152, 225, 255, 218, 255, 6, 10])), 0)) { return QuponBondsInstruction.StrikeRecord; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([254, 28, 191, 138, 156, 179, 183, 53])), 0)) { return QuponBondsInstruction.Subscribe; }
 if (containsBytes(data, fixEncoderSize(getBytesEncoder(), 8).encode(new Uint8Array([123, 93, 244, 55, 206, 230, 255, 58])), 0)) { return QuponBondsInstruction.SuspendInvestor; }
     throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_INSTRUCTION, { instructionData: data, programName: "quponBonds" });
 }
 
 export type ParsedQuponBondsInstruction<TProgram extends string = 'QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd'> =
+| { instructionType: QuponBondsInstruction.AnnounceAction } & ParsedAnnounceActionInstruction<TProgram>
+| { instructionType: QuponBondsInstruction.CancelAction } & ParsedCancelActionInstruction<TProgram>
+| { instructionType: QuponBondsInstruction.CompleteAction } & ParsedCompleteActionInstruction<TProgram>
+| { instructionType: QuponBondsInstruction.FinalizeSnapshot } & ParsedFinalizeSnapshotInstruction<TProgram>
+| { instructionType: QuponBondsInstruction.FundAction } & ParsedFundActionInstruction<TProgram>
 | { instructionType: QuponBondsInstruction.InitSeries } & ParsedInitSeriesInstruction<TProgram>
 | { instructionType: QuponBondsInstruction.IssueUnits } & ParsedIssueUnitsInstruction<TProgram>
+| { instructionType: QuponBondsInstruction.PayBatch } & ParsedPayBatchInstruction<TProgram>
 | { instructionType: QuponBondsInstruction.RegisterInvestor } & ParsedRegisterInvestorInstruction<TProgram>
 | { instructionType: QuponBondsInstruction.ReinstateInvestor } & ParsedReinstateInvestorInstruction<TProgram>
+| { instructionType: QuponBondsInstruction.SnapshotBatch } & ParsedSnapshotBatchInstruction<TProgram>
+| { instructionType: QuponBondsInstruction.StrikeRecord } & ParsedStrikeRecordInstruction<TProgram>
 | { instructionType: QuponBondsInstruction.Subscribe } & ParsedSubscribeInstruction<TProgram>
 | { instructionType: QuponBondsInstruction.SuspendInvestor } & ParsedSuspendInvestorInstruction<TProgram>
 
@@ -76,14 +93,30 @@ export type ParsedQuponBondsInstruction<TProgram extends string = 'QPN1zdVm6PgMd
         ): ParsedQuponBondsInstruction<TProgram> {
             const instructionType = identifyQuponBondsInstruction(instruction);
             switch (instructionType) {
-                case QuponBondsInstruction.InitSeries: { assertIsInstructionWithAccounts(instruction);
+                case QuponBondsInstruction.AnnounceAction: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: QuponBondsInstruction.AnnounceAction, ...parseAnnounceActionInstruction(instruction) }; }
+case QuponBondsInstruction.CancelAction: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: QuponBondsInstruction.CancelAction, ...parseCancelActionInstruction(instruction) }; }
+case QuponBondsInstruction.CompleteAction: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: QuponBondsInstruction.CompleteAction, ...parseCompleteActionInstruction(instruction) }; }
+case QuponBondsInstruction.FinalizeSnapshot: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: QuponBondsInstruction.FinalizeSnapshot, ...parseFinalizeSnapshotInstruction(instruction) }; }
+case QuponBondsInstruction.FundAction: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: QuponBondsInstruction.FundAction, ...parseFundActionInstruction(instruction) }; }
+case QuponBondsInstruction.InitSeries: { assertIsInstructionWithAccounts(instruction);
 return { instructionType: QuponBondsInstruction.InitSeries, ...parseInitSeriesInstruction(instruction) }; }
 case QuponBondsInstruction.IssueUnits: { assertIsInstructionWithAccounts(instruction);
 return { instructionType: QuponBondsInstruction.IssueUnits, ...parseIssueUnitsInstruction(instruction) }; }
+case QuponBondsInstruction.PayBatch: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: QuponBondsInstruction.PayBatch, ...parsePayBatchInstruction(instruction) }; }
 case QuponBondsInstruction.RegisterInvestor: { assertIsInstructionWithAccounts(instruction);
 return { instructionType: QuponBondsInstruction.RegisterInvestor, ...parseRegisterInvestorInstruction(instruction) }; }
 case QuponBondsInstruction.ReinstateInvestor: { assertIsInstructionWithAccounts(instruction);
 return { instructionType: QuponBondsInstruction.ReinstateInvestor, ...parseReinstateInvestorInstruction(instruction) }; }
+case QuponBondsInstruction.SnapshotBatch: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: QuponBondsInstruction.SnapshotBatch, ...parseSnapshotBatchInstruction(instruction) }; }
+case QuponBondsInstruction.StrikeRecord: { assertIsInstructionWithAccounts(instruction);
+return { instructionType: QuponBondsInstruction.StrikeRecord, ...parseStrikeRecordInstruction(instruction) }; }
 case QuponBondsInstruction.Subscribe: { assertIsInstructionWithAccounts(instruction);
 return { instructionType: QuponBondsInstruction.Subscribe, ...parseSubscribeInstruction(instruction) }; }
 case QuponBondsInstruction.SuspendInvestor: { assertIsInstructionWithAccounts(instruction);
@@ -94,9 +127,9 @@ return { instructionType: QuponBondsInstruction.SuspendInvestor, ...parseSuspend
 
 export type QuponBondsPlugin = { accounts: QuponBondsPluginAccounts; instructions: QuponBondsPluginInstructions; pdas: QuponBondsPluginPdas; identifyAccount: typeof identifyQuponBondsAccount; identifyInstruction: typeof identifyQuponBondsInstruction; parseInstruction: typeof parseQuponBondsInstruction; }
 
-export type QuponBondsPluginAccounts = { investor: ReturnType<typeof getInvestorCodec> & SelfFetchFunctions<InvestorArgs, Investor>; series: ReturnType<typeof getSeriesCodec> & SelfFetchFunctions<SeriesArgs, Series>; }
+export type QuponBondsPluginAccounts = { corporateAction: ReturnType<typeof getCorporateActionCodec> & SelfFetchFunctions<CorporateActionArgs, CorporateAction>; investor: ReturnType<typeof getInvestorCodec> & SelfFetchFunctions<InvestorArgs, Investor>; series: ReturnType<typeof getSeriesCodec> & SelfFetchFunctions<SeriesArgs, Series>; }
 
-export type QuponBondsPluginInstructions = { initSeries: (input: InitSeriesAsyncInput) => ReturnType<typeof getInitSeriesInstructionAsync> & SelfPlanAndSendFunctions; issueUnits: (input: IssueUnitsInput) => ReturnType<typeof getIssueUnitsInstruction> & SelfPlanAndSendFunctions; registerInvestor: (input: RegisterInvestorAsyncInput) => ReturnType<typeof getRegisterInvestorInstructionAsync> & SelfPlanAndSendFunctions; reinstateInvestor: (input: ReinstateInvestorInput) => ReturnType<typeof getReinstateInvestorInstruction> & SelfPlanAndSendFunctions; subscribe: (input: SubscribeAsyncInput) => ReturnType<typeof getSubscribeInstructionAsync> & SelfPlanAndSendFunctions; suspendInvestor: (input: SuspendInvestorInput) => ReturnType<typeof getSuspendInvestorInstruction> & SelfPlanAndSendFunctions; }
+export type QuponBondsPluginInstructions = { announceAction: (input: AnnounceActionAsyncInput) => ReturnType<typeof getAnnounceActionInstructionAsync> & SelfPlanAndSendFunctions; cancelAction: (input: CancelActionInput) => ReturnType<typeof getCancelActionInstruction> & SelfPlanAndSendFunctions; completeAction: (input: CompleteActionInput) => ReturnType<typeof getCompleteActionInstruction> & SelfPlanAndSendFunctions; finalizeSnapshot: (input: FinalizeSnapshotInput) => ReturnType<typeof getFinalizeSnapshotInstruction> & SelfPlanAndSendFunctions; fundAction: (input: FundActionInput) => ReturnType<typeof getFundActionInstruction> & SelfPlanAndSendFunctions; initSeries: (input: InitSeriesAsyncInput) => ReturnType<typeof getInitSeriesInstructionAsync> & SelfPlanAndSendFunctions; issueUnits: (input: IssueUnitsInput) => ReturnType<typeof getIssueUnitsInstruction> & SelfPlanAndSendFunctions; payBatch: (input: PayBatchInput) => ReturnType<typeof getPayBatchInstruction> & SelfPlanAndSendFunctions; registerInvestor: (input: RegisterInvestorAsyncInput) => ReturnType<typeof getRegisterInvestorInstructionAsync> & SelfPlanAndSendFunctions; reinstateInvestor: (input: ReinstateInvestorInput) => ReturnType<typeof getReinstateInvestorInstruction> & SelfPlanAndSendFunctions; snapshotBatch: (input: SnapshotBatchInput) => ReturnType<typeof getSnapshotBatchInstruction> & SelfPlanAndSendFunctions; strikeRecord: (input: StrikeRecordInput) => ReturnType<typeof getStrikeRecordInstruction> & SelfPlanAndSendFunctions; subscribe: (input: SubscribeAsyncInput) => ReturnType<typeof getSubscribeInstructionAsync> & SelfPlanAndSendFunctions; suspendInvestor: (input: SuspendInvestorInput) => ReturnType<typeof getSuspendInvestorInstruction> & SelfPlanAndSendFunctions; }
 
 export type QuponBondsPluginPdas = { series: typeof findSeriesPda; investor: typeof findInvestorPda; }
 
@@ -104,6 +137,6 @@ export type QuponBondsPluginRequirements = ClientWithRpc<GetAccountInfoApi & Get
 
 export function quponBondsProgram() {
     return <T extends QuponBondsPluginRequirements>(client: T): ExtendedClient<T, { quponBonds: QuponBondsPlugin }> => {
-        return extendClient(client, { quponBonds: <QuponBondsPlugin>{ accounts: { investor: addSelfFetchFunctions(client, getInvestorCodec()), series: addSelfFetchFunctions(client, getSeriesCodec()) }, instructions: { initSeries: input => addSelfPlanAndSendFunctions(client, getInitSeriesInstructionAsync(input)), issueUnits: input => addSelfPlanAndSendFunctions(client, getIssueUnitsInstruction(input)), registerInvestor: input => addSelfPlanAndSendFunctions(client, getRegisterInvestorInstructionAsync(input)), reinstateInvestor: input => addSelfPlanAndSendFunctions(client, getReinstateInvestorInstruction(input)), subscribe: input => addSelfPlanAndSendFunctions(client, getSubscribeInstructionAsync(input)), suspendInvestor: input => addSelfPlanAndSendFunctions(client, getSuspendInvestorInstruction(input)) }, pdas: { series: findSeriesPda, investor: findInvestorPda }, identifyAccount: identifyQuponBondsAccount, identifyInstruction: identifyQuponBondsInstruction, parseInstruction: parseQuponBondsInstruction } });
+        return extendClient(client, { quponBonds: <QuponBondsPlugin>{ accounts: { corporateAction: addSelfFetchFunctions(client, getCorporateActionCodec()), investor: addSelfFetchFunctions(client, getInvestorCodec()), series: addSelfFetchFunctions(client, getSeriesCodec()) }, instructions: { announceAction: input => addSelfPlanAndSendFunctions(client, getAnnounceActionInstructionAsync(input)), cancelAction: input => addSelfPlanAndSendFunctions(client, getCancelActionInstruction(input)), completeAction: input => addSelfPlanAndSendFunctions(client, getCompleteActionInstruction(input)), finalizeSnapshot: input => addSelfPlanAndSendFunctions(client, getFinalizeSnapshotInstruction(input)), fundAction: input => addSelfPlanAndSendFunctions(client, getFundActionInstruction(input)), initSeries: input => addSelfPlanAndSendFunctions(client, getInitSeriesInstructionAsync(input)), issueUnits: input => addSelfPlanAndSendFunctions(client, getIssueUnitsInstruction(input)), payBatch: input => addSelfPlanAndSendFunctions(client, getPayBatchInstruction(input)), registerInvestor: input => addSelfPlanAndSendFunctions(client, getRegisterInvestorInstructionAsync(input)), reinstateInvestor: input => addSelfPlanAndSendFunctions(client, getReinstateInvestorInstruction(input)), snapshotBatch: input => addSelfPlanAndSendFunctions(client, getSnapshotBatchInstruction(input)), strikeRecord: input => addSelfPlanAndSendFunctions(client, getStrikeRecordInstruction(input)), subscribe: input => addSelfPlanAndSendFunctions(client, getSubscribeInstructionAsync(input)), suspendInvestor: input => addSelfPlanAndSendFunctions(client, getSuspendInvestorInstruction(input)) }, pdas: { series: findSeriesPda, investor: findInvestorPda }, identifyAccount: identifyQuponBondsAccount, identifyInstruction: identifyQuponBondsInstruction, parseInstruction: parseQuponBondsInstruction } });
     };
 }

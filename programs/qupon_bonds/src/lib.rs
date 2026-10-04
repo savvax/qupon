@@ -70,4 +70,19 @@ pub mod qupon_bonds {
     pub fn finalize_snapshot(ctx: Context<FinalizeSnapshot>) -> Result<()> {
         instructions::snapshot::handle_finalize_snapshot(ctx)
     }
+
+    /// Move cash into the action escrow (issuer or paying agent); Funded once it covers net + tax + principal.
+    pub fn fund_action(ctx: Context<FundAction>, amount: u64) -> Result<()> {
+        instructions::settle::handle_fund_action(ctx, amount)
+    }
+
+    /// Pay up to 10 holders: remaining accounts = N × [Entitlement, Investor, holder cash ATA] (crank).
+    pub fn pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<()> {
+        instructions::settle::handle_pay_batch(ctx)
+    }
+
+    /// Reconcile and resume the mint; INTR completes and advances the schedule, redemptions go to Retiring.
+    pub fn complete_action(ctx: Context<CompleteAction>) -> Result<()> {
+        instructions::settle::handle_complete_action(ctx)
+    }
 }

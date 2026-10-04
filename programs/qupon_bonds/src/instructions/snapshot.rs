@@ -195,6 +195,7 @@ pub fn handle_snapshot_batch<'info>(ctx: Context<'info, SnapshotBatch<'info>>) -
         action.total_gross = add(action.total_gross, e.gross)?;
         action.total_tax = add(action.total_tax, e.tax)?;
         action.total_net = add(action.total_net, e.net)?;
+        action.total_principal = add(action.total_principal, e.principal)?;
         action.holders_snapshotted = action
             .holders_snapshotted
             .checked_add(1)
@@ -261,6 +262,7 @@ pub fn handle_finalize_snapshot(ctx: Context<FinalizeSnapshot>) -> Result<()> {
         action.units_snapshotted == ctx.accounts.mint.supply,
         QuponError::SupplyMismatch
     );
+    require!(action.holders_snapshotted > 0, QuponError::NothingToDo);
     let meeting = action.kind == ActionKind::Meeting as u8;
     if !meeting {
         let dc = DayCount::try_from(series.day_count).map_err(math_err)?;

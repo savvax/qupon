@@ -45,6 +45,7 @@ mint: TAccountMint;
 /** Settlement currency (tKZT on Token-2022 or USDC on SPL Token). */
 cashMint: TAccountCashMint;
 series?: TAccountSeries;
+/** `init_if_needed`: a pre-created ATA for the (predictable) series PDA must not block init_series. */
 taxVault?: TAccountTaxVault;
 bondTokenProgram?: TAccountBondTokenProgram;
 cashTokenProgram: TAccountCashTokenProgram;
@@ -107,6 +108,7 @@ mint: TAccountMint;
 /** Settlement currency (tKZT on Token-2022 or USDC on SPL Token). */
 cashMint: TAccountCashMint;
 series: TAccountSeries;
+/** `init_if_needed`: a pre-created ATA for the (predictable) series PDA must not block init_series. */
 taxVault: TAccountTaxVault;
 bondTokenProgram?: TAccountBondTokenProgram;
 cashTokenProgram: TAccountCashTokenProgram;
@@ -164,6 +166,7 @@ mint: TAccountMetas[1];
 /** Settlement currency (tKZT on Token-2022 or USDC on SPL Token). */
 cashMint: TAccountMetas[2];
 series: TAccountMetas[3];
+/** `init_if_needed`: a pre-created ATA for the (predictable) series PDA must not block init_series. */
 taxVault: TAccountMetas[4];
 bondTokenProgram: TAccountMetas[5];
 cashTokenProgram: TAccountMetas[6];
