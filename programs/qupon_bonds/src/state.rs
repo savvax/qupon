@@ -83,6 +83,8 @@ pub struct Series {
     pub approval_bps: u16,
     /// ATA of the series PDA for `cash_mint`.
     pub tax_vault: Pubkey,
+    /// The one non-final corporate action (statuses other than Completed/Cancelled), if any.
+    pub open_action: Option<Pubkey>,
     pub reserved: [u8; 64],
 }
 
@@ -159,6 +161,8 @@ pub struct CorporateAction {
     /// [`MeetingResult`].
     pub result: u8,
     pub completed_at: i64,
+    /// PCAL only: share of face redeemed, bps.
+    pub factor_bps: u16,
     pub reserved: [u8; 64],
 }
 

@@ -45,4 +45,14 @@ pub mod qupon_bonds {
     pub fn issue_units(ctx: Context<IssueUnits>, units: u64) -> Result<()> {
         instructions::subscribe::handle_issue_units(ctx, units)
     }
+
+    /// Announce a corporate action (registrar for INTR/REDM/MCAL/PCAL, issuer for BMET); amounts verified on-chain.
+    pub fn announce_action(ctx: Context<AnnounceAction>, args: AnnounceArgs) -> Result<()> {
+        instructions::announce_action::handle_announce_action(ctx, args)
+    }
+
+    /// Cancel an action that is still only Announced (registrar).
+    pub fn cancel_action(ctx: Context<CancelAction>) -> Result<()> {
+        instructions::announce_action::handle_cancel_action(ctx)
+    }
 }

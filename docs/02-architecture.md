@@ -49,7 +49,7 @@ day_count u8 (0=THIRTY_360, 1=ACT_ACT, 2=ACT_365);
 issue_date i64; maturity_date i64; next_coupon_date i64; period_start i64;
 status u8 (0 Active, 1 Matured, 2 Retiring, 3 Closed);
 total_issued u64; action_count u32; quorum_bps u16; approval_bps u16;
-tax_vault Pubkey (ATA of series PDA for cash_mint); reserved [u8;64]
+tax_vault Pubkey (ATA of series PDA for cash_mint); open_action Option<Pubkey> (the one non-final action; set by announce_action, cleared by cancel/complete); reserved [u8;64]
 ```
 
 `Investor` — seeds `["investor", series, owner]`
@@ -77,7 +77,7 @@ total_gross u64; total_tax u64; total_net u64; total_paid u64; total_retired u64
 // meeting fields
 proposal_new_rate_bps u32; proposal_new_maturity i64; voting_ends_at i64;
 votes_for u64; votes_against u64; votes_abstain u64; result u8 (0 Pending, 1 Approved, 2 Rejected, 3 NoQuorum);
-completed_at i64; reserved [u8;64]
+completed_at i64; factor_bps u16 (PCAL only); reserved [u8;64]
 ```
 
 `Entitlement` — seeds `["entitlement", action, owner]`
@@ -96,8 +96,8 @@ vote u8 (0 None, 1 For, 2 Against, 3 Abstain); voted_at i64
 | 3 | `suspend_investor` / `reinstate_investor` | registrar | — | status flag; suspend freezes the bond ATA | `InvestorStatusChanged` |
 | 4 | `subscribe(units, price_per_unit)` | investor | Investor Active; placement open (Series.status Active, now < issue window end or always for demo) | `price_per_unit == face_value` (placement at par — the investor cannot pick the price, else `InvalidParams`); mint not paused (`MintPaused`); transfer `units*price` cash investor→issuer cash account (any token account of `series.issuer` for `cash_mint`); mint `units` to investor (series PDA mint authority); total_issued += units | `Subscribed` |
 | 5 | `issue_units(units)` | issuer | Investor Active | mint without cash (free allocation / demo) | `UnitsIssued` |
-| 6 | `announce_action(args)` | registrar (INTR/REDM/MCAL/PCAL) or issuer (BMET/CHAN proposal) | Series Active; no other action in statuses 1–4,6,8 for this series ("one open action at a time"); dates ordered: announced_at < record_at ≤ payment_at; for INTR period matches schedule; compute per_unit_gross/principal server-side AND verify on-chain against formula | create CorporateAction, escrow ATA; action_count += 1 | `ActionAnnounced` |
-| 7 | `cancel_action` | registrar | status Announced | status Cancelled | `ActionCancelled` |
+| 6 | `announce_action(args)` | registrar (INTR/REDM/MCAL/PCAL) or issuer (BMET); CHAN is never announced (it results from an approved BMET) → `InvalidParams` | Series Active; `open_action` is None (`ActionAlreadyOpen`); `now < record_at ≤ payment_at`; mandatory = MAND for cash kinds, VOLU for BMET. Cash kinds: `period_*_ymd` must be the Almaty dates of the Almaty-midnight `period_*_ts` (`InvalidDates`); `accrual_days` = crate day count (`EntitlementCalcMismatch`); `period_start_ts == Series.period_start` and `rate_bps == Series.coupon_rate_bps`; INTR ends at `next_coupon_date`, REDM at `maturity_date`, MCAL/PCAL before both. BMET: `voting_ends_at > record_at`, a rate or maturity proposal; quorum/approval come from Series. Args: `{kind, mandatory, corp_id, official_id, record_at, payment_at, period_start_ymd, period_end_ymd, period_start_ts, period_end_ts, accrual_days, rate_bps, factor_bps, proposal_new_rate_bps, proposal_new_maturity, voting_ends_at}` | create CorporateAction (PDA index = action_count), escrow ATA (authority = action PDA); `per_unit_gross` = crate `per_unit_gross`, `per_unit_principal` = face (REDM/MCAL) or round(face × factor_bps / 10000) (PCAL); action_count += 1; open_action = action | `ActionAnnounced` |
+| 7 | `cancel_action` | registrar | status Announced (`WrongStatus`) | status Cancelled; Series.open_action = None | `ActionCancelled` |
 | 8 | `strike_record` | registrar or paying_agent | status Announced; now ≥ record_at (clock) — for demo a `--force` flag is NOT allowed on-chain; use short periods instead | CPI `pause` mint; status RecordStruck; snapshot_slot = clock.slot | `RecordStruck` |
 | 9 | `snapshot_batch` | registrar/paying_agent (crank) | status RecordStruck; mint paused | remaining_accounts = N × [Investor PDA, bond ATA (owner==investor.owner, mint==series.mint), Entitlement PDA (init if needed, payer = crank)]; skip zero balances; for each new entitlement: units=ata.amount; compute gross/tax/net/principal (03-domain); totals += ; holders_snapshotted += 1; snapshot_hash = sha256(snapshot_hash ‖ owner ‖ units_le) | `HolderSnapshotted` per holder |
 | 10 | `finalize_snapshot` | registrar/paying_agent | status RecordStruck; units_snapshotted == mint.supply | status SnapshotComplete; for BMET: status VotingOpen | `SnapshotFinalized` |

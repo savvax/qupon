@@ -507,3 +507,88 @@ impl Env {
             == 2
     }
 }
+
+pub fn action_pda(series: &Pubkey, index: u32) -> Pubkey {
+    Pubkey::find_program_address(
+        &[
+            qupon_bonds::constants::ACTION_SEED,
+            series.as_ref(),
+            &index.to_le_bytes(),
+        ],
+        &qupon_bonds::id(),
+    )
+    .0
+}
+
+pub fn corp_id(s: &str) -> [u8; 16] {
+    let mut id = [0u8; 16];
+    id[..s.len()].copy_from_slice(s.as_bytes());
+    id
+}
+
+/// INTR #1 of the default series: 2026-07-03 → 2027-01-03, 10%, 180 days (30E/360); record in 60 s.
+pub fn intr_args(now: i64) -> qupon_bonds::AnnounceArgs {
+    qupon_bonds::AnnounceArgs {
+        kind: 0,
+        mandatory: 0,
+        corp_id: corp_id("QPNb1-INTR-0001"),
+        official_id: [0; 16],
+        record_at: now + 60,
+        payment_at: now + 120,
+        period_start_ymd: 20260703,
+        period_end_ymd: 20270103,
+        period_start_ts: ISSUE_DATE,
+        period_end_ts: NEXT_COUPON,
+        accrual_days: 180,
+        rate_bps: 1000,
+        factor_bps: 0,
+        proposal_new_rate_bps: 0,
+        proposal_new_maturity: 0,
+        voting_ends_at: 0,
+    }
+}
+
+impl Env {
+    pub fn now(&self) -> i64 {
+        self.svm.get_sysvar::<Clock>().unix_timestamp
+    }
+
+    /// `announce_action` for the series' next action index.
+    pub fn announce_ix(
+        &self,
+        b: &Bond,
+        authority: &Pubkey,
+        args: qupon_bonds::AnnounceArgs,
+    ) -> Instruction {
+        let s: qupon_bonds::Series = self.account(&b.series);
+        let action = action_pda(&b.series, s.action_count);
+        Instruction::new_with_bytes(
+            qupon_bonds::id(),
+            &qupon_bonds::instruction::AnnounceAction { args }.data(),
+            qupon_bonds::accounts::AnnounceAction {
+                authority: *authority,
+                series: b.series,
+                action,
+                cash_mint: b.cash,
+                escrow: ata(&action, &b.cash, &b.cash_tp),
+                cash_token_program: b.cash_tp,
+                associated_token_program: anchor_spl::associated_token::ID,
+                system_program: anchor_lang::solana_program::system_program::ID,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    pub fn cancel_ix(&self, b: &Bond, index: u32) -> Instruction {
+        Instruction::new_with_bytes(
+            qupon_bonds::id(),
+            &qupon_bonds::instruction::CancelAction {}.data(),
+            qupon_bonds::accounts::CancelAction {
+                registrar: self.registrar.pubkey(),
+                series: b.series,
+                action: action_pda(&b.series, index),
+            }
+            .to_account_metas(None),
+        )
+    }
+}

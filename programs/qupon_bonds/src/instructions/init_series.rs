@@ -127,6 +127,7 @@ pub fn handle_init_series(ctx: Context<InitSeries>, p: InitSeriesParams) -> Resu
     s.quorum_bps = p.quorum_bps;
     s.approval_bps = p.approval_bps;
     s.tax_vault = ctx.accounts.tax_vault.key();
+    s.open_action = None;
 
     let clock = Clock::get()?;
     emit!(SeriesInitialized {
