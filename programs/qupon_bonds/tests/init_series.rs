@@ -181,3 +181,28 @@ fn init_series_rejects_bad_params() {
         assert_err(env.send(&[ix], &[]), QuponError::InvalidDates);
     }
 }
+
+/// Exports the raw `Series` account (incl. Anchor discriminator) as base64 for the
+/// Codama decoder test in `clients/ts`. No-op unless `QUPON_EXPORT_FIXTURE` is set,
+/// so `make verify` stays fast; regenerate with:
+/// `QUPON_EXPORT_FIXTURE=1 cargo test -p qupon_bonds export_series_fixture`.
+#[test]
+fn export_series_fixture() {
+    use base64::Engine as _;
+
+    if std::env::var("QUPON_EXPORT_FIXTURE").is_err() {
+        return;
+    }
+    let mut env = Env::new();
+    let bond = env.setup_bond();
+    let acc = env.svm.get_account(&bond.series).expect("series account");
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&acc.data);
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../clients/ts/test/fixtures/series.b64"
+    );
+    if let Some(dir) = std::path::Path::new(path).parent() {
+        std::fs::create_dir_all(dir).expect("create fixture dir");
+    }
+    std::fs::write(path, b64).expect("write series.b64");
+}

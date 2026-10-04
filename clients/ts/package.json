@@ -20,7 +20,8 @@
     "@solana-program/token": "^0.17",
     "@solana-program/token-2022": "^0.19",
     "@solana/kit": "^8.4",
-    "commander": "^15.0.0"
+    "commander": "^15.0.0",
+    "@solana/program-client-core": "^8.3.0"
   },
   "devDependencies": {
     "@codama/nodes-from-anchor": "^1.5.6",
