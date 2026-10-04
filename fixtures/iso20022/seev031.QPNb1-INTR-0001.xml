@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:seev.031.001.15">
+  <CorpActnNtfctn>
+    <CorpActnGnlInf>
+      <CorpActnEvtId>QPNb1-INTR-0001</CorpActnEvtId>
+      <EvtTp>INTR</EvtTp>
+      <MndtryVlntryEvtTp>MAND</MndtryVlntryEvtTp>
+      <UndrlygScty>
+        <FinInstrmId>
+          <ISIN>KZ2C0QUPON001</ISIN>
+        </FinInstrmId>
+      </UndrlygScty>
+    </CorpActnGnlInf>
+    <CorpActnDtls>
+      <DtDtls>
+        <AnncmntDt>2026-07-03T00:00:00+05:00</AnncmntDt>
+        <RcrdDt>2027-01-03T00:00:00+05:00</RcrdDt>
+        <PmtDt>2027-01-05</PmtDt>
+      </DtDtls>
+      <PrdDtls>
+        <IntrstPrd>
+          <FrDt>2026-07-03</FrDt>
+          <ToDt>2027-01-03</ToDt>
+        </IntrstPrd>
+      </PrdDtls>
+      <RateAndAmtDtls>
+        <IntrstRateUsdForPmt>10.00</IntrstRateUsdForPmt>
+      </RateAndAmtDtls>
+      <DayCntBsis>A001</DayCntBsis>
+    </CorpActnDtls>
+  </CorpActnNtfctn>
+</Document>

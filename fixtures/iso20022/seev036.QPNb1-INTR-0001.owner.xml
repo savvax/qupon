@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:seev.036.001.16">
+  <CorpActnConf>
+    <CorpActnGnlInf>
+      <CorpActnEvtId>QPNb1-INTR-0001</CorpActnEvtId>
+      <EvtTp>INTR</EvtTp>
+      <MndtryVlntryEvtTp>MAND</MndtryVlntryEvtTp>
+      <UndrlygScty>
+        <FinInstrmId>
+          <ISIN>KZ2C0QUPON001</ISIN>
+        </FinInstrmId>
+      </UndrlygScty>
+    </CorpActnGnlInf>
+    <CorpActnConfDtls>
+      <AcctDtls>
+        <AcctOwnr>OwnerPubkey1111111111111111111111111111111111111111</AcctOwnr>
+        <SfkpgAcct>BondAta1111111111111111111111111111111111111111</SfkpgAcct>
+        <ConfdBal>10</ConfdBal>
+      </AcctDtls>
+      <CshMvmntDtls>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <GrssCshAmt Ccy="tKZT">500.00</GrssCshAmt>
+        <WhldgTaxAmt Ccy="tKZT">0.00</WhldgTaxAmt>
+        <NetCshAmt Ccy="tKZT">500.00</NetCshAmt>
+        <PstngAmt Ccy="tKZT">500.00</PstngAmt>
+        <PstngDt>2027-01-05</PstngDt>
+        <ValDt>2027-01-05</ValDt>
+      </CshMvmntDtls>
+      <SplmtryData>
+        <AddtlInf>
+          <TxSignature>SIMULATEDTxSignaturePlaceholder1111111111111111111111111</TxSignature>
+          <Cluster>devnet</Cluster>
+        </AddtlInf>
+      </SplmtryData>
+    </CorpActnConfDtls>
+  </CorpActnConf>
+</Document>
