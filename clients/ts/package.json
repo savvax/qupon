@@ -1,0 +1,37 @@
+{
+  "name": "@qupon/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "qupon": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "codama": "tsx scripts/codama.ts"
+  },
+  "dependencies": {
+    "@solana-program/system": "^0.15",
+    "@solana-program/token": "^0.17",
+    "@solana-program/token-2022": "^0.19",
+    "@solana/kit": "^8.4",
+    "commander": "^15.0.0"
+  },
+  "devDependencies": {
+    "@codama/nodes-from-anchor": "^1.5.6",
+    "@codama/renderers-js": "^2.5.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "22",
+    "codama": "^1.11.0",
+    "eslint": "^10.12.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.0",
+    "vitest": "^5.0.3"
+  }
+}

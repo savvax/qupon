@@ -1,0 +1,38 @@
+name: ci
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: system packages
+        run: sudo apt-get update -y && sudo apt-get install -y pkg-config libssl-dev libudev-dev
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.25" }
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cache/solana
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - name: Agave 4.3.0
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v4.3.0/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+      - name: Anchor 1.2.0 (avm)
+        run: |
+          cargo install --git https://github.com/otter-sec/anchor avm --force
+          avm install 1.2.0 && avm use 1.2.0
+      - name: golangci-lint
+        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+      - name: program keypair (CI builds only; deploy keypair is never in git)
+        run: mkdir -p target/deploy && solana-keygen new --no-bip39-passphrase -s -o target/deploy/qupon_bonds-keypair.json --force
+      - run: make verify

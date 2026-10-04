@@ -9,9 +9,17 @@ HAS_CRATE   := $(wildcard crates/entitlement/Cargo.toml)
 HAS_GO      := $(wildcard services/registrar/go.mod)
 HAS_TS      := $(wildcard clients/ts/package.json)
 HAS_WEB     := $(wildcard apps/web/package.json)
+# Stable program id across worktrees/clones: the deploy keypair lives outside git (ops/deploy.sh, task 014).
+PROGRAM_KEYPAIR ?= $(HOME)/.config/qupon/qupon_bonds-program.json
 
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-16s %s\n", $$1, $$2}'
+
+program-keypair: ## copy the deploy keypair into target/deploy so anchor build keeps the declared program id
+	@if [ -f "$(PROGRAM_KEYPAIR)" ] && [ ! -f target/deploy/qupon_bonds-keypair.json ]; then mkdir -p target/deploy && cp "$(PROGRAM_KEYPAIR)" target/deploy/qupon_bonds-keypair.json; fi
+
+fixtures: ## refresh programs/qupon_bonds/tests/fixtures/spl_token_2022.so from devnet (committed; LiteSVM loads it)
+	solana program dump TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb programs/qupon_bonds/tests/fixtures/spl_token_2022.so -u devnet
 
 doctor: ## print toolchain versions and check pins
 	@bash ops/doctor.sh
@@ -19,7 +27,7 @@ doctor: ## print toolchain versions and check pins
 verify: ## THE GATE: build + tests + lint for every existing component (no network)
 	@set -e; \
 	if [ -n "$(HAS_CRATE)" ]; then echo "== crates/entitlement"; (cd crates/entitlement && cargo fmt --all -- --check && cargo clippy --all-targets -- -D warnings && cargo test --quiet); fi; \
-	if [ -n "$(HAS_PROGRAM)" ]; then echo "== programs/qupon_bonds"; anchor build && cargo fmt --all -- --check && cargo clippy -p qupon_bonds --all-targets -- -D warnings && cargo test -p qupon_bonds --quiet; fi; \
+	if [ -n "$(HAS_PROGRAM)" ]; then echo "== programs/qupon_bonds"; $(MAKE) -s program-keypair; (anchor build && cargo fmt --all -- --check && cargo clippy -p qupon_bonds --all-targets -- -D warnings && cargo test -p qupon_bonds --quiet); fi; \
 	if [ -n "$(HAS_TS)" ]; then echo "== clients/ts"; (cd clients/ts && pnpm install --frozen-lockfile --silent && pnpm typecheck && pnpm lint && pnpm test); fi; \
 	if [ -n "$(HAS_GO)" ]; then echo "== services/registrar"; (cd services/registrar && go build ./... && go vet ./... && go test ./... && (command -v golangci-lint >/dev/null && golangci-lint run ./... || echo "golangci-lint not installed (skipped)")); fi; \
 	if [ -n "$(HAS_WEB)" ]; then echo "== apps/web"; (cd apps/web && pnpm install --frozen-lockfile --silent && pnpm typecheck && pnpm lint); fi; \
@@ -60,4 +68,4 @@ web: ## run the web app locally
 status: ## task board
 	@bash ops/status.sh
 
-.PHONY: help doctor verify build test-program test-go test-ts client deploy demo-coupon demo api web status
+.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo api web status

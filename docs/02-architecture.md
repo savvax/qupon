@@ -24,7 +24,7 @@ qupon/
 
 ## On-chain program `qupon_bonds` (Anchor 1.2.0, SBPFv3)
 
-Program id: placeholder `QPNbnd1111111111111111111111111111111111111` until `anchor keys sync`; record the real id in `config/devnet.json` and `declare_id!`.
+Program id: `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (keypair outside git at `~/.config/qupon/qupon_bonds-program.json`); recorded in `config/devnet.json` and `declare_id!`.
 
 ### Design principles
 1. All corporate-action state lives on-chain; off-chain only schedules, batches, reconciles, exports.

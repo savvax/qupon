@@ -1,0 +1,21 @@
+skip_local_validator = true
+
+[toolchain]
+anchor_version = "1.2.0"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+qupon_bonds = "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"
+
+[programs.devnet]
+qupon_bonds = "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/qupon/registrar.json"
+
+[scripts]
+test = "cargo test"

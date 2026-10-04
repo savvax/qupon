@@ -22,6 +22,8 @@
 | Token ACL (sRFC-37) | program `TACLkU6CiCdkQN2MjoyDkVg2yAH9zkxiHDsiztQ52TP` (devnet) | NOT used in T0/T1 — our own Investor registry + thaw replaces it; mention as compatible roadmap |
 
 ## Gotchas
+- **LiteSVM ≥ 0.17 for SBPFv3**: Agave 4.3 platform-tools emit SBPFv3; LiteSVM 0.10 (Anchor 1.2 template default) fails `add_program` with `InvalidAccountData`. LiteSVM 0.17 needs host rustc ≥ 1.97.1 → `rust-toolchain.toml` pins 1.97.1, but workspace `rust-version` stays 1.89 (it also binds the SBF build, whose platform-tools rustc is 1.95).
+- **Program id** `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`; deploy keypair at `~/.config/qupon/qupon_bonds-program.json` (never in git); `make program-keypair` copies it into `target/deploy/` of each worktree. Avm's `anchor` lives in `~/.cargo/bin` — a Homebrew/npm `anchor` wrapper earlier on PATH is wrong (Makefile prepends `~/.cargo/bin`).
 - **Toolchain pins via mise** (macOS dev box): `mise.toml` pins node 22 / go 1.25 / pnpm 9; Makefile, `ops/lib.sh`, `ops/doctor.sh` put `~/.local/share/mise/shims` first on PATH. `ops/wallets.sh` needs bash ≥ 4 (`brew install bash`).
 - **Pausable blocks mint, burn and transfer.** Order for redemption: pay → `complete_action` (resume) → `retire_batch` (burn) → `close_series`.
 - **Permanent delegate burn**: use `burn_checked` with the series PDA as delegate signer; works on thawed accounts only.
