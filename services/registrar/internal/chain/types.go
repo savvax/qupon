@@ -3,7 +3,11 @@
 // decoders (added with the reader task) rely on it.
 package chain
 
-import solana "github.com/solana-foundation/solana-go/v2"
+import (
+	"strings"
+
+	solana "github.com/solana-foundation/solana-go/v2"
+)
 
 // Series mirrors the on-chain `Series` account (seeds ["series", mint]).
 type Series struct {
@@ -108,4 +112,69 @@ type Entitlement struct {
 	PaidAt    int64
 	Vote      uint8 // 0 None, 1 For, 2 Against, 3 Abstain
 	VotedAt   int64
+}
+
+// SeriesView is the JSON projection served by GET /series: pubkeys as base58
+// and fixed-width ascii fields trimmed of their zero padding.
+type SeriesView struct {
+	PDA            string `json:"pda"`
+	Mint           string `json:"mint"`
+	CashMint       string `json:"cashMint"`
+	Registrar      string `json:"registrar"`
+	Issuer         string `json:"issuer"`
+	PayingAgent    string `json:"payingAgent"`
+	ISIN           string `json:"isin"`
+	Ticker         string `json:"ticker"`
+	FaceValue      uint64 `json:"faceValue"`
+	CouponRateBps  uint32 `json:"couponRateBps"`
+	Frequency      uint8  `json:"frequency"`
+	DayCount       string `json:"dayCount"`
+	IssueDate      int64  `json:"issueDate"`
+	MaturityDate   int64  `json:"maturityDate"`
+	NextCouponDate int64  `json:"nextCouponDate"`
+	Status         string `json:"status"`
+	TotalIssued    uint64 `json:"totalIssued"`
+	ActionCount    uint32 `json:"actionCount"`
+	QuorumBps      uint16 `json:"quorumBps"`
+	ApprovalBps    uint16 `json:"approvalBps"`
+	TaxVault       string `json:"taxVault"`
+}
+
+var (
+	seriesStatusNames = [...]string{"Active", "Matured", "Retiring", "Closed"}
+	dayCountNames     = [...]string{"THIRTY_360", "ACT_ACT", "ACT_365"}
+)
+
+// View projects the Series account for the REST API.
+func (s *Series) View(pda solana.PublicKey) SeriesView {
+	status, dayCount := "Unknown", "Unknown"
+	if int(s.Status) < len(seriesStatusNames) {
+		status = seriesStatusNames[s.Status]
+	}
+	if int(s.DayCount) < len(dayCountNames) {
+		dayCount = dayCountNames[s.DayCount]
+	}
+	return SeriesView{
+		PDA:            pda.String(),
+		Mint:           s.Mint.String(),
+		CashMint:       s.CashMint.String(),
+		Registrar:      s.Registrar.String(),
+		Issuer:         s.Issuer.String(),
+		PayingAgent:    s.PayingAgent.String(),
+		ISIN:           strings.TrimRight(string(s.ISIN[:]), "\x00"),
+		Ticker:         strings.TrimRight(string(s.Ticker[:]), "\x00"),
+		FaceValue:      s.FaceValue,
+		CouponRateBps:  s.CouponRateBps,
+		Frequency:      s.Frequency,
+		DayCount:       dayCount,
+		IssueDate:      s.IssueDate,
+		MaturityDate:   s.MaturityDate,
+		NextCouponDate: s.NextCouponDate,
+		Status:         status,
+		TotalIssued:    s.TotalIssued,
+		ActionCount:    s.ActionCount,
+		QuorumBps:      s.QuorumBps,
+		ApprovalBps:    s.ApprovalBps,
+		TaxVault:       s.TaxVault.String(),
+	}
 }

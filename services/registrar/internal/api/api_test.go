@@ -11,18 +11,19 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
-func newTestServer(t *testing.T) http.Handler {
+func newTestServer(t *testing.T) (http.Handler, *store.Store) {
 	t.Helper()
 	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "api.db"))
 	if err != nil {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { _ = st.Close() })
-	return New(slog.New(slog.DiscardHandler), st)
+	return New(slog.New(slog.DiscardHandler), st), st
 }
 
 func TestHealthz(t *testing.T) {
-	srv := httptest.NewServer(newTestServer(t))
+	handler, _ := newTestServer(t)
+	srv := httptest.NewServer(handler)
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/healthz")
@@ -36,7 +37,8 @@ func TestHealthz(t *testing.T) {
 }
 
 func TestOpenAPI(t *testing.T) {
-	srv := httptest.NewServer(newTestServer(t))
+	handler, _ := newTestServer(t)
+	srv := httptest.NewServer(handler)
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/openapi.yaml")
@@ -53,7 +55,8 @@ func TestOpenAPI(t *testing.T) {
 }
 
 func TestActivity(t *testing.T) {
-	srv := httptest.NewServer(newTestServer(t))
+	h, _ := newTestServer(t)
+	srv := httptest.NewServer(h)
 	defer srv.Close()
 
 	// fresh store: empty ordered feed
@@ -77,7 +80,8 @@ func TestActivity(t *testing.T) {
 }
 
 func TestActivityLimit(t *testing.T) {
-	srv := httptest.NewServer(newTestServer(t))
+	h, _ := newTestServer(t)
+	srv := httptest.NewServer(h)
 	defer srv.Close()
 
 	resp, err := http.Get(srv.URL + "/activity?limit=nope")
@@ -91,7 +95,8 @@ func TestActivityLimit(t *testing.T) {
 }
 
 func TestCORSLocalhost(t *testing.T) {
-	srv := httptest.NewServer(newTestServer(t))
+	handler, _ := newTestServer(t)
+	srv := httptest.NewServer(handler)
 	defer srv.Close()
 
 	req, _ := http.NewRequest(http.MethodOptions, srv.URL+"/series", nil)
@@ -103,5 +108,43 @@ func TestCORSLocalhost(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "http://localhost:3000" {
 		t.Fatalf("allow-origin = %q", got)
+	}
+}
+
+func TestSeriesEndpoint(t *testing.T) {
+	handler, st := newTestServer(t)
+	if err := st.UpsertSeries(t.Context(), "MintAAA", []byte(`{"ticker":"QPNB1"}`)); err != nil {
+		t.Fatalf("upsert: %v", err)
+	}
+	if err := st.UpsertSeries(t.Context(), "MintAAA", []byte(`{"ticker":"QPNB1","faceValue":100000}`)); err != nil {
+		t.Fatalf("re-upsert: %v", err)
+	}
+	if err := st.UpsertSeries(t.Context(), "MintZZZ", []byte(`{"ticker":"BTRKdemo"}`)); err != nil {
+		t.Fatalf("upsert: %v", err)
+	}
+
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/series")
+	if err != nil {
+		t.Fatalf("get /series: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d", resp.StatusCode)
+	}
+	var rows []map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&rows); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("rows = %d, want 2 (upsert replaces)", len(rows))
+	}
+	if rows[0]["ticker"] != "QPNB1" || rows[0]["faceValue"] != float64(100000) {
+		t.Errorf("row0 = %v", rows[0])
+	}
+	if rows[1]["ticker"] != "BTRKdemo" {
+		t.Errorf("row1 = %v (ordered by mint)", rows[1])
 	}
 }

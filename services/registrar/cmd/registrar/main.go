@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -16,6 +17,7 @@ import (
 	solana "github.com/solana-foundation/solana-go/v2"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/api"
+	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/config"
 	"github.com/qupon-kz/qupon/services/registrar/internal/ingest"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
@@ -28,6 +30,34 @@ func main() {
 		slog.Error("registrar exited", "err", err)
 		os.Exit(1)
 	}
+}
+
+// indexSeries scans the program for Series accounts and mirrors them into
+// the store so GET /series can serve them without hitting the chain.
+func indexSeries(ctx context.Context, cfg config.Config, logger *slog.Logger, st *store.Store) error {
+	if cfg.ProgramID == "" {
+		return errors.New("PROGRAM_ID not set")
+	}
+	program, err := solana.PublicKeyFromBase58(cfg.ProgramID)
+	if err != nil {
+		return fmt.Errorf("bad program id %q: %w", cfg.ProgramID, err)
+	}
+	cl := chain.NewClient(cfg.RPCURL, program, logger)
+	recs, err := cl.AllSeries(ctx)
+	if err != nil {
+		return err
+	}
+	for _, rec := range recs {
+		data, err := json.Marshal(rec.Series.View(rec.PDA))
+		if err != nil {
+			return fmt.Errorf("marshal series %s: %w", rec.PDA, err)
+		}
+		if err := st.UpsertSeries(ctx, rec.Series.Mint.String(), data); err != nil {
+			return err
+		}
+	}
+	logger.Info("indexed series", "count", len(recs))
+	return nil
 }
 
 func run() error {
@@ -52,6 +82,12 @@ func run() error {
 		}
 		poller := ingest.NewPoller(cfg.RPCURL, program, st, logger)
 		go poller.Run(ctx)
+	}
+
+	// Index all Series accounts at startup so GET /series serves the chain;
+	// failures degrade to the stored mirror (task 051 wires live fixtures).
+	if err := indexSeries(ctx, cfg, logger, st); err != nil {
+		logger.Warn("series index skipped", "err", err)
 	}
 
 	srv := &http.Server{

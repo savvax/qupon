@@ -50,6 +50,45 @@ func (s *Store) Ping(ctx context.Context) error {
 // Close releases the database handle.
 func (s *Store) Close() error { return s.db.Close() }
 
+// SeriesRow is one mirrored Series account.
+type SeriesRow struct {
+	Mint      string
+	Data      []byte // series view JSON, served verbatim by GET /series
+	UpdatedAt int64
+}
+
+// UpsertSeries mirrors a Series account (keyed by bond mint).
+func (s *Store) UpsertSeries(ctx context.Context, mint string, data []byte) error {
+	if _, err := s.db.ExecContext(ctx,
+		`INSERT INTO series (mint, data, updated_at) VALUES (?, ?, unixepoch())
+		 ON CONFLICT(mint) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`,
+		mint, string(data)); err != nil {
+		return fmt.Errorf("upsert series %s: %w", mint, err)
+	}
+	return nil
+}
+
+// ListSeries returns all mirrored series ordered by mint.
+func (s *Store) ListSeries(ctx context.Context) ([]SeriesRow, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT mint, data, updated_at FROM series ORDER BY mint`)
+	if err != nil {
+		return nil, fmt.Errorf("list series: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []SeriesRow
+	for rows.Next() {
+		var r SeriesRow
+		if err := rows.Scan(&r.Mint, &r.Data, &r.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scan series: %w", err)
+		}
+		out = append(out, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("list series rows: %w", err)
+	}
+	return out, nil
+}
+
 func (s *Store) migrate(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx,
 		`CREATE TABLE IF NOT EXISTS schema_migrations (name TEXT PRIMARY KEY, applied_at INTEGER NOT NULL)`); err != nil {
