@@ -31,6 +31,7 @@ verify: ## THE GATE: build + tests + lint for every existing component (no netwo
 	if [ -n "$(HAS_TS)" ]; then echo "== clients/ts"; (cd clients/ts && pnpm install --frozen-lockfile --silent && pnpm typecheck && pnpm lint && pnpm test); fi; \
 	if [ -n "$(HAS_GO)" ]; then echo "== services/registrar"; (cd services/registrar && go build ./... && go vet ./... && go test ./... && (command -v golangci-lint >/dev/null && golangci-lint run ./... || echo "golangci-lint not installed (skipped)")); fi; \
 	if [ -n "$(HAS_WEB)" ]; then echo "== apps/web"; (cd apps/web && pnpm install --frozen-lockfile --silent && pnpm typecheck && pnpm lint); fi; \
+	if [ -f services/registrar/openapi.yaml ]; then echo "== openapi"; npx --yes @redocly/cli lint services/registrar/openapi.yaml >/dev/null; fi; \
 	echo "VERIFY OK"
 
 build: ## anchor build + ts build + go build
@@ -61,6 +62,9 @@ demo: ## run the full lifecycle on devnet (S0–S4), write reports/demo-full.md
 
 api: ## run the Go registrar locally
 	cd services/registrar && go run ./cmd/registrar
+
+openapi-lint: ## lint the registrar OpenAPI spec
+	npx --yes @redocly/cli lint services/registrar/openapi.yaml
 
 web: ## run the web app locally
 	cd apps/web && pnpm dev
