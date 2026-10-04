@@ -1,0 +1,12 @@
+{
+  "cluster": "devnet",
+  "programId": "REPLACE_AFTER_anchor_keys_sync",
+  "token2022ProgramId": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+  "usdcMint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+  "tkztMint": "REPLACE_AFTER_create-tkzt",
+  "series": {
+    "QPNb1": { "mint": "", "cashMint": "tKZT", "isin": "KZ2C0QUPON001", "faceValue": 100000, "couponRateBps": 1000, "frequency": 2, "dayCount": "THIRTY_360", "termYears": 2 },
+    "BTRKdemo": { "mint": "", "cashMint": "USDC", "isin": "KZ2C00018703", "faceValue": 1000000000, "couponRateBps": 1595, "frequency": 2, "dayCount": "THIRTY_360", "termYears": 5 }
+  },
+  "wallets": { "registrar": "", "issuer": "", "payingAgent": "", "investors": ["", "", ""], "outsider": "" }
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "qupon entitlement test vectors v1",
+  "rounding": "half_up_per_holder",
+  "notes": "Amounts are integers in minor units. gross = round_half_up(units*face*rate_bps*days, 10000*basis); tax = round_half_up(gross*tax_bps, 10000); net = gross - tax; principal = units*face for redemption kinds. Dates are civil dates (UTC calendar) used only for day counting.",
+  "day_count_cases": [
+    {"id": "regular_semi", "day_count": "THIRTY_360", "start": "2026-07-03", "end": "2027-01-03", "days": 180},
+    {"id": "regular_quarter", "day_count": "THIRTY_360", "start": "2026-07-03", "end": "2026-10-03", "days": 90},
+    {"id": "regular_month", "day_count": "THIRTY_360", "start": "2026-07-03", "end": "2026-08-03", "days": 30},
+    {"id": "mcal_47", "day_count": "THIRTY_360", "start": "2026-07-03", "end": "2026-08-20", "days": 47},
+    {"id": "eom_30e", "day_count": "THIRTY_360", "start": "2026-01-31", "end": "2026-02-28", "days": 28},
+    {"id": "tie_18", "day_count": "THIRTY_360", "start": "2026-01-01", "end": "2026-01-19", "days": 18},
+    {"id": "act365_184", "day_count": "ACT_365", "start": "2026-07-03", "end": "2027-01-03", "days": 184},
+    {"id": "year_360", "day_count": "THIRTY_360", "start": "2026-07-03", "end": "2027-07-03", "days": 360}
+  ],
+  "cases": [
+    {"id": "brief_coupon_10", "kind": "INTR", "units": 10, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 50000, "tax": 0, "net": 50000, "principal": 0},
+    {"id": "brief_coupon_25", "kind": "INTR", "units": 25, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 125000, "tax": 0, "net": 125000, "principal": 0},
+    {"id": "brief_coupon_65", "kind": "INTR", "units": 65, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 325000, "tax": 0, "net": 325000, "principal": 0},
+    {"id": "brief_redemption_10", "kind": "REDM", "units": 10, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 50000, "tax": 0, "net": 50000, "principal": 1000000},
+    {"id": "tax_10pct", "kind": "INTR", "units": 10, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "days": 180, "tax_bps": 1000, "gross": 50000, "tax": 5000, "net": 45000, "principal": 0},
+    {"id": "btrk_semi_7", "kind": "INTR", "units": 7, "face": 100000, "rate_bps": 1595, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 55825, "tax": 0, "net": 55825, "principal": 0},
+    {"id": "mcal_accrued_47d", "kind": "MCAL", "units": 10, "face": 100000, "rate_bps": 1595, "day_count": "THIRTY_360", "days": 47, "tax_bps": 1000, "gross": 20824, "tax": 2082, "net": 18742, "principal": 1000000},
+    {"id": "usdc_btrk_3", "kind": "INTR", "units": 3, "face": 1000000000, "rate_bps": 1595, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 239250000, "tax": 0, "net": 239250000, "principal": 0},
+    {"id": "half_up_tie", "kind": "INTR", "units": 1, "face": 100000, "rate_bps": 1, "day_count": "THIRTY_360", "days": 18, "tax_bps": 0, "gross": 1, "tax": 0, "net": 1, "principal": 0},
+    {"id": "act365_184d", "kind": "INTR", "units": 10, "face": 100000, "rate_bps": 1000, "day_count": "ACT_365", "days": 184, "tax_bps": 0, "gross": 50411, "tax": 0, "net": 50411, "principal": 0},
+    {"id": "new_rate_after_vote", "kind": "INTR", "units": 10, "face": 100000, "rate_bps": 1200, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 60000, "tax": 0, "net": 60000, "principal": 0},
+    {"id": "zero_units", "kind": "INTR", "units": 0, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 0, "tax": 0, "net": 0, "principal": 0},
+    {"id": "large_holder_u128_safe", "kind": "REDM", "units": 50000000, "face": 100000, "rate_bps": 1595, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 398750000000, "tax": 0, "net": 398750000000, "principal": 5000000000000}
+  ],
+  "totals_check": {
+    "description": "Sum over brief holders must equal supply * per_unit; here supply=100, per_unit_gross=5000",
+    "supply": 100,
+    "per_unit_gross": 5000,
+    "sum_gross": 500000,
+    "max_drift_allowed": 3
+  }
+}

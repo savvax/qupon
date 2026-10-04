@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(make *)", "Bash(cargo *)", "Bash(anchor *)", "Bash(go *)", "Bash(pnpm *)", "Bash(npx *)", "Bash(node *)",
+      "Bash(solana *)", "Bash(spl-token *)", "Bash(surfpool *)", "Bash(rg *)", "Bash(ls *)", "Bash(cat *)", "Bash(jq *)",
+      "Bash(git add *)", "Bash(git commit *)", "Bash(git status *)", "Bash(git diff *)", "Bash(git log *)", "Bash(git show *)", "Bash(git rev-parse *)",
+      "Bash(bash ops/*)", "Bash(./ops/*)", "Bash(mkdir *)", "Bash(cp *)", "Bash(mv *)"
+    ],
+    "deny": [
+      "Bash(git push *)", "Bash(git push --force *)", "Bash(rm -rf *)", "Bash(sudo *)",
+      "Read(./.env)", "Read(./.env.*)", "Read(~/.config/qupon/**)", "Read(**/*keypair*.json)",
+      "Edit(tasks/done/**)", "Write(tasks/done/**)", "Edit(clients/ts/src/generated/**)", "Write(clients/ts/src/generated/**)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_STOP_HOOK_BLOCK_CAP": "15",
+    "SOLANA_CLUSTER": "devnet"
+  },
+  "hooks": {
+    "PostToolUse": [
+      { "matcher": "Edit|Write", "hooks": [ { "type": "command", "timeout": 60, "command": "bash \"$CLAUDE_PROJECT_DIR\"/ops/hooks/format.sh" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "timeout": 900, "command": "bash \"$CLAUDE_PROJECT_DIR\"/ops/hooks/stop-verify.sh" } ] }
+    ]
+  }
+}

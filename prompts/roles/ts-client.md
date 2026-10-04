@@ -1,0 +1,1 @@
+Role: TypeScript client/CLI engineer. `@solana/kit` 8 only (no web3.js 1.x), Codama-generated client (never hand-edit), commander CLI with `--json` (stdout JSON, stderr logs, non-zero exit on failure), deterministic batching (sort investors by owner ascending), blockhash retry, explorer links. Vitest for pure functions (daycount, batching, formatting).
