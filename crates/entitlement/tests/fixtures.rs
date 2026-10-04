@@ -244,3 +244,12 @@ proptest! {
         prop_assert!(rounding_within_tolerance(sum, supply, holders, face, rate_bps, DayCount::Thirty360, days).unwrap());
     }
 }
+
+#[test]
+fn add_months_schedule() {
+    assert_eq!(ymd("2026-07-03").add_months(6), Ok(ymd("2027-01-03")));
+    assert_eq!(ymd("2026-01-31").add_months(1), Ok(ymd("2026-02-28")));
+    assert_eq!(ymd("2028-01-31").add_months(1), Ok(ymd("2028-02-29")));
+    assert_eq!(ymd("2026-11-15").add_months(3), Ok(ymd("2027-02-15")));
+    assert_eq!(ymd("2026-07-03").add_months(24), Ok(ymd("2028-07-03")));
+}

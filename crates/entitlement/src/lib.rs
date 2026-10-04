@@ -161,6 +161,14 @@ impl Ymd {
         })
     }
 
+    /// Same day `months` later, clamped to the month's last day (Jan 31 + 1 → Feb 28/29). Coupon schedule step.
+    pub fn add_months(self, months: u32) -> Result<Self, Error> {
+        let total = i64::from(self.y) * 12 + i64::from(self.m) - 1 + i64::from(months);
+        let (y, m) = (total / 12, (total % 12 + 1) as u8);
+        let y16 = u16::try_from(y).map_err(|_| Error::InvalidDate)?;
+        Self::new(y16, m, self.d.min(days_in_month(y, m)))
+    }
+
     /// Days since 1970-01-01 — Howard Hinnant's `days_from_civil`.
     pub fn days_from_epoch(self) -> i64 {
         let m = i64::from(self.m);
