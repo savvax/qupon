@@ -3,6 +3,7 @@
 # usage: ops/run_task.sh <claude|glm|flash> <task-file> <log-prefix>
 # Prints the agent's output to stdout (captured by the orchestrator) and logs to <log-prefix>.*
 set -uo pipefail
+export QUPON_WORKER=1
 AGENT="$1"; TASK="$2"; LOGP="$3"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=lib.sh

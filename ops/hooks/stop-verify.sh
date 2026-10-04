@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Claude Code Stop hook: block finishing while `make verify` is red (unless the agent reported BLOCKED).
 IN=$(cat)
+[ "${QUPON_WORKER:-0}" = "1" ] || exit 0
 [ "$(printf '%s' "$IN" | jq -r '.stop_hook_active // false')" = "true" ] && exit 0
 LAST=$(printf '%s' "$IN" | jq -r '.last_assistant_message // ""')
 printf '%s' "$LAST" | grep -q 'BLOCKED:' && exit 0
