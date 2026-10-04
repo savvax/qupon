@@ -1,9 +1,9 @@
 ---
 id: 021
-title: Chain reader: RPC + Borsh decoders + getProgramAccounts by discriminator, with fixtures from state:dump
+title: Chain reader: RPC client + account decoders + getProgramAccounts by discriminator (synthetic round-trip tests; real fixtures arrive in task 051)
 agent: glm
 tier: T1
-depends_on: [020, 013]
+depends_on: [020, 046]
 verify: make verify
 timeout_min: 60
 ---
@@ -17,7 +17,7 @@ Read the four account types from devnet into Go structs without trusting any off
 
 ## Steps
 1. `internal/chain/client.go`: solana-go v2 RPC client with timeouts and retry; `GetAccount`, `GetProgramAccounts(discriminator, memcmp filters)`; discriminators computed as `sha256("account:Series")[:8]` etc.
-2. `internal/chain/borsh.go`: minimal Borsh reader (u8/u16/u32/u64/i64/[u8;N]/Pubkey/bool) and decoders for the four accounts; table tests from base64 fixtures produced by `qupon state:dump --raw` (add `--raw` to the CLI if missing: base64 account data per PDA).
+2. Decoders for the four accounts on top of `internal/borsh` (task 046), field order = Rust layout in `docs/02-architecture.md` (8-byte discriminator first); tests: encode synthetic structs with the same package's encoder and decode them back; real on-chain fixtures are wired in task 051.
 3. `internal/chain/tokens.go`: read Token-2022 account balance + frozen flag and mint supply/pausable state (parse TLV extensions minimally: only `PausableConfig` paused flag).
 4. Service start: index all series by scanning program accounts; `GET /series` returns them.
 

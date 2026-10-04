@@ -3,7 +3,7 @@ id: 032
 title: Deploy web (Vercel) and API (Fly.io/Railway) pointed at devnet; public URLs in README
 agent: flash
 tier: T1
-depends_on: [030]
+depends_on: [030, 031]
 verify: make verify
 timeout_min: 30
 ---

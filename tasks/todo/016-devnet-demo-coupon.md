@@ -3,7 +3,7 @@ id: 016
 title: make demo-coupon: scripted INTR flow on devnet with explorer links in reports/demo-coupon.md
 agent: glm
 tier: T0
-depends_on: [013, 014]
+depends_on: [013, 014, 054]
 verify: make verify
 timeout_min: 45
 ---

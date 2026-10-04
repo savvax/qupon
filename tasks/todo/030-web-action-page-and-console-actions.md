@@ -3,7 +3,7 @@ id: 030
 title: Action page: status timeline, entitlements, tx links, downloads; console buttons via POST /advance
 agent: glm
 tier: T1
-depends_on: [029, 023, 025, 026]
+depends_on: [029, 050, 023, 025, 026, 027]
 verify: make verify
 timeout_min: 60
 ---

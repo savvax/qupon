@@ -3,7 +3,7 @@ id: 019
 title: make demo: full lifecycle S0–S4 on devnet with reports/demo-full.md (Gate 1)
 agent: glm
 tier: T0
-depends_on: [016, 018]
+depends_on: [016, 018, 054]
 verify: make verify
 timeout_min: 60
 ---

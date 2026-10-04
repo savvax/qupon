@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Worker loop: claim → worktree → run agent → independent verify → ff-merge → next.
-# usage: ops/orchestrate.sh <worker-name>   e.g. claude-1 | glm-1 | glm-2 | flash-1
-# One instance per worker (ops/tmux.sh starts them). Stop with Ctrl-C or `touch tasks/.stop`.
+# Worker loop: claim → worktree → run agent → independent verify → serialized rebase + ff-merge → next.
+# usage: ops/orchestrate.sh <worker-name>   e.g. glm-1 … glm-10 | flash-1 … | claude-1
+# One instance per worker (ops/tmux.sh starts N of them). Stop all: `touch tasks/.stop`.
 #
-# Invariants:
-#  - main's working tree is always clean: the orchestrator commits queue moves and human notes itself.
-#  - agents commit only on their task branch inside .worktrees/<worker>; they never push.
-#  - a task is merged only if the orchestrator's own `make verify` is green in the worktree.
+# Invariants (hold for any number of workers):
+#  - every operation on the ROOT repo (queue moves, queue commits, rebase, ff-merge, push) runs under the `git` lock;
+#  - main's working tree is always clean: the orchestrator commits queue moves and human notes itself;
+#  - agents commit only on their task branch inside .worktrees/<worker>; they never push;
+#  - a task is merged only if the orchestrator's own `make verify` is green in the worktree (run outside the lock).
 set -uo pipefail
 WORKER="${1:?worker name like glm-1}"
 AGENT="${WORKER%-*}"
@@ -19,23 +20,26 @@ git rev-parse --verify main >/dev/null 2>&1 || { echo "branch 'main' required"; 
 
 MERGES_FILE="$LOGS/merges.count"; touch "$MERGES_FILE"
 backoff=60
-log "[$WORKER] started (agent=$AGENT)"
+log "[$WORKER] started (agent=$AGENT, AUTO_PASSES=${AUTO_PASSES:-1}, GLM_PEAK_WORKERS=${GLM_PEAK_WORKERS:-4})"
 
 while :; do
   [ -f "$TASKS/.stop" ] && { log "[$WORKER] stop file found; exiting"; exit 0; }
-  commit_queue "tick" >/dev/null 2>&1
+  [ -f "$TASKS/.stop-$WORKER" ] && { rm -f "$TASKS/.stop-$WORKER"; log "[$WORKER] scaled down; exiting"; exit 0; }
+  if peak_idle "$WORKER"; then sleep 300; continue; fi
   TASK=$(claim "$AGENT" "$WORKER" || true)
-  if [ -z "$TASK" ]; then sleep 60; continue; fi
-  commit_queue "claim $(basename "$TASK")"
+  if [ -z "$TASK" ]; then sleep $((30 + RANDOM % 30)); continue; fi
   ID=$(task_id "$TASK"); NAME=$(basename "$TASK" .md)
   WT="$ROOT/.worktrees/$WORKER"; BR="task/$NAME"
   log "[$WORKER] claimed $NAME"
 
+  # fresh worktree from main (worktree add touches refs → under the git lock)
+  lock git
   git worktree remove --force "$WT" >/dev/null 2>&1 || true
   git branch -D "$BR" >/dev/null 2>&1 || true
   if ! git worktree add -B "$BR" "$WT" main >/dev/null 2>&1; then
-    log "[$WORKER] cannot create worktree; requeue"; requeue "$TASK"; sleep 120; continue
+    unlock git; log "[$WORKER] cannot create worktree; requeue"; requeue "$TASK"; sleep 120; continue
   fi
+  unlock git
   cp "$ROOT/.env" "$WT/.env" 2>/dev/null || true
   mkdir -p "$WT/reports/worklog" "$WT/reports/questions" "$WT/logs"
 
@@ -45,43 +49,53 @@ while :; do
 
   if hit_limit "$LOGP.out" || hit_limit "$LOGP.err"; then
     log "[$WORKER] usage/rate limit; requeue $NAME; sleep ${backoff}s"
-    requeue "$TASK"; git worktree remove --force "$WT" >/dev/null 2>&1 || true
+    requeue "$TASK"; lock git; git worktree remove --force "$WT" >/dev/null 2>&1 || true; unlock git
     sleep "$backoff"; backoff=$(( backoff < 3600 ? backoff * 2 : 3600 )); continue
   fi
   backoff=60
 
-  # fold any question files the agent wrote (they are committed on the branch; copy before cleanup)
-  if ls "$WT"/reports/questions/*.md >/dev/null 2>&1; then
-    mkdir -p "$ROOT/reports/questions"; cp "$WT"/reports/questions/*.md "$ROOT/reports/questions/" 2>/dev/null || true
-  fi
-
   if grep -q "BLOCKED:$ID" "$LOGP.out"; then
     REASON=$(grep -m1 "BLOCKED:$ID" "$LOGP.out" | sed "s/.*BLOCKED:$ID *//")
     log "[$WORKER] $NAME BLOCKED: $REASON"
+    mkdir -p "$ROOT/reports/questions"; cp "$WT"/reports/questions/*.md "$ROOT/reports/questions/" 2>/dev/null || true
     add_blocked "$TASK" "$REASON"; requeue "$TASK"
-    fold_questions; human_todo "($ID) BLOCKED by $WORKER: $REASON — fix, then delete the blocked_reason line in tasks/todo/$NAME.md."
-    git worktree remove --force "$WT" >/dev/null 2>&1 || true
+    lock git; _fold_questions_nolock; _human_todo_nolock "($ID) BLOCKED by $WORKER: $REASON — fix, then delete the blocked_reason line in tasks/todo/$NAME.md."; git worktree remove --force "$WT" >/dev/null 2>&1 || true; unlock git
     continue
   fi
 
   CLEAN=$( cd "$WT" && git status --porcelain | wc -l | tr -d ' ' )
   if [ $rc -eq 0 ] && grep -q "DONE:$ID" "$LOGP.out" && [ "$CLEAN" = "0" ] && ( cd "$WT" && make verify >"$LOGP.verify" 2>&1 ); then
-    commit_queue "pre-merge $NAME"
-    if ( cd "$WT" && git rebase main >/dev/null 2>&1 ) && git merge --ff-only "$BR" >/dev/null 2>&1; then
-      finish "$TASK"; echo x >> "$MERGES_FILE"; fold_questions; commit_queue "merged $NAME"
+    # ---- critical section: rebase onto the current main and fast-forward, nobody else touches main meanwhile ----
+    lock git
+    _commit_queue_nolock "pre-merge $NAME"
+    MERGED=0
+    if ( cd "$WT" && git rebase main >/dev/null 2>&1 ); then
+      if git merge --ff-only "$BR" >/dev/null 2>&1; then MERGED=1; fi
+    else ( cd "$WT" && git rebase --abort >/dev/null 2>&1 || true ); fi
+    if [ "$MERGED" = "1" ]; then
+      mv "$TASK" "$TASKS/done/"; echo x >> "$MERGES_FILE"
+      mkdir -p "$ROOT/reports/questions"; _fold_questions_nolock
+      _commit_queue_nolock "done $NAME"
       log "[$WORKER] MERGED $NAME ($(git rev-parse --short HEAD))"
       [ "${AUTO_PUSH:-0}" = "1" ] && { git push -q origin main 2>/dev/null || log "[$WORKER] push failed (ignored)"; }
-      if [ $(( $(wc -l < "$MERGES_FILE") % 5 )) -eq 0 ]; then
+      git worktree remove --force "$WT" >/dev/null 2>&1 || true; git branch -D "$BR" >/dev/null 2>&1 || true
+      N_MERGES=$(wc -l < "$MERGES_FILE" | tr -d ' ')
+      unlock git
+      # periodic passes (claude -p): only when AUTO_PASSES=1 and only from the first worker of each kind, every 5 merges
+      if [ "${AUTO_PASSES:-1}" = "1" ] && [ "$(worker_index "$WORKER")" = "1" ] && [ $(( N_MERGES % 5 )) -eq 0 ]; then
         ( bash "$ROOT/ops/review.sh" 5 >>"$LOGS/review.log" 2>&1 || true )
         ( bash "$ROOT/ops/planner.sh" >>"$LOGS/planner.log" 2>&1 || true )
       fi
+      continue
     else
-      ( cd "$WT" && git rebase --abort >/dev/null 2>&1 || true )
-      log "[$WORKER] rebase/merge conflict on $NAME"
-      add_blocked "$TASK" "rebase conflict with main"; requeue "$TASK"
-      human_todo "($ID) rebase conflict on $BR (branch kept) — resolve by hand or let the planner split; then delete blocked_reason."
+      # the rebase onto main conflicted after verify passed on an older base: keep the branch for a human/lead
+      add_blocked "$TASK" "rebase conflict with main"; mv "$TASK" "$TASKS/todo/"
+      _human_todo_nolock "($ID) rebase conflict on $BR (branch kept) — resolve by hand or let the lead/planner split; then delete blocked_reason."
+      _commit_queue_nolock "conflict $NAME"
       git worktree remove --force "$WT" >/dev/null 2>&1 || true
-      continue   # keep the branch for a human
+      unlock git
+      log "[$WORKER] rebase conflict on $NAME"
+      continue
     fi
   else
     n=$(retries "$ID"); bump_retries "$ID"
@@ -89,7 +103,6 @@ while :; do
     if [ "$n" -lt 2 ]; then requeue "$TASK"
     elif [ "$AGENT" != "claude" ]; then log "[$WORKER] escalating $NAME to claude"; set_agent "$TASK" claude; echo 0 > "$TASKS/.retries-$ID"; requeue "$TASK"
     else fail "$TASK"; human_todo "($ID) FAILED 3× on claude — see $LOGP.* — split, drop, or do by hand."; fi
+    lock git; git worktree remove --force "$WT" >/dev/null 2>&1 || true; git branch -D "$BR" >/dev/null 2>&1 || true; unlock git
   fi
-  git worktree remove --force "$WT" >/dev/null 2>&1 || true
-  git branch -D "$BR" >/dev/null 2>&1 || true
 done

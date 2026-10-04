@@ -21,3 +21,6 @@ services/registrar/*.db
 .current-task.md
 tasks/.stop
 tasks/.lock-*
+.surfpool/
+.DS_Store
+tasks/.stop-*

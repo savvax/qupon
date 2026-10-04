@@ -3,7 +3,7 @@ id: 026
 title: KASE-style disclosure notice generator (EN/RU) + endpoint
 agent: flash
 tier: T1
-depends_on: [021]
+depends_on: [020, 048]
 verify: make verify
 timeout_min: 30
 ---
@@ -16,7 +16,7 @@ Generate the news item KASE would publish, from on-chain state — judges will r
 
 ## Steps
 1. `internal/notice`: templates for INTR, REDM, MCAL, CHAN; ordinal helper (1st/2nd/3rd, 1-й); amounts with thousands separators and currency; `GET /actions/{pda}/notice?lang=en|ru` returns text/markdown.
-2. Golden tests for all four kinds in both languages.
+2. Golden tests for all four kinds in both languages against `fixtures/notices/*.golden.txt` (task 048).
 
 ## Acceptance criteria
 - [ ] Notice for the demo coupon reads like the KASE sample and contains ISIN, ticker, amount, record date, payment date, holder count, tx links.

@@ -7,10 +7,13 @@ Three kinds of workers pull from one file queue; a bash orchestrator verifies an
 | Role | Runtime | Tag in task frontmatter | Typical work |
 |---|---|---|---|
 | Lead / architect | Claude Code (Max, Opus) — one instance | `agent: claude` | Anchor program, state machine, entitlement crate, tricky integration, README/technical overview, planning passes |
-| Builder ×2 | pi + GLM-5.3 (`--model glm-5.3:high`) | `agent: glm` | TS client/CLI, Go service, web app, tests, scripts |
-| Janitor ×1 | pi + GLM-5.3-Flash (`--thinking low`) | `agent: flash` | lint/format fixes, docs sections, CI yaml, daily reports, notice templates |
+| Builder ×N (up to 8) | pi + GLM-5.3 (`--model glm-5.3:high`) | `agent: glm` | TS client/CLI, Go service, web app, tests, scripts |
+| Janitor ×N (2–3) | pi + GLM-5.3-Flash (`--thinking low`) | `agent: flash` | lint/format fixes, docs sections, CI yaml, daily reports, notice templates |
 | Reviewer | Claude Code subagent `reviewer` (Sonnet, fresh context) | run by `ops/review.sh` | diff vs acceptance criteria → JSON verdict; `fail` → fix task |
 | Planner | Claude Code, plan mode, `plan-next` skill | run by `ops/planner.sh` every 5 merges | reconcile `docs/05-plan.md` with `tasks/done`, append tasks, never delete |
+
+## Parallelism
+Any number of `ops/orchestrate.sh <worker>` loops may run (stress-tested with 10). Every root-repo git operation (claim, queue commit, rebase, ff-merge, push) is serialized under `tasks/.lock-git`; builds and `make verify` run in per-worker worktrees outside the lock. `ops/tmux.sh` takes `CLAUDE_WORKERS/GLM_WORKERS/FLASH_WORKERS`; `ops/scale.sh <glm|flash> <n>` adds or retires workers on the fly; `AUTO_PASSES=0` disables the automatic review/planner passes when a human-driven Claude lead runs them instead; `GLM_PEAK_WORKERS` caps GLM-5.3 workers during Z.ai peak hours.
 
 ## Queue
 `tasks/todo/NNN-slug.md` → `tasks/doing/<worker>/` → `tasks/done/` or `tasks/failed/`. Claim = atomic `mv` under `flock tasks/.lock`. A task is claimable when all `depends_on` ids are in `tasks/done/`. Lower numbers first.
