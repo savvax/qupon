@@ -1,0 +1,1 @@
+/KASE, 2027-01-10/ – Qupon Issuer Demo has announced changes to the prospectus of its bonds KZT0000000000 (QPON) registered: coupon rate 10.00% → 12.00% per annum, effective from 2027-01-03. Trading in the bonds continues on KASE. Details: https://explorer.solana.com/tx/<TX_SIGNATURE>?cluster=devnet.
