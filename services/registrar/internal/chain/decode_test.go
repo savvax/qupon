@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -50,6 +51,7 @@ func encodeSeries(s *Series) []byte {
 		U16(s.QuorumBps).
 		U16(s.ApprovalBps).
 		Pubkey(s.TaxVault).
+		OptionPubkey((*[32]byte)(s.OpenAction)).
 		FixedBytes(s.Reserved[:]).
 		Bytes()
 }
@@ -110,6 +112,7 @@ func encodeCorporateAction(a *CorporateAction) []byte {
 		U64(a.VotesAbstain).
 		U8(a.Result).
 		I64(a.CompletedAt).
+		U16(a.FactorBps).
 		FixedBytes(a.Reserved[:]).
 		Bytes()
 }
@@ -132,7 +135,7 @@ func encodeEntitlement(e *Entitlement) []byte {
 }
 
 func TestDecodeSeriesRoundTrip(t *testing.T) {
-	in := &Series{
+	base := Series{
 		Bump:           254,
 		Mint:           pk(t, "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"),
 		CashMint:       pk(t, "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"),
@@ -157,12 +160,27 @@ func TestDecodeSeriesRoundTrip(t *testing.T) {
 		TaxVault:       pk(t, "AVMoJ7VrsMQ8tPjxWZYeDb9nXZuVhxzXb2S2QZKtcHq"),
 		Reserved:       [64]byte{},
 	}
-	out, err := DecodeSeries(encodeSeries(in))
-	if err != nil {
-		t.Fatalf("DecodeSeries: %v", err)
+	// open_action: Borsh Option<Pubkey> after tax_vault — None and Some shapes.
+	some := pk(t, "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNNjuMzaDmG4onrZDA")
+	for name, open := range map[string]*solana.PublicKey{"none": nil, "some": &some} {
+		t.Run(name, func(t *testing.T) {
+			in := base
+			in.OpenAction = open
+			out, err := DecodeSeries(encodeSeries(&in))
+			if err != nil {
+				t.Fatalf("DecodeSeries: %v", err)
+			}
+			// DeepEqual, not !=: OpenAction is a pointer field.
+			if !reflect.DeepEqual(out, &in) {
+				t.Fatalf("round trip mismatch:\n got %+v\nwant %+v", *out, in)
+			}
+		})
 	}
-	if *out != *in {
-		t.Fatalf("round trip mismatch:\n got %+v\nwant %+v", *out, *in)
+	// Some encodes as tag 1 + 32 bytes; None as tag 0 — one byte shorter.
+	withSome := base
+	withSome.OpenAction = &some
+	if n, m := len(encodeSeries(&base)), len(encodeSeries(&withSome)); m != n+32 {
+		t.Fatalf("Some open_action should add 32 bytes: none=%d some=%d", n, m)
 	}
 }
 
@@ -229,6 +247,7 @@ func TestDecodeCorporateActionRoundTrip(t *testing.T) {
 		VotesAbstain:        0,
 		Result:              0,
 		CompletedAt:         0,
+		FactorBps:           2500, // PCAL 25%
 		Reserved:            [64]byte{},
 	}
 	out, err := DecodeCorporateAction(encodeCorporateAction(in))

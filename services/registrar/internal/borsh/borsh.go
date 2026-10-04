@@ -98,6 +98,25 @@ func (r *Reader) Pubkey() ([32]byte, error) {
 	return v, err
 }
 
+// OptionPubkey reads a Borsh Option<Pubkey>: a 1-byte tag (0 = None,
+// 1 = Some) followed by 32 bytes only when Some. Returns nil for None.
+func (r *Reader) OptionPubkey() (*[32]byte, error) {
+	tag, err := r.U8()
+	if err != nil {
+		return nil, err
+	}
+	switch tag {
+	case 0:
+		return nil, nil
+	case 1:
+		var v [32]byte
+		err := r.read(&v)
+		return &v, err
+	default:
+		return nil, fmt.Errorf("borsh: option tag %d", tag)
+	}
+}
+
 // Writer builds a Borsh-encoded byte slice; methods are chainable and never
 // fail, so encoders stay one-liners in tests and fixtures.
 type Writer struct{ buf bytes.Buffer }
@@ -142,6 +161,15 @@ func (w *Writer) FixedBytes(v []byte) *Writer { return w.write(v) }
 
 // Pubkey appends a 32-byte public key.
 func (w *Writer) Pubkey(v [32]byte) *Writer { return w.write(v) }
+
+// OptionPubkey appends a Borsh Option<Pubkey>: a 1-byte tag (0 = None,
+// 1 = Some) followed by 32 bytes only when Some. nil encodes None.
+func (w *Writer) OptionPubkey(v *[32]byte) *Writer {
+	if v == nil {
+		return w.U8(0)
+	}
+	return w.U8(1).Pubkey(*v)
+}
 
 // AnchorDiscriminator returns the first 8 bytes of sha256(kind + ":" + name),
 // Anchor's discriminator scheme; kind must be "account" or "event".

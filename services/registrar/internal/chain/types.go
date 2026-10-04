@@ -29,6 +29,7 @@ type Series struct {
 	QuorumBps      uint16
 	ApprovalBps    uint16
 	TaxVault       solana.PublicKey
+	OpenAction     *solana.PublicKey // nil = Borsh None; the one non-final action, if any
 	Reserved       [64]byte
 }
 
@@ -88,6 +89,7 @@ type CorporateAction struct {
 	VotesAbstain        uint64
 	Result              uint8 // 0 Pending, 1 Approved, 2 Rejected, 3 NoQuorum
 	CompletedAt         int64
+	FactorBps           uint16 // PCAL only: share of face redeemed, bps
 	Reserved            [64]byte
 }
 

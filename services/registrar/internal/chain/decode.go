@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/borsh"
+	solana "github.com/solana-foundation/solana-go/v2"
 )
 
 // DecodeSeries decodes a Series account (after the 8-byte discriminator).
@@ -79,6 +80,14 @@ func DecodeSeries(data []byte) (*Series, error) {
 	}
 	if s.TaxVault, err = r.Pubkey(); err != nil {
 		return nil, fmt.Errorf("series: tax_vault: %w", err)
+	}
+	opt, err := r.OptionPubkey()
+	if err != nil {
+		return nil, fmt.Errorf("series: open_action: %w", err)
+	}
+	if opt != nil {
+		p := solana.PublicKey(*opt)
+		s.OpenAction = &p
 	}
 	if s.Reserved, err = fixed64(r); err != nil {
 		return nil, fmt.Errorf("series: reserved: %w", err)
@@ -251,6 +260,9 @@ func DecodeCorporateAction(data []byte) (*CorporateAction, error) {
 	}
 	if a.CompletedAt, err = r.I64(); err != nil {
 		return nil, fmt.Errorf("action: completed_at: %w", err)
+	}
+	if a.FactorBps, err = r.U16(); err != nil {
+		return nil, fmt.Errorf("action: factor_bps: %w", err)
 	}
 	if a.Reserved, err = fixed64(r); err != nil {
 		return nil, fmt.Errorf("action: reserved: %w", err)
