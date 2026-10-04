@@ -10,7 +10,7 @@ HAS_GO      := $(wildcard services/registrar/go.mod)
 HAS_TS      := $(wildcard clients/ts/package.json)
 HAS_WEB     := $(wildcard apps/web/package.json)
 # Stable program id across worktrees/clones: the deploy keypair lives outside git (ops/deploy.sh, task 014).
-PROGRAM_KEYPAIR ?= $(HOME)/.config/qupon/qupon_bonds-program.json
+PROGRAM_KEYPAIR ?= $(HOME)/.config/qupon/program-keypair.json
 
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-16s %s\n", $$1, $$2}'

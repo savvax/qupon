@@ -6,6 +6,10 @@ resolver = "2"
 edition = "2021"
 rust-version = "1.89.0"
 
+# Line tables only: keeps panic/backtrace locations, cuts each worktree's target/ by GBs (many parallel workers share one disk).
+[profile.dev]
+debug = "line-tables-only"
+
 [profile.release]
 overflow-checks = true
 lto = "fat"
