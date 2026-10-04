@@ -22,3 +22,76 @@ pub fn mul_amount(units: u64, price: u64) -> Result<u64> {
     u64::try_from(u128::from(units) * u128::from(price))
         .map_err(|_| error!(QuponError::MathOverflow))
 }
+
+/// Registrar or paying agent (the "crank" roles in docs/02).
+pub fn require_operator(series: &crate::state::Series, signer: &Pubkey) -> Result<()> {
+    require!(
+        *signer == series.registrar || *signer == series.paying_agent,
+        QuponError::Unauthorized
+    );
+    Ok(())
+}
+
+/// Create a program-owned PDA account even if someone pre-funded its address (griefing-safe `create_account`).
+pub fn create_pda_account<'info>(
+    payer: &AccountInfo<'info>,
+    target: &AccountInfo<'info>,
+    system_program: &AccountInfo<'info>,
+    space: usize,
+    seeds: &[&[u8]],
+) -> Result<()> {
+    use anchor_lang::system_program::{
+        allocate, assign, create_account, transfer, Allocate, Assign, CreateAccount, Transfer,
+    };
+    let rent = Rent::get()?.minimum_balance(space);
+    let sys = system_program.key();
+    let signer: &[&[&[u8]]] = &[seeds];
+    if target.lamports() == 0 {
+        return create_account(
+            CpiContext::new_with_signer(
+                sys,
+                CreateAccount {
+                    from: payer.clone(),
+                    to: target.clone(),
+                },
+                signer,
+            ),
+            rent,
+            space as u64,
+            &crate::ID,
+        );
+    }
+    let short = rent.saturating_sub(target.lamports());
+    if short > 0 {
+        transfer(
+            CpiContext::new(
+                sys,
+                Transfer {
+                    from: payer.clone(),
+                    to: target.clone(),
+                },
+            ),
+            short,
+        )?;
+    }
+    allocate(
+        CpiContext::new_with_signer(
+            sys,
+            Allocate {
+                account_to_allocate: target.clone(),
+            },
+            signer,
+        ),
+        space as u64,
+    )?;
+    assign(
+        CpiContext::new_with_signer(
+            sys,
+            Assign {
+                account_to_assign: target.clone(),
+            },
+            signer,
+        ),
+        &crate::ID,
+    )
+}

@@ -2120,8 +2120,10 @@ dependencies = [
  "base64 0.22.1",
  "entitlement",
  "litesvm",
+ "sha2 0.10.9",
  "solana-keypair",
  "solana-message",
+ "solana-sha256-hasher",
  "solana-signer",
  "solana-transaction",
 ]

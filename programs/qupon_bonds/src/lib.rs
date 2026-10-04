@@ -55,4 +55,19 @@ pub mod qupon_bonds {
     pub fn cancel_action(ctx: Context<CancelAction>) -> Result<()> {
         instructions::announce_action::handle_cancel_action(ctx)
     }
+
+    /// Record date reached: pause the bond mint (registrar or paying agent).
+    pub fn strike_record(ctx: Context<StrikeRecord>) -> Result<()> {
+        instructions::snapshot::handle_strike_record(ctx)
+    }
+
+    /// Snapshot up to 8 holders: remaining accounts = N × [Investor, bond ATA, Entitlement PDA] (crank).
+    pub fn snapshot_batch<'info>(ctx: Context<'info, SnapshotBatch<'info>>) -> Result<()> {
+        instructions::snapshot::handle_snapshot_batch(ctx)
+    }
+
+    /// Close the snapshot once Σ units == supply (BMET → VotingOpen).
+    pub fn finalize_snapshot(ctx: Context<FinalizeSnapshot>) -> Result<()> {
+        instructions::snapshot::handle_finalize_snapshot(ctx)
+    }
 }

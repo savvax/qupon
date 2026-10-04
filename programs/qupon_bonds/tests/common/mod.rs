@@ -592,3 +592,90 @@ impl Env {
         )
     }
 }
+
+pub fn entitlement_pda(action: &Pubkey, owner: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[
+            qupon_bonds::constants::ENTITLEMENT_SEED,
+            action.as_ref(),
+            owner.as_ref(),
+        ],
+        &qupon_bonds::id(),
+    )
+    .0
+}
+
+impl Env {
+    fn action_ix(
+        &self,
+        data: Vec<u8>,
+        metas: Vec<anchor_lang::solana_program::instruction::AccountMeta>,
+    ) -> Instruction {
+        Instruction::new_with_bytes(qupon_bonds::id(), &data, metas)
+    }
+
+    pub fn strike_ix(&self, b: &Bond, authority: &Pubkey, index: u32) -> Instruction {
+        self.action_ix(
+            qupon_bonds::instruction::StrikeRecord {}.data(),
+            qupon_bonds::accounts::StrikeRecord {
+                authority: *authority,
+                series: b.series,
+                action: action_pda(&b.series, index),
+                mint: b.mint,
+                bond_token_program: spl_token_2022::ID,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    /// `snapshot_batch` over `owners` in the given order (the CLI sorts by owner pubkey ascending).
+    pub fn snapshot_ix(&self, b: &Bond, index: u32, owners: &[Pubkey]) -> Instruction {
+        use anchor_lang::solana_program::instruction::AccountMeta;
+        let action = action_pda(&b.series, index);
+        let mut metas = qupon_bonds::accounts::SnapshotBatch {
+            authority: self.registrar.pubkey(),
+            series: b.series,
+            action,
+            mint: b.mint,
+            system_program: anchor_lang::solana_program::system_program::ID,
+        }
+        .to_account_metas(None);
+        for o in owners {
+            metas.push(AccountMeta::new_readonly(investor_pda(&b.series, o), false));
+            metas.push(AccountMeta::new_readonly(
+                ata(o, &b.mint, &spl_token_2022::ID),
+                false,
+            ));
+            metas.push(AccountMeta::new(entitlement_pda(&action, o), false));
+        }
+        self.action_ix(qupon_bonds::instruction::SnapshotBatch {}.data(), metas)
+    }
+
+    pub fn finalize_snapshot_ix(&self, b: &Bond, index: u32) -> Instruction {
+        self.action_ix(
+            qupon_bonds::instruction::FinalizeSnapshot {}.data(),
+            qupon_bonds::accounts::FinalizeSnapshot {
+                authority: self.registrar.pubkey(),
+                series: b.series,
+                action: action_pda(&b.series, index),
+                mint: b.mint,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    /// Register holders and issue them `units` each (issuer allocation). Returns owners sorted ascending.
+    pub fn holders(&mut self, b: &Bond, units: &[u64]) -> Vec<(Pubkey, u64)> {
+        let issuer = self.issuer.insecure_clone();
+        let mut out = vec![];
+        for &u in units {
+            let owner = Keypair::new().pubkey();
+            self.register(b, &owner).expect("register");
+            let ix = self.issue_ix(b, &issuer.pubkey(), &owner, u);
+            self.send(&[ix], &[&issuer]).expect("issue");
+            out.push((owner, u));
+        }
+        out.sort_by_key(|(o, _)| *o);
+        out
+    }
+}
