@@ -13,7 +13,7 @@ rm -f tasks/.stop
 S=qupon
 tmux has-session -t $S 2>/dev/null && { echo "session $S exists; tmux attach -t $S (or tmux kill-session -t $S)"; exit 0; }
 tmux new-session -d -s $S -n status "watch -n 30 bash ops/status.sh"
-for i in $(seq 1 "$CLAUDE_WORKERS"); do tmux new-window -t $S -n "claude-$i" "bash ops/orchestrate.sh claude-$i; bash"; done
-for i in $(seq 1 "$GLM_WORKERS");    do tmux new-window -t $S -n "glm-$i"    "bash ops/orchestrate.sh glm-$i; bash";    sleep 2; done
-for i in $(seq 1 "$FLASH_WORKERS");  do tmux new-window -t $S -n "flash-$i"  "bash ops/orchestrate.sh flash-$i; bash";  sleep 2; done
+for ((i=1; i<=CLAUDE_WORKERS; i++)); do tmux new-window -t $S -n "claude-$i" "bash ops/orchestrate.sh claude-$i; bash"; done
+for ((i=1; i<=GLM_WORKERS; i++)); do tmux new-window -t $S -n "glm-$i"    "bash ops/orchestrate.sh glm-$i; bash";    sleep 2; done
+for ((i=1; i<=FLASH_WORKERS; i++)); do tmux new-window -t $S -n "flash-$i"  "bash ops/orchestrate.sh flash-$i; bash";  sleep 2; done
 echo "started $CLAUDE_WORKERS claude, $GLM_WORKERS glm, $FLASH_WORKERS flash workers: tmux attach -t $S   (stop: touch tasks/.stop)"
