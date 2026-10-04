@@ -7,12 +7,13 @@ describe("formatMinor", () => {
     expect(formatMinor(50000n, 2, "tKZT")).toBe("500.00 tKZT");
   });
   it("0", () => expect(formatMinor(0n, 2, "tKZT")).toBe("0.00 tKZT"));
-  it("truncates display half-up per minor digits shown", () => {
+  it("shows every minor digit exactly", () => {
     // display-level: exact division keeps full precision; extra precision beyond decimals truncated
     expect(formatMinor(123456n, 4, "tKZT")).toBe("12.3456 tKZT");
   });
   it("negative", () => expect(formatMinor(-150n, 2, "tKZT")).toBe("-1.50 tKZT"));
-  it("decimals=0", () => expect(formatMinor(1000n, 0, "tKZT")).toBe("1000.0 tKZT"));
+  it("decimals=0 has no fraction", () => expect(formatMinor(1000n, 0, "tKZT")).toBe("1000 tKZT"));
+  it("brief coupon in tiyn", () => expect(formatMinor(50000n, 2, "KZT")).toBe("500.00 KZT"));
   it("brief numbers: 500/1250/3250 minor with 1 decimal", () => {
     expect(formatMinor(500n, 1, "KZT")).toBe("50.0 KZT");
     expect(formatMinor(1250n, 1, "KZT")).toBe("125.0 KZT");

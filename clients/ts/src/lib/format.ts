@@ -1,13 +1,11 @@
-/** Format a minor-unit amount with half-up rounding to `decimals` places: (500n, 2, "tKZT") → "500.00 tKZT". */
+/** Exact display of a minor-unit amount (no rounding): (50000n, 2, "tKZT") → "500.00 tKZT"; (10n, 0, "QPNb1") → "10 QPNb1". */
 export function formatMinor(amount: bigint, decimals: number, symbol: string): string {
-  if (decimals < 0) throw new Error(`decimals must be >= 0, got ${decimals}`);
+  if (!Number.isInteger(decimals) || decimals < 0) throw new Error(`decimals must be an integer >= 0, got ${decimals}`);
   const neg = amount < 0n;
   const abs = neg ? -amount : amount;
   const scale = 10n ** BigInt(decimals);
-  const units = abs / scale;
-  let frac = (abs % scale).toString().padStart(decimals, "0");
-  if (decimals > 0) frac = frac.slice(0, decimals);
-  return `${neg ? "-" : ""}${units.toString()}.${frac} ${symbol}`;
+  const frac = decimals > 0 ? "." + (abs % scale).toString().padStart(decimals, "0") : "";
+  return `${neg ? "-" : ""}${(abs / scale).toString()}${frac} ${symbol}`;
 }
 
 /** Unix seconds → Asia/Almaty (UTC+5) formatted timestamp, e.g. "2026-10-12 20:00:00 +05". */
