@@ -5,8 +5,36 @@
   "usdcMint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
   "tkztMint": "REPLACE_AFTER_create-tkzt",
   "series": {
-    "QPNb1": { "mint": "", "cashMint": "tKZT", "isin": "KZ2C0QUPON001", "faceValue": 100000, "couponRateBps": 1000, "frequency": 2, "dayCount": "THIRTY_360", "termYears": 2 },
-    "BTRKdemo": { "mint": "", "cashMint": "USDC", "isin": "KZ2C00018703", "faceValue": 1000000000, "couponRateBps": 1595, "frequency": 2, "dayCount": "THIRTY_360", "termYears": 5 }
+    "QPNb1": {
+      "mint": "",
+      "cashMint": "tKZT",
+      "isin": "KZ2C0QUPON001",
+      "faceValue": 100000,
+      "couponRateBps": 1000,
+      "frequency": 2,
+      "dayCount": "THIRTY_360",
+      "termYears": 2
+    },
+    "BTRKdemo": {
+      "mint": "",
+      "cashMint": "USDC",
+      "isin": "KZ2C00018703",
+      "faceValue": 1000000000,
+      "couponRateBps": 1595,
+      "frequency": 2,
+      "dayCount": "THIRTY_360",
+      "termYears": 5
+    }
   },
-  "wallets": { "registrar": "", "issuer": "", "payingAgent": "", "investors": ["", "", ""], "outsider": "" }
+  "wallets": {
+    "registrar": "Bnq22GvV6AQcXWeTp6x3uTYkC7HKKrysiFve2uCDqE97",
+    "issuer": "8zqKjKvQUmo38zTjwppjnQZdaFBf3ipZVZMhV26g3yma",
+    "payingAgent": "7EiXu2LfAk6WiCE5ZfF2kc4Sk3cP9GubmQ4V9R4smijk",
+    "investors": [
+      "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo",
+      "7XVBxDqctEz5mMXieqJ7swAa2UbBK2hBSwvoXc9ntLau",
+      "6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC"
+    ],
+    "outsider": "EiAZ7r9tVciGeibwdFmjbhhZVeSGXxY2CMuqP71MaN6g"
+  }
 }
