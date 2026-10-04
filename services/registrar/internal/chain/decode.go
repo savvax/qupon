@@ -1,0 +1,330 @@
+// Hand-written Borsh decoders for the four qupon_bonds accounts.
+// Field order mirrors the Rust layout in programs/qupon_bonds/src/state.rs
+// (docs/02-architecture.md); encoders live only in tests.
+package chain
+
+import (
+	"fmt"
+
+	"github.com/qupon-kz/qupon/services/registrar/internal/borsh"
+)
+
+// DecodeSeries decodes a Series account (after the 8-byte discriminator).
+func DecodeSeries(data []byte) (*Series, error) {
+	r := borsh.NewReader(data)
+	var s Series
+	var err error
+	if s.Bump, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("series: bump: %w", err)
+	}
+	if s.Mint, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("series: mint: %w", err)
+	}
+	if s.CashMint, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("series: cash_mint: %w", err)
+	}
+	if s.Registrar, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("series: registrar: %w", err)
+	}
+	if s.Issuer, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("series: issuer: %w", err)
+	}
+	if s.PayingAgent, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("series: paying_agent: %w", err)
+	}
+	if s.ISIN, err = fixed12(r); err != nil {
+		return nil, fmt.Errorf("series: isin: %w", err)
+	}
+	if s.Ticker, err = fixed16(r); err != nil {
+		return nil, fmt.Errorf("series: ticker: %w", err)
+	}
+	if s.FaceValue, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("series: face_value: %w", err)
+	}
+	if s.CouponRateBps, err = r.U32(); err != nil {
+		return nil, fmt.Errorf("series: coupon_rate_bps: %w", err)
+	}
+	if s.Frequency, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("series: frequency: %w", err)
+	}
+	if s.DayCount, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("series: day_count: %w", err)
+	}
+	if s.IssueDate, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("series: issue_date: %w", err)
+	}
+	if s.MaturityDate, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("series: maturity_date: %w", err)
+	}
+	if s.NextCouponDate, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("series: next_coupon_date: %w", err)
+	}
+	if s.PeriodStart, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("series: period_start: %w", err)
+	}
+	if s.Status, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("series: status: %w", err)
+	}
+	if s.TotalIssued, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("series: total_issued: %w", err)
+	}
+	if s.ActionCount, err = r.U32(); err != nil {
+		return nil, fmt.Errorf("series: action_count: %w", err)
+	}
+	if s.QuorumBps, err = r.U16(); err != nil {
+		return nil, fmt.Errorf("series: quorum_bps: %w", err)
+	}
+	if s.ApprovalBps, err = r.U16(); err != nil {
+		return nil, fmt.Errorf("series: approval_bps: %w", err)
+	}
+	if s.TaxVault, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("series: tax_vault: %w", err)
+	}
+	if s.Reserved, err = fixed64(r); err != nil {
+		return nil, fmt.Errorf("series: reserved: %w", err)
+	}
+	if !r.Done() {
+		return nil, fmt.Errorf("series: %d trailing bytes", r.Remaining())
+	}
+	return &s, nil
+}
+
+// DecodeInvestor decodes an Investor account (after the discriminator).
+func DecodeInvestor(data []byte) (*Investor, error) {
+	r := borsh.NewReader(data)
+	var i Investor
+	var err error
+	if i.Bump, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("investor: bump: %w", err)
+	}
+	if i.Series, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("investor: series: %w", err)
+	}
+	if i.Owner, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("investor: owner: %w", err)
+	}
+	if i.BondATA, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("investor: bond_ata: %w", err)
+	}
+	if i.CashATA, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("investor: cash_ata: %w", err)
+	}
+	if i.InvestorType, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("investor: investor_type: %w", err)
+	}
+	if i.Residency, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("investor: residency: %w", err)
+	}
+	if i.TaxRateBps, err = r.U16(); err != nil {
+		return nil, fmt.Errorf("investor: tax_rate_bps: %w", err)
+	}
+	if i.Status, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("investor: status: %w", err)
+	}
+	if i.KYCRef, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("investor: kyc_ref: %w", err)
+	}
+	if i.RegisteredAt, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("investor: registered_at: %w", err)
+	}
+	if !r.Done() {
+		return nil, fmt.Errorf("investor: %d trailing bytes", r.Remaining())
+	}
+	return &i, nil
+}
+
+// DecodeCorporateAction decodes a CorporateAction account (after the discriminator).
+func DecodeCorporateAction(data []byte) (*CorporateAction, error) {
+	r := borsh.NewReader(data)
+	var a CorporateAction
+	var err error
+	if a.Bump, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("action: bump: %w", err)
+	}
+	if a.Series, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("action: series: %w", err)
+	}
+	if a.Index, err = r.U32(); err != nil {
+		return nil, fmt.Errorf("action: index: %w", err)
+	}
+	if a.Kind, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("action: kind: %w", err)
+	}
+	if a.Mandatory, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("action: mandatory: %w", err)
+	}
+	if a.CorpID, err = fixed16(r); err != nil {
+		return nil, fmt.Errorf("action: corp_id: %w", err)
+	}
+	if a.OfficialID, err = fixed16(r); err != nil {
+		return nil, fmt.Errorf("action: official_id: %w", err)
+	}
+	if a.AnnouncedAt, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("action: announced_at: %w", err)
+	}
+	if a.RecordAt, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("action: record_at: %w", err)
+	}
+	if a.PaymentAt, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("action: payment_at: %w", err)
+	}
+	if a.PeriodStart, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("action: period_start: %w", err)
+	}
+	if a.PeriodEnd, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("action: period_end: %w", err)
+	}
+	if a.AccrualDays, err = r.U32(); err != nil {
+		return nil, fmt.Errorf("action: accrual_days: %w", err)
+	}
+	if a.RateBps, err = r.U32(); err != nil {
+		return nil, fmt.Errorf("action: rate_bps: %w", err)
+	}
+	if a.PerUnitGross, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: per_unit_gross: %w", err)
+	}
+	if a.PerUnitPrincipal, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: per_unit_principal: %w", err)
+	}
+	if a.CashMint, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("action: cash_mint: %w", err)
+	}
+	if a.Escrow, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("action: escrow: %w", err)
+	}
+	if a.Status, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("action: status: %w", err)
+	}
+	if a.SnapshotSlot, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: snapshot_slot: %w", err)
+	}
+	if a.SnapshotHash, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("action: snapshot_hash: %w", err)
+	}
+	if a.UnitsSnapshotted, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: units_snapshotted: %w", err)
+	}
+	if a.HoldersSnapshotted, err = r.U32(); err != nil {
+		return nil, fmt.Errorf("action: holders_snapshotted: %w", err)
+	}
+	if a.HoldersPaid, err = r.U32(); err != nil {
+		return nil, fmt.Errorf("action: holders_paid: %w", err)
+	}
+	if a.TotalGross, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: total_gross: %w", err)
+	}
+	if a.TotalTax, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: total_tax: %w", err)
+	}
+	if a.TotalNet, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: total_net: %w", err)
+	}
+	if a.TotalPaid, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: total_paid: %w", err)
+	}
+	if a.TotalRetired, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: total_retired: %w", err)
+	}
+	if a.HoldersRetired, err = r.U32(); err != nil {
+		return nil, fmt.Errorf("action: holders_retired: %w", err)
+	}
+	if a.ProposalNewRateBps, err = r.U32(); err != nil {
+		return nil, fmt.Errorf("action: proposal_new_rate_bps: %w", err)
+	}
+	if a.ProposalNewMaturity, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("action: proposal_new_maturity: %w", err)
+	}
+	if a.VotingEndsAt, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("action: voting_ends_at: %w", err)
+	}
+	if a.VotesFor, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: votes_for: %w", err)
+	}
+	if a.VotesAgainst, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: votes_against: %w", err)
+	}
+	if a.VotesAbstain, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: votes_abstain: %w", err)
+	}
+	if a.Result, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("action: result: %w", err)
+	}
+	if a.CompletedAt, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("action: completed_at: %w", err)
+	}
+	if a.Reserved, err = fixed64(r); err != nil {
+		return nil, fmt.Errorf("action: reserved: %w", err)
+	}
+	if !r.Done() {
+		return nil, fmt.Errorf("action: %d trailing bytes", r.Remaining())
+	}
+	return &a, nil
+}
+
+// DecodeEntitlement decodes an Entitlement account (after the discriminator).
+func DecodeEntitlement(data []byte) (*Entitlement, error) {
+	r := borsh.NewReader(data)
+	var e Entitlement
+	var err error
+	if e.Bump, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("entitlement: bump: %w", err)
+	}
+	if e.Action, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("entitlement: action: %w", err)
+	}
+	if e.Owner, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("entitlement: owner: %w", err)
+	}
+	if e.Units, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("entitlement: units: %w", err)
+	}
+	if e.Gross, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("entitlement: gross: %w", err)
+	}
+	if e.Tax, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("entitlement: tax: %w", err)
+	}
+	if e.Net, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("entitlement: net: %w", err)
+	}
+	if e.Principal, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("entitlement: principal: %w", err)
+	}
+	if e.Status, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("entitlement: status: %w", err)
+	}
+	if e.PaidAt, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("entitlement: paid_at: %w", err)
+	}
+	if e.Vote, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("entitlement: vote: %w", err)
+	}
+	if e.VotedAt, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("entitlement: voted_at: %w", err)
+	}
+	if !r.Done() {
+		return nil, fmt.Errorf("entitlement: %d trailing bytes", r.Remaining())
+	}
+	return &e, nil
+}
+
+func fixed12(r *borsh.Reader) ([12]byte, error) {
+	b, err := r.Bytes(12)
+	var out [12]byte
+	copy(out[:], b)
+	return out, err
+}
+
+func fixed16(r *borsh.Reader) ([16]byte, error) {
+	b, err := r.Bytes(16)
+	var out [16]byte
+	copy(out[:], b)
+	return out, err
+}
+
+func fixed64(r *borsh.Reader) ([64]byte, error) {
+	b, err := r.Bytes(64)
+	var out [64]byte
+	copy(out[:], b)
+	return out, err
+}
