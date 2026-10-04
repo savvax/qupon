@@ -8,7 +8,7 @@ KP="${QUPON_REGISTRAR_KEYPAIR:-$HOME/.config/qupon/registrar.json}"
 PKP="$HOME/.config/qupon/program-keypair.json"
 mkdir -p target/deploy
 if [ ! -f "$PKP" ]; then solana-keygen new --no-bip39-passphrase -s -o "$PKP" >/dev/null; fi
-cp "$PKP" target/deploy/qupon_bonds-keypair.json
+ln -sf "$PKP" target/deploy/qupon_bonds-keypair.json
 anchor keys sync
 anchor build
 anchor deploy --provider.cluster devnet --provider.wallet "$KP"
