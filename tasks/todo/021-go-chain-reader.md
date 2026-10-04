@@ -1,4 +1,5 @@
 ---
+blocked_reason: rebase conflict with main
 id: 021
 title: Chain reader: RPC client + account decoders + getProgramAccounts by discriminator (synthetic round-trip tests; real fixtures arrive in task 051)
 agent: glm
