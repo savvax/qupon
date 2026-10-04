@@ -322,3 +322,188 @@ pub fn assert_err(res: TransactionResult, expected: QuponError) {
         meta.logs
     );
 }
+
+/// An initialized series: bond mint + series PDA + cash mint (issuer is the cash mint authority).
+#[derive(Clone, Copy)]
+pub struct Bond {
+    pub mint: Pubkey,
+    pub series: Pubkey,
+    pub cash: Pubkey,
+    pub cash_tp: Pubkey,
+}
+
+pub fn ata(owner: &Pubkey, mint: &Pubkey, tp: &Pubkey) -> Pubkey {
+    get_associated_token_address_with_program_id(owner, mint, tp)
+}
+
+pub fn investor_pda(series: &Pubkey, owner: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[
+            qupon_bonds::constants::INVESTOR_SEED,
+            series.as_ref(),
+            owner.as_ref(),
+        ],
+        &qupon_bonds::id(),
+    )
+    .0
+}
+
+pub fn kyc() -> qupon_bonds::KycParams {
+    qupon_bonds::KycParams {
+        investor_type: 0,
+        residency: 0,
+        tax_rate_bps: 0,
+        kyc_ref: [7; 32],
+    }
+}
+
+impl Env {
+    /// SPL-Token cash mint + bond mint + `init_series` with default params.
+    pub fn setup_bond(&mut self) -> Bond {
+        let cash = self.create_cash_mint(spl_token::ID);
+        let (mint, series) = self.create_bond_mint(BondMintOpts::default());
+        let ix = self.init_series_ix(mint, cash, spl_token::ID, self.params());
+        self.send(&[ix], &[]).expect("init_series");
+        Bond {
+            mint,
+            series,
+            cash,
+            cash_tp: spl_token::ID,
+        }
+    }
+
+    pub fn register_ix(&self, b: &Bond, signer: &Pubkey, owner: &Pubkey) -> Instruction {
+        Instruction::new_with_bytes(
+            qupon_bonds::id(),
+            &qupon_bonds::instruction::RegisterInvestor { kyc: kyc() }.data(),
+            qupon_bonds::accounts::RegisterInvestor {
+                registrar: *signer,
+                series: b.series,
+                owner: *owner,
+                investor: investor_pda(&b.series, owner),
+                mint: b.mint,
+                bond_ata: ata(owner, &b.mint, &spl_token_2022::ID),
+                cash_mint: b.cash,
+                cash_ata: ata(owner, &b.cash, &b.cash_tp),
+                bond_token_program: spl_token_2022::ID,
+                cash_token_program: b.cash_tp,
+                associated_token_program: anchor_spl::associated_token::ID,
+                system_program: anchor_lang::solana_program::system_program::ID,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    pub fn register(&mut self, b: &Bond, owner: &Pubkey) -> TransactionResult {
+        let ix = self.register_ix(b, &self.registrar.pubkey(), owner);
+        self.send(&[ix], &[])
+    }
+
+    pub fn set_status_ix(&self, b: &Bond, owner: &Pubkey, suspend: bool) -> Instruction {
+        let data = if suspend {
+            qupon_bonds::instruction::SuspendInvestor {}.data()
+        } else {
+            qupon_bonds::instruction::ReinstateInvestor {}.data()
+        };
+        Instruction::new_with_bytes(
+            qupon_bonds::id(),
+            &data,
+            qupon_bonds::accounts::SetInvestorStatus {
+                registrar: self.registrar.pubkey(),
+                series: b.series,
+                investor: investor_pda(&b.series, owner),
+                mint: b.mint,
+                bond_ata: ata(owner, &b.mint, &spl_token_2022::ID),
+                bond_token_program: spl_token_2022::ID,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    /// Issuer's cash ATA (created idempotently).
+    pub fn issuer_cash(&mut self, b: &Bond) -> Pubkey {
+        let issuer = self.issuer.pubkey();
+        let ix = anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent(
+            &self.registrar.pubkey(), &issuer, &b.cash, &b.cash_tp,
+        );
+        self.send(&[ix], &[]).expect("issuer cash ata");
+        ata(&issuer, &b.cash, &b.cash_tp)
+    }
+
+    /// Mint `amount` cash to `owner`'s cash ATA (issuer is the cash mint authority in tests).
+    pub fn fund_cash(&mut self, b: &Bond, owner: &Pubkey, amount: u64) {
+        let ix = spl_token::instruction::mint_to(
+            &spl_token::ID,
+            &b.cash,
+            &ata(owner, &b.cash, &b.cash_tp),
+            &self.issuer.pubkey(),
+            &[],
+            amount,
+        )
+        .unwrap();
+        let issuer = self.issuer.insecure_clone();
+        self.send(&[ix], &[&issuer]).expect("fund cash");
+    }
+
+    pub fn subscribe_ix(
+        &mut self,
+        b: &Bond,
+        owner: &Pubkey,
+        units: u64,
+        price: u64,
+    ) -> Instruction {
+        let issuer_cash = self.issuer_cash(b);
+        Instruction::new_with_bytes(
+            qupon_bonds::id(),
+            &qupon_bonds::instruction::Subscribe {
+                units,
+                price_per_unit: price,
+            }
+            .data(),
+            qupon_bonds::accounts::Subscribe {
+                owner: *owner,
+                series: b.series,
+                investor: investor_pda(&b.series, owner),
+                mint: b.mint,
+                bond_ata: ata(owner, &b.mint, &spl_token_2022::ID),
+                cash_mint: b.cash,
+                cash_ata: ata(owner, &b.cash, &b.cash_tp),
+                issuer_cash,
+                bond_token_program: spl_token_2022::ID,
+                cash_token_program: b.cash_tp,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    pub fn issue_ix(&self, b: &Bond, issuer: &Pubkey, owner: &Pubkey, units: u64) -> Instruction {
+        Instruction::new_with_bytes(
+            qupon_bonds::id(),
+            &qupon_bonds::instruction::IssueUnits { units }.data(),
+            qupon_bonds::accounts::IssueUnits {
+                issuer: *issuer,
+                series: b.series,
+                investor: investor_pda(&b.series, owner),
+                mint: b.mint,
+                bond_ata: ata(owner, &b.mint, &spl_token_2022::ID),
+                bond_token_program: spl_token_2022::ID,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    /// Token amount (base layout is identical for SPL Token and Token-2022: amount at 64..72).
+    pub fn balance(&self, token_account: &Pubkey) -> u64 {
+        let a = self.svm.get_account(token_account).expect("token account");
+        u64::from_le_bytes(a.data[64..72].try_into().unwrap())
+    }
+
+    /// Account state byte at 108: 1 = Initialized, 2 = Frozen.
+    pub fn is_frozen(&self, token_account: &Pubkey) -> bool {
+        self.svm
+            .get_account(token_account)
+            .expect("token account")
+            .data[108]
+            == 2
+    }
+}
