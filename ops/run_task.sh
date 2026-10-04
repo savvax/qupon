@@ -52,3 +52,15 @@ case "$AGENT" in
     ;;
   *) echo "unknown agent $AGENT" >&2; exit 2;;
 esac
+rc=$?
+# Agents must commit on the worktree's task branch. Tasks 045/048 were "merged" empty because the agent committed
+# on a self-made branch; recover by fast-forwarding the task branch, otherwise refuse with BLOCKED.
+BR="task/$(basename "$TASK" .md)"; CUR=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+if [ -n "$CUR" ] && [ "$CUR" != "$BR" ]; then
+  if git checkout -q "$BR" 2>/dev/null && git merge -q --ff-only "$CUR" 2>/dev/null; then
+    echo "[run_task] agent committed on '$CUR'; fast-forwarded $BR to it" >&2
+  else
+    echo "BLOCKED:$ID agent committed on branch $CUR instead of $BR (work kept on $CUR)"
+  fi
+fi
+exit $rc
