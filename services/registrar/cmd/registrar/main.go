@@ -20,6 +20,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/config"
 	"github.com/qupon-kz/qupon/services/registrar/internal/ingest"
+	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -92,7 +93,7 @@ func run() error {
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(logger, st),
+		Handler:           api.New(logger, st, notice.NewReader(cfg.RPCURL, "")),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

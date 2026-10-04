@@ -7,6 +7,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -14,15 +15,18 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	solana "github.com/solana-foundation/solana-go/v2"
 
+	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
 //go:embed openapi.yaml
 var openapiFS embed.FS
 
-// New builds the HTTP handler tree.
-func New(logger *slog.Logger, st *store.Store) http.Handler {
+// New builds the HTTP handler tree. noticeReader may be nil (the notice
+// endpoint then reports 503 — chain reader not configured).
+func New(logger *slog.Logger, st *store.Store, noticeReader *notice.Reader) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.Recoverer)
 	r.Use(loggerMiddleware(logger), corsLocalhost)
@@ -45,6 +49,39 @@ func New(logger *slog.Logger, st *store.Store) http.Handler {
 		}
 		w.Header().Set("Content-Type", "application/yaml")
 		_, _ = w.Write(body)
+	})
+
+	r.Get("/actions/{pda}/notice", func(w http.ResponseWriter, r *http.Request) {
+		lang := r.URL.Query().Get("lang")
+		if lang == "" {
+			lang = "en"
+		}
+		if lang != "en" && lang != "ru" {
+			writeError(w, http.StatusBadRequest, "lang must be en or ru")
+			return
+		}
+		pda, err := solana.PublicKeyFromBase58(chi.URLParam(r, "pda"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid action pda")
+			return
+		}
+		if noticeReader == nil {
+			writeError(w, http.StatusServiceUnavailable, "chain reader not configured")
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+		text, err := noticeReader.Notice(ctx, pda, lang)
+		if err != nil {
+			if errors.Is(err, notice.ErrActionNotFound) {
+				writeError(w, http.StatusNotFound, err.Error())
+				return
+			}
+			writeError(w, http.StatusBadGateway, err.Error())
+			return
+		}
+		w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		_, _ = w.Write([]byte(text))
 	})
 
 	r.Get("/activity", func(w http.ResponseWriter, r *http.Request) {

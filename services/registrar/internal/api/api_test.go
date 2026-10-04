@@ -18,7 +18,7 @@ func newTestServer(t *testing.T) (http.Handler, *store.Store) {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { _ = st.Close() })
-	return New(slog.New(slog.DiscardHandler), st), st
+	return New(slog.New(slog.DiscardHandler), st, nil), st
 }
 
 func TestHealthz(t *testing.T) {
@@ -146,5 +146,39 @@ func TestSeriesEndpoint(t *testing.T) {
 	}
 	if rows[1]["ticker"] != "BTRKdemo" {
 		t.Errorf("row1 = %v (ordered by mint)", rows[1])
+	}
+}
+
+func TestNoticeParamValidation(t *testing.T) {
+	h, _ := newTestServer(t)
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/actions/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/notice?lang=de")
+	if err != nil {
+		t.Fatalf("get notice: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("bad lang status = %d, want 400", resp.StatusCode)
+	}
+
+	resp, err = http.Get(srv.URL + "/actions/not-a-pk/notice")
+	if err != nil {
+		t.Fatalf("get notice: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("bad pda status = %d, want 400", resp.StatusCode)
+	}
+
+	// nil reader configured (newTestServer passes nil): 503
+	resp, err = http.Get(srv.URL + "/actions/9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM/notice")
+	if err != nil {
+		t.Fatalf("get notice: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("nil reader status = %d, want 503", resp.StatusCode)
 	}
 }

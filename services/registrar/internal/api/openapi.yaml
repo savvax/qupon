@@ -115,13 +115,22 @@ paths:
           description: not implemented yet
   /actions/{pda}/notice:
     get:
-      summary: KASE-style notice text (stub)
+      summary: KASE-style disclosure notice (text/markdown)
       parameters:
         - {name: pda, in: path, required: true, schema: {type: string}}
         - {name: lang, in: query, schema: {type: string, enum: [en, ru]}}
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: notice text
+          content:
+            text/markdown:
+              schema: {type: string}
+        "400":
+          description: invalid pda or lang
+        "404":
+          description: action account not found
+        "503":
+          description: chain reader not configured
   /activity:
     get:
       summary: Live activity feed (on-chain program events, ingested by polling)
