@@ -11,7 +11,7 @@ const ACTION_VOTING = "ActnBMET0002Dem0PDA1111111111111111111111111111"; // BMET
 test("series list renders both series and links to the series page", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/console"); // legacy series list (the new "/" is the landing page)
   await expect(
     page.getByRole("heading", { name: "Bond series" }),
   ).toBeVisible();
@@ -96,9 +96,9 @@ test("completed action page: timeline all steps done, entitlements, downloads, S
   // funding panel reflects the completed payment
   await expect(page.getByText("fully funded")).toBeVisible();
 
-  // entitlements: brief's 500 / 1250 / 3250 KZT (mock display strings), paid tx links
+  // entitlements: brief's 500 / 1 250 / 3 250 KZT (AmountCell groups thousands), paid tx links
   await expect(page.getByText("Entitlements (3)")).toBeVisible();
-  for (const amount of ["500.00", "1250.00", "3250.00"]) {
+  for (const amount of ["500.00", "1,250.00", "3,250.00"]) {
     await expect(
       page.getByText(amount, { exact: false }).first(),
     ).toBeVisible();

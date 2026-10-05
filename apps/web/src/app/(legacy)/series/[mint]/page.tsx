@@ -75,7 +75,7 @@ export default async function SeriesPage({
   return (
     <section>
       <div className="flex flex-wrap items-center gap-3">
-        <Link href="/" className="text-xs text-neutral-500 hover:text-sky-300">
+        <Link href="/console" className="text-xs text-neutral-500 hover:text-sky-300">
           ← all series
         </Link>
         <h1 className="text-lg font-semibold">{series.ticker}</h1>
