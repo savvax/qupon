@@ -105,7 +105,12 @@ export default async function RegistrarActionPage({
 
   const ids = stepsForKind(action.kind);
   const timeline = buildTimeline(action, activity, series?.status === "Closed");
-  const next = nextStep(action, Date.now(), investors?.length);
+  const next = nextStep(
+    action,
+    Date.now(),
+    // holders with bonds: zero-balance investors are never snapshotted (executor.NextStep compares units with supply)
+    investors?.filter((i) => BigInt(i.units) > 0n).length,
+  );
   const paidTx = paidTxByOwner(activity, pda);
   const label = (id: StepId) => tstep(`do.${id}`);
   const status = (s: string) => (

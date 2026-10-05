@@ -92,13 +92,13 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		investors, err := deps.Read.FetchInvestorsBySeries(r.Context(), action.Series)
-		if err != nil {
-			writeError(w, http.StatusBadGateway, err.Error())
+		mint, err := deps.Read.FetchMint(r.Context(), series.Mint)
+		if err != nil || mint == nil {
+			writeError(w, http.StatusBadGateway, fmt.Sprintf("bond mint %s: %v", series.Mint, err))
 			return
 		}
 
-		step, wait := executor.NextStep(action, len(investors), time.Now(), req.AutoFund)
+		step, wait := executor.NextStep(action, mint.Supply, time.Now(), req.AutoFund)
 		if step == "" {
 			writeError(w, http.StatusBadRequest, wait)
 			return
@@ -137,7 +137,7 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 			Step: step, OK: true, Status: chain.ActionStatusName(fresh.Status),
 			Signature: sigPtr(res), Slot: slotPtr(res), ExplorerURL: txExplorer(res.Signature),
 		}
-		if next, wait := executor.NextStep(fresh, len(investors), time.Now(), req.AutoFund); next != "" {
+		if next, wait := executor.NextStep(fresh, mint.Supply, time.Now(), req.AutoFund); next != "" {
 			resp.NextStep = &next
 		} else if wait != "" {
 			resp.NextStep = nil

@@ -345,7 +345,8 @@
     "investor": "Кабинет инвестора",
     "investorPlacement": "Размещение",
     "investorMeetings": "Собрания",
-    "investorStatements": "Выписки"
+    "investorStatements": "Выписки",
+    "registrarInvestors": "Инвесторы"
   },
   "errors": {
     "failed": "Что-то пошло не так",

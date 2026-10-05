@@ -205,12 +205,18 @@ func (e *Executor) SeriesName(mint string) (string, error) {
 // (task 023 / docs §Data flow). Returns ("", reason) when the action must
 // wait or has no runnable step — the chain stays the source of truth for
 // timing (TooEarly etc. surfaces as a CLI error, not a service rule).
-func NextStep(a *chain.CorporateAction, investors int, now time.Time, autofund bool) (step, wait string) {
+//
+// supply is the bond mint supply: finalize_snapshot requires units_snapshotted == supply, and the program skips
+// zero-balance accounts, so counting registered investors would snapshot forever once one holds no bonds.
+func NextStep(a *chain.CorporateAction, supply uint64, now time.Time, autofund bool) (step, wait string) {
 	switch a.Status {
 	case 0: // Announced
 		return StepStrike, ""
-	case 1: // RecordStruck: snapshot until every holder has an entitlement
-		if int(a.HoldersSnapshotted) < investors {
+	case 1: // RecordStruck: snapshot until every outstanding unit is in the snapshot
+		if supply == 0 {
+			return "", "no bonds outstanding — nothing to snapshot"
+		}
+		if a.UnitsSnapshotted < supply {
 			return StepSnapshot, ""
 		}
 		return StepFinalize, ""

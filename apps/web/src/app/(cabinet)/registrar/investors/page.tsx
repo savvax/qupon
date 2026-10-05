@@ -1,3 +1,4 @@
+import { metaTitle } from "@/lib/meta";
 import { getTranslations } from "next-intl/server";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
@@ -9,6 +10,10 @@ import { bpsToPercent } from "@/lib/format";
 import { InvestorRowActions } from "../_components/InvestorRowActions";
 import { OnboardDialog } from "../_components/OnboardDialog";
 import { SeriesPicker } from "../_components/SeriesPicker";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("registrarInvestors") };
+}
 
 export default async function RegistrarInvestors({
   searchParams,

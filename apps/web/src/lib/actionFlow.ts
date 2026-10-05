@@ -274,7 +274,7 @@ export type NextStep = { step: StepId | null; label?: string; wait?: string };
 export function nextStep(
   a: ActionDTO,
   now = Date.now(),
-  /** registered investors of the series — executor.NextStep finalizes once every one is snapshotted */
+  /** investors holding bonds — once every one is snapshotted, finalize (executor.NextStep: units == supply) */
   investors?: number,
 ): NextStep {
   const hs = a.holdersSnapshotted ?? 0;

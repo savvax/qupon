@@ -62,7 +62,7 @@ func (f *fakeChain) FetchTokenAccount(context.Context, solana.PublicKey) (*chain
 	return nil, nil
 }
 func (f *fakeChain) FetchMint(context.Context, solana.PublicKey) (*chain.Mint, error) {
-	return &chain.Mint{Decimals: 2}, nil
+	return &chain.Mint{Decimals: 2, Supply: 100}, nil
 }
 
 // advanceServer builds the API with a fake chain and the fake CLI.
@@ -151,7 +151,7 @@ func TestAdvanceLifecycle(t *testing.T) {
 		mutate func(*chain.CorporateAction)
 	}{
 		{body: `{"confirm":true}`, want: want{200, "strike_record", ""}, mutate: func(a *chain.CorporateAction) { a.Status = 1 }},
-		{body: `{"confirm":true}`, want: want{200, "snapshot_batch", ""}, mutate: func(a *chain.CorporateAction) { a.HoldersSnapshotted = 1 }},
+		{body: `{"confirm":true}`, want: want{200, "snapshot_batch", ""}, mutate: func(a *chain.CorporateAction) { a.HoldersSnapshotted = 1; a.UnitsSnapshotted = 100 }},
 		{body: `{"confirm":true}`, want: want{200, "finalize_snapshot", ""}, mutate: func(a *chain.CorporateAction) { a.Status = 2 }},
 		{body: `{"confirm":true}`, want: want{400, "", "autofund"}, mutate: nil},
 		{body: `{"confirm":true,"autofund":true}`, want: want{200, "fund_action", ""}, mutate: func(a *chain.CorporateAction) { a.Status = 3 }},

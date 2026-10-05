@@ -166,7 +166,7 @@ func TestNextStep(t *testing.T) {
 	tests := []struct {
 		name       string
 		action     chain.CorporateAction
-		investors  int
+		supply     uint64
 		now        time.Time
 		autofund   bool
 		wantStep   string
@@ -174,10 +174,15 @@ func TestNextStep(t *testing.T) {
 	}{
 		{name: "announced strikes", action: chain.CorporateAction{Status: 0},
 			wantStep: StepStrike},
-		{name: "record struck snapshots holders", action: chain.CorporateAction{Status: 1, HoldersSnapshotted: 1},
-			investors: 3, wantStep: StepSnapshot},
-		{name: "record struck with all holders finalizes", action: chain.CorporateAction{Status: 1, HoldersSnapshotted: 3},
-			investors: 3, wantStep: StepFinalize},
+		{name: "record struck snapshots holders", action: chain.CorporateAction{Status: 1, HoldersSnapshotted: 1, UnitsSnapshotted: 10},
+			supply: 100, wantStep: StepSnapshot},
+		{name: "record struck with every unit snapshotted finalizes", action: chain.CorporateAction{Status: 1, HoldersSnapshotted: 3, UnitsSnapshotted: 100},
+			supply: 100, wantStep: StepFinalize},
+		// regression: a registered investor holding 0 bonds is never snapshotted; it must not block finalize
+		{name: "zero-balance investor does not block finalize", action: chain.CorporateAction{Status: 1, HoldersSnapshotted: 3, UnitsSnapshotted: 101},
+			supply: 101, wantStep: StepFinalize},
+		{name: "record struck with no bonds outstanding waits", action: chain.CorporateAction{Status: 1},
+			supply: 0, wantWaitIn: "nothing to snapshot"},
 		{name: "snapshot complete waits for issuer", action: chain.CorporateAction{Status: 2},
 			wantWaitIn: "autofund"},
 		{name: "snapshot complete autofunds", action: chain.CorporateAction{Status: 2},
@@ -211,7 +216,7 @@ func TestNextStep(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			step, wait := NextStep(&tt.action, tt.investors, tt.now, tt.autofund)
+			step, wait := NextStep(&tt.action, tt.supply, tt.now, tt.autofund)
 			if tt.wantWaitIn != "" {
 				if step != "" || !strings.Contains(wait, tt.wantWaitIn) {
 					t.Fatalf("NextStep = (%q, %q), want wait containing %q", step, wait, tt.wantWaitIn)

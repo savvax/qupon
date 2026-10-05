@@ -69,7 +69,7 @@ func waitf(format string, a ...any) Decision {
 // Decide is the pure per-series decision (unit-tested with a fake clock).
 // The chain enforces every precondition anyway; these gates just keep the
 // scheduler from sending transactions it knows are early.
-func Decide(s *chain.Series, open *chain.CorporateAction, investors int, now time.Time, cfg Config) Decision {
+func Decide(s *chain.Series, open *chain.CorporateAction, supply uint64, now time.Time, cfg Config) Decision {
 	if open != nil {
 		// Time gates only exist for the two dated steps; everything else is
 		// the same status→step mapping the manual /advance endpoint uses.
@@ -79,7 +79,7 @@ func Decide(s *chain.Series, open *chain.CorporateAction, investors int, now tim
 		if open.Status == 3 && now.Unix() < open.PaymentAt { // Funded → pay at the payment date
 			return waitf("payment date not reached until %s", time.Unix(open.PaymentAt, 0).UTC().Format(time.RFC3339))
 		}
-		step, wait := executor.NextStep(open, investors, now, cfg.AutoFund)
+		step, wait := executor.NextStep(open, supply, now, cfg.AutoFund)
 		if step == "" {
 			return waitf("%s", wait)
 		}
@@ -111,6 +111,7 @@ type Reader interface {
 	AllSeries(ctx context.Context) ([]chain.SeriesRecord, error)
 	FetchCorporateAction(ctx context.Context, pda solana.PublicKey) (*chain.CorporateAction, error)
 	FetchInvestorsBySeries(ctx context.Context, series solana.PublicKey) ([]chain.InvestorRecord, error)
+	FetchMint(ctx context.Context, mint solana.PublicKey) (*chain.Mint, error)
 }
 
 // Scheduler runs the tick loop. Safe as a single goroutine (no shared state).
@@ -163,7 +164,7 @@ func (s *Scheduler) handleSeries(ctx context.Context, rec chain.SeriesRecord) {
 	series := rec.Series
 	now := s.Now()
 	var open *chain.CorporateAction
-	investors := 0
+	var supply uint64
 	if series.OpenAction != nil {
 		a, err := s.Read.FetchCorporateAction(ctx, *series.OpenAction)
 		if err != nil || a == nil {
@@ -171,14 +172,14 @@ func (s *Scheduler) handleSeries(ctx context.Context, rec chain.SeriesRecord) {
 			return
 		}
 		open = a
-		holders, err := s.Read.FetchInvestorsBySeries(ctx, rec.PDA)
-		if err != nil {
-			s.Log.Error("scheduler: fetch investors", "series", series.Mint.String(), "err", err)
+		mint, err := s.Read.FetchMint(ctx, series.Mint)
+		if err != nil || mint == nil {
+			s.Log.Error("scheduler: fetch bond mint", "series", series.Mint.String(), "err", err)
 			return
 		}
-		investors = len(holders)
+		supply = mint.Supply
 	}
-	d := Decide(series, open, investors, now, s.Cfg)
+	d := Decide(series, open, supply, now, s.Cfg)
 	if d.Kind == KindWait {
 		s.Log.Debug("scheduler wait", "series", series.Mint.String(), "reason", d.Reason)
 		return

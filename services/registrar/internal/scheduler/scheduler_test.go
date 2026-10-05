@@ -40,20 +40,20 @@ func action(status uint8) *chain.CorporateAction {
 	return &chain.CorporateAction{
 		Series: kSeries, Index: 3, Status: status,
 		RecordAt: now0.Add(50 * time.Second).Unix(), PaymentAt: now0.Add(70 * time.Second).Unix(),
-		HoldersSnapshotted: 2, HoldersPaid: 1, HoldersRetired: 1,
+		HoldersSnapshotted: 2, UnitsSnapshotted: 2, HoldersPaid: 1, HoldersRetired: 1,
 	}
 }
 
 func TestDecide(t *testing.T) {
 	maturity := now0.Add(24 * time.Hour).Unix()
 	tests := []struct {
-		name      string
-		series    *chain.Series
-		open      *chain.CorporateAction
-		investors int
-		now       time.Time
-		cfg       Config
-		want      Decision
+		name   string
+		series *chain.Series
+		open   *chain.CorporateAction
+		supply uint64
+		now    time.Time
+		cfg    Config
+		want   Decision
 	}{
 		{
 			name:   "no open action, coupon far away → wait",
@@ -89,77 +89,77 @@ func TestDecide(t *testing.T) {
 			want:   Decision{Kind: KindWait, Reason: "series status 3: nothing to schedule"},
 		},
 		{
-			name:      "announced before the record date → wait",
-			series:    series(now0.Unix(), maturity),
-			open:      action(0),
-			investors: 2,
-			now:       now0,
-			want:      Decision{Kind: KindWait, Reason: "record date not reached until 2027-01-15T08:00:50Z"},
+			name:   "announced before the record date → wait",
+			series: series(now0.Unix(), maturity),
+			open:   action(0),
+			supply: 2,
+			now:    now0,
+			want:   Decision{Kind: KindWait, Reason: "record date not reached until 2027-01-15T08:00:50Z"},
 		},
 		{
-			name:      "announced at the record date → strike",
-			series:    series(now0.Unix(), maturity),
-			open:      action(0),
-			investors: 2,
-			now:       now0.Add(time.Minute),
-			want:      Decision{Kind: KindStep, Action: executor.StepStrike},
+			name:   "announced at the record date → strike",
+			series: series(now0.Unix(), maturity),
+			open:   action(0),
+			supply: 2,
+			now:    now0.Add(time.Minute),
+			want:   Decision{Kind: KindStep, Action: executor.StepStrike},
 		},
 		{
-			name:      "record struck, holders missing → snapshot",
-			series:    series(now0.Unix(), maturity),
-			open:      action(1),
-			investors: 3,
-			now:       now0,
-			want:      Decision{Kind: KindStep, Action: executor.StepSnapshot},
+			name:   "record struck, holders missing → snapshot",
+			series: series(now0.Unix(), maturity),
+			open:   action(1),
+			supply: 3,
+			now:    now0,
+			want:   Decision{Kind: KindStep, Action: executor.StepSnapshot},
 		},
 		{
-			name:      "record struck, all holders snapshotted → finalize",
-			series:    series(now0.Unix(), maturity),
-			open:      action(1),
-			investors: 2,
-			now:       now0,
-			want:      Decision{Kind: KindStep, Action: executor.StepFinalize},
+			name:   "record struck, all holders snapshotted → finalize",
+			series: series(now0.Unix(), maturity),
+			open:   action(1),
+			supply: 2,
+			now:    now0,
+			want:   Decision{Kind: KindStep, Action: executor.StepFinalize},
 		},
 		{
-			name:      "snapshot complete, autofund off → wait for issuer",
-			series:    series(now0.Unix(), maturity),
-			open:      action(2),
-			investors: 2,
-			now:       now0,
-			cfg:       Config{Lead: cfg.Lead},
-			want:      Decision{Kind: KindWait, Reason: "waiting for issuer funding (re-run with autofund:true)"},
+			name:   "snapshot complete, autofund off → wait for issuer",
+			series: series(now0.Unix(), maturity),
+			open:   action(2),
+			supply: 2,
+			now:    now0,
+			cfg:    Config{Lead: cfg.Lead},
+			want:   Decision{Kind: KindWait, Reason: "waiting for issuer funding (re-run with autofund:true)"},
 		},
 		{
-			name:      "snapshot complete, autofund on → fund",
-			series:    series(now0.Unix(), maturity),
-			open:      action(2),
-			investors: 2,
-			now:       now0,
-			want:      Decision{Kind: KindStep, Action: executor.StepFund},
+			name:   "snapshot complete, autofund on → fund",
+			series: series(now0.Unix(), maturity),
+			open:   action(2),
+			supply: 2,
+			now:    now0,
+			want:   Decision{Kind: KindStep, Action: executor.StepFund},
 		},
 		{
-			name:      "funded before the payment date → wait",
-			series:    series(now0.Unix(), maturity),
-			open:      action(3),
-			investors: 2,
-			now:       now0,
-			want:      Decision{Kind: KindWait, Reason: "payment date not reached until 2027-01-15T08:01:10Z"},
+			name:   "funded before the payment date → wait",
+			series: series(now0.Unix(), maturity),
+			open:   action(3),
+			supply: 2,
+			now:    now0,
+			want:   Decision{Kind: KindWait, Reason: "payment date not reached until 2027-01-15T08:01:10Z"},
 		},
 		{
-			name:      "funded at the payment date → pay",
-			series:    series(now0.Unix(), maturity),
-			open:      action(3),
-			investors: 2,
-			now:       now0.Add(2 * time.Minute),
-			want:      Decision{Kind: KindStep, Action: executor.StepPay},
+			name:   "funded at the payment date → pay",
+			series: series(now0.Unix(), maturity),
+			open:   action(3),
+			supply: 2,
+			now:    now0.Add(2 * time.Minute),
+			want:   Decision{Kind: KindStep, Action: executor.StepPay},
 		},
 		{
-			name:      "settling with a holder unpaid → pay",
-			series:    series(now0.Unix(), maturity),
-			open:      action(4),
-			investors: 2,
-			now:       now0,
-			want:      Decision{Kind: KindStep, Action: executor.StepPay},
+			name:   "settling with a holder unpaid → pay",
+			series: series(now0.Unix(), maturity),
+			open:   action(4),
+			supply: 2,
+			now:    now0,
+			want:   Decision{Kind: KindStep, Action: executor.StepPay},
 		},
 		{
 			name:   "settling, all paid → complete",
@@ -167,16 +167,16 @@ func TestDecide(t *testing.T) {
 				a := action(4)
 				a.HoldersPaid = 2
 				return a
-			}(), investors: 2, now: now0,
+			}(), supply: 2, now: now0,
 			want: Decision{Kind: KindStep, Action: executor.StepComplete},
 		},
 		{
-			name:      "retiring with holders left → retire",
-			series:    series(now0.Unix(), maturity),
-			open:      action(6),
-			investors: 2,
-			now:       now0,
-			want:      Decision{Kind: KindStep, Action: executor.StepRetire},
+			name:   "retiring with holders left → retire",
+			series: series(now0.Unix(), maturity),
+			open:   action(6),
+			supply: 2,
+			now:    now0,
+			want:   Decision{Kind: KindStep, Action: executor.StepRetire},
 		},
 		{
 			name:   "retiring, all retired → close",
@@ -184,16 +184,16 @@ func TestDecide(t *testing.T) {
 				a := action(6)
 				a.HoldersRetired = 2
 				return a
-			}(), investors: 2, now: now0,
+			}(), supply: 2, now: now0,
 			want: Decision{Kind: KindStep, Action: executor.StepClose},
 		},
 		{
-			name:      "completed action → wait",
-			series:    series(now0.Unix(), maturity),
-			open:      action(5),
-			investors: 2,
-			now:       now0,
-			want:      Decision{Kind: KindWait, Reason: "action completed"},
+			name:   "completed action → wait",
+			series: series(now0.Unix(), maturity),
+			open:   action(5),
+			supply: 2,
+			now:    now0,
+			want:   Decision{Kind: KindWait, Reason: "action completed"},
 		},
 		{
 			name:   "meeting actions are issuer-driven → wait",
@@ -204,9 +204,9 @@ func TestDecide(t *testing.T) {
 				a.UnitsSnapshotted = 100 // votes outstanding, not full turnout
 				return a
 			}(),
-			investors: 2,
-			now:       now0,
-			want:      Decision{Kind: KindWait, Reason: "voting still open"},
+			supply: 2,
+			now:    now0,
+			want:   Decision{Kind: KindWait, Reason: "voting still open"},
 		},
 	}
 	for _, tc := range tests {
@@ -215,7 +215,7 @@ func TestDecide(t *testing.T) {
 			if c == (Config{}) {
 				c = cfg
 			}
-			got := Decide(tc.series, tc.open, tc.investors, tc.now, c)
+			got := Decide(tc.series, tc.open, tc.supply, tc.now, c)
 			if got != tc.want {
 				t.Fatalf("Decide = %+v, want %+v", got, tc.want)
 			}
@@ -239,6 +239,10 @@ func (f *fakeChain) FetchCorporateAction(_ context.Context, pda solana.PublicKey
 		return f.action, nil
 	}
 	return nil, nil
+}
+
+func (f *fakeChain) FetchMint(context.Context, solana.PublicKey) (*chain.Mint, error) {
+	return &chain.Mint{Supply: 100}, nil
 }
 
 func (f *fakeChain) FetchInvestorsBySeries(context.Context, solana.PublicKey) ([]chain.InvestorRecord, error) {

@@ -345,7 +345,8 @@
     "investor": "Investor cabinet",
     "investorPlacement": "Placement",
     "investorMeetings": "Meetings",
-    "investorStatements": "Statements"
+    "investorStatements": "Statements",
+    "registrarInvestors": "Investors"
   },
   "errors": {
     "failed": "Something went wrong",
