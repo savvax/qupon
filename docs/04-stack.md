@@ -13,7 +13,7 @@
 | Go | **1.25** | `github.com/solana-foundation/solana-go/v2` v2.1.0 (RPC, ws); Borsh decode by hand or `github.com/near/borsh-go`; SQLite `modernc.org/sqlite`; router `github.com/go-chi/chi/v5`; lint `golangci-lint` |
 | LiteSVM | litesvm 0.17.0, anchor-litesvm 0.4.0 | default Anchor 1.x test template (`anchor init --test-template litesvm`); load Token-2022 via `add_program_from_file("tests/fixtures/spl_token_2022.so")` (dump with `solana program dump TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb tests/fixtures/spl_token_2022.so -u devnet`). |
 | Surfpool | 1.6.0 | `curl --proto '=https' --tlsv1.2 -sSfL https://run.surfpool.run/ | bash`; `anchor test` uses it by default; `--validator legacy` for solana-test-validator. |
-| solana-verify | 0.5.2 | `cargo install solana-verify --locked`; run once before submission. |
+| solana-verify | 0.5.2 | `cargo install solana-verify --locked`; default image too old for our deps — always pass `--base-image solanafoundation/solana-verifiable-build:4.3.0`. Hash & instructions: `reports/verified-build.md`. |
 | Helius | free plan: 1M credits/mo, 10 RPS | `https://devnet.helius-rpc.com/?api-key=…`; `getProgramAccountsV2` (paginated, `changedSinceSlot`), DAS `getTokenAccounts {mint}`; webhooks. |
 | USDC devnet | mint `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` (SPL Token, 6 dec) | faucet.circle.com: 20 USDC per address every 2 h |
 | SOL devnet | faucet.solana.com (GitHub login → higher limit); `solana airdrop 2` is IP-limited | fund 5 keypairs on day 1 and keep them |
