@@ -1,7 +1,7 @@
 ---
 id: 9031
 title: Portal — sign with the wallet's signTransaction (not signMessage); par price; keyless public RPC
-agent: glm
+agent: claude
 tier: T1
 depends_on: [031]
 verify: make verify
