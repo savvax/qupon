@@ -24,3 +24,6 @@ Judges open a link, not a terminal.
 
 ## Finish
 Run `make verify`, commit on your task branch, write `reports/worklog/032.md`, then print exactly `DONE:032` or `BLOCKED:032 <reason>`.
+
+## Note (lead, 023 merge)
+- `POST /actions/{pda}/advance` signs with the operator keys. For the public deploy set `ADVANCE_TOKEN` on the API (secret store, not git) and have the console send `Authorization: Bearer` from a server-side route only — never a NEXT_PUBLIC_ variable.
