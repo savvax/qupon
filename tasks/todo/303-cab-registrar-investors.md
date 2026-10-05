@@ -1,4 +1,5 @@
 ---
+blocked_reason: rebase conflict with main
 id: 303
 title: Registrar dashboard (pipeline, alerts) and investor onboarding (SAS KYC + registration), suspend/reinstate
 agent: glm
