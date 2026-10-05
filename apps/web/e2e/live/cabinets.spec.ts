@@ -14,10 +14,12 @@ test("@live demo sign-in reaches each cabinet", async ({ page, context }) => {
     // A signed-in user is redirected away from /login — start each role fresh.
     await context.clearCookies();
     await page.goto("/login");
-    await page
-      .getByRole("button", { name: new RegExp(`^${role}`, "i") })
-      .click();
-    await expect(page).toHaveURL(home);
+    // A click that lands before hydration does nothing: retry until the sign-in navigates.
+    const button = page.getByRole("button", { name: new RegExp(`^${role}`, "i") });
+    await expect(async () => {
+      if (await button.isVisible()) await button.click();
+      await expect(page).toHaveURL(home, { timeout: 5_000 });
+    }).toPass({ timeout: 60_000 });
     // The topbar DEMO pill (the investor portfolio adds a second pill in main).
     await expect(
       page.getByRole("banner").getByText("DEMO", { exact: true }),
