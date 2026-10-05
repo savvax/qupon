@@ -7,7 +7,10 @@ export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.cargo/b
 KP="${QUPON_REGISTRAR_KEYPAIR:-$HOME/.config/qupon/registrar.json}"
 PKP="$HOME/.config/qupon/program-keypair.json"
 mkdir -p target/deploy
-if [ ! -f "$PKP" ]; then solana-keygen new --no-bip39-passphrase -s -o "$PKP" >/dev/null; fi
+# Never mint a new program id: a fresh keypair + `anchor keys sync` would rewrite declare_id! everywhere.
+[ -f "$PKP" ] || { echo "missing $PKP — restore the QPN1zd… program keypair (see docs/04-stack.md); refusing to generate one" >&2; exit 1; }
+DECLARED=$(sed -n 's/^declare_id!("\(.*\)");/\1/p' programs/qupon_bonds/src/lib.rs)
+[ "$(solana-keygen pubkey "$PKP")" = "$DECLARED" ] || { echo "program keypair does not match declare_id! ($DECLARED)" >&2; exit 1; }
 ln -sf "$PKP" target/deploy/qupon_bonds-keypair.json
 anchor keys sync
 anchor build
