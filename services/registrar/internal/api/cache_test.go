@@ -61,11 +61,30 @@ func TestReadCache(t *testing.T) {
 		t.Fatalf("a 404 was cached")
 	}
 
+	// arbitrary query strings bypass the cache; ?lang= is cached
+	status = http.StatusOK
+	do("GET", "/series?x=1")
+	do("GET", "/series?x=1")
+	if calls["GET /series"] != 3 {
+		t.Fatalf("a random query was cached: %d", calls["GET /series"])
+	}
+	do("GET", "/actions/X/notice?lang=ru")
+	do("GET", "/actions/X/notice?lang=ru")
+	if calls["GET /actions/X/notice"] != 1 {
+		t.Fatalf("?lang= was not cached")
+	}
+	// sign-in/out do not flush
+	do("POST", "/auth/demo")
+	do("GET", "/actions/X/notice?lang=ru")
+	if calls["GET /actions/X/notice"] != 1 {
+		t.Fatalf("/auth POST flushed the cache")
+	}
+
 	// expiry
 	status = http.StatusOK
 	now = now.Add(11 * time.Second)
 	do("GET", "/series")
-	if calls["GET /series"] != 2 {
+	if calls["GET /series"] != 4 {
 		t.Fatalf("entry served after its TTL")
 	}
 }

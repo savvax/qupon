@@ -40,12 +40,8 @@ export async function POST(
       },
       body: await req.text(),
     });
-  } catch (e) {
-    return err(
-      502,
-      "upstream",
-      `registrar API unreachable: ${e instanceof Error ? e.message : String(e)}`,
-    );
+  } catch {
+    return err(502, "upstream", "registrar API unreachable");
   }
   return new NextResponse(res.body, {
     status: res.status,

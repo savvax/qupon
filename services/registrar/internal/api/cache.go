@@ -27,11 +27,29 @@ type readCache struct {
 	entries map[string]cachedResponse
 }
 
+// maxEntries caps the cache; a full cache drops expired entries and otherwise stops caching new keys.
+const maxEntries = 1000
+
 // cacheable: chain read models only — not sessions, the audit/approvals feeds, reconcile (an explicit fresh check)
-// or the DB-backed activity feed.
-func cacheable(path string) bool {
-	return (strings.HasPrefix(path, "/series") || strings.HasPrefix(path, "/actions/")) &&
-		!strings.HasSuffix(path, "/reconcile")
+// or the DB-backed activity feed. Any query other than ?lang= bypasses the cache, so random query strings cannot
+// grow it or force chain reads through it.
+func cacheable(r *http.Request) bool {
+	path := r.URL.Path
+	readModel := strings.HasPrefix(path, "/series") || strings.HasPrefix(path, "/actions/")
+	if !readModel || strings.HasSuffix(path, "/reconcile") {
+		return false
+	}
+	for k := range r.URL.Query() {
+		if k != "lang" {
+			return false
+		}
+	}
+	return true
+}
+
+// invalidates: writes that can change chain state; sign-in/out (anonymous, cheap) must not flush the cache.
+func invalidates(r *http.Request) bool {
+	return r.Method != http.MethodOptions && !strings.HasPrefix(r.URL.Path, "/auth/")
 }
 
 type recorder struct {
@@ -54,14 +72,14 @@ func (c *readCache) middleware(next http.Handler) http.Handler {
 		if r.Method != http.MethodGet {
 			rec := &recorder{ResponseWriter: w}
 			next.ServeHTTP(rec, r)
-			if r.Method != http.MethodOptions && rec.status != 0 && rec.status < 400 {
+			if invalidates(r) && rec.status != 0 && rec.status < 400 {
 				c.mu.Lock()
 				c.entries = map[string]cachedResponse{}
 				c.mu.Unlock()
 			}
 			return
 		}
-		if !cacheable(r.URL.Path) {
+		if !cacheable(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -79,7 +97,16 @@ func (c *readCache) middleware(next http.Handler) http.Handler {
 		next.ServeHTTP(rec, r)
 		if rec.status == http.StatusOK {
 			c.mu.Lock()
-			c.entries[key] = cachedResponse{body: rec.buf.Bytes(), contentType: w.Header().Get("Content-Type"), expires: c.now().Add(c.ttl)}
+			if len(c.entries) >= maxEntries {
+				for k, e := range c.entries {
+					if !c.now().Before(e.expires) {
+						delete(c.entries, k)
+					}
+				}
+			}
+			if len(c.entries) < maxEntries {
+				c.entries[key] = cachedResponse{body: rec.buf.Bytes(), contentType: w.Header().Get("Content-Type"), expires: c.now().Add(c.ttl)}
+			}
 			c.mu.Unlock()
 		}
 	})

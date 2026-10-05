@@ -132,7 +132,7 @@ func createSeries(deps Deps, st *store.Store) http.HandlerFunc {
 			return
 		}
 		var req seriesCreateRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "body must be SeriesCreateRequest JSON: "+err.Error())
 			return
 		}

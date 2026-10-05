@@ -34,7 +34,7 @@ type Client struct {
 // NewClient builds a chain reader for rpcURL (devnet endpoint) and program.
 func NewClient(rpcURL string, program solana.PublicKey, log *slog.Logger) *Client {
 	return &Client{
-		rpc:     rpc.NewWithTimeoutAndCommitment(rpcURL, rpcTimeout, defaultCommitm_),
+		rpc:     NewRPC(rpcURL, rpcTimeout), // every call passes Commitment: defaultCommitm_ explicitly
 		program: program,
 		log:     log,
 	}

@@ -90,3 +90,23 @@ func TestTokenHashing(t *testing.T) {
 		t.Fatalf("token %q hash %q err %v", raw, hash, err)
 	}
 }
+
+// Successful logins never lock an account; failures (also for unknown emails) do.
+func TestOnlyFailuresCountTowardTheLimit(t *testing.T) {
+	s, st, _ := svc(t, false)
+	h, _ := HashPassword("pw")
+	_, _ = st.UpsertUser(t.Context(), store.User{Email: "ok@q.kz", Name: "O", Role: "issuer"}, h)
+	for i := 0; i < 8; i++ {
+		if _, _, err := s.Login(t.Context(), "ok@q.kz", "pw"); err != nil {
+			t.Fatalf("login %d: %v", i, err)
+		}
+	}
+	for i := 0; i < 5; i++ {
+		if _, _, err := s.Login(t.Context(), "nobody@q.kz", "x"); !errors.Is(err, ErrBadCredentials) {
+			t.Fatalf("unknown email err = %v", err)
+		}
+	}
+	if _, _, err := s.Login(t.Context(), "nobody@q.kz", "x"); !errors.Is(err, ErrRateLimited) {
+		t.Fatalf("6th failure err = %v, want ErrRateLimited", err)
+	}
+}

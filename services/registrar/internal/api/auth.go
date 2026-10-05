@@ -6,7 +6,10 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
@@ -50,10 +53,14 @@ func writeSession(w http.ResponseWriter, token string, u store.User, err error) 
 	}
 }
 
-func authLogin(svc *auth.Service) http.HandlerFunc {
+func authLogin(svc *auth.Service, perIP *auth.Limiter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if svc == nil {
 			writeErrorCode(w, http.StatusServiceUnavailable, "auth_unavailable", "auth not configured")
+			return
+		}
+		if perIP != nil && !perIP.Allow(clientIP(r), time.Now()) {
+			writeErrorCode(w, http.StatusTooManyRequests, "rate_limited", "too many sign-ins from this address — try again in a minute")
 			return
 		}
 		var req struct {
@@ -72,10 +79,14 @@ func authLogin(svc *auth.Service) http.HandlerFunc {
 	}
 }
 
-func authDemo(svc *auth.Service) http.HandlerFunc {
+func authDemo(svc *auth.Service, perIP *auth.Limiter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if svc == nil {
 			writeErrorCode(w, http.StatusServiceUnavailable, "auth_unavailable", "auth not configured")
+			return
+		}
+		if perIP != nil && !perIP.Allow(clientIP(r), time.Now()) {
+			writeErrorCode(w, http.StatusTooManyRequests, "rate_limited", "too many sign-ins from this address — try again in a minute")
 			return
 		}
 		var req struct {
@@ -116,4 +127,17 @@ func authMe(svc *auth.Service) http.HandlerFunc {
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"user": toUserDTO(u)})
 	}
+}
+
+// clientIP is the last X-Forwarded-For hop (appended by Caddy, so a client cannot forge it), else the TCP peer.
+func clientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		parts := strings.Split(xff, ",")
+		return strings.TrimSpace(parts[len(parts)-1])
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }

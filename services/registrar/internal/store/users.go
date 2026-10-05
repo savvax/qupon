@@ -72,6 +72,9 @@ func (s *Store) DemoUser(ctx context.Context, role string) (User, error) {
 
 // CreateSession stores a session token hash for a user until expiresAt.
 func (s *Store) CreateSession(ctx context.Context, tokenHash string, userID, expiresAt int64) error {
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM sessions WHERE expires_at < unixepoch()`); err != nil {
+		return fmt.Errorf("prune sessions: %w", err)
+	}
 	if _, err := s.db.ExecContext(ctx,
 		`INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)
 		 ON CONFLICT(token_hash) DO UPDATE SET user_id = excluded.user_id, expires_at = excluded.expires_at`,

@@ -38,6 +38,8 @@ type Deps struct {
 	Executor   *executor.Executor // qupon CLI runner (advance.go); nil → /advance answers 503
 	Auth       *auth.Service      // sessions + roles (auth.go, rbac.go); nil → write routes answer 503
 	BaseConfig string             // base CLI config (config/devnet.json) the issuer endpoints merge the registry into
+	// SignInLimit caps sign-ins (demo and password) per client IP; nil = unlimited (tests).
+	SignInLimit *auth.Limiter
 	// ReadCacheTTL caches GET chain read models (cache.go); 0 disables (tests).
 	ReadCacheTTL time.Duration
 	// TestRoutes registers GET /_test/registrar (role-gated no-op) for RBAC tests; never set in production.
@@ -176,8 +178,8 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r.Get("/entitlements/{pda}/iso/seev036.xml", isoSeev036(deps.Chain))
 
 	// Back-office sign-in (product spec §4).
-	r.Post("/auth/login", authLogin(deps.Auth))
-	r.Post("/auth/demo", authDemo(deps.Auth))
+	r.Post("/auth/login", authLogin(deps.Auth, deps.SignInLimit))
+	r.Post("/auth/demo", authDemo(deps.Auth, deps.SignInLimit))
 	r.Post("/auth/logout", authLogout(deps.Auth))
 	r.Get("/me", authMe(deps.Auth))
 

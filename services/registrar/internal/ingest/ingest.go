@@ -11,6 +11,7 @@ import (
 	solana "github.com/solana-foundation/solana-go/v2"
 	"github.com/solana-foundation/solana-go/v2/rpc"
 
+	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -41,7 +42,7 @@ func NewPoller(rpcURL string, program solana.PublicKey, st *store.Store, log *sl
 		fallback = rpc.New(rpc.DevNet_RPC)
 	}
 	return &Poller{
-		rpc:         rpc.New(rpcURL),
+		rpc:         chain.NewRPC(rpcURL, 0),
 		fallback:    fallback,
 		program:     program,
 		st:          st,

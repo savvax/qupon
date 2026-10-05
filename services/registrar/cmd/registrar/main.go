@@ -144,10 +144,15 @@ func run() error {
 			Executor:     exec,
 			BaseConfig:   cfg.QuponConfig,
 			ReadCacheTTL: 10 * time.Second,
+			SignInLimit:  auth.NewLimiter(20, time.Minute),
 			Auth: &auth.Service{Store: st, Now: time.Now, TTL: 12 * time.Hour, DemoLogin: cfg.DemoLogin,
 				Limit: auth.NewLimiter(5, time.Minute)},
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		// a write may wait for an executor slot, then run the CLI (≤ executor.Timeout)
+		WriteTimeout: 3*executor.Timeout + 30*time.Second,
 	}
 
 	// Autopilot (task 024): --demo-speed implies the scheduler with a cadence

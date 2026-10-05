@@ -246,3 +246,14 @@ func TestRunBatchReportsLastSignature(t *testing.T) {
 		t.Fatalf("res = %+v, want the last batch (last, 11)", res)
 	}
 }
+
+func TestRedactKeys(t *testing.T) {
+	in := `failed: POST https://devnet.helius-rpc.com/?api-key=abc-123&x=1: 429 {"url":"https://h/?API_KEY=zz"}`
+	out := redactKeys(in)
+	if strings.Contains(out, "abc-123") || strings.Contains(out, "zz") {
+		t.Fatalf("key survived: %s", out)
+	}
+	if !strings.Contains(out, "api-key=…&x=1") {
+		t.Fatalf("unexpected redaction: %s", out)
+	}
+}

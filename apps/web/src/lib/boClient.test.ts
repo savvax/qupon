@@ -48,6 +48,10 @@ describe("safeNext", () => {
     ["//evil.com", undefined],
     ["/\\evil.com", undefined],
     ["https://evil.com", undefined],
+    ["/\t/evil.com", undefined],
+    ["/\n/evil.com", undefined],
+    ["/ok\\..\\evil", undefined],
+    ["/registrar/actions?x=1", "/registrar/actions?x=1"],
     ["", undefined],
     [undefined, undefined],
   ])("%s → %s", (input, want) => {

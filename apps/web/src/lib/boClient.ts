@@ -80,12 +80,12 @@ export async function boPost<T>(path: string, body: unknown = {}): Promise<T> {
   return (await res.json()) as T;
 }
 
-/** Only same-site paths survive as ?next= (no //host, no /\host, no absolute URLs). */
+/**
+ * Only same-site paths survive as ?next=: one leading slash, then no slash/backslash, and no control characters
+ * anywhere (browsers strip tab/newline, so "/\t/evil.com" would become "//evil.com").
+ */
 export function safeNext(next: string | null | undefined): string | undefined {
-  return next &&
-    next.startsWith("/") &&
-    !next.startsWith("//") &&
-    !next.startsWith("/\\")
+  return next && /^\/(?![/\\])[^\\\u0000-\u001f\u007f]*$/.test(next)
     ? next
     : undefined;
 }

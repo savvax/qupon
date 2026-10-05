@@ -10,10 +10,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -93,14 +95,23 @@ type Executor struct {
 	cfgPath string        // writable config the executor regenerates (base + series registry)
 	timeout time.Duration // per-invocation cap (Timeout)
 	log     *slog.Logger
+	slots   chan struct{} // at most cap(slots) CLI processes at once (1 vCPU box); others queue on their context
 }
+
+// MaxConcurrent bounds parallel CLI runs: each is a node process, and a burst of writes must not exhaust the host.
+const MaxConcurrent = 2
+
+// keyParam matches API keys in URLs the CLI may print (a keyed RPC endpoint); CLI output reaches response bodies.
+var keyParam = regexp.MustCompile(`(?i)(api[-_]?key=)[^&\s"'<>]+`)
+
+func redactKeys(s string) string { return keyParam.ReplaceAllString(s, "${1}…") }
 
 // New builds an Executor (bin from cfg, config for series-name resolution).
 func New(bin, cfgPath string, logger *slog.Logger) *Executor {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Executor{bin: bin, cfgPath: cfgPath, timeout: Timeout, log: logger}
+	return &Executor{bin: bin, cfgPath: cfgPath, timeout: Timeout, log: logger, slots: make(chan struct{}, MaxConcurrent)}
 }
 
 // ConfigPath is the writable executor config path (the execconfig.Write target).
@@ -124,6 +135,21 @@ func (f *flexUint64) UnmarshalJSON(b []byte) error {
 // Result{OK:false, Error:…}; only spawn/timeout/contract failures return a
 // Go error.
 func (e *Executor) Run(ctx context.Context, args ...string) (Result, error) {
+	select {
+	case e.slots <- struct{}{}:
+		defer func() { <-e.slots }()
+	case <-ctx.Done():
+		return Result{}, fmt.Errorf("cli %s: waiting for a free executor slot: %w", strings.Join(args, " "), ctx.Err())
+	}
+	res, err := e.run(ctx, args...)
+	res.Error = redactKeys(res.Error)
+	if err != nil && keyParam.MatchString(err.Error()) {
+		err = errors.New(redactKeys(err.Error()))
+	}
+	return res, err
+}
+
+func (e *Executor) run(ctx context.Context, args ...string) (Result, error) {
 	runCtx, cancel := context.WithTimeout(ctx, e.timeout)
 	defer cancel()
 	full := append([]string{"--json"}, args...)

@@ -27,11 +27,19 @@ type Service struct {
 
 func (s *Service) Login(ctx context.Context, email, password string) (string, store.User, error) {
 	email = strings.ToLower(strings.TrimSpace(email))
-	if !s.Limit.Allow(email, s.Now()) {
+	// Only failures count: a stranger cannot lock a real operator out by spamming their email. Unknown emails still
+	// pay one bcrypt so the response time does not tell which accounts exist.
+	if s.Limit.Blocked(email, s.Now()) {
 		return "", store.User{}, ErrRateLimited
 	}
 	u, hash, err := s.Store.UserByEmail(ctx, email)
-	if errors.Is(err, store.ErrNoUser) || (err == nil && !CheckPassword(hash, password)) {
+	if errors.Is(err, store.ErrNoUser) {
+		CheckPassword(dummyHash(), password)
+		s.Limit.Hit(email, s.Now())
+		return "", store.User{}, ErrBadCredentials
+	}
+	if err == nil && !CheckPassword(hash, password) {
+		s.Limit.Hit(email, s.Now())
 		return "", store.User{}, ErrBadCredentials
 	}
 	if err != nil {

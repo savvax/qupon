@@ -64,7 +64,7 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 			return
 		}
 		var req AdvanceRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
 			writeError(w, http.StatusBadRequest, "body must be AdvanceRequest JSON: "+err.Error())
 			return
 		}
