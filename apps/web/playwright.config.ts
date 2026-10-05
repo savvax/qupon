@@ -7,23 +7,28 @@ import { defineConfig, devices } from "@playwright/test";
  */
 export default defineConfig({
   testDir: "./e2e",
+  // Outside apps/web: failure artifacts must not wake next dev's watcher mid-run (routes 404).
+  outputDir: "/tmp/qupon-e2e-results",
   timeout: 60_000,
   workers: 1, // next dev compiles routes on demand — serial keeps a cold dev server reliable
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3210",
+    baseURL:
+      process.env.E2E_BASE_URL ??
+      `http://localhost:${process.env.E2E_PORT ?? 3210}`,
     ...devices["Desktop Chrome"],
   },
   webServer: {
     command: "pnpm dev",
-    url: "http://localhost:3210",
+    // E2E_PORT isolates parallel worktrees (the default 3210 may serve another checkout).
+    url: `http://localhost:${process.env.E2E_PORT ?? 3210}`,
     timeout: 120_000,
     reuseExistingServer: !process.env.CI,
     env: {
       API_MOCKING: "enabled",
       NEXT_PUBLIC_API_MOCKING: "enabled",
-      PORT: "3210",
+      PORT: String(process.env.E2E_PORT ?? 3210),
     },
   },
 });

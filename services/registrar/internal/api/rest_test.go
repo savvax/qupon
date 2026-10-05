@@ -81,7 +81,9 @@ func (f fakeRead) FetchActionsBySeries(context.Context, solana.PublicKey) ([]cha
 	return []chain.ActionRecord{{PDA: fAction, Action: f.action()}}, nil
 }
 func (fakeRead) FetchInvestorsBySeries(context.Context, solana.PublicKey) ([]chain.InvestorRecord, error) {
-	return []chain.InvestorRecord{{Investor: &chain.Investor{Series: fSeries, Owner: fOwnerA, BondATA: fBondATAA}}}, nil
+	inv := &chain.Investor{Series: fSeries, Owner: fOwnerA, BondATA: fBondATAA, InvestorType: 1, Residency: 1, TaxRateBps: 1200}
+	copy(inv.KYCRef[:], fAction[:]) // any non-zero 32 bytes stand in for the SAS attestation PDA
+	return []chain.InvestorRecord{{Investor: inv}}, nil
 }
 func (fakeRead) FetchEntitlementsByAction(context.Context, solana.PublicKey) ([]chain.EntitlementRecord, error) {
 	return []chain.EntitlementRecord{
@@ -152,6 +154,12 @@ func TestSeriesReadModels(t *testing.T) {
 	getJSON(t, srv.URL+"/series/"+fMint.String()+"/investors", http.StatusOK, &inv)
 	if len(inv) != 1 || inv[0].Units != "10" || inv[0].Status != "Active" {
 		t.Errorf("investors = %+v", inv)
+	}
+	if inv[0].InvestorType != "legal_entity" || inv[0].Residency != "nonresident" || inv[0].TaxRateBps != 1200 {
+		t.Errorf("investor kyc fields = %+v", inv[0])
+	}
+	if inv[0].KYCRef != fAction.String() {
+		t.Errorf("kycRef = %q, want the attestation PDA %q", inv[0].KYCRef, fAction.String())
 	}
 
 	getJSON(t, srv.URL+"/series/"+solana.PublicKey{8: 8}.String(), http.StatusNotFound, nil)

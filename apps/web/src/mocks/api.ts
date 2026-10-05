@@ -19,6 +19,7 @@ const MINT_TKZT = "tKZTDeM0CashMint1111111111111111111111111111";
 const MINT_USDC = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 const ACTION_PDA_1 = "ActnINTR0001Dem0PDA111111111111111111111111111";
 const ACTION_PDA_2 = "ActnBMET0002Dem0PDA1111111111111111111111111111";
+const ACTION_PDA_3 = "ActnINTR0003Dem0PDA111111111111111111111111111";
 const ESCROW_PDA_1 = "EscrowDem0PDA11111111111111111111111111111111";
 
 const REGISTRAR = "Bnq22GvV6AQcXWeTp6x3uTYkC7HKKrysiFve2uCDqE97";
@@ -63,7 +64,7 @@ const series: SeriesDTO[] = [
     totalIssued: "100",
     quorumBps: 5000,
     approvalBps: 6667,
-    openAction: ACTION_PDA_1,
+    openAction: null,
     explorerUrl: explorer(MINT_QPNB1),
   },
   {
@@ -85,7 +86,7 @@ const series: SeriesDTO[] = [
     totalIssued: "100",
     quorumBps: 5000,
     approvalBps: 6667,
-    openAction: null,
+    openAction: ACTION_PDA_3,
     explorerUrl: explorer(MINT_BTRK),
   },
 ];
@@ -96,6 +97,10 @@ const investors = (mint: string, units: string[]): InvestorDTO[] =>
     bondAta: `BoNdAtaDem0${mint.slice(4, 8)}Pda${i}111111111111111111111111111`,
     cashAta: `CaShAtaDem0${mint.slice(4, 8)}Pda${i}111111111111111111111111111`,
     units: u,
+    investorType: i === 1 ? "legal_entity" : "individual",
+    residency: i === 2 ? "nonresident" : "resident",
+    taxRateBps: i === 2 ? 1500 : 0,
+    kycRef: `KycAttestPda${i}111111111111111111111111111111`,
     status: "Active",
     explorerUrl: explorer(INVESTOR_OWNERS[i] ?? INVESTOR_OWNERS[0]!),
   }));
@@ -222,6 +227,50 @@ const actions: Record<string, ActionDTO[]> = {
       completedAt: null,
       factorBps: null,
       explorerUrl: explorer(ACTION_PDA_2),
+    },
+  ],
+  // Announced with the record date already past: drives the registrar dashboard's
+  // "Announced" pipeline column and the record-date alert in mock mode.
+  [MINT_BTRK]: [
+    {
+      pda: ACTION_PDA_3,
+      seriesMint: MINT_BTRK,
+      kind: "INTR",
+      mandatory: "MAND",
+      corpId: "BTRKdemo-INTR-0001",
+      officialId: null,
+      announcedAt: "2026-09-25T10:00:00+05:00",
+      recordAt: "2026-09-28T00:00:00+05:00",
+      paymentAt: "2026-10-28T00:00:00+05:00",
+      periodStart: "2026-03-15",
+      periodEnd: "2026-09-15",
+      accrualDays: 180,
+      rateBps: 1595,
+      perUnitGross: usdc("79800", "79.80 USDC"),
+      perUnitPrincipal: usdc("0", "0.00 USDC"),
+      cashMint: MINT_USDC,
+      status: "Announced",
+      snapshotSlot: null,
+      snapshotHash: null,
+      unitsSnapshotted: null,
+      holdersSnapshotted: null,
+      holdersPaid: null,
+      totalGross: usdc("7980000", "7,980.00 USDC"),
+      totalTax: usdc("0", "0.00 USDC"),
+      totalNet: usdc("7980000", "7,980.00 USDC"),
+      totalPaid: usdc("0", "0.00 USDC"),
+      totalRetired: null,
+      holdersRetired: null,
+      proposalNewRateBps: null,
+      proposalNewMaturity: null,
+      votingEndsAt: null,
+      votesFor: null,
+      votesAgainst: null,
+      votesAbstain: null,
+      result: null,
+      completedAt: null,
+      factorBps: null,
+      explorerUrl: explorer(ACTION_PDA_3),
     },
   ],
 };

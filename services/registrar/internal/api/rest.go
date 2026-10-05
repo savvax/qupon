@@ -90,6 +90,17 @@ func optDateTime(ts int64) *string {
 
 func trimBytes(b []byte) string { return strings.TrimRight(string(b), "\x00") }
 
+// kycRefOf is the SAS attestation PDA in base58, or "" when the investor
+// record carries no attestation (registered before KYC was enforced).
+func kycRefOf(inv *chain.Investor) string {
+	for _, b := range inv.KYCRef {
+		if b != 0 {
+			return solana.PublicKeyFromBytes(inv.KYCRef[:]).String()
+		}
+	}
+	return ""
+}
+
 func pick(names []string, i uint8) string {
 	if int(i) < len(names) {
 		return names[i]
@@ -108,6 +119,8 @@ var (
 	entitlementStatusNames = []string{"Snapshotted", "Paid", "Retired"}
 	voteNames              = []string{"None", "For", "Against", "Abstain"}
 	investorStatusNames    = []string{"Active", "Suspended"}
+	investorTypeNames      = []string{"individual", "legal_entity"}
+	residencyNames         = []string{"resident", "nonresident"}
 )
 
 // SeriesDTO is openapi.yaml#/components/schemas/SeriesDTO.
@@ -153,12 +166,16 @@ func seriesDTO(s *chain.Series, m money) SeriesDTO {
 
 // InvestorDTO is openapi.yaml#/components/schemas/InvestorDTO.
 type InvestorDTO struct {
-	Owner       string `json:"owner"`
-	BondATA     string `json:"bondAta"`
-	CashATA     string `json:"cashAta"`
-	Units       string `json:"units"`
-	Status      string `json:"status"`
-	ExplorerURL string `json:"explorerUrl"`
+	Owner        string `json:"owner"`
+	BondATA      string `json:"bondAta"`
+	CashATA      string `json:"cashAta"`
+	Units        string `json:"units"`
+	InvestorType string `json:"investorType"`
+	Residency    string `json:"residency"`
+	TaxRateBps   int    `json:"taxRateBps"`
+	KYCRef       string `json:"kycRef"`
+	Status       string `json:"status"`
+	ExplorerURL  string `json:"explorerUrl"`
 }
 
 // ActionDTO is openapi.yaml#/components/schemas/ActionDTO.
@@ -449,6 +466,8 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			out = append(out, InvestorDTO{
 				Owner: inv.Owner.String(), BondATA: inv.BondATA.String(), CashATA: inv.CashATA.String(),
 				Units: strconv.FormatUint(units, 10), Status: pick(investorStatusNames, inv.Status),
+				InvestorType: pick(investorTypeNames, inv.InvestorType), Residency: pick(residencyNames, inv.Residency),
+				TaxRateBps: int(inv.TaxRateBps), KYCRef: kycRefOf(inv),
 				ExplorerURL: explorer(inv.Owner),
 			})
 		}

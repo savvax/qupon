@@ -983,6 +983,21 @@ components:
         units:
           type: string
           description: bond units held, decimal string
+        investorType:
+          type: string
+          enum: [individual, legal_entity]
+          description: from the on-chain investor record
+        residency:
+          type: string
+          enum: [resident, nonresident]
+        taxRateBps:
+          type: integer
+          description: withholding tax rate, basis points (1000 = 10%)
+        kycRef:
+          type: string
+          description: >-
+            Solana Attestation Service attestation PDA (base58); empty when
+            the record has none
         status:
           type: string
           enum: [Active, Suspended]
