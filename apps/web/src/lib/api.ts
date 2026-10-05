@@ -1,5 +1,5 @@
 import type { components } from "./api-schema";
-import { mockGet } from "../mocks/api";
+import { mockGet, mockGetText } from "../mocks/api";
 
 export type Schemas = components["schemas"];
 export type Amount = Schemas["Amount"];
@@ -8,6 +8,8 @@ export type InvestorDTO = Schemas["InvestorDTO"];
 export type EntitlementDTO = Schemas["EntitlementDTO"];
 export type ScheduleItem = Schemas["ScheduleItem"];
 export type ActionDTO = Schemas["ActionDTO"];
+export type ReconcileReport = Schemas["ReconcileReport"];
+export type AdvanceResponse = Schemas["AdvanceResponse"];
 export type ErrorDTO = Schemas["Error"];
 
 /** Base URL of the Go registrar service (server-side env). */
@@ -58,6 +60,38 @@ async function get<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+/**
+ * Activity feed row. The Go store serializes snake_case (action_pda) while
+ * openapi.yaml promises camelCase — accept both so either deployment shape
+ * renders; payload is the decoded event (snake_case field names).
+ */
+export type ActivityLike = {
+  id: number;
+  ts: number;
+  kind: string;
+  sig: string;
+  slot?: number;
+  seq?: number;
+  actionPda?: string | null;
+  action_pda?: string | null;
+  seriesMint?: string | null;
+  payload?: Record<string, unknown> | null;
+  explorerUrl?: string;
+};
+
+export async function getNoticeText(pda: string, lang: "en" | "ru"): Promise<string> {
+  if (MOCK) return mockGetText(`/actions/${pda}/notice?lang=${lang}`);
+  const res = await fetch(`${API_BASE_URL}/actions/${pda}/notice?lang=${lang}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`notice ${lang}: HTTP ${res.status}`);
+  return res.text();
+}
+
+export const seev031Url = (pda: string) => `${API_BASE_URL}/actions/${pda}/iso/seev031.xml`;
+export const seev036ZipUrl = (pda: string) => `${API_BASE_URL}/actions/${pda}/iso/seev036.zip`;
+export const seev036Url = (pda: string) => `${API_BASE_URL}/entitlements/${pda}/iso/seev036.xml`;
+
 export const listSeries = () => get<SeriesDTO[]>("/series");
 export const getSeries = (mint: string) => get<SeriesDTO>(`/series/${mint}`);
 export const listInvestors = (mint: string) =>
@@ -68,3 +102,40 @@ export const listActions = (mint: string) =>
   get<ActionDTO[]>(`/series/${mint}/actions`);
 export const listEntitlements = (actionPda: string) =>
   get<EntitlementDTO[]>(`/actions/${actionPda}/entitlements`);
+export const getAction = (pda: string) => get<ActionDTO>(`/actions/${pda}`);
+
+export async function getReconcile(pda: string): Promise<ReconcileReport> {
+  return get<ReconcileReport>(`/actions/${pda}/reconcile`);
+}
+
+export async function listActivity(limit = 200): Promise<ActivityLike[]> {
+  if (MOCK) return (await mockGet(`/activity?limit=${limit}`)) as ActivityLike[];
+  const res = await fetch(`${API_BASE_URL}/activity?limit=${limit}`);
+  if (!res.ok) return []; // the feed is evidence, not a dependency
+  const body = (await res.json()) as { events?: ActivityLike[] };
+  return body.events ?? [];
+}
+
+/** POST /actions/{pda}/advance — runs one lifecycle step via the qupon CLI. */
+export async function postAdvance(
+  pda: string,
+  req: { confirm: boolean; autofund?: boolean },
+): Promise<AdvanceResponse> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  // Optional bearer token for deployments that set ADVANCE_TOKEN on the API.
+  const token = process.env.NEXT_PUBLIC_ADVANCE_TOKEN;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE_URL}/actions/${pda}/advance`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(req),
+  });
+  const raw = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) {
+    // The Go API answers {"error": …} (writeError); onchain names live inside it.
+    const message =
+      typeof raw.error === "string" ? raw.error : `HTTP ${res.status} ${res.statusText}`;
+    throw new ApiError(res.status, `http_${res.status}`, message);
+  }
+  return raw as AdvanceResponse;
+}

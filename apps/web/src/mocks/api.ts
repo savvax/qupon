@@ -248,33 +248,91 @@ const entitlements: Record<string, EntitlementDTO[]> = {
   })),
 };
 
+/** Demo activity feed: a few events per action so the timeline shows tx links. */
+const SIGS = [
+  "2QDEmoSIGsxUZfxv9Wqmc7YHxzGVvXhWlLXkrxm9yuxJ4xJNuXkAepiYgLBaKq5YrTkNvWxTd1",
+  "3Sp4jVLUu8FWeCJiKDA6mruYgRBMhJW9uCJdM2iNPvFrMdKaTrLoVe9nvCGdz9cAoPzVKYtu2",
+  "4kJvYGz9cAoPzVKYtu2Sp4jVLUu8FWeCJiKDA6mruYgRBMhJW9uCJdM2iNPvFrMdKaTrLoVe9",
+];
+
+const ev = (
+  id: number,
+  ts: number,
+  kind: string,
+  actionPda: string,
+  sig: string,
+  payload: Record<string, unknown> = {},
+) => ({ id, ts, kind, sig, slot: 1234 + id, seq: 0, actionPda, seriesMint: MINT_QPNB1, payload });
+
+const activity = [
+  ev(1, 1771908000, "ActionAnnounced", ACTION_PDA_1, SIGS[0]!), { ...ev(2, 1771994400, "RecordStruck", ACTION_PDA_1, SIGS[1]!) },
+  ev(3, 1771994700, "HolderSnapshotted", ACTION_PDA_1, SIGS[2]!, { owner: INVESTOR_OWNERS[0], units: "10" }),
+  ev(4, 1771995000, "HolderSnapshotted", ACTION_PDA_1, SIGS[0]!, { owner: INVESTOR_OWNERS[1], units: "25" }),
+  ev(5, 1771995300, "HolderSnapshotted", ACTION_PDA_1, SIGS[1]!, { owner: INVESTOR_OWNERS[2], units: "65" }),
+  ev(6, 1771995600, "SnapshotFinalized", ACTION_PDA_1, SIGS[2]!),
+  ev(7, 1772000000, "ActionFunded", ACTION_PDA_1, SIGS[0]!, { amount: "500000", escrow_balance: "500000", required: "500000", fully_funded: true }),
+  ev(8, 1772080800, "EntitlementPaid", ACTION_PDA_1, SIGS[1]!, { owner: INVESTOR_OWNERS[0], net: "50000" }),
+  ev(9, 1772080801, "EntitlementPaid", ACTION_PDA_1, SIGS[2]!, { owner: INVESTOR_OWNERS[1], net: "125000" }),
+  ev(10, 1772080802, "EntitlementPaid", ACTION_PDA_1, SIGS[0]!, { owner: INVESTOR_OWNERS[2], net: "325000" }),
+  ev(11, 1772084400, "ActionCompleted", ACTION_PDA_1, SIGS[1]!),
+  ev(12, 1772150000, "ActionAnnounced", ACTION_PDA_2, SIGS[2]!),
+  ev(13, 1772236400, "RecordStruck", ACTION_PDA_2, SIGS[0]!),
+  ev(14, 1772240000, "SnapshotFinalized", ACTION_PDA_2, SIGS[1]!),
+  ev(15, 1772300000, "VoteCast", ACTION_PDA_2, SIGS[2]!, { owner: INVESTOR_OWNERS[0], choice: 1, weight: "10" }),
+];
+
+function mockReconcile(pda: string) {
+  const ents = entitlements[pda] ?? [];
+  const ok = pda !== ACTION_PDA_2; // meetings reconcile against snapshot weights
+  return {
+    actionPda: pda,
+    actionStatus: ok ? "Completed" : "VotingOpen",
+    ok,
+    holders: ents.length,
+    mismatches: [],
+    expectedHash: "C7oUNmockHASHqPQf2XN7pXhXpzKdQmYtWJChMAvery9",
+    onchainHash: "C7oUNmockHASHqPQf2XN7pXhXpzKdQmYtWJChMAvery9",
+    hashMatches: true,
+    supply: 100,
+    unitsSnapshotted: 100,
+    totalsMatch: ok,
+    checkedAt: Math.floor(Date.now() / 1000),
+  };
+}
+
+const delay = <T,>(body: T): Promise<T> =>
+  new Promise((resolve) => setTimeout(() => resolve(body), 30));
+
 /** Serve one registrar API path from the fixtures above. */
 export function mockGet(path: string): Promise<unknown> {
   const notFound = () => {
     throw new Api404(`series ${path} not found`);
   };
-  const respond = (body: unknown) =>
-    new Promise((resolve) => setTimeout(() => resolve(body), 30));
 
-  if (path === "/series") return respond(series);
+  if (path === "/series") return delay(series);
+  if (path.startsWith("/activity")) return delay(activity);
+  const reconcileMatch = /^\/actions\/([^/]+)\/reconcile$/.exec(path);
+  if (reconcileMatch) {
+    return delay(mockReconcile(reconcileMatch[1]!));
+  }
   const seriesMatch = /^\/series\/([^/]+)$/.exec(path);
   if (seriesMatch) {
     const found = series.find((s) => s.mint === seriesMatch[1]);
-    return found ? respond(found) : Promise.reject(new Api404(`series ${seriesMatch[1]} not found`));
+    return found ? delay(found) : Promise.reject(new Api404(`series ${seriesMatch[1]} not found`));
   }
   const subMatch = /^\/series\/([^/]+)\/(investors|schedule|actions)$/.exec(path);
   if (subMatch) {
     const mint = subMatch[1]!;
     const resource = subMatch[2]!;
     if (resource === "investors") {
-      return respond(
+      return delay(
         mint === MINT_QPNB1
           ? investors(mint, ["10", "25", "65"])
           : investors(mint, ["40", "30", "30"]),
       );
     }
     if (resource === "schedule") {
-      return respond(
+      return delay(
         mint === MINT_QPNB1
           ? couponSchedule(
               [2026, 9, 1],
@@ -291,13 +349,38 @@ export function mockGet(path: string): Promise<unknown> {
             ),
       );
     }
-    return respond(actions[mint] ?? []);
+    return delay(actions[mint] ?? []);
   }
   const entMatch = /^\/actions\/([^/]+)\/entitlements$/.exec(path);
   if (entMatch) {
-    return respond(entitlements[entMatch[1]!] ?? []);
+    return delay(entitlements[entMatch[1]!] ?? []);
+  }
+  const actionMatch = /^\/actions\/([^/]+)$/.exec(path);
+  if (actionMatch) {
+    const found = Object.values(actions)
+      .flat()
+      .find((a) => a.pda === actionMatch[1]);
+    return found ? delay(found) : Promise.reject(new Api404(`action ${actionMatch[1]} not found`));
   }
   return Promise.reject(notFound());
+}
+
+/** Plain-text fixture downloads (notice, ISO XML) for mock mode. */
+export function mockGetText(path: string): Promise<string> {
+  const noticeMatch = /^\/actions\/([^/]+)\/notice\?lang=(en|ru)$/.exec(path);
+  if (noticeMatch) {
+    const found = Object.values(actions).flat().find((a) => a.pda === noticeMatch[1]);
+    if (!found) return Promise.reject(new Api404(`action ${noticeMatch[1]} not found`));
+    const text =
+      noticeMatch[2] === "ru"
+        ? `УВЕДОМЛЕНИЕ (ДЕМО)\n${found.corpId} · процентный платёж · запись ${found.recordAt.slice(0, 10)}\nКУПОН: 10.00% · на единицу 50.00 KZT\nSIMULATED — публикация на kase.kz не подключена\n`
+        : `NOTICE (DEMO)\n${found.corpId} · interest payment · record ${found.recordAt.slice(0, 10)}\nCOUPON: 10.00% · per unit 50.00 KZT\nSIMULATED — publication on kase.kz not integrated\n`;
+    return delay(text);
+  }
+  if (path.endsWith(".xml")) {
+    return delay('<?xml version="1.0" encoding="UTF-8"?>\n<!-- seev mock (API_MOCKING=enabled) -->\n<Document>DEMO</Document>\n');
+  }
+  return Promise.reject(new Api404(`text ${path} not found`));
 }
 
 export class Api404 extends Error {

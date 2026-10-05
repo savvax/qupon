@@ -180,6 +180,7 @@ type ActionDTO struct {
 	PerUnitPrincipal    Amount  `json:"perUnitPrincipal"`
 	CashMint            string  `json:"cashMint"`
 	Escrow              string  `json:"escrow"`
+	EscrowBalance       Amount  `json:"escrowBalance"`
 	Status              string  `json:"status"`
 	SnapshotSlot        *uint64 `json:"snapshotSlot"`
 	SnapshotHash        *string `json:"snapshotHash"`
@@ -519,7 +520,13 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 
 	r.Get("/actions/{pda}", need(func(w http.ResponseWriter, r *http.Request) {
 		if pda, a, s, m, ok := loadAction(w, r); ok {
-			writeJSON(w, http.StatusOK, actionDTO(pda, a, s.Mint, m))
+			dto := actionDTO(pda, a, s.Mint, m)
+			// Funding panel evidence: the live escrow balance (0 when the
+			// token account does not exist yet — announce init_if_needed's it).
+			if ta, err := rm.FetchTokenAccount(r.Context(), a.Escrow); err == nil && ta != nil {
+				dto.EscrowBalance = m.amount(ta.Amount)
+			}
+			writeJSON(w, http.StatusOK, dto)
 		}
 	}))
 

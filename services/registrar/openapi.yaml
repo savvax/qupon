@@ -208,7 +208,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "401":
-          description: 'ADVANCE_TOKEN is set and the request lacks the header Authorization: Bearer <token>'
+          description: >-
+            ADVANCE_TOKEN is set and the request lacks the header
+            Authorization: Bearer <token>
           content:
             application/json:
               schema:
@@ -475,6 +477,9 @@ components:
           $ref: "#/components/schemas/Amount"
         cashMint: {type: string}
         escrow: {type: string}
+        escrowBalance:
+          $ref: "#/components/schemas/Amount"
+          description: live escrow token balance (0 before funding)
         status:
           type: string
           enum: [Announced, RecordStruck, SnapshotComplete, Funded, Settling,

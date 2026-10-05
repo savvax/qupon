@@ -225,6 +225,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/actions/{pda}/iso/seev036.zip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ISO 20022 seev.036 confirmations, ZIP for all holders */
+        get: operations["getSeev036Zip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/actions/{pda}/notice": {
         parameters: {
             query?: never;
@@ -381,6 +398,8 @@ export interface components {
             perUnitPrincipal: components["schemas"]["Amount"];
             cashMint: string;
             escrow?: string;
+            /** @description live escrow token balance (0 before funding) */
+            escrowBalance?: components["schemas"]["Amount"];
             /** @enum {string} */
             status: "Announced" | "RecordStruck" | "SnapshotComplete" | "Funded" | "Settling" | "Completed" | "Retiring" | "Cancelled" | "VotingOpen" | "Finalized";
             snapshotSlot?: number | null;
@@ -453,25 +472,59 @@ export interface components {
             /** @enum {string} */
             status: "Projected" | "Announced" | "InProgress" | "Completed";
         };
-        /** @description Chain state vs recomputed entitlement math (registrar reconciler). */
+        /** @description Registrar recomputation vs chain: entitlements recomputed from bond ATA balances (minContextSlot = snapshot_slot), snapshot hash chained sha256(prev ‖ owner ‖ units_le) over investors owner-ascending, and action totals (docs/03-domain.md §4). */
         ReconcileReport: {
             actionPda: string;
+            /** @example Completed */
+            actionStatus?: string;
             ok: boolean;
-            snapshotHashMatches?: boolean;
-            /** @description total_paid == total_net and holders_paid == holders_snapshotted */
-            totalsMatch?: boolean;
-            checks: {
-                /** @example rounding_half_up_per_holder */
-                name: string;
-                ok: boolean;
-                detail?: string | null;
+            /** @description investors with a non-zero balance at read time */
+            holders: number;
+            mismatches: {
+                owner: string;
+                /** @enum {string} */
+                reason: "missing_entitlement" | "unexpected_entitlement" | "entitlement_mismatch" | "ata_mismatch";
+                /** @description differing fields among units/gross/tax/net/principal */
+                fields?: string[];
+                expected?: components["schemas"]["ReconcileEntry"];
+                onchain?: components["schemas"]["ReconcileEntry"];
             }[];
-            /** Format: date-time */
-            checkedAt?: string;
+            /** @description base58 sha256 chain recomputed owner-ascending */
+            expectedHash: string;
+            onchainHash: string;
+            hashMatches: boolean;
+            /** @description bond mint supply at read time */
+            supply: number;
+            unitsSnapshotted: number;
+            expectedTotals?: components["schemas"]["ReconcileTotals"];
+            onchainTotals?: components["schemas"]["ReconcileTotals"];
+            totalsMatch: boolean;
+            /** @description unix seconds */
+            checkedAt?: number;
+        };
+        ReconcileEntry: {
+            units: number;
+            gross: number;
+            tax: number;
+            net: number;
+            principal: number;
+        };
+        ReconcileTotals: {
+            units: number;
+            holders: number;
+            gross: number;
+            tax: number;
+            net: number;
+            principal: number;
         };
         AdvanceRequest: {
-            /** @description must be true; dry-run preview when false */
+            /** @description must be true; refuses without explicit confirmation */
             confirm: boolean;
+            /**
+             * @description fund the escrow from the paying agent (demo mode) when the action waits for funding
+             * @default false
+             */
+            autofund: boolean;
         };
         AdvanceResponse: {
             /** @description executed step, e.g. strike_record, snapshot_batch, pay_batch */
@@ -479,9 +532,15 @@ export interface components {
             ok: boolean;
             /** @description tx signature */
             signature?: string | null;
+            /** @description confirmation slot */
+            slot?: number | null;
             /** @description https://explorer.solana.com/tx/<sig>?cluster=devnet */
             explorerUrl?: string | null;
+            /** @description action status re-read from the chain after the step */
+            status: string;
             nextStep?: string | null;
+            /** @description true when the step was not executed (dry run) */
+            preview?: boolean;
             error?: components["schemas"]["Error"];
         };
         ActivityItem: {
@@ -718,7 +777,10 @@ export interface operations {
     };
     listEntitlements: {
         parameters: {
-            query?: never;
+            query?: {
+                offset?: number;
+                limit?: number;
+            };
             header?: never;
             path: {
                 /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
@@ -805,6 +867,15 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+            /** @description ADVANCE_TOKEN is set and the request lacks the header Authorization: Bearer <token> */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             /** @description not found */
             404: {
                 headers: {
@@ -870,6 +941,38 @@ export interface operations {
                 };
             };
             /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getSeev036Zip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ZIP archive, one seev.036 XML per holder */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            /** @description not found or no entitlements snapshotted */
             404: {
                 headers: {
                     [name: string]: unknown;
