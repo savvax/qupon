@@ -1,4 +1,4 @@
-import { listActivity, listSeries, type SeriesDTO } from "@/lib/api";
+import { listActivity, listPublicSeries, type SeriesDTO } from "@/lib/api";
 
 /** ISO 20022 event codes in on-chain `ActionKind` order (state.rs). */
 export const KIND_CODES = [
@@ -29,7 +29,7 @@ export type Live = {
 /** Landing data from the public API; any failure degrades to empty (the page renders static content). */
 export async function loadLive(): Promise<Live> {
   const [series, activity] = await Promise.all([
-    listSeries().catch(() => [] as SeriesDTO[]),
+    listPublicSeries().catch(() => [] as SeriesDTO[]),
     listActivity(200).catch(() => []),
   ]);
   const done = activity

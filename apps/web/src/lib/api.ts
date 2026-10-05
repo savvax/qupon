@@ -139,6 +139,10 @@ export const listEntitlements = (actionPda: string) =>
   get<EntitlementDTO[]>(`/actions/${actionPda}/entitlements`);
 export const getAction = (pda: string) => get<ActionDTO>(`/actions/${pda}`);
 
+/** Public lists also skip the series the live e2e issues on every run (tickers `E2E-…`); cabinets still show them. */
+export const listPublicSeries = () =>
+  listSeries().then((all) => all.filter((s) => !s.ticker.startsWith("E2E-")));
+
 export async function getReconcile(pda: string): Promise<ReconcileReport> {
   return get<ReconcileReport>(`/actions/${pda}/reconcile`);
 }

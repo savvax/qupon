@@ -4,7 +4,7 @@ import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Tabs } from "@/components/ui/Tabs";
-import { listSeries, type SeriesDTO } from "@/lib/api";
+import { listPublicSeries, type SeriesDTO } from "@/lib/api";
 import { bpsToPercent, formatDate } from "@/lib/format";
 import type { Locale } from "@/i18n/request";
 
@@ -30,7 +30,7 @@ export default async function BondsPage() {
     getTranslations("status"),
     getTranslations("bond"),
   ]);
-  const series = await listSeries();
+  const series = await listPublicSeries();
   // Closed and matured series only appear under "All".
   const active = series.filter(
     (s) => s.status === "Active" || s.status === "Retiring",
