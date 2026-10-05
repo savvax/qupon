@@ -1,7 +1,7 @@
 ---
 id: 204
 title: Executor config generated from the series registry (writable, no bind mount)
-agent: claude
+agent: glm
 tier: T1
 depends_on: [201]
 verify: make verify

@@ -1,7 +1,7 @@
 ---
 id: 202
 title: internal/auth: bcrypt, hashed session tokens, per-email rate limit, demo gate
-agent: claude
+agent: glm
 tier: T1
 depends_on: [201]
 verify: make verify
