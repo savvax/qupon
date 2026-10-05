@@ -187,7 +187,7 @@ export function resolveCashMint(cfg: QuponConfig, alias: string): Address {
 
 /** Owning token program of a mint (SPL Token vs Token-2022). */
 export async function tokenProgramOfMint(rpc: QuponRpc, mint: Address): Promise<Address> {
-	const { value } = await rpc.getAccountInfo(mint, { commitment: "confirmed" }).send();
+	const { value } = await rpc.getAccountInfo(mint, { commitment: "confirmed", encoding: "base64" }).send(); // base58 is refused for > 128 bytes (Token-2022 mints)
 	if (value === null) throw new Error(`cash mint ${mint} not found on chain`);
 	return value.owner;
 }
