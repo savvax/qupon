@@ -38,6 +38,8 @@ type Deps struct {
 	Executor   *executor.Executor // qupon CLI runner (advance.go); nil → /advance answers 503
 	Auth       *auth.Service      // sessions + roles (auth.go, rbac.go); nil → write routes answer 503
 	BaseConfig string             // base CLI config (config/devnet.json) the issuer endpoints merge the registry into
+	// ReadCacheTTL caches GET chain read models (cache.go); 0 disables (tests).
+	ReadCacheTTL time.Duration
 	// TestRoutes registers GET /_test/registrar (role-gated no-op) for RBAC tests; never set in production.
 	TestRoutes bool
 }
@@ -47,6 +49,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.Recoverer)
 	r.Use(loggerMiddleware(logger), corsReadOnly)
+	r.Use(newReadCache(deps.ReadCacheTTL, time.Now))
 
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
