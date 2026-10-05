@@ -1,0 +1,48 @@
+{
+  "common": {
+    "signIn": "Войти",
+    "signOut": "Выйти",
+    "devnet": "Solana devnet",
+    "loading": "Загрузка…",
+    "retry": "Повторить",
+    "viewOnExplorer": "Открыть в обозревателе",
+    "copy": "Копировать"
+  },
+  "nav": {
+    "bonds": "Облигации",
+    "howItWorks": "Как это работает",
+    "forIssuers": "Эмитентам",
+    "forInvestors": "Инвесторам"
+  },
+  "status": {
+    "Active": "Активен",
+    "Paid": "Выплачен",
+    "Completed": "Завершён",
+    "Finalized": "Финализирован",
+    "Retired": "Погашен",
+    "For": "За",
+    "Approved": "Одобрен",
+    "Announced": "Объявлен",
+    "RecordStruck": "Реестр зафиксирован",
+    "SnapshotComplete": "Снимок завершён",
+    "Snapshotted": "Снимок сделан",
+    "Projected": "Прогноз",
+    "Funded": "Финансирован",
+    "Settling": "Идёт расчёт",
+    "InProgress": "В процессе",
+    "Matured": "Срок наступил",
+    "Suspended": "Приостановлен",
+    "Against": "Против",
+    "Rejected": "Отклонён",
+    "VotingOpen": "Голосование открыто",
+    "Retiring": "Идёт погашение",
+    "Closed": "Закрыт",
+    "Cancelled": "Отменён",
+    "Abstain": "Воздержались",
+    "Draft": "Черновик"
+  },
+  "landing": {},
+  "bonds": {},
+  "bond": {},
+  "login": {}
+}

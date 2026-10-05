@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
 import "./globals.css";
 import Providers from "@/components/Providers";
 
@@ -15,13 +17,16 @@ export const metadata: Metadata = {
     "Record date, entitlements, escrowed settlement and ISO 20022 for tokenized bonds on Solana (devnet).",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getLocale();
   return (
-    <html lang="en" className={manrope.variable}>
+    <html lang={locale} className={manrope.variable}>
       <body className="min-h-screen font-sans">
-        <Providers>{children}</Providers>
+        <NextIntlClientProvider>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

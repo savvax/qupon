@@ -1,6 +1,7 @@
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   // The portal builds cast_vote/subscribe with the Kit generated client that
@@ -25,4 +26,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: dirname(dirname(dirname(fileURLToPath(import.meta.url)))), // repo root (apps/web/../..)
 };
 
-export default nextConfig;
+// next-intl: locale from the NEXT_LOCALE cookie (no i18n routing) — see src/i18n/request.ts.
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(nextConfig);

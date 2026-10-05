@@ -1,0 +1,48 @@
+{
+  "common": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "devnet": "Solana devnet",
+    "loading": "Loading…",
+    "retry": "Retry",
+    "viewOnExplorer": "View on explorer",
+    "copy": "Copy"
+  },
+  "nav": {
+    "bonds": "Bonds",
+    "howItWorks": "How it works",
+    "forIssuers": "For issuers",
+    "forInvestors": "For investors"
+  },
+  "status": {
+    "Active": "Active",
+    "Paid": "Paid",
+    "Completed": "Completed",
+    "Finalized": "Finalized",
+    "Retired": "Retired",
+    "For": "For",
+    "Approved": "Approved",
+    "Announced": "Announced",
+    "RecordStruck": "Record struck",
+    "SnapshotComplete": "Snapshot complete",
+    "Snapshotted": "Snapshotted",
+    "Projected": "Projected",
+    "Funded": "Funded",
+    "Settling": "Settling",
+    "InProgress": "In progress",
+    "Matured": "Matured",
+    "Suspended": "Suspended",
+    "Against": "Against",
+    "Rejected": "Rejected",
+    "VotingOpen": "Voting open",
+    "Retiring": "Retiring",
+    "Closed": "Closed",
+    "Cancelled": "Cancelled",
+    "Abstain": "Abstain",
+    "Draft": "Draft"
+  },
+  "landing": {},
+  "bonds": {},
+  "bond": {},
+  "login": {}
+}
