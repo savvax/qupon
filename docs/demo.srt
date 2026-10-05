@@ -1,0 +1,55 @@
+1
+00:00:00,000 --> 00:00:10,000
+Qupon — corporate actions engine for tokenized bonds on Solana.
+Coupon, vote, redeem — fully on-chain.
+
+2
+00:00:10,000 --> 00:00:30,000
+We create the bond as a Token-2022 mint, frozen by default.
+Three investors pass the KYC gate — KYC itself is simulated —
+an unregistered wallet is rejected on-chain.
+
+3
+00:00:30,000 --> 00:00:50,000
+Coupon one. The registrar announces it; at record date
+the program pauses the mint and freezes the register.
+
+4
+00:00:50,000 --> 00:01:10,000
+Snapshot writes an Entitlement per holder — half-up rounding
+per holder: 500, 1,250, 3,250 tenge.
+The issuer pre-funds escrow; the program checks the amount.
+
+5
+00:01:10,000 --> 00:01:30,000
+Payment settles from escrow, the action PDA signs.
+We reconcile, resume the register, and generate
+ISO 20022 seev.036 confirmations and the KASE notice.
+
+6
+00:01:30,000 --> 00:01:55,000
+A bondholder meeting. Votes are weighted by snapshot units:
+65 for, 25 against, 10 abstain.
+Quorum 100 percent, approval over two-thirds — approved.
+
+7
+00:01:55,000 --> 00:02:10,000
+The new rate lands in the series and the token metadata.
+The next coupon pays 600, 1,500, 3,900.
+
+8
+00:02:10,000 --> 00:02:35,000
+At maturity: principal plus final coupon per holder,
+then units are burned through the permanent delegate
+and the mint closes. Status: redeemed.
+
+9
+00:02:35,000 --> 00:02:50,000
+Bonus: an early call in USDC on a real KASE bond's terms,
+with accrued-days interest, rounded half-up.
+
+10
+00:02:50,000 --> 00:03:00,000
+Everything you saw is on Solana devnet. KYC, Swift delivery
+and ARDFM registration are simulated and labelled.
+Code and every transaction link are in the repo.
