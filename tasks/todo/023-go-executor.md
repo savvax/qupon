@@ -1,7 +1,7 @@
 ---
 id: 023
 title: Executor: run qupon CLI steps with JSON contract, timeouts, idempotency; POST /actions/{pda}/advance
-agent: glm
+agent: claude
 tier: T1
 depends_on: [021, 018]
 verify: make verify
