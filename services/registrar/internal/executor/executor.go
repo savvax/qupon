@@ -72,6 +72,9 @@ type Result struct {
 	Slot      flexUint64 `json:"slot"`
 	Error     string     `json:"error"`
 	Skipped   bool       `json:"skipped"` // e.g. action:fund with a full escrow
+	// Command-specific passthrough fields the CLI merges into its JSON output.
+	Investor    string `json:"investor"`    // investor:register — the new Investor PDA
+	Attestation string `json:"attestation"` // kyc:attest — the SAS attestation PDA
 	// Batch commands (snapshot/pay/retire) print {ok, results:[{signature, slot}…]} instead of one signature.
 	Results []struct {
 		Signature string     `json:"signature"`

@@ -465,6 +465,120 @@ paths:
                   user:
                     $ref: "#/components/schemas/User"
         "401": {description: no valid session}
+  /registrar/investors:
+    post:
+      summary: >-
+        Onboard an investor: the KYC provider (SIMULATED) attests the wallet
+        on the Solana Attestation Service, then the registrar registers the
+        investor on-chain
+      operationId: registrarOnboard
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [series, owner, investorType, residency, taxBps]
+              properties:
+                series: {type: string, description: bond mint (base58)}
+                owner: {type: string, description: investor wallet (base58)}
+                investorType: {type: string, enum: [individual, legal_entity]}
+                residency: {type: string, enum: [resident, nonresident]}
+                taxBps: {type: integer, minimum: 0, maximum: 10000}
+                expiryDays:
+                  type: integer
+                  minimum: 0
+                  description: KYC validity in days (default 365, 0 = no expiry)
+      responses:
+        "201":
+          description: attested and registered
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [investor, attestation, signatures]
+                properties:
+                  investor: {type: string, description: Investor PDA}
+                  attestation: {type: string, description: SAS attestation PDA}
+                  signatures:
+                    type: array
+                    items: {type: string}
+        "400":
+          description: >-
+            malformed input (non-base58 owner/mint, taxBps > 10000, unknown
+            investorType or residency)
+        "401": {description: no valid back-office session}
+        "403": {description: role is not registrar or admin}
+        "404": {description: "unknown_series — mint is not a registered series"}
+        "409":
+          description: the chain refused a step (onchainError carries the raw
+            message)
+        "503": {description: executor not configured}
+  /registrar/investors/{mint}/{owner}/suspend:
+    post:
+      summary: Suspend an investor (freezes the bond ATA)
+      operationId: registrarSuspend
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "#/components/parameters/Mint"
+        - name: owner
+          in: path
+          required: true
+          description: investor wallet (base58)
+          schema: {type: string}
+      responses:
+        "200": {description: executed; body carries the transaction signatures}
+        "400": {description: mint or owner is not base58}
+        "401": {description: no valid back-office session}
+        "403": {description: role is not registrar or admin}
+        "404": {description: unknown_series}
+        "409": {description: the chain refused the step (onchainError)}
+  /registrar/investors/{mint}/{owner}/reinstate:
+    post:
+      summary: Reinstate a suspended investor
+      operationId: registrarReinstate
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "#/components/parameters/Mint"
+        - name: owner
+          in: path
+          required: true
+          description: investor wallet (base58)
+          schema: {type: string}
+      responses:
+        "200": {description: executed; body carries the transaction signatures}
+        "400": {description: mint or owner is not base58}
+        "401": {description: no valid back-office session}
+        "403": {description: role is not registrar or admin}
+        "404": {description: unknown_series}
+        "409": {description: the chain refused the step (onchainError)}
+  /registrar/audit:
+    get:
+      summary: The back-office audit feed (who ran which write, and what it did)
+      operationId: registrarAudit
+      security: [{bearerAuth: []}]
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: {type: integer, minimum: 1, maximum: 500, default: 100}
+      responses:
+        "200":
+          description: audit rows, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AuditEntry"
+        "400": {description: limit out of range}
+        "401": {description: no valid back-office session}
+        "403": {description: role is not registrar or admin}
 components:
   securitySchemes:
     bearerAuth:
@@ -502,6 +616,21 @@ components:
         token: {type: string}
         user:
           $ref: "#/components/schemas/User"
+    AuditEntry:
+      type: object
+      required: [id, ts, userId, role, route, params, ok, detail, signatures]
+      properties:
+        id: {type: integer}
+        ts: {type: integer, description: unix seconds}
+        userId: {type: integer}
+        role: {type: string}
+        route: {type: string, example: "POST /registrar/investors"}
+        params: {type: object, description: request params JSON}
+        ok: {type: boolean}
+        detail: {type: string}
+        signatures:
+          type: array
+          items: {type: string}
     Amount:
       description: Money amount in minor units plus a human display string.
       type: object

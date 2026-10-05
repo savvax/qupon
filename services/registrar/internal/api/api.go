@@ -187,6 +187,12 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r.With(registrar).Post("/registrar/approvals/{id}/approve", approveApproval(deps, st))
 	r.With(registrar).Post("/approvals/{id}/approve", approveApproval(deps, st))
 
+	// Registrar back-office: investor onboarding (SIMULATED SAS attestation + registration), suspend/reinstate, audit feed.
+	r.With(registrar).Post("/registrar/investors", registrarOnboard(deps, st))
+	r.With(registrar).Post("/registrar/investors/{mint}/{owner}/suspend", registrarSuspend(deps, st, "suspend"))
+	r.With(registrar).Post("/registrar/investors/{mint}/{owner}/reinstate", registrarSuspend(deps, st, "reinstate"))
+	r.With(registrar).Get("/registrar/audit", registrarAudit(st))
+
 	if deps.TestRoutes {
 		r.With(registrar).Get("/_test/registrar", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, http.StatusOK, map[string]string{}) })
 	}

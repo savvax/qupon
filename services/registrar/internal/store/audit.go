@@ -9,15 +9,15 @@ import (
 // AuditEntry is one row per authenticated write: who ran what with which
 // params, whether it succeeded, and the resulting transaction signatures.
 type AuditEntry struct {
-	ID         int64
-	Ts         int64
-	UserID     int64
-	Role       string
-	Route      string
-	Params     json.RawMessage
-	OK         bool
-	Detail     string
-	Signatures []string
+	ID         int64           `json:"id"`
+	Ts         int64           `json:"ts"`
+	UserID     int64           `json:"userId"`
+	Role       string          `json:"role"`
+	Route      string          `json:"route"`
+	Params     json.RawMessage `json:"params"`
+	OK         bool            `json:"ok"`
+	Detail     string          `json:"detail"`
+	Signatures []string        `json:"signatures"`
 }
 
 // InsertAudit appends an audit row; signatures are stored as a JSON array.
