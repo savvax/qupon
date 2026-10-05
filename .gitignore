@@ -26,3 +26,5 @@ tasks/.lock-*
 .DS_Store
 tasks/.stop-*
 /services/registrar/registrar
+
+.vitest/
