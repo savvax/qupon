@@ -8,6 +8,12 @@ import {
   Scenarios,
 } from "./_landing/sections";
 
+import { metaTitle } from "@/lib/meta";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("home") };
+}
+
 export default async function Home() {
   const live = await loadLive();
   return (

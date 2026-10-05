@@ -11,10 +11,14 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@qupon/client"],
   // Self-contained server bundle for the VPS image (apps/web/Dockerfile).
   output: "standalone",
+  // No x-powered-by header on the public site.
+  poweredByHeader: false,
   // Dev only: Next 15 replays cached fetch responses across refreshes, so the console's router.refresh() after a
   // step kept showing the pre-step status. Production never caches these (force-dynamic + no-store).
   experimental: { serverComponentsHmrCache: false },
-  webpack: (config) => {
+  webpack: (
+    config: Parameters<NonNullable<Required<NextConfig>["webpack"]>>[0],
+  ) => {
     config.resolve.extensionAlias = {
       ".js": [".ts", ".tsx", ".js"],
       ".mjs": [".mts", ".mjs"],
@@ -23,7 +27,9 @@ const nextConfig: NextConfig = {
   },
   // This repo runs inside a git worktree with its own pnpm-lock.yaml; pin the
   // workspace root here so Next stops guessing.
-  outputFileTracingRoot: dirname(dirname(dirname(fileURLToPath(import.meta.url)))), // repo root (apps/web/../..)
+  outputFileTracingRoot: dirname(
+    dirname(dirname(fileURLToPath(import.meta.url))),
+  ), // repo root (apps/web/../..)
 };
 
 // next-intl: locale from the NEXT_LOCALE cookie (no i18n routing) — see src/i18n/request.ts.

@@ -10,6 +10,7 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
+    "og": "node scripts/og-image.mjs",
     "gen": "openapi-typescript ../../services/registrar/openapi.yaml -o src/lib/api-schema.d.ts"
   },
   "dependencies": {

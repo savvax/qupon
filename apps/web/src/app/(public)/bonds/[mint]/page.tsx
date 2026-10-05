@@ -18,6 +18,19 @@ import { bpsToPercent, formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ mint: string }>;
+}) {
+  const { mint } = await params;
+  const t = await getTranslations("meta");
+  const s = await getSeries(mint).catch(() => null);
+  return {
+    title: s ? t("bond", { ticker: s.ticker, isin: s.isin }) : t("bonds"),
+  };
+}
+
 const FREQ_KEY: Record<number, string> = {
   1: "freqAnnual",
   2: "freqSemiAnnual",

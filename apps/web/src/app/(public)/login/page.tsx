@@ -2,6 +2,11 @@ import { redirect } from "next/navigation";
 import { safeNext } from "@/lib/boClient";
 import { ROLE_HOME, getSession } from "@/lib/session";
 import { DemoPanel, SignInCard } from "./LoginForm";
+import { metaTitle } from "@/lib/meta";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("login") };
+}
 
 export default async function LoginPage({
   searchParams,

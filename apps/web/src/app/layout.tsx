@@ -11,10 +11,31 @@ const manrope = Manrope({
   display: "swap",
 });
 
+const DESCRIPTION =
+  "Record date, entitlements, escrowed settlement and ISO 20022 for tokenized bonds on Solana (devnet).";
+
+const SITE_URL = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000");
+  } catch {
+    return new URL("http://localhost:3000");
+  }
+})();
+
 export const metadata: Metadata = {
-  title: "Qupon — corporate actions for tokenized bonds",
-  description:
-    "Record date, entitlements, escrowed settlement and ISO 20022 for tokenized bonds on Solana (devnet).",
+  // Absolute base for the OG image URL (opengraph-image.png file convention).
+  metadataBase: SITE_URL,
+  title: {
+    default: "Qupon",
+    template: "%s · Qupon",
+  },
+  description: DESCRIPTION,
+  openGraph: {
+    title: { default: "Qupon", template: "%s · Qupon" },
+    description: DESCRIPTION,
+    type: "website",
+    siteName: "Qupon",
+  },
 };
 
 export default async function RootLayout({

@@ -2,6 +2,11 @@ import { getTranslations } from "next-intl/server";
 import { listActivity } from "@/lib/api";
 import { boFetch } from "@/lib/bo";
 import { ActivityTabs, type AuditItem } from "../_components/ActivityTabs";
+import { metaTitle } from "@/lib/meta";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("registrarActivity") };
+}
 
 /** Registrar activity: on-chain events + the operator audit trail (Plan 3 Task 5). */
 export default async function RegistrarActivityPage() {

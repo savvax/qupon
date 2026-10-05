@@ -7,6 +7,11 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import type { SeriesDTO } from "@/lib/api";
 import { bpsToPercent, formatDate } from "@/lib/format";
 import { issuerSeries } from "../_components/data";
+import { metaTitle } from "@/lib/meta";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("issuerSeries") };
+}
 
 export const dynamic = "force-dynamic";
 

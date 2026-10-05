@@ -33,8 +33,13 @@ import { Countdown } from "./Countdown";
 import { NoticePanel } from "./NoticePanel";
 import { ReconcilePanel } from "./ReconcilePanel";
 import { StepButton } from "./StepButton";
+import { metaTitle } from "@/lib/meta";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("registrarActions") };
+}
 
 function Panel({
   title,

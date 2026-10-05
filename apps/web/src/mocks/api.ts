@@ -467,6 +467,9 @@ export function mockGet(path: string): Promise<unknown> {
   }
   const seriesMatch = /^\/series\/([^/]+)$/.exec(path);
   if (seriesMatch) {
+    // Magic mint for e2e: a registrar 500 so the (public) error boundary renders.
+    if (seriesMatch[1] === "boom")
+      return Promise.reject(new Mock500("mock registrar exploded (e2e)"));
     const found = series.find((s) => s.mint === seriesMatch[1]);
     return found
       ? delay(found)
@@ -547,4 +550,10 @@ export function mockGetText(path: string): Promise<string> {
 export class Api404 extends Error {
   readonly code = "http_404";
   readonly status = 404;
+}
+
+/** Mock-only HTTP 500 (mint "boom" in e2e) so the error boundary can be exercised without a real outage. */
+class Mock500 extends Error {
+  readonly code = "http_500";
+  readonly status = 500;
 }

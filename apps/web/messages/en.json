@@ -309,6 +309,24 @@
       "console": "Open the console"
     }
   },
+  "meta": {
+    "home": "Corporate actions for tokenized bonds",
+    "bonds": "Bonds",
+    "bond": "{ticker} ({isin})",
+    "login": "Sign in",
+    "forbidden": "Access denied",
+    "issuer": "Issuer cabinet",
+    "issuerSeries": "Series",
+    "issuerNewSeries": "New series",
+    "registrar": "Registrar back office",
+    "registrarActions": "Corporate actions",
+    "registrarActivity": "Activity",
+    "registrarAutopilot": "Autopilot",
+    "investor": "Investor cabinet",
+    "investorPlacement": "Placement",
+    "investorMeetings": "Meetings",
+    "investorStatements": "Statements"
+  },
   "errors": {
     "failed": "Something went wrong",
     "sessionExpiredTitle": "Session expired",
@@ -317,6 +335,17 @@
     "forbidden": "Your role can't do this.",
     "throttled": "Demo limit reached — try again in a few minutes.",
     "unreachable": "The registrar service is unreachable — try again in a moment.",
+    "notFound": {
+      "title": "Page not found",
+      "body": "The page you are looking for does not exist or was moved.",
+      "home": "Home",
+      "bonds": "Bonds"
+    },
+    "crash": {
+      "title": "Something broke",
+      "body": "An unexpected error occurred while rendering this page — try again.",
+      "retry": "Retry"
+    },
     "onchain": {
       "Unauthorized": "this step needs the registrar or paying-agent key — the configured operator wallet does not match",
       "InvalidAuthority": "authority mismatch — the step must be signed by the authority stored on-chain",

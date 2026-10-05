@@ -1,5 +1,10 @@
 import { getTranslations } from "next-intl/server";
 import { NewSeriesWizard } from "./NewSeriesWizard";
+import { metaTitle } from "@/lib/meta";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("issuerNewSeries") };
+}
 
 export default async function NewSeriesPage() {
   const t = await getTranslations("issuer.wizard");

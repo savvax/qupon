@@ -4,6 +4,11 @@ import { SignOutButton } from "@/components/shell/SignOutButton";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ROLE_HOME, type Role } from "@/lib/session";
+import { metaTitle } from "@/lib/meta";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("forbidden") };
+}
 
 export default async function Forbidden({
   searchParams,

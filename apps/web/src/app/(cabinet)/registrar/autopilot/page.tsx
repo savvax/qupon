@@ -2,6 +2,11 @@ import { getTranslations } from "next-intl/server";
 import type { Schemas } from "@/lib/api";
 import { boFetch } from "@/lib/bo";
 import { Approvals } from "../_components/Approvals";
+import { metaTitle } from "@/lib/meta";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("registrarAutopilot") };
+}
 
 type Approval = Schemas["Approval"];
 

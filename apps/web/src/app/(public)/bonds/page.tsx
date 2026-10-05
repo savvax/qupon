@@ -8,6 +8,11 @@ import { listSeries, type SeriesDTO } from "@/lib/api";
 import { bpsToPercent, formatDate } from "@/lib/format";
 import type { Locale } from "@/i18n/request";
 
+import { metaTitle } from "@/lib/meta";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("bonds") };
+}
 export const dynamic = "force-dynamic";
 
 const FREQ_KEY: Record<number, string> = {

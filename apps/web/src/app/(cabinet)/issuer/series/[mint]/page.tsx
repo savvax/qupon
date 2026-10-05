@@ -23,8 +23,13 @@ import {
   FundButton,
   MeetingButton,
 } from "../../_components/IssuerActions";
+import { metaTitle } from "@/lib/meta";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("issuerSeries") };
+}
 
 const OPEN = [
   "Announced",

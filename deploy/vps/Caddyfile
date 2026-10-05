@@ -1,7 +1,19 @@
 # QUPON_HOST defaults to <ip-with-dashes>.sslip.io (resolves to the server IP; Let's Encrypt works without a domain).
+(site_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+}
+
 qupon.{$QUPON_HOST} {
+	import site_headers
 	reverse_proxy web:3000
 }
 api.{$QUPON_HOST} {
+	import site_headers
 	reverse_proxy registrar:8080
 }

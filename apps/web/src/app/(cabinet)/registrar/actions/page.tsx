@@ -11,8 +11,13 @@ import {
 } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { KIND_TONE } from "@/lib/ui/badge";
+import { metaTitle } from "@/lib/meta";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("registrarActions") };
+}
 
 type Row = { a: ActionDTO; s: SeriesDTO };
 const DONE = ["Completed", "Cancelled"];

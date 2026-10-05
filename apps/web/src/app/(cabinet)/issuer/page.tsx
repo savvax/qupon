@@ -16,6 +16,11 @@ import {
   issuerSeries,
   type ActionRow,
 } from "./_components/data";
+import { metaTitle } from "@/lib/meta";
+
+export async function generateMetadata() {
+  return { title: await metaTitle("issuer") };
+}
 
 export const dynamic = "force-dynamic";
 
