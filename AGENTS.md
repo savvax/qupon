@@ -23,7 +23,7 @@ Qupon: a corporate-actions engine for tokenized bonds on Solana devnet for the K
 ## Coding rules
 - **Rust/Anchor**: Anchor 1.2 idioms (`#[derive(Accounts)]`, `token_interface`, `InterfaceAccount`), checked math (`checked_*` or u128 + `try_into`), explicit error codes from `docs/02-architecture.md`, every instruction has at least one happy-path and one failure LiteSVM test; emit events on every state transition; no `unwrap()` in program code; box large accounts.
 - **TypeScript**: `@solana/kit` 8 (no web3.js 1.x outside `apps/web` wallet glue), strict TS, generated code only via `pnpm codama` (never hand-edit `src/generated`), CLI outputs JSON on stdout and logs on stderr, exit code ≠ 0 on failure.
-- **Go**: 1.26, `go vet` + `golangci-lint` clean, table tests, context everywhere, no global state, errors wrapped with `%w`, exec of the `qupon` CLI isolated in `internal/executor` with timeouts.
+- **Go**: 1.25, `go vet` + `golangci-lint` clean, table tests, context everywhere, no global state, errors wrapped with `%w`, exec of the `qupon` CLI isolated in `internal/executor` with timeouts.
 - **Web**: Next.js app router, Tailwind, server components for reads, wallet-adapter only for signing; every action step shows its tx signature with an explorer link (`https://explorer.solana.com/tx/<sig>?cluster=devnet`).
 - **Tests use the brief's numbers** (10/25/65 units, 1,000 KZT face, 10% semi-annual → 500/1,250/3,250 and 10,000 principal).
 

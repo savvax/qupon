@@ -11,7 +11,7 @@ primary_region = "ams"
   # Devnet, no secrets:
   RPC_URL = "https://api.devnet.solana.com"
   PROGRAM_ID = "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"
-  QUPON_CONFIG = "/app/config/devnet.json"
+  QUPON_CONFIG = "/data/config/devnet.json"
 
 [http_service]
   internal_port = 8080

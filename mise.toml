@@ -1,5 +1,5 @@
 # Toolchain pins for this repo (ops/doctor.sh checks them). `mise install` once; ops scripts and the Makefile put mise shims first on PATH.
 [tools]
 node = "22"
-go = "1.26"
+go = "1.25"
 pnpm = "9"

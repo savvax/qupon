@@ -25,8 +25,8 @@ type Approval struct {
 	Detail     json.RawMessage `json:"detail"`
 }
 
-// InsertApproval appends a proposal; dedup_key is unique among *pending* rows (migration 004), so repeated ticks
-// don't stack duplicates, while a batch step that must run again after an executed approval can be re-proposed.
+// InsertApproval appends a proposal; the dedup_key UNIQUE constraint makes
+// repeated ticks idempotent (an executed row is never re-inserted).
 func (s *Store) InsertApproval(ctx context.Context, a Approval) error {
 	args, err := json.Marshal(a.Args)
 	if err != nil {

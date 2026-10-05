@@ -107,7 +107,7 @@ Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are **series configu
 ## Quickstart
 
 ```bash
-bash ops/bootstrap.sh          # Agave 4.3.0, Anchor 1.2.0, Node 22, pnpm 9, Go 1.26
+bash ops/bootstrap.sh          # Agave 4.3.0, Anchor 1.2.0, Node 22, pnpm 9, Go 1.25
 cp .env.example .env           # RPC_URL (Helius devnet), keypair paths
 make verify                    # build + all tests + lint (no network)
 bash ops/wallets.sh            # devnet keypairs; fund via faucet.solana.com / faucet.circle.com
@@ -125,14 +125,14 @@ make api                       # Go registrar on :8080 (REST + ISO 20022 + notic
 
 The web app reads only devnet state; wallet actions are signed in the browser, lifecycle steps go through a server-side route (`/api/advance/[pda]`) so the registrar's `ADVANCE_TOKEN` never reaches the browser bundle.
 
-Deployment steps (the logins are the team's): `HUMAN_TODO.md` → "deploy the API and the console". In short:
+One command each (human performs the logins — see `reports/questions/032-deployment.md`):
 
 ```bash
-# API — Fly.io (image: Go API + Node 22 + built qupon CLI; entrypoint writes keypair secrets to 0600 files)
-fly secrets set ADVANCE_TOKEN=… RPC_URL=… QUPON_REGISTRAR_KEYPAIR_JSON=… QUPON_ISSUER_KEYPAIR_JSON=… QUPON_PAYING_AGENT_KEYPAIR_JSON=…
-fly deploy                                   # fly.toml → services/registrar/Dockerfile
+# API — Fly.io (multi-stage image: Go API + Node 22 + built qupon CLI)
+fly deploy --dockerfile services/registrar/Dockerfile   # config in fly.toml
+fly secrets set ADVANCE_TOKEN=<token>
 
-# Web — Vercel (root dir apps/web)
+# Web — Vercel (root dir apps/web, Next.js auto-detected)
 vercel --prod apps/web \
   --env NEXT_PUBLIC_API_URL=https://qupon-registrar.fly.dev \
   --env NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com

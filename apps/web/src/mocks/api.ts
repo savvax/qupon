@@ -5,7 +5,13 @@
  * USDC. Pubkeys are placeholders until real devnet mints land in
  * config/devnet.json.
  */
-import type { ActionDTO, EntitlementDTO, InvestorDTO, ScheduleItem, SeriesDTO } from "../lib/api";
+import type {
+  ActionDTO,
+  EntitlementDTO,
+  InvestorDTO,
+  ScheduleItem,
+  SeriesDTO,
+} from "../lib/api";
 
 const MINT_QPNB1 = "QpNb1Dem0BondMint1111111111111111111111111111";
 const MINT_BTRK = "BTRKDeM0BondMint1111111111111111111111111111";
@@ -24,8 +30,16 @@ const INVESTOR_OWNERS = [
   "6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC",
 ];
 
-const kzt = (minor: string, display: string) => ({ minor, display, currency: "tKZT" });
-const usdc = (minor: string, display: string) => ({ minor, display, currency: "USDC" });
+const kzt = (minor: string, display: string) => ({
+  minor,
+  display,
+  currency: "tKZT",
+});
+const usdc = (minor: string, display: string) => ({
+  minor,
+  display,
+  currency: "USDC",
+});
 const explorer = (address: string) =>
   `https://explorer.solana.com/address/${address}?cluster=devnet`;
 
@@ -145,16 +159,17 @@ const actions: Record<string, ActionDTO[]> = {
       perUnitPrincipal: kzt("0", "0.00 KZT"),
       cashMint: MINT_TKZT,
       escrow: ESCROW_PDA_1,
-      status: "Announced",
-      snapshotSlot: null,
-      snapshotHash: null,
-      unitsSnapshotted: null,
-      holdersSnapshotted: null,
-      holdersPaid: null,
+      escrowBalance: kzt("500000", "5,000.00 KZT"),
+      status: "Completed",
+      snapshotSlot: 1234,
+      snapshotHash: "C7oUNmockHASHqPQf2XN7pXhXpzKdQmYtWJChMAvery9",
+      unitsSnapshotted: "100",
+      holdersSnapshotted: 3,
+      holdersPaid: 3,
       totalGross: kzt("500000", "5,000.00 KZT"),
       totalTax: kzt("0", "0.00 KZT"),
       totalNet: kzt("500000", "5,000.00 KZT"),
-      totalPaid: kzt("0", "0.00 KZT"),
+      totalPaid: kzt("500000", "5,000.00 KZT"),
       totalRetired: null,
       holdersRetired: null,
       proposalNewRateBps: null,
@@ -164,7 +179,7 @@ const actions: Record<string, ActionDTO[]> = {
       votesAgainst: null,
       votesAbstain: null,
       result: null,
-      completedAt: null,
+      completedAt: "2026-03-01T12:20:00+05:00",
       factorBps: null,
       explorerUrl: explorer(ACTION_PDA_1),
     },
@@ -262,23 +277,61 @@ const ev = (
   actionPda: string,
   sig: string,
   payload: Record<string, unknown> = {},
-) => ({ id, ts, kind, sig, slot: 1234 + id, seq: 0, actionPda, seriesMint: MINT_QPNB1, payload });
+) => ({
+  id,
+  ts,
+  kind,
+  sig,
+  slot: 1234 + id,
+  seq: 0,
+  actionPda,
+  seriesMint: MINT_QPNB1,
+  payload,
+});
 
 const activity = [
-  ev(1, 1771908000, "ActionAnnounced", ACTION_PDA_1, SIGS[0]!), { ...ev(2, 1771994400, "RecordStruck", ACTION_PDA_1, SIGS[1]!) },
-  ev(3, 1771994700, "HolderSnapshotted", ACTION_PDA_1, SIGS[2]!, { owner: INVESTOR_OWNERS[0], units: "10" }),
-  ev(4, 1771995000, "HolderSnapshotted", ACTION_PDA_1, SIGS[0]!, { owner: INVESTOR_OWNERS[1], units: "25" }),
-  ev(5, 1771995300, "HolderSnapshotted", ACTION_PDA_1, SIGS[1]!, { owner: INVESTOR_OWNERS[2], units: "65" }),
+  ev(1, 1771908000, "ActionAnnounced", ACTION_PDA_1, SIGS[0]!),
+  { ...ev(2, 1771994400, "RecordStruck", ACTION_PDA_1, SIGS[1]!) },
+  ev(3, 1771994700, "HolderSnapshotted", ACTION_PDA_1, SIGS[2]!, {
+    owner: INVESTOR_OWNERS[0],
+    units: "10",
+  }),
+  ev(4, 1771995000, "HolderSnapshotted", ACTION_PDA_1, SIGS[0]!, {
+    owner: INVESTOR_OWNERS[1],
+    units: "25",
+  }),
+  ev(5, 1771995300, "HolderSnapshotted", ACTION_PDA_1, SIGS[1]!, {
+    owner: INVESTOR_OWNERS[2],
+    units: "65",
+  }),
   ev(6, 1771995600, "SnapshotFinalized", ACTION_PDA_1, SIGS[2]!),
-  ev(7, 1772000000, "ActionFunded", ACTION_PDA_1, SIGS[0]!, { amount: "500000", escrow_balance: "500000", required: "500000", fully_funded: true }),
-  ev(8, 1772080800, "EntitlementPaid", ACTION_PDA_1, SIGS[1]!, { owner: INVESTOR_OWNERS[0], net: "50000" }),
-  ev(9, 1772080801, "EntitlementPaid", ACTION_PDA_1, SIGS[2]!, { owner: INVESTOR_OWNERS[1], net: "125000" }),
-  ev(10, 1772080802, "EntitlementPaid", ACTION_PDA_1, SIGS[0]!, { owner: INVESTOR_OWNERS[2], net: "325000" }),
+  ev(7, 1772000000, "ActionFunded", ACTION_PDA_1, SIGS[0]!, {
+    amount: "500000",
+    escrow_balance: "500000",
+    required: "500000",
+    fully_funded: true,
+  }),
+  ev(8, 1772080800, "EntitlementPaid", ACTION_PDA_1, SIGS[1]!, {
+    owner: INVESTOR_OWNERS[0],
+    net: "50000",
+  }),
+  ev(9, 1772080801, "EntitlementPaid", ACTION_PDA_1, SIGS[2]!, {
+    owner: INVESTOR_OWNERS[1],
+    net: "125000",
+  }),
+  ev(10, 1772080802, "EntitlementPaid", ACTION_PDA_1, SIGS[0]!, {
+    owner: INVESTOR_OWNERS[2],
+    net: "325000",
+  }),
   ev(11, 1772084400, "ActionCompleted", ACTION_PDA_1, SIGS[1]!),
   ev(12, 1772150000, "ActionAnnounced", ACTION_PDA_2, SIGS[2]!),
   ev(13, 1772236400, "RecordStruck", ACTION_PDA_2, SIGS[0]!),
   ev(14, 1772240000, "SnapshotFinalized", ACTION_PDA_2, SIGS[1]!),
-  ev(15, 1772300000, "VoteCast", ACTION_PDA_2, SIGS[2]!, { owner: INVESTOR_OWNERS[0], choice: 1, weight: "10" }),
+  ev(15, 1772300000, "VoteCast", ACTION_PDA_2, SIGS[2]!, {
+    owner: INVESTOR_OWNERS[0],
+    choice: 1,
+    weight: "10",
+  }),
 ];
 
 function mockReconcile(pda: string) {
@@ -300,7 +353,7 @@ function mockReconcile(pda: string) {
   };
 }
 
-const delay = <T,>(body: T): Promise<T> =>
+const delay = <T>(body: T): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(body), 30));
 
 /** Serve one registrar API path from the fixtures above. */
@@ -318,9 +371,13 @@ export function mockGet(path: string): Promise<unknown> {
   const seriesMatch = /^\/series\/([^/]+)$/.exec(path);
   if (seriesMatch) {
     const found = series.find((s) => s.mint === seriesMatch[1]);
-    return found ? delay(found) : Promise.reject(new Api404(`series ${seriesMatch[1]} not found`));
+    return found
+      ? delay(found)
+      : Promise.reject(new Api404(`series ${seriesMatch[1]} not found`));
   }
-  const subMatch = /^\/series\/([^/]+)\/(investors|schedule|actions)$/.exec(path);
+  const subMatch = /^\/series\/([^/]+)\/(investors|schedule|actions)$/.exec(
+    path,
+  );
   if (subMatch) {
     const mint = subMatch[1]!;
     const resource = subMatch[2]!;
@@ -360,7 +417,9 @@ export function mockGet(path: string): Promise<unknown> {
     const found = Object.values(actions)
       .flat()
       .find((a) => a.pda === actionMatch[1]);
-    return found ? delay(found) : Promise.reject(new Api404(`action ${actionMatch[1]} not found`));
+    return found
+      ? delay(found)
+      : Promise.reject(new Api404(`action ${actionMatch[1]} not found`));
   }
   return Promise.reject(notFound());
 }
@@ -369,8 +428,11 @@ export function mockGet(path: string): Promise<unknown> {
 export function mockGetText(path: string): Promise<string> {
   const noticeMatch = /^\/actions\/([^/]+)\/notice\?lang=(en|ru)$/.exec(path);
   if (noticeMatch) {
-    const found = Object.values(actions).flat().find((a) => a.pda === noticeMatch[1]);
-    if (!found) return Promise.reject(new Api404(`action ${noticeMatch[1]} not found`));
+    const found = Object.values(actions)
+      .flat()
+      .find((a) => a.pda === noticeMatch[1]);
+    if (!found)
+      return Promise.reject(new Api404(`action ${noticeMatch[1]} not found`));
     const text =
       noticeMatch[2] === "ru"
         ? `УВЕДОМЛЕНИЕ (ДЕМО)\n${found.corpId} · процентный платёж · запись ${found.recordAt.slice(0, 10)}\nКУПОН: 10.00% · на единицу 50.00 KZT\nSIMULATED — публикация на kase.kz не подключена\n`
@@ -378,7 +440,9 @@ export function mockGetText(path: string): Promise<string> {
     return delay(text);
   }
   if (path.endsWith(".xml")) {
-    return delay('<?xml version="1.0" encoding="UTF-8"?>\n<!-- seev mock (API_MOCKING=enabled) -->\n<Document>DEMO</Document>\n');
+    return delay(
+      '<?xml version="1.0" encoding="UTF-8"?>\n<!-- seev mock (API_MOCKING=enabled) -->\n<Document>DEMO</Document>\n',
+    );
   }
   return Promise.reject(new Api404(`text ${path} not found`));
 }

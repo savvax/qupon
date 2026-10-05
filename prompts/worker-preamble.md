@@ -6,6 +6,6 @@ Workflow: implement → run the narrowest tests → `make verify` → commit wit
 
 Hard limits: never create, switch or rename git branches — commit on the branch this worktree is already on (the orchestrator merges only that branch); never touch mainnet; never commit `.env`, keypairs or API keys; never push; never weaken or skip tests; never edit `tasks/done/`; never hand-edit `clients/ts/src/generated` (run `pnpm codama`). Never use `pkill`, `killall` or `kill $(pgrep -f …)`: your own command line contains this prompt, so a pattern like `pkill -f registrar` kills you and other workers. Start a server for a test as `cmd & PID=$!` and stop it with `kill $PID`, or wrap it in `timeout 30s`. Run `gofmt -w` / `pnpm prettier --write` on files you changed before committing, then check `git status` is clean. If you need a human decision, write `reports/questions/<id>-<slug>.md` (never edit HUMAN_TODO.md) and continue with the stated default.
 
-Toolchain pins (do not change): Agave 4.3.0, Anchor 1.2.0, @solana/kit 8.x, @solana-program/token-2022 0.19, Go 1.26, Node 22, pnpm 9. Versions and gotchas: `docs/04-stack.md`.
+Toolchain pins (do not change): Agave 4.3.0, Anchor 1.2.0, @solana/kit 8.x, @solana-program/token-2022 0.19, Go 1.25, Node 22, pnpm 9. Versions and gotchas: `docs/04-stack.md`.
 
 --- TASK ---
