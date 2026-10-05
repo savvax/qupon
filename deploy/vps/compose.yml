@@ -3,7 +3,7 @@
 services:
   registrar:
     build: { context: ../.., dockerfile: services/registrar/Dockerfile }
-    env_file: /opt/qupon/registrar.env # RPC_URL, ADVANCE_TOKEN, QUPON_*_KEYPAIR_JSON (devnet)
+    env_file: /opt/qupon/registrar.env # RPC_URL, DEMO_LOGIN, QUPON_USERS, QUPON_*_KEYPAIR_JSON (devnet)
     environment:
       PROGRAM_ID: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd
       QUPON_CONFIG: /app/config/devnet.json
@@ -15,7 +15,9 @@ services:
       context: ../..
       dockerfile: apps/web/Dockerfile
       args: { NEXT_PUBLIC_API_URL: "https://api.${QUPON_HOST}" }
-    env_file: /opt/qupon/web.env # ADVANCE_TOKEN (server-side route only)
+    env_file: /opt/qupon/web.env # server-side only; empty for now
+    environment:
+      API_INTERNAL_URL: http://registrar:8080 # session proxy talks to the API inside the compose network
     restart: unless-stopped
   caddy:
     image: caddy:2-alpine

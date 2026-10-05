@@ -18,6 +18,7 @@ import (
 	solana "github.com/solana-foundation/solana-go/v2"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/api"
+	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/config"
 	"github.com/qupon-kz/qupon/services/registrar/internal/execconfig"
@@ -129,15 +130,20 @@ func run() error {
 	}
 	exec := executor.New(cfg.QuponCLI, cfg.ExecConfigPath, logger)
 
+	if err := seedUsers(ctx, st, cfg); err != nil {
+		return fmt.Errorf("seed users: %w", err)
+	}
+
 	srv := &http.Server{
 		Addr: ":" + cfg.Port,
 		Handler: api.New(logger, st, api.Deps{
-			Read:         readModel(chainClient),
-			Notice:       noticeReader(chainClient, st),
-			Reconcile:    chainReader,
-			Chain:        chainClient,
-			Executor:     exec,
-			AdvanceToken: cfg.AdvanceToken,
+			Read:      readModel(chainClient),
+			Notice:    noticeReader(chainClient, st),
+			Reconcile: chainReader,
+			Chain:     chainClient,
+			Executor:  exec,
+			Auth: &auth.Service{Store: st, Now: time.Now, TTL: 12 * time.Hour, DemoLogin: cfg.DemoLogin,
+				Limit: auth.NewLimiter(5, time.Minute)},
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -212,4 +218,42 @@ func noticeReader(c *chain.Client, st *store.Store) *notice.Reader {
 	r := notice.NewReader(c, "")
 	r.Activity = st
 	return r
+}
+
+// seedUsers upserts the demo identities (DEMO_LOGIN) and the QUPON_USERS accounts. Demo users get the
+// password hash "!", which no password matches: they can only sign in through POST /auth/demo.
+func seedUsers(ctx context.Context, st *store.Store, cfg config.Config) error {
+	if cfg.DemoLogin {
+		for _, u := range []store.User{
+			{Email: "demo-issuer@qupon.demo", Name: "Demo issuer", Role: "issuer", IsDemo: true},
+			{Email: "demo-registrar@qupon.demo", Name: "Demo registrar", Role: "registrar", IsDemo: true},
+			{Email: "demo-investor@qupon.demo", Name: "Demo investor", Role: "investor_demo", IsDemo: true},
+		} {
+			if _, err := st.UpsertUser(ctx, u, "!"); err != nil {
+				return err
+			}
+		}
+	}
+	if cfg.Users == "" {
+		return nil
+	}
+	var users []struct{ Email, Name, Role, Password string }
+	if err := json.Unmarshal([]byte(cfg.Users), &users); err != nil {
+		return fmt.Errorf("QUPON_USERS is not a JSON array of users: %w", err)
+	}
+	for _, u := range users {
+		email := strings.ToLower(strings.TrimSpace(u.Email))
+		if !strings.Contains(email, "@") || len(u.Password) < 12 ||
+			(u.Role != "issuer" && u.Role != "registrar" && u.Role != "admin") {
+			return fmt.Errorf("QUPON_USERS entry %q: need an email, a password of 12+ characters and role issuer, registrar or admin", email)
+		}
+		hash, err := auth.HashPassword(u.Password)
+		if err != nil {
+			return fmt.Errorf("hash password for %s: %w", email, err)
+		}
+		if _, err := st.UpsertUser(ctx, store.User{Email: email, Name: u.Name, Role: u.Role}, hash); err != nil {
+			return err
+		}
+	}
+	return nil
 }

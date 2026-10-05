@@ -18,9 +18,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	solana "github.com/solana-foundation/solana-go/v2"
 
+	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
@@ -86,11 +88,20 @@ func advanceServer(t *testing.T, fc *fakeChain) (*httptest.Server, *store.Store,
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { _ = st.Close() })
+	svc := &auth.Service{Store: st, Now: time.Now, TTL: time.Hour, Limit: auth.NewLimiter(5, time.Minute)}
 	h := New(slog.New(slog.DiscardHandler), st, Deps{
 		Read:     fc,
 		Executor: executor.New(bin, cfg, nil),
+		Auth:     svc,
 	})
-	srv := httptest.NewServer(h)
+	tok := registrarToken(t, st, svc)
+	// Every request runs as a signed-in registrar unless the test sets its own Authorization header.
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") == "" {
+			r.Header.Set("Authorization", "Bearer "+tok)
+		}
+		h.ServeHTTP(w, r)
+	}))
 	t.Cleanup(srv.Close)
 	log := filepath.Join(dir, "cli.log")
 	t.Setenv("FAKE_CLI_LOG", log)
@@ -263,35 +274,15 @@ func TestAdvanceValidation(t *testing.T) {
 	}
 }
 
-func TestAdvanceRequiresTokenWhenSet(t *testing.T) {
-	fc := &fakeChain{action: &chain.CorporateAction{Series: fSeries, Status: 0}}
-	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "api.db"))
+func registrarToken(t *testing.T, st *store.Store, svc *auth.Service) string {
+	t.Helper()
+	hash, _ := auth.HashPassword("pw-registrar")
+	if _, err := st.UpsertUser(t.Context(), store.User{Email: "op@test.kz", Name: "op", Role: "registrar"}, hash); err != nil {
+		t.Fatal(err)
+	}
+	tok, _, err := svc.Login(t.Context(), "op@test.kz", "pw-registrar")
 	if err != nil {
-		t.Fatalf("open store: %v", err)
+		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = st.Close() })
-	srv := httptest.NewServer(New(slog.New(slog.DiscardHandler), st, Deps{Read: fc, AdvanceToken: "s3cret"}))
-	t.Cleanup(srv.Close)
-	url := srv.URL + "/actions/" + fAction.String() + "/advance"
-	for _, tc := range []struct {
-		auth string
-		want int
-	}{
-		{"", http.StatusUnauthorized},
-		{"Bearer wrong", http.StatusUnauthorized},
-		{"Bearer s3cret", http.StatusServiceUnavailable}, // authorized; no executor configured
-	} {
-		req, _ := http.NewRequest(http.MethodPost, url, strings.NewReader(`{"confirm":true}`))
-		if tc.auth != "" {
-			req.Header.Set("Authorization", tc.auth)
-		}
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			t.Fatalf("post: %v", err)
-		}
-		_ = resp.Body.Close()
-		if resp.StatusCode != tc.want {
-			t.Errorf("auth %q: status = %d, want %d", tc.auth, resp.StatusCode, tc.want)
-		}
-	}
+	return tok
 }

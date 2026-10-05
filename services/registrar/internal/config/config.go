@@ -16,7 +16,8 @@ type Config struct {
 	QuponCLI       string // QUPON_CLI — path to the qupon CLI executable
 	QuponConfig    string // QUPON_CONFIG — base qupon config (series names/mints, baked into the image)
 	ExecConfigPath string // EXEC_CONFIG_PATH — writable config the executor regenerates (base + series registry)
-	AdvanceToken   string // ADVANCE_TOKEN — bearer token for POST /actions/{pda}/advance (empty = open, local only)
+	DemoLogin      bool   // DEMO_LOGIN — enable one-click demo sign-in (POST /auth/demo) and seed the demo users
+	Users          string // QUPON_USERS — JSON [{"email","name","role","password"}] upserted at startup
 	Port           string // PORT — HTTP listen port
 
 	// Scheduler / autopilot (task 024). Scheduler defaults off; -demo-speed
@@ -50,7 +51,8 @@ func FromFlags(args []string) Config {
 		QuponCLI:         env("QUPON_CLI", "qupon"),
 		QuponConfig:      env("QUPON_CONFIG", "config/devnet.json"),
 		ExecConfigPath:   env("EXEC_CONFIG_PATH", "/data/qupon-config.json"),
-		AdvanceToken:     env("ADVANCE_TOKEN", ""),
+		DemoLogin:        envBool("DEMO_LOGIN"),
+		Users:            env("QUPON_USERS", ""),
 		Port:             env("PORT", "8080"),
 		Scheduler:        envBool("SCHEDULER"),
 		DemoSpeed:        envBool("DEMO_SPEED"),

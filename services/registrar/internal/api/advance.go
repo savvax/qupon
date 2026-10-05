@@ -7,7 +7,6 @@ package api
 // with the CLI message).
 
 import (
-	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -54,11 +53,6 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 	return func(w http.ResponseWriter, r *http.Request) {
 		if deps.Read == nil {
 			writeError(w, http.StatusServiceUnavailable, "chain reader not configured (set PROGRAM_ID)")
-			return
-		}
-		if deps.AdvanceToken != "" &&
-			subtle.ConstantTimeCompare([]byte(r.Header.Get("Authorization")), []byte("Bearer "+deps.AdvanceToken)) != 1 {
-			writeError(w, http.StatusUnauthorized, "advance requires Authorization: Bearer <ADVANCE_TOKEN>")
 			return
 		}
 		if deps.Executor == nil {

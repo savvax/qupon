@@ -7,11 +7,8 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
-	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -126,33 +123,6 @@ func TestApproveCliRefusedStaysPending(t *testing.T) {
 	row, _ := st.ApprovalByID(t.Context(), 1)
 	if row.Status != "pending" {
 		t.Fatalf("status after refusal = %s, want pending (retryable)", row.Status)
-	}
-}
-
-func TestApproveRequiresTokenWhenSet(t *testing.T) {
-	fc := &fakeChain{action: (&fakeRead{}).action()}
-	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "t.db"))
-	if err != nil {
-		t.Fatalf("open store: %v", err)
-	}
-	t.Cleanup(func() { _ = st.Close() })
-	if err := st.InsertApproval(t.Context(), store.Approval{
-		Ts: 1, DedupKey: "k", SeriesMint: "m", Step: "step:strike_record", Args: []string{"action:strike"},
-	}); err != nil {
-		t.Fatalf("insert: %v", err)
-	}
-	h := New(slog.New(slog.DiscardHandler), st, Deps{Read: fc, AdvanceToken: "s3cret"})
-	srv := httptest.NewServer(h)
-	t.Cleanup(srv.Close)
-	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/approvals/1/approve", strings.NewReader("{}"))
-	req.Header.Set("Authorization", "Bearer wrong")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("post: %v", err)
-	}
-	_ = resp.Body.Close()
-	if resp.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("wrong token status = %d, want 401", resp.StatusCode)
 	}
 }
 

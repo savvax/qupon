@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	solana "github.com/solana-foundation/solana-go/v2"
 
+	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
@@ -35,9 +36,9 @@ type Deps struct {
 	Chain     *chain.Client
 	Read      ReadModel          // series/investors/schedule/actions/entitlements read models (rest.go)
 	Executor  *executor.Executor // qupon CLI runner (advance.go); nil → /advance answers 503
-	// AdvanceToken (ADVANCE_TOKEN), when set, is required as "Authorization: Bearer <token>" on /advance —
-	// that endpoint signs transactions with the operator keys, so a public deployment must set it.
-	AdvanceToken string
+	Auth      *auth.Service      // sessions + roles (auth.go, rbac.go); nil → write routes answer 503
+	// TestRoutes registers GET /_test/registrar (role-gated no-op) for RBAC tests; never set in production.
+	TestRoutes bool
 }
 
 // New builds the HTTP handler tree.
@@ -170,11 +171,25 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r.Get("/actions/{pda}/iso/seev036.zip", isoSeev036Zip(deps.Chain))
 	r.Get("/entitlements/{pda}/iso/seev036.xml", isoSeev036(deps.Chain))
 
-	r.Post("/actions/{pda}/advance", advanceAction(deps, st, logger))
+	// Back-office sign-in (product spec §4).
+	r.Post("/auth/login", authLogin(deps.Auth))
+	r.Post("/auth/demo", authDemo(deps.Auth))
+	r.Post("/auth/logout", authLogout(deps.Auth))
+	r.Get("/me", authMe(deps.Auth))
 
-	// Scheduler surface (task 024): planned actions + approval gate.
+	// Writes that sign with the operator keys need a registrar session; /actions/{pda}/advance stays as an alias.
+	registrar := requireRole(deps.Auth, "registrar")
+	r.With(registrar).Post("/registrar/actions/{pda}/advance", advanceAction(deps, st, logger))
+	r.With(registrar).Post("/actions/{pda}/advance", advanceAction(deps, st, logger))
+
+	// Scheduler surface (task 024): planned actions + approval gate (approve executes the CLI → registrar only).
 	r.Get("/approvals", listApprovals(st))
-	r.Post("/approvals/{id}/approve", approveApproval(deps, st))
+	r.With(registrar).Post("/registrar/approvals/{id}/approve", approveApproval(deps, st))
+	r.With(registrar).Post("/approvals/{id}/approve", approveApproval(deps, st))
+
+	if deps.TestRoutes {
+		r.With(registrar).Get("/_test/registrar", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, http.StatusOK, map[string]string{}) })
+	}
 
 	return r
 }
@@ -225,5 +240,5 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {
-	writeJSON(w, status, map[string]string{"error": msg})
+	writeErrorCode(w, status, "http_"+strconv.Itoa(status), msg)
 }

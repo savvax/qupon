@@ -2,8 +2,8 @@
 # One command: deploy the registrar API + console to a VPS with Docker Compose and Caddy (automatic HTTPS).
 #   ops/deploy-vps.sh [root@host]          (default root@85.192.29.7; QUPON_HOST overrides <ip-dashes>.sslip.io)
 # The server needs docker + docker compose. Secrets go over ssh stdin into /opt/qupon/*.env (mode 600) — never
-# into git, argv or logs: RPC_URL (keyed devnet RPC), ADVANCE_TOKEN (kept across deploys) and the devnet operator
-# keypairs the executor signs with (registrar, issuer, paying agent).
+# into git, argv or logs: RPC_URL (keyed devnet RPC), QUPON_USERS (back-office accounts, optional) and the devnet
+# operator keypairs the executor signs with (registrar, issuer, paying agent). DEMO_LOGIN=1 enables demo sign-in.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$ROOT"
 TARGET="${1:-${VPS_TARGET:-root@85.192.29.7}}"
@@ -21,17 +21,16 @@ rsync -az --delete \
   ./ "$TARGET:/opt/qupon/src/"
 
 echo "== secrets (server-side only)"
-TOKEN=$("${SSH[@]}" 'grep -s "^ADVANCE_TOKEN=" /opt/qupon/web.env | cut -d= -f2-' || true)
-[ -n "$TOKEN" ] || TOKEN=$(openssl rand -hex 24)
 kp() { tr -d ' \n' < "$1"; }
 {
   echo "RPC_URL=$RPC_URL"
-  echo "ADVANCE_TOKEN=$TOKEN"
+  echo "DEMO_LOGIN=1"
+  [ -z "${QUPON_USERS:-}" ] || echo "QUPON_USERS=$QUPON_USERS"
   echo "QUPON_REGISTRAR_KEYPAIR_JSON=$(kp "$QUPON_REGISTRAR_KEYPAIR")"
   echo "QUPON_ISSUER_KEYPAIR_JSON=$(kp "$QUPON_ISSUER_KEYPAIR")"
   echo "QUPON_PAYING_AGENT_KEYPAIR_JSON=$(kp "$QUPON_PAYING_AGENT_KEYPAIR")"
 } | "${SSH[@]}" 'umask 077; cat > /opt/qupon/registrar.env'
-echo "ADVANCE_TOKEN=$TOKEN" | "${SSH[@]}" 'umask 077; cat > /opt/qupon/web.env'
+"${SSH[@]}" 'umask 077; : > /opt/qupon/web.env' # nothing secret for the web yet; kept for compose's env_file
 
 echo "== build (one image at a time: 1 vCPU) and start"
 # QUPON_HOST persisted next to compose.yml (excluded from rsync --delete), so a manual `docker compose up` keeps routing.

@@ -5,7 +5,6 @@ package api
 // stored argv through the executor (same qupon CLI, same on-chain checks).
 
 import (
-	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -49,11 +48,6 @@ func listApprovals(st *store.Store) http.HandlerFunc {
 // marks it executed.
 func approveApproval(deps Deps, st *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if deps.AdvanceToken != "" &&
-			subtle.ConstantTimeCompare([]byte(r.Header.Get("Authorization")), []byte("Bearer "+deps.AdvanceToken)) != 1 {
-			writeError(w, http.StatusUnauthorized, "approve requires Authorization: Bearer <ADVANCE_TOKEN>")
-			return
-		}
 		if deps.Executor == nil {
 			writeError(w, http.StatusServiceUnavailable, "executor not configured (set QUPON_CLI)")
 			return
