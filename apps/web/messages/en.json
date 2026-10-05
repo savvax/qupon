@@ -675,5 +675,117 @@
         "rate": "Enter a rate between 0.01% and 100%."
       }
     }
+  },
+  "investor": {
+    "chooser": {
+      "title": "Investor cabinet",
+      "body": "Connect a self-custody wallet (Phantom, Backpack, Solflare) to see your holdings, payouts and votes — or try the demo investor.",
+      "connectWallet": "Connect wallet",
+      "tryDemo": "Try the demo investor",
+      "note": "Demo data is shared by every visitor and may be reset · Solana devnet.",
+      "failed": "Could not start the demo — try again."
+    },
+    "identity": {
+      "wallet": "Investor wallet",
+      "demoWallet": "Demo custodial wallet",
+      "demoBadge": "DEMO"
+    },
+    "portfolio": {
+      "title": "Portfolio",
+      "faceTotal": "Face value total",
+      "receivedToDate": "Received to date",
+      "nextPayment": "Next payment",
+      "kycOk": "KYC verified",
+      "kycSuspended": "Investor suspended",
+      "kycNone": "Not registered",
+      "holdings": "Holdings",
+      "holdingsEmpty": "No holdings yet",
+      "holdingsEmptyBody": "This wallet is not registered in any series — the registrar registers investors after a KYC attestation (SIMULATED).",
+      "units": "Units",
+      "coupon": "Coupon",
+      "maturity": "Maturity",
+      "nextEstimate": "Next coupon (est., gross)",
+      "lastPayment": "Last payment",
+      "history": "Entitlement history",
+      "historyEmpty": "No entitlements yet",
+      "historyEmptyBody": "Entitlements appear here after a record date snapshot.",
+      "loadFailed": "Could not load your portfolio",
+      "paidOn": "paid {date}",
+      "col": {
+        "action": "Action",
+        "kind": "Kind",
+        "units": "Units",
+        "gross": "Gross",
+        "net": "Net",
+        "status": "Status",
+        "vote": "Vote",
+        "record": "Record date"
+      }
+    },
+    "placement": {
+      "lead": "Primary placement at par with atomic DvP: bonds against cash in one transaction.",
+      "series": "Series",
+      "units": "Units",
+      "unitsInvalid": "Enter a whole number of at least 1",
+      "pricePerUnit": "Price per unit",
+      "atPar": "at par",
+      "total": "Total",
+      "subscribe": "Subscribe (DvP)",
+      "empty": "Nothing to subscribe to",
+      "emptyBody": "Placement is open to registered investors in active series only.",
+      "demoNote": "Demo mode: the demo investor's custodial wallet signs (SIMULATED).",
+      "walletNote": "Your wallet signs the transaction — make sure the cash account holds enough funds.",
+      "loadFailed": "Could not load series",
+      "toasts": {
+        "subscribing": "Subscribing to {units} × {ticker}…",
+        "subscribed": "Subscribed: {units} × {ticker}"
+      }
+    },
+    "meetings": {
+      "proposalRate": "coupon {from} → {to}",
+      "proposalMaturity": "new maturity {date}",
+      "proposalOther": "terms change",
+      "votingEnds": "voting ends {date}",
+      "yourWeight": "Your weight:",
+      "units": "{units} units",
+      "notSnapshotted": "not in the snapshot",
+      "alreadyVoted": "You voted:",
+      "castYourVote": "Cast your vote",
+      "choice": {
+        "For": "For",
+        "Against": "Against",
+        "Abstain": "Abstain"
+      },
+      "tally": "Tally: for {for} · against {against} · abstain {abstain} of {total} units",
+      "empty": "No open meetings",
+      "emptyBody": "When the issuer calls a bondholder meeting it will appear here.",
+      "loadFailed": "Could not load meetings",
+      "confirmTitle": "Vote “{choice}”?",
+      "confirmBody": "Votes are weighted by the record-date snapshot and cannot be changed.",
+      "cancel": "Cancel",
+      "confirmVote": "Cast vote",
+      "toasts": {
+        "voting": "Sending your vote: {choice}…",
+        "voted": "Vote recorded: {choice}"
+      }
+    },
+    "statements": {
+      "seev036": "seev.036",
+      "note": "Statements are ISO 20022 seev.036 files (SIMULATED — delivery via KASE is not integrated).",
+      "empty": "No payouts yet",
+      "emptyBody": "A statement appears here after every settled payment.",
+      "loadFailed": "Could not load statements",
+      "col": {
+        "action": "Action",
+        "kind": "Kind",
+        "paidOn": "Paid on",
+        "net": "Net paid",
+        "statement": "Statement",
+        "tx": "Transaction"
+      }
+    },
+    "toasts": {
+      "failed": "Something went wrong"
+    }
   }
 }

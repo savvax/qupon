@@ -20,6 +20,10 @@ export default defineConfig({
     url: "http://localhost:3210",
     timeout: 120_000,
     reuseExistingServer: !process.env.CI,
-    env: { API_MOCKING: "enabled", PORT: "3210" },
+    env: {
+      API_MOCKING: "enabled",
+      NEXT_PUBLIC_API_MOCKING: "enabled",
+      PORT: "3210",
+    },
   },
 });

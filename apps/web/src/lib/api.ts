@@ -20,8 +20,12 @@ export const API_BASE_URL =
   process.env.API_URL ??
   "http://localhost:8080";
 
-/** Serve demo fixtures instead of HTTP while the Go registrar does not exist. */
-export const MOCK_ENABLED = process.env.API_MOCKING === "enabled";
+/** Serve demo fixtures instead of HTTP while the Go registrar does not exist.
+ * NEXT_PUBLIC_API_MOCKING mirrors it into the browser bundle (client-side
+ * portal loads); the server-only API_MOCKING stays for deploys. */
+export const MOCK_ENABLED =
+  process.env.API_MOCKING === "enabled" ||
+  process.env.NEXT_PUBLIC_API_MOCKING === "enabled";
 const MOCK = process.env.NODE_ENV === "development" && MOCK_ENABLED;
 let mockWarned = false;
 
