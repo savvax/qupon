@@ -13,7 +13,9 @@ declare -A PK
 for r in "${roles[@]}"; do PK[$r]=$(solana-keygen pubkey "$D/$r.json"); printf '%-13s %s\n' "$r" "${PK[$r]}"; done
 echo; echo "airdropping (devnet is rate-limited; use https://faucet.solana.com with GitHub login if this fails):"
 for r in registrar issuer paying-agent investor1 investor2 investor3 outsider; do
-  for i in 1 2 3; do solana airdrop 2 "${PK[$r]}" >/dev/null 2>&1 && { echo "  $r +2 SOL"; break; } || sleep 5; done
+  ok=0
+  for i in 1 2 3; do solana airdrop 2 "${PK[$r]}" >/dev/null 2>&1 && { echo "  $r +2 SOL"; ok=1; break; } || sleep 5; done
+  [ "$ok" = 1 ] || echo "  $r airdrop FAILED — get SOL at https://faucet.solana.com (GitHub login gives more) for: ${PK[$r]}"
 done
 tmp=$(mktemp)
 jq --arg r "${PK[registrar]}" --arg i "${PK[issuer]}" --arg p "${PK[paying-agent]}" --arg a "${PK[investor1]}" --arg b "${PK[investor2]}" --arg c "${PK[investor3]}" --arg o "${PK[outsider]}" \
