@@ -44,7 +44,27 @@
     "Closed": "Closed",
     "Cancelled": "Cancelled",
     "Abstain": "Abstain",
-    "Draft": "Draft"
+    "Draft": "Draft",
+    "SeriesInitialized": "Series created",
+    "InvestorRegistered": "Investor registered",
+    "InvestorStatusChanged": "Investor status changed",
+    "Subscribed": "Subscribed",
+    "UnitsIssued": "Bonds issued",
+    "ActionAnnounced": "Action announced",
+    "ActionCancelled": "Action cancelled",
+    "HolderSnapshotted": "Holder snapshotted",
+    "SnapshotFinalized": "Snapshot finalized",
+    "ActionFunded": "Escrow funded",
+    "EntitlementPaid": "Entitlement paid",
+    "ActionCompleted": "Action completed",
+    "UnitsRetired": "Bonds retired",
+    "SeriesClosed": "Series closed",
+    "VoteCast": "Vote cast",
+    "MeetingFinalized": "Meeting finalized",
+    "TermsChanged": "Terms changed",
+    "NoQuorum": "No quorum",
+    "Pending": "Pending",
+    "None": "Not voted"
   },
   "landing": {
     "hero": {

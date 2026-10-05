@@ -39,13 +39,15 @@ export default async function RegistrarInvestors({
       key: "type",
       header: t("type"),
       hideBelow: "md",
-      render: (r) => (r.investorType ? t(`types.${r.investorType}`) : t("none")),
+      render: (r) =>
+        r.investorType ? t(`types.${r.investorType}`) : t("none"),
     },
     {
       key: "residency",
       header: t("residency"),
       hideBelow: "md",
-      render: (r) => (r.residency ? t(`residencies.${r.residency}`) : t("none")),
+      render: (r) =>
+        r.residency ? t(`residencies.${r.residency}`) : t("none"),
     },
     {
       key: "tax",

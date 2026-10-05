@@ -23,10 +23,10 @@ export default async function RegistrarAutopilotPage() {
     fetchApprovals("executed").catch(() => [] as Approval[]),
   ]);
   return (
-    <main className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6">
-      <h1 className="text-2xl font-bold">{t("title")}</h1>
+    <div className="mx-auto max-w-[1200px]">
+      <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
       <p className="mt-1 mb-6 text-sm text-n600">{t("lead")}</p>
       <Approvals pending={pending} executed={executed} />
-    </main>
+    </div>
   );
 }

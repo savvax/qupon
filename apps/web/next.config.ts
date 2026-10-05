@@ -13,6 +13,20 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // No x-powered-by header on the public site.
   poweredByHeader: false,
+  // The prototype's console and portal live on in the new cabinets; old links (README, reports, bookmarks) still land.
+  async redirects() {
+    return [
+      { source: "/console", destination: "/registrar", permanent: true },
+      { source: "/series/:mint", destination: "/bonds/:mint", permanent: true },
+      {
+        source: "/actions/:pda",
+        destination: "/registrar/actions/:pda",
+        permanent: true,
+      },
+      { source: "/portal", destination: "/investor", permanent: true },
+      { source: "/kitchen-sink", destination: "/ui", permanent: true },
+    ];
+  },
   // Dev only: Next 15 replays cached fetch responses across refreshes, so the console's router.refresh() after a
   // step kept showing the pre-step status. Production never caches these (force-dynamic + no-store).
   experimental: { serverComponentsHmrCache: false },

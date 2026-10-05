@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { listActivity } from "@/lib/api";
+import { listActivity, listSeries } from "@/lib/api";
 import { boFetch } from "@/lib/bo";
 import { ActivityTabs, type AuditItem } from "../_components/ActivityTabs";
 import { metaTitle } from "@/lib/meta";
@@ -12,7 +12,12 @@ export async function generateMetadata() {
 export default async function RegistrarActivityPage() {
   const t = await getTranslations("registrar.activity");
   // The on-chain feed is evidence, not a dependency (listActivity degrades to []).
-  const events = await listActivity(200);
+  const [raw, series] = await Promise.all([
+    listActivity(200),
+    listSeries().catch(() => []),
+  ]);
+  const events = [...raw].sort((x, y) => y.ts - x.ts || y.id - x.id);
+  const tickers = Object.fromEntries(series.map((x) => [x.mint, x.ticker]));
   let audit: AuditItem[] = [];
   let auditDown = false;
   try {
@@ -23,15 +28,15 @@ export default async function RegistrarActivityPage() {
     auditDown = true; // session/role gates are enforced by the layout; show a notice
   }
   return (
-    <main className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6">
-      <h1 className="text-2xl font-bold">{t("title")}</h1>
+    <div className="mx-auto max-w-[1200px]">
+      <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
       <p className="mt-1 mb-6 text-sm text-n600">{t("lead")}</p>
       {auditDown && (
         <p className="mb-4 rounded-card border border-warn-bd bg-warn-bg px-4 py-2 text-sm text-warn-fg">
           {t("unreachable")}
         </p>
       )}
-      <ActivityTabs events={events} audit={audit} />
-    </main>
+      <ActivityTabs events={events} audit={audit} tickers={tickers} />
+    </div>
   );
 }

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
+import { KIND_TONE } from "@/lib/ui/badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -41,8 +42,11 @@ function Money({
   return (
     <>
       {totals.map((t, i) => (
-        <span key={t.currency}>
-          {i > 0 && " + "}
+        // one line per currency: amounts in different units are never added up
+        <span
+          key={t.currency}
+          className={i > 0 ? "mt-1 block text-lg" : "block"}
+        >
           <Amount minor={t.minor} currency={t.currency} locale={locale} />
         </span>
       ))}
@@ -63,7 +67,7 @@ function PortfolioHeader({ rows }: { rows: Parameters<typeof faceTotals>[0] }) {
       : { tone: "neutral", label: t("kycNone") };
   const kpiLabel = "text-xs font-bold uppercase tracking-wider text-p100";
   const kpiValue =
-    "num mt-1.5 truncate text-2xl font-extrabold [&_span]:text-p100";
+    "num mt-1.5 text-2xl font-extrabold [&_.text-n500]:text-p100";
 
   return (
     <section className="relative overflow-hidden rounded-hero bg-p900 p-6 text-white sm:p-8">
@@ -181,13 +185,23 @@ export function PortfolioView() {
     if (sig) lastTxByMint.set(row.series.mint, sig);
   }
 
-  const history = rows.flatMap((row) =>
-    row.entitlements.map((e) => ({
-      e,
-      row,
-      action: row.actions.find((a) => a.pda === e.actionPda),
-    })),
-  );
+  // One row per entitlement account, attributed to the series whose action it belongs to.
+  const candidates = rows
+    .flatMap((row) =>
+      row.entitlements.map((e) => ({
+        e,
+        row,
+        action: row.actions.find((a) => a.pda === e.actionPda),
+      })),
+    )
+    .sort((x, y) => Number(!x.action) - Number(!y.action));
+  const seen = new Set<string>();
+  const history: typeof candidates = [];
+  for (const h of candidates) {
+    if (seen.has(h.e.pda)) continue;
+    seen.add(h.e.pda);
+    history.push(h);
+  }
 
   return (
     <div className="space-y-8">
@@ -235,8 +249,14 @@ export function PortfolioView() {
                         {row.series.ticker}
                       </span>
                     </td>
-                    <td className={`${TD} font-mono text-xs`}>
-                      {action?.kind ?? "—"}
+                    <td className={TD}>
+                      {action ? (
+                        <Badge tone={KIND_TONE[action.kind] ?? "neutral"}>
+                          {action.kind}
+                        </Badge>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td className={`${TD} num text-right`}>{e.units}</td>
                     <td className={`${TD} text-right`}>

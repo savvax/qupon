@@ -4,8 +4,18 @@
  * buttons, timeline construction from the activity feed, and one-line
  * explanations for on-chain error names. Pure functions — vitest-covered.
  */
-import type { TimelineStep } from "@/components/ui/Timeline";
 import type { ActionDTO, ActivityLike } from "./api";
+
+/** One row of an action timeline (stepper + timeline card on the registrar action page). */
+export type TimelineStep = {
+  label: string;
+  state: "done" | "current" | "pending" | "failed";
+  detail?: string;
+  /** tx signature of the step, when it executed on-chain */
+  signature?: string | null;
+  /** when the step happened (ISO 8601 with +05:00), shown in Almaty time */
+  at?: string | null;
+};
 
 export type StepId =
   | "announce"

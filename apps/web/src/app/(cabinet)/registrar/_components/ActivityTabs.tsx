@@ -33,9 +33,12 @@ const dash = "—";
 export function ActivityTabs({
   events,
   audit,
+  tickers = {},
 }: {
   events: ActivityLike[];
   audit: AuditItem[];
+  /** mint → ticker, so rows name the series instead of showing its address */
+  tickers?: Record<string, string>;
 }) {
   const t = useTranslations("registrar.activity");
   const roles = useTranslations("cabinet.roles");
@@ -50,7 +53,18 @@ export function ActivityTabs({
     {
       key: "series",
       header: t("series"),
-      render: (r) => (r.seriesMint ? <Address value={r.seriesMint} /> : dash),
+      render: (r) =>
+        r.seriesMint ? (
+          tickers[r.seriesMint] ? (
+            <span className="font-semibold text-n900" title={r.seriesMint}>
+              {tickers[r.seriesMint]}
+            </span>
+          ) : (
+            <Address value={r.seriesMint} />
+          )
+        ) : (
+          dash
+        ),
     },
     {
       key: "sig",

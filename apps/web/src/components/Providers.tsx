@@ -6,7 +6,6 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import type { ReactNode } from "react";
-import { ToastProvider } from "@/components/ui/Toast";
 import { Toaster } from "@/components/ui/Toaster";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
@@ -22,7 +21,7 @@ export default function Providers({ children }: { children: ReactNode }) {
     <ConnectionProvider endpoint={ENDPOINT}>
       <WalletProvider wallets={[]} autoConnect>
         <WalletModalProvider>
-          <ToastProvider>{children}</ToastProvider>
+          {children}
           <Toaster />
         </WalletModalProvider>
       </WalletProvider>

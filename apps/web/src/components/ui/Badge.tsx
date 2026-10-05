@@ -1,8 +1,9 @@
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { badgeTone, prettifyStatus } from "@/lib/ui/badge";
 import { cx } from "@/lib/ui/cx";
 
-/** Status pill: pass an API `status` (tone + label derived) or an explicit `tone` with children. */
+/** Status pill: pass an API `status` (tone + translated label derived) or an explicit `tone` with children. */
 export function Badge({
   status,
   tone,
@@ -15,6 +16,8 @@ export function Badge({
   dot?: boolean;
 }) {
   const t = badgeTone(tone ?? status ?? "neutral");
+  // Bare statuses are translated here once (status.* in messages), so no page can forget to.
+  const label = useTranslations("status");
   return (
     <span
       className={cx(
@@ -24,7 +27,12 @@ export function Badge({
       )}
     >
       {dot && <span aria-hidden className="size-1.5 rounded-full bg-current" />}
-      {children ?? (status ? prettifyStatus(status) : null)}
+      {children ??
+        (status
+          ? label.has(status)
+            ? label(status)
+            : prettifyStatus(status)
+          : null)}
     </span>
   );
 }

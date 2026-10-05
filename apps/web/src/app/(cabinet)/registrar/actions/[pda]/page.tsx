@@ -390,17 +390,19 @@ export default async function RegistrarActionPage({
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {action.kind === "BMET" ? (
-          <Kpi
-            label={t("kpi.proposal")}
-            value={
-              <span className="num">
-                {series ? bpsToPercent(series.couponRateBps) : "—"} →{" "}
-                {action.proposalNewRateBps != null
-                  ? bpsToPercent(action.proposalNewRateBps)
-                  : "—"}
-              </span>
-            }
-          />
+          <div className="col-span-2 lg:col-span-1">
+            <Kpi
+              label={t("kpi.proposal")}
+              value={
+                <span className="num">
+                  {series ? bpsToPercent(series.couponRateBps) : "—"} →{" "}
+                  {action.proposalNewRateBps != null
+                    ? bpsToPercent(action.proposalNewRateBps)
+                    : "—"}
+                </span>
+              }
+            />
+          </div>
         ) : (
           <Kpi label={t("kpi.perBond")} value={money(action.perUnitGross)} />
         )}

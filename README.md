@@ -118,13 +118,13 @@ make api                       # Go registrar on :8080 (REST + ISO 20022 + notic
 
 ## Deployed (devnet)
 
-| What                                                        | URL                                                                                                                      |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Console (registrar view)                                    | https://qupon.85-192-29-7.sslip.io                                                                                       |
-| Investor portal — read-only demo investor, no wallet needed | https://qupon.85-192-29-7.sslip.io/portal?owner=6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC                             |
+| What | URL |
+| --- | --- |
+| Site (landing, bond board) | https://qupon.85-192-29-7.sslip.io |
+| Sign in — one-click demo issuer, registrar or investor | https://qupon.85-192-29-7.sslip.io/login |
 | Registrar API                                               | https://api.85-192-29-7.sslip.io/healthz (OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
 
-One VPS, Docker Compose: registrar API (Go + the `qupon` CLI as executor), console (Next.js) and Caddy (automatic HTTPS;
+One VPS, Docker Compose: registrar API (Go + the `qupon` CLI as executor), web app (Next.js) and Caddy (automatic HTTPS;
 `sslip.io` resolves the hostnames to the server IP). The web app reads devnet state; wallet actions are signed in the
 browser; back-office writes go through a session proxy (`/api/bo/*`): the session token lives only in an httpOnly cookie
 and every operator-key action is role-checked by the Go API. Deploy or update with one command (needs ssh access and the
