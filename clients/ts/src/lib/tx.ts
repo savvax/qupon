@@ -1,7 +1,9 @@
 import { inspect } from "node:util";
 import {
   appendTransactionMessageInstructions,
+  createDefaultRpcTransport,
   createSolanaRpc,
+  createSolanaRpcFromTransport,
   createTransactionMessage,
   address,
   type Instruction,
@@ -32,8 +34,30 @@ export function getRpcUrl(): string {
   return process.env.RPC_URL ?? "https://api.devnet.solana.com";
 }
 
+/** Transient transport failures worth retrying: network errors, HTTP 429 and 5xx. */
+export function isTransient(e: unknown): boolean {
+  const text = `${(e as Error)?.message ?? ""} ${JSON.stringify((e as { context?: unknown })?.context ?? {})}`;
+  return /fetch failed|ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|"statusCode":(429|5\d\d)|HTTP error \((429|5\d\d)\)/i.test(text);
+}
+
+/**
+ * RPC client whose transport retries transient failures (≤ 4 retries, backoff). Safe for every call: reads are
+ * idempotent and re-sending an already-signed transaction is a no-op on Solana (same signature).
+ */
 export function createRpc(): QuponRpc {
-  return createSolanaRpc(getRpcUrl());
+  const transport = createDefaultRpcTransport({ url: getRpcUrl() });
+  const retrying = (async (config: Parameters<typeof transport>[0]) => {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await transport(config);
+      } catch (e) {
+        if (attempt > 4 || !isTransient(e)) throw e;
+        console.error(`[rpc] transient error (${(e as Error).message}); retry ${attempt}/4`);
+        await new Promise(r => setTimeout(r, 750 * 2 ** attempt));
+      }
+    }
+  }) as typeof transport;
+  return createSolanaRpcFromTransport(retrying);
 }
 
 /** Wait until a signature reaches at least `confirmed` (no websocket needed). */
