@@ -455,6 +455,47 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 		writeJSON(w, http.StatusOK, out)
 	}))
 
+	// GET /schedule: every series' projected coupon calendar (task 024 — the
+	// autopilot's plan view). Reuses the per-series projection verbatim.
+	r.Get("/schedule", need(func(w http.ResponseWriter, r *http.Request) {
+		recs, err := rm.AllSeries(r.Context())
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		type seriesSchedule struct {
+			Mint           string         `json:"mint"`
+			Ticker         string         `json:"ticker"`
+			Status         string         `json:"status"`
+			NextCouponDate string         `json:"nextCouponDate"`
+			Items          []ScheduleItem `json:"items"`
+		}
+		out := make([]seriesSchedule, 0, len(recs))
+		for _, rec := range recs {
+			m, err := cashMoney(r.Context(), rm, rec.Series.CashMint)
+			if err != nil {
+				fail(w, err)
+				return
+			}
+			actions, err := rm.FetchActionsBySeries(r.Context(), rec.PDA)
+			if err != nil {
+				fail(w, err)
+				return
+			}
+			items, err := schedule(rec.Series, actions, m)
+			if err != nil {
+				fail(w, err)
+				return
+			}
+			out = append(out, seriesSchedule{
+				Mint: rec.Series.Mint.String(), Ticker: trimBytes(rec.Series.Ticker[:]),
+				Status: pick(seriesStatusNames, rec.Series.Status), NextCouponDate: dateTime(rec.Series.NextCouponDate),
+				Items: items,
+			})
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"series": out})
+	}))
+
 	r.Get("/series/{mint}/schedule", need(func(w http.ResponseWriter, r *http.Request) {
 		pda, s, m, ok := loadSeries(w, r)
 		if !ok {

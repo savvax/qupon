@@ -64,31 +64,6 @@ func (s *Store) ListActivity(ctx context.Context, limit int) ([]Activity, error)
 	return out, rows.Err()
 }
 
-// ActionSignatures returns the distinct transaction signatures of an action's
-// settlement events (EntitlementPaid, ActionCompleted) in chain order
-// (oldest first, newest last); implements notice.Activity.
-func (s *Store) ActionSignatures(ctx context.Context, pda string) ([]string, error) {
-	rows, err := s.db.QueryContext(ctx,
-		`SELECT sig, MIN(id) FROM activity
-		 WHERE action_pda = ? AND kind IN ('EntitlementPaid', 'ActionCompleted')
-		 GROUP BY sig ORDER BY MIN(id)`, pda)
-	if err != nil {
-		return nil, fmt.Errorf("action signatures: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	var out []string
-	for rows.Next() {
-		var sig string
-		var first int64
-		if err := rows.Scan(&sig, &first); err != nil {
-			return nil, fmt.Errorf("scan action signature: %w", err)
-		}
-		out = append(out, sig)
-	}
-	return out, rows.Err()
-}
-
 // IngestCursor returns the persisted newest-processed signature ("" if none).
 func (s *Store) IngestCursor(ctx context.Context) (string, error) {
 	var cur string

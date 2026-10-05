@@ -24,6 +24,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/ingest"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
+	"github.com/qupon-kz/qupon/services/registrar/internal/scheduler"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -95,17 +96,45 @@ func run() error {
 		}
 	}
 
+	exec := executor.New(cfg.QuponCLI, cfg.QuponConfig, logger)
+
 	srv := &http.Server{
 		Addr: ":" + cfg.Port,
 		Handler: api.New(logger, st, api.Deps{
 			Read:         readModel(chainClient),
-			Notice:       noticeReader(chainClient, st),
+			Notice:       noticeReader(chainClient),
 			Reconcile:    chainReader,
 			Chain:        chainClient,
-			Executor:     executor.New(cfg.QuponCLI, cfg.QuponConfig, logger),
+			Executor:     exec,
 			AdvanceToken: cfg.AdvanceToken,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	// Autopilot (task 024): --demo-speed implies the scheduler with a cadence
+	// that runs a full coupon cycle unattended.
+	if cfg.Scheduler || cfg.DemoSpeed {
+		if chainClient == nil {
+			logger.Warn("scheduler enabled but PROGRAM_ID is empty: not started")
+		} else {
+			sc := scheduler.DefaultConfig()
+			if cfg.DemoSpeed {
+				sc = scheduler.DemoConfig()
+			}
+			if cfg.Tick != 0 {
+				sc.Tick = cfg.Tick
+			}
+			if cfg.Lead != 0 {
+				sc.Lead = cfg.Lead
+			}
+			if cfg.PaymentDelay != 0 {
+				sc.PaymentDelay = cfg.PaymentDelay
+			}
+			sc.AutoFund = cfg.AutoFund || sc.AutoFund
+			sc.ApprovalRequired = cfg.ApprovalRequired
+			sc.DryRun = cfg.DryRun
+			go (&scheduler.Scheduler{Cfg: sc, Read: chainClient, Exec: exec, Store: st, Log: logger}).Run(ctx)
+		}
 	}
 
 	errCh := make(chan error, 1)
@@ -143,13 +172,10 @@ func redactURL(u string) string {
 	return u
 }
 
-// noticeReader is nil (endpoint answers 503) when no PROGRAM_ID is configured;
-// the store supplies the action's settlement signatures for notice tx links.
-func noticeReader(c *chain.Client, st *store.Store) *notice.Reader {
+// noticeReader is nil (endpoint answers 503) when no PROGRAM_ID is configured.
+func noticeReader(c *chain.Client) *notice.Reader {
 	if c == nil {
 		return nil
 	}
-	r := notice.NewReader(c, "")
-	r.Activity = st
-	return r
+	return notice.NewReader(c, "")
 }

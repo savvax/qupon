@@ -168,6 +168,10 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	r.Post("/actions/{pda}/advance", advanceAction(deps, st, logger))
 
+	// Scheduler surface (task 024): planned actions + approval gate.
+	r.Get("/approvals", listApprovals(st))
+	r.Post("/approvals/{id}/approve", approveApproval(deps, st))
+
 	return r
 }
 

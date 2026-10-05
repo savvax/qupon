@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"slices"
 	"testing"
 )
 
@@ -98,38 +97,6 @@ func TestListActivityReturnsNewestRows(t *testing.T) {
 		if row.Sig != want {
 			t.Errorf("rows[%d].Sig = %s, want %s (oldest row must be dropped)", i, row.Sig, want)
 		}
-	}
-}
-
-func TestActionSignatures(t *testing.T) {
-	ctx := context.Background()
-	st, err := Open(ctx, filepath.Join(t.TempDir(), "sigs.db"))
-	if err != nil {
-		t.Fatalf("open: %v", err)
-	}
-	defer func() { _ = st.Close() }()
-
-	pda := "ActionPDA1"
-	insert := func(kind, sig, action string) {
-		t.Helper()
-		if _, err := st.InsertActivity(ctx, Activity{
-			Ts: 1, Kind: kind, Sig: sig, ActionPDA: &action, Payload: json.RawMessage(`{}`),
-		}); err != nil {
-			t.Fatalf("insert %s/%s: %v", kind, sig, err)
-		}
-	}
-	insert("EntitlementPaid", "sigA", pda)
-	insert("EntitlementPaid", "sigA", pda) // same sig, second event in one tx → deduped
-	insert("ActionCompleted", "sigB", pda)
-	insert("Subscribed", "sigC", pda)          // not a settlement event
-	insert("EntitlementPaid", "sigD", "other") // another action
-
-	got, err := st.ActionSignatures(ctx, pda)
-	if err != nil {
-		t.Fatalf("signatures: %v", err)
-	}
-	if want := []string{"sigA", "sigB"}; !slices.Equal(got, want) {
-		t.Errorf("signatures = %v, want %v (settlement kinds only, oldest first)", got, want)
 	}
 }
 
