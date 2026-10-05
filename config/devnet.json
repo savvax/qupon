@@ -19,7 +19,7 @@
       "mint": "",
       "cashMint": "USDC",
       "isin": "KZ2C00018703",
-      "faceValue": 1000000000,
+      "faceValue": 1000000,
       "couponRateBps": 1595,
       "frequency": 2,
       "dayCount": "THIRTY_360",

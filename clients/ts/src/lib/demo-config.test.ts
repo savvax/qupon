@@ -65,9 +65,10 @@ describe("config/demo.json", () => {
     expect(new Set(inv.map((i) => i.index)).size).toBe(3);
   });
 
-  it("BTRKdemo investors sum to 100 units with distinct indices", () => {
+  // BTRK-demo is scaled to devnet faucet limits (20 USDC per wallet / 2 h): face 1 USDC, 3/3/4 units.
+  it("BTRKdemo investors sum to 10 units with distinct indices", () => {
     const inv = c.series.BTRKdemo.investors;
-    expect(inv.reduce((a, i) => a + i.units, 0)).toBe(100);
+    expect(inv.reduce((a, i) => a + i.units, 0)).toBe(10);
     expect(new Set(inv.map((i) => i.index)).size).toBe(3);
   });
 

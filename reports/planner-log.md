@@ -7,3 +7,4 @@
 - Review passes 1–2 queued fix tasks 9028 9047 9044 9014 9011 9046 9026 9128 9021 9002 9029; most merged.
 - HUMAN_TODO: ticked .env/wallets (done) and the 021/026/022 rebase conflicts (resolved by lead).
 - Human next: answer the open defaults (name Qupon; third action meeting + MCAL; lawyer wording on 50%/⅔ thresholds) — agents continue with defaults; record the Tue 1-minute update video.
+- 06:30 correction (lead): QPNb1 keeps its 2-year term (already on devnet); 019 runs INTR #3 before REDM instead. BTRK-demo scaled to faucet limits (face 1 USDC, 3/3/4 units) in config/demo.json + devnet.json.
