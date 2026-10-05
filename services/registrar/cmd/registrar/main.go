@@ -99,7 +99,7 @@ func run() error {
 		Addr: ":" + cfg.Port,
 		Handler: api.New(logger, st, api.Deps{
 			Read:         readModel(chainClient),
-			Notice:       noticeReader(chainClient),
+			Notice:       noticeReader(chainClient, st),
 			Reconcile:    chainReader,
 			Chain:        chainClient,
 			Executor:     executor.New(cfg.QuponCLI, cfg.QuponConfig, logger),
@@ -143,10 +143,13 @@ func redactURL(u string) string {
 	return u
 }
 
-// noticeReader is nil (endpoint answers 503) when no PROGRAM_ID is configured.
-func noticeReader(c *chain.Client) *notice.Reader {
+// noticeReader is nil (endpoint answers 503) when no PROGRAM_ID is configured;
+// the store supplies the action's settlement signatures for notice tx links.
+func noticeReader(c *chain.Client, st *store.Store) *notice.Reader {
 	if c == nil {
 		return nil
 	}
-	return notice.NewReader(c, "")
+	r := notice.NewReader(c, "")
+	r.Activity = st
+	return r
 }

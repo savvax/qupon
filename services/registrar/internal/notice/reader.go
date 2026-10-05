@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	solana "github.com/solana-foundation/solana-go/v2"
@@ -30,9 +31,19 @@ type Chain interface {
 	FetchMint(ctx context.Context, mint solana.PublicKey) (*chain.Mint, error)
 }
 
+// Activity supplies the settlement transaction signatures recorded for an
+// action in the activity feed (EntitlementPaid / ActionCompleted events);
+// *store.Store implements it. Optional: nil keeps the placeholder link.
+type Activity interface {
+	ActionSignatures(ctx context.Context, pda string) ([]string, error)
+}
+
 // Reader builds notices from on-chain state.
 type Reader struct {
-	chain      Chain
+	chain Chain
+	// Activity, when set, supplies the action's settlement signatures for the
+	// notice tx links (nil keeps the placeholder; see txLinks).
+	Activity   Activity
 	IssuerName string
 }
 
@@ -105,7 +116,45 @@ func (r *Reader) FetchAction(ctx context.Context, pda solana.PublicKey, lang str
 	for range max(int(mint.Decimals)-2, 0) {
 		d.AccruedNetMinor /= 10
 	}
+	d.TxLinks = r.txLinks(ctx, pda)
 	return d, nil
+}
+
+// maxTxLinks caps the notice at five settlement links; with more signatures
+// the newest five win (the final payments matter most in the headline).
+const maxTxLinks = 5
+
+// txLinks resolves the settlement signatures for an action from the activity
+// feed: deduplicated, newest last, capped at maxTxLinks. When nothing is
+// known yet (no feed wired, feed error or no events) it falls back to the
+// action's explorer page — the feed is best-effort and never fails a notice.
+func (r *Reader) txLinks(ctx context.Context, pda solana.PublicKey) []string {
+	var sigs []string
+	if r.Activity != nil {
+		var err error
+		sigs, err = r.Activity.ActionSignatures(ctx, pda.String())
+		if err != nil {
+			slog.Warn("notice: action signatures unavailable", "pda", pda.String(), "err", err)
+			sigs = nil
+		}
+	}
+	seen := make(map[string]bool, len(sigs))
+	links := make([]string, 0, min(len(sigs), maxTxLinks))
+	for _, sig := range sigs {
+		if seen[sig] {
+			continue
+		}
+		seen[sig] = true
+		links = append(links, explorerLink(sig))
+	}
+	if len(links) > maxTxLinks {
+		links = links[len(links)-maxTxLinks:]
+	}
+	if len(links) == 0 {
+		links = append(links, "see explorer for action "+pda.String()+
+			": https://explorer.solana.com/address/"+pda.String()+"?cluster=devnet")
+	}
+	return links
 }
 
 // Notice renders the full notice text for an action PDA.
