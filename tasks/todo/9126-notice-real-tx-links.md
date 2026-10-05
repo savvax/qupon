@@ -1,7 +1,7 @@
 ---
 id: 9126
 title: KASE notice — real transaction links instead of the <TX_SIGNATURE> placeholder
-agent: glm
+agent: claude
 tier: T1
 depends_on: [9026, 9128]
 verify: make verify
