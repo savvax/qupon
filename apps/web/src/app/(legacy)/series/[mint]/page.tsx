@@ -38,15 +38,50 @@ export default async function SeriesPage({
   ]);
 
   const terms: [string, React.ReactNode][] = [
-    ["ISIN", <span key="isin" className="font-mono">{series.isin}</span>],
+    [
+      "ISIN",
+      <span key="isin" className="font-mono">
+        {series.isin}
+      </span>,
+    ],
     ["Face value", <AmountCell key="face" amount={series.faceValue} />],
-    ["Coupon", <span key="coupon" className="font-mono tabular-nums">{bpsToPercent(series.couponRateBps)}</span>],
+    [
+      "Coupon",
+      <span key="coupon" className="font-mono tabular-nums">
+        {bpsToPercent(series.couponRateBps)}
+      </span>,
+    ],
     ["Frequency", <span key="freq">{frequencyLabel(series.frequency)}</span>],
-    ["Day count", <span key="dc" className="font-mono">{series.dayCount}</span>],
-    ["Issue date", <span key="issue" className="font-mono">{formatDate(`${series.issueDate}T00:00:00+05:00`)}</span>],
-    ["Maturity", <span key="mat" className="font-mono">{formatDate(`${series.maturityDate}T00:00:00+05:00`)}</span>],
-    ["Next coupon", <span key="nc" className="font-mono">{formatDate(series.nextCouponDate)}</span>],
-    ["Units issued", <span key="units" className="font-mono">{series.totalIssued}</span>],
+    [
+      "Day count",
+      <span key="dc" className="font-mono">
+        {series.dayCount}
+      </span>,
+    ],
+    [
+      "Issue date",
+      <span key="issue" className="font-mono">
+        {formatDate(`${series.issueDate}T00:00:00+05:00`)}
+      </span>,
+    ],
+    [
+      "Maturity",
+      <span key="mat" className="font-mono">
+        {formatDate(`${series.maturityDate}T00:00:00+05:00`)}
+      </span>,
+    ],
+    [
+      "Next coupon",
+      <span key="nc" className="font-mono">
+        {formatDate(series.nextCouponDate)}
+      </span>,
+    ],
+    [
+      "Units issued",
+      <span key="units" className="font-mono">
+        {series.totalIssued}
+      </span>,
+    ],
     [
       "Quorum / approval",
       <span key="quorum" className="font-mono tabular-nums">
@@ -57,7 +92,11 @@ export default async function SeriesPage({
       "Settlement cash",
       <span key="cash" className="flex items-center gap-2">
         <span className="font-mono">{shortKey(series.cashMint, 6, 4)}</span>
-        <ExplorerLink value={series.cashMint} kind="address" label="explorer ↗" />
+        <ExplorerLink
+          value={series.cashMint}
+          kind="address"
+          label="explorer ↗"
+        />
       </span>,
     ],
     [
@@ -75,7 +114,10 @@ export default async function SeriesPage({
   return (
     <section>
       <div className="flex flex-wrap items-center gap-3">
-        <Link href="/console" className="text-xs text-neutral-500 hover:text-sky-300">
+        <Link
+          href="/console"
+          className="text-xs text-neutral-500 hover:text-sky-300"
+        >
           ← all series
         </Link>
         <h1 className="text-lg font-semibold">{series.ticker}</h1>
@@ -111,13 +153,20 @@ export default async function SeriesPage({
           </thead>
           <tbody>
             {schedule.map((item) => (
-              <tr key={item.couponNumber} className="border-b border-neutral-800/60 last:border-0">
+              <tr
+                key={item.couponNumber}
+                className="border-b border-neutral-800/60 last:border-0"
+              >
                 <td className={`${td} font-mono`}>{item.couponNumber}</td>
                 <td className={`${td} font-mono text-xs`}>
                   {item.periodStart} → {item.periodEnd}
                 </td>
-                <td className={`${td} font-mono text-xs`}>{formatDateTime(item.recordDate)}</td>
-                <td className={`${td} font-mono text-xs`}>{formatDateTime(item.paymentDate)}</td>
+                <td className={`${td} font-mono text-xs`}>
+                  {formatDateTime(item.recordDate)}
+                </td>
+                <td className={`${td} font-mono text-xs`}>
+                  {formatDateTime(item.paymentDate)}
+                </td>
                 <td className={`${td} text-right`}>
                   <AmountCell amount={item.amountPerUnit} />
                 </td>
@@ -154,11 +203,16 @@ export default async function SeriesPage({
           </thead>
           <tbody>
             {investors.map((inv) => (
-              <tr key={inv.owner} className="border-b border-neutral-800/60 last:border-0">
+              <tr
+                key={inv.owner}
+                className="border-b border-neutral-800/60 last:border-0"
+              >
                 <td className={`${td} font-mono text-xs`}>
                   <ExplorerLink value={inv.owner} kind="address" />
                 </td>
-                <td className={`${td} text-right font-mono tabular-nums`}>{inv.units}</td>
+                <td className={`${td} text-right font-mono tabular-nums`}>
+                  {inv.units}
+                </td>
                 <td className={td}>
                   <StatusChip status={inv.status} />
                 </td>
@@ -190,11 +244,18 @@ export default async function SeriesPage({
               </tr>
             )}
             {actions.map((action) => (
-              <tr key={action.pda} className="border-b border-neutral-800/60 last:border-0">
+              <tr
+                key={action.pda}
+                className="border-b border-neutral-800/60 last:border-0"
+              >
                 <td className={`${td} font-mono text-xs`}>{action.corpId}</td>
                 <td className={`${td} font-mono text-xs`}>{action.kind}</td>
-                <td className={`${td} font-mono text-xs`}>{formatDateTime(action.recordAt)}</td>
-                <td className={`${td} font-mono text-xs`}>{formatDateTime(action.paymentAt)}</td>
+                <td className={`${td} font-mono text-xs`}>
+                  {formatDateTime(action.recordAt)}
+                </td>
+                <td className={`${td} font-mono text-xs`}>
+                  {formatDateTime(action.paymentAt)}
+                </td>
                 <td className={td}>
                   <StatusChip status={action.status} />
                 </td>

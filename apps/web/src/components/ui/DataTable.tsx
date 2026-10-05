@@ -15,7 +15,10 @@ export type Column<T> = {
   mono?: boolean;
 };
 
-const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+const collator = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base",
+});
 
 /** Sortable, dense data table. Client component: sort state is local. */
 export function DataTable<T>({
@@ -40,14 +43,17 @@ export function DataTable<T>({
     return [...rows].sort((a, b) => {
       const va = col.value(a);
       const vb = col.value(b);
-      if (typeof va === "number" && typeof vb === "number") return (va - vb) * dir;
+      if (typeof va === "number" && typeof vb === "number")
+        return (va - vb) * dir;
       return collator.compare(String(va), String(vb)) * dir;
     });
   }, [rows, columns, sort]);
 
   const toggle = (key: string) =>
     setSort((s) =>
-      s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
+      s?.key === key
+        ? { key, dir: s.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: "asc" },
     );
 
   return (
@@ -60,7 +66,11 @@ export function DataTable<T>({
                 key={col.key}
                 className={`px-3 py-2 font-medium ${col.align === "right" ? "text-right" : ""}`}
                 aria-sort={
-                  sort?.key === col.key ? (sort.dir === "asc" ? "ascending" : "descending") : "none"
+                  sort?.key === col.key
+                    ? sort.dir === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none"
                 }
               >
                 <button
@@ -70,7 +80,11 @@ export function DataTable<T>({
                 >
                   {col.header}
                   <span className="text-[9px] normal-case">
-                    {sort?.key === col.key ? (sort.dir === "asc" ? "▲" : "▼") : "↕"}
+                    {sort?.key === col.key
+                      ? sort.dir === "asc"
+                        ? "▲"
+                        : "▼"
+                      : "↕"}
                   </span>
                 </button>
               </th>
@@ -80,7 +94,10 @@ export function DataTable<T>({
         <tbody>
           {sorted.length === 0 && (
             <tr>
-              <td className="px-3 py-2 text-neutral-600" colSpan={columns.length}>
+              <td
+                className="px-3 py-2 text-neutral-600"
+                colSpan={columns.length}
+              >
                 {empty}
               </td>
             </tr>

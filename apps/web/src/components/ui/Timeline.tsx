@@ -32,18 +32,26 @@ export function Timeline({ steps }: { steps: TimelineStep[] }) {
       {steps.map((step, i) => (
         <li key={i} className="flex gap-3">
           <div className="flex flex-col items-center">
-            <span className={`mt-1.5 h-2.5 w-2.5 rounded-full border ${DOTS[step.state]}`} />
-            {i < steps.length - 1 && <span className="w-px grow bg-neutral-800" />}
+            <span
+              className={`mt-1.5 h-2.5 w-2.5 rounded-full border ${DOTS[step.state]}`}
+            />
+            {i < steps.length - 1 && (
+              <span className="w-px grow bg-neutral-800" />
+            )}
           </div>
           <div className="min-w-0 pb-5">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span className={`text-sm ${LABELS[step.state]}`}>{step.label}</span>
+              <span className={`text-sm ${LABELS[step.state]}`}>
+                {step.label}
+              </span>
               {step.at && (
                 <span className="font-mono text-xs text-neutral-600">
                   {formatDateTime(step.at)}
                 </span>
               )}
-              {step.signature && <ExplorerLink value={step.signature} kind="tx" />}
+              {step.signature && (
+                <ExplorerLink value={step.signature} kind="tx" />
+              )}
             </div>
             {step.detail && (
               <div

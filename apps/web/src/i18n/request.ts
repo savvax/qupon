@@ -5,5 +5,8 @@ export type Locale = (typeof LOCALES)[number];
 export default getRequestConfig(async () => {
   const c = (await cookies()).get("NEXT_LOCALE")?.value;
   const locale: Locale = c === "ru" ? "ru" : "en";
-  return { locale, messages: (await import(`../../messages/${locale}.json`)).default };
+  return {
+    locale,
+    messages: (await import(`../../messages/${locale}.json`)).default,
+  };
 });

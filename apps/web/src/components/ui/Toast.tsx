@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import { ExplorerLink } from "./ExplorerLink";
 
@@ -59,7 +65,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 aria-label="Dismiss"
-                onClick={() => setItems((prev) => prev.filter((i) => i.id !== t.id))}
+                onClick={() =>
+                  setItems((prev) => prev.filter((i) => i.id !== t.id))
+                }
                 className="text-xs text-neutral-500 hover:text-neutral-200"
               >
                 ✕

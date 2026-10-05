@@ -1,18 +1,17 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useState, type ReactNode } from "react";
-import { Button } from "@/components/ui/Button";
+import type { ReactNode } from "react";
 import { cx } from "@/lib/ui/cx";
 import { activeHref } from "@/lib/ui/nav";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { Logo } from "./Logo";
+import { SignOutButton } from "./SignOutButton";
 
 export type CabinetRole = "issuer" | "registrar" | "investor_demo" | "admin";
 export type CabinetNavItem = { href: string; label: string; icon?: ReactNode };
 export type CabinetUser = { name: string; role: CabinetRole; isDemo: boolean };
-
 
 /**
  * Back-office frame: 240 px sidebar (≥768 px) or bottom tab bar (max 5 items), top bar with breadcrumb slot,
@@ -32,23 +31,11 @@ export function CabinetShell({
   children: ReactNode;
 }) {
   const t = useTranslations("cabinet");
-  const c = useTranslations("common");
   const pathname = usePathname();
-  const router = useRouter();
-  const [signingOut, setSigningOut] = useState(false);
   const active = activeHref(
     pathname,
     nav.map((n) => n.href),
   );
-
-  const signOut = async () => {
-    setSigningOut(true);
-    await fetch("/api/session/logout", { method: "POST" }).catch(
-      () => undefined,
-    );
-    router.push("/login");
-    router.refresh();
-  };
 
   return (
     <div className="min-h-screen">
@@ -104,14 +91,7 @@ export function CabinetShell({
                   {t(`roles.${user.role}`)}
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                loading={signingOut}
-                onClick={signOut}
-              >
-                {c("signOut")}
-              </Button>
+              <SignOutButton />
             </>
           )}
         </header>

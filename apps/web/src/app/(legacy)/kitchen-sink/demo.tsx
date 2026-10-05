@@ -51,7 +51,13 @@ const COLUMNS: Column<Row>[] = [
     value: (r) => r.owner,
     render: (r) => <ExplorerLink value={r.owner} kind="address" />,
   },
-  { key: "units", header: "Units", align: "right", mono: true, value: (r) => r.units },
+  {
+    key: "units",
+    header: "Units",
+    align: "right",
+    mono: true,
+    value: (r) => r.units,
+  },
   {
     key: "gross",
     header: "Gross",
@@ -94,7 +100,11 @@ function ToastDemo() {
       <button
         type="button"
         onClick={() =>
-          toast.push({ message: "Coupon paid to 3 holders", kind: "success", signature: SIG })
+          toast.push({
+            message: "Coupon paid to 3 holders",
+            kind: "success",
+            signature: SIG,
+          })
         }
         className="rounded border border-neutral-700 px-2 py-1 text-xs hover:border-neutral-500"
       >

@@ -9,6 +9,8 @@ export type Toast = {
   body?: string;
   /** Transaction signature — rendered as a devnet explorer link by `<Toaster />`. */
   tx?: string;
+  /** Optional follow-up link, e.g. "Sign in" when the session expired. */
+  action?: { href: string; label: string };
 };
 
 export type ToastInput = Omit<Toast, "id"> & { id?: string };

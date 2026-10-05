@@ -56,6 +56,14 @@ function ToastCard({ toast: t }: { toast: Toast }) {
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold">{t.title}</div>
           {t.body && <div className="mt-0.5 text-sm text-n600">{t.body}</div>}
+          {t.action && (
+            <a
+              href={t.action.href}
+              className="mt-1 inline-block text-sm font-bold text-g700 underline-offset-2 hover:underline"
+            >
+              {t.action.label}
+            </a>
+          )}
           {t.tx && (
             <span className="mt-1 block">
               <Address value={t.tx} kind="tx" />

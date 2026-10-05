@@ -65,7 +65,8 @@ apps/web/src/
   - `boFetch<T>(path: string, init?: RequestInit): Promise<T>` (server only; base `API_INTERNAL_URL ?? NEXT_PUBLIC_API_URL`; throws `BoError {status, code, message, onchainError?}`)
   - `isAllowedWrite(path: string): boolean` — allowlist `^(issuer|registrar|demo)/[A-Za-z0-9/_-]{1,200}$`, no `..`, no `//`
   - `boPost<T>(path: string, body: unknown): Promise<T>` (client; throws `BoError`)
-  - `runWrite<T>(opts: { pending: string; success: (r: T) => string; call: () => Promise<T>; txs?: (r: T) => string[] }): Promise<T | null>` — toast pending → success (first tx as link) / error (explained); on 401 shows the session-expired toast with a sign-in link
+  - `useRunWrite()` (`src/lib/useRunWrite.ts`, client hook) → `runWrite<T>(opts: { pending: string; success: (r: T) => string; call: () => Promise<T>; txs?: (r: T) => string[] }): Promise<T | null>` — toast pending → success (first tx as link) / error (explained, RU/EN via `errors.*`, on-chain names via `errors.onchain.*`); on 401 the toast carries a "Sign in again" link. Usage: `const runWrite = useRunWrite(); await runWrite({ pending, success, call: () => boPost(path, body), txs: (r) => r.signatures })`
+  - **As built (task 301):** role layouts `src/app/(cabinet)/{issuer,registrar,investor}/layout.tsx` (CabinetShell + nav from `src/app/(cabinet)/nav.tsx`; issuer/registrar call `requireRole`, investor is open) and temporary home pages using `(cabinet)/Placeholder.tsx` — tasks 302/303/306 replace the `page.tsx` files. Mock mode (`API_MOCKING=enabled`, dev): demo sign-in works without the Go API (`mock:<role>` tokens), `/api/bo/*` writes return `{mock: true, signatures: ["MockSig…"]}`, `boFetch` reads `src/mocks/api.ts` — so cabinet e2e specs run in CI. Error bodies: `{code, message, onchainError?}`; `onchainError` may be raw CLI text — always go through `explainBoError`.
   - Cookie name `qupon_session`
 
 - [ ] **Step 1: failing tests**
@@ -176,13 +177,12 @@ export const sessionCookie = (token: string) => ({ name: SESSION_COOKIE, value: 
 ### Task 2: Issuer cabinet
 
 **Files:**
-- Create: `src/app/(cabinet)/layout.tsx`, `src/app/(cabinet)/issuer/{page,series/page,series/new/page,series/[mint]/page}.tsx`, `src/app/(cabinet)/issuer/_components/{NewSeriesWizard,AnnounceDialog,MeetingDialog,FundButton,SchedulePreview}.tsx`, `src/lib/schedulePreview.ts` (+ test), `e2e/issuer.spec.ts`
+- Create: `src/app/(cabinet)/issuer/{series/page,series/new/page,series/[mint]/page}.tsx` (replace `issuer/page.tsx`; the issuer layout + nav exist since 301), `src/app/(cabinet)/issuer/_components/{NewSeriesWizard,AnnounceDialog,MeetingDialog,FundButton,SchedulePreview}.tsx`, `src/lib/schedulePreview.ts` (+ test), `e2e/issuer.spec.ts`
 - Modify: messages (`issuer.*`)
 
 **Interfaces:**
 - Consumes: `requireRole`, `boFetch`, `runWrite`/`boPost`, Plan 1 components, `listSeries/getSeries/getSchedule/listActions`, Go `/issuer/*`.
 - Produces:
-  - `(cabinet)/layout.tsx`: `const u = await getSession()`; nav by role: issuer → Dashboard `/issuer`, Series `/issuer/series`, New series `/issuer/series/new`; registrar → Dashboard, Actions, Investors, Activity, Autopilot; investor_demo → Portfolio, Placement, Meetings, Statements.
   - `schedulePreview(terms: { faceMinor: bigint; rateBps: number; frequency: 1|2|4|12; dayCount: "THIRTY_360"|"ACT_365"; issueDate: string; maturityDate: string }): { n: number; periodStart: string; periodEnd: string; perUnitMinor: bigint }[]` — 30E/360 = face × rate / 10000 / frequency, rounded half-up; ACT/365 = face × rate × days / (10000 × 365) half-up; last row's period ends at maturity.
 
 - [ ] **Step 1: failing test**

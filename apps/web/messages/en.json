@@ -180,7 +180,39 @@
   },
   "bonds": {},
   "bond": {},
-  "login": {},
+  "login": {
+    "title": "Sign in to the back office",
+    "lead": "Issuers and registrars sign in with the account their organisation was given.",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "accountsNote": "No account? Use a demo identity — every action still runs on Solana devnet.",
+    "errors": {
+      "bad_credentials": "Wrong email or password.",
+      "rate_limited": "Too many attempts — wait a minute and try again.",
+      "generic": "Sign-in failed — try again in a moment."
+    },
+    "demo": {
+      "badge": "Demo",
+      "title": "Try it as…",
+      "lead": "One click, no password. Demo accounts sign real devnet transactions with the operator keys.",
+      "issuer": {
+        "title": "Issuer",
+        "text": "Issue a series, announce coupons, fund escrow, call a meeting"
+      },
+      "registrar": {
+        "title": "Registrar",
+        "text": "Onboard investors, run record date → snapshot → payout"
+      },
+      "investor": {
+        "title": "Investor",
+        "text": "Portfolio, payouts, placement and voting"
+      },
+      "disabled": "Demo sign-in is turned off on this deployment.",
+      "failed": "Could not start the demo — try again.",
+      "note": "Demo data is shared by every visitor and may be reset."
+    }
+  },
   "footer": {
     "devnet": "Runs on Solana devnet with test tokens — no real money moves.",
     "source": "Source code",
@@ -195,6 +227,71 @@
       "registrar": "Registrar",
       "investor_demo": "Investor",
       "admin": "Administrator"
+    },
+    "menu": {
+      "dashboard": "Dashboard",
+      "series": "Series",
+      "newSeries": "New series",
+      "actions": "Actions",
+      "investors": "Investors",
+      "activity": "Activity",
+      "autopilot": "Autopilot",
+      "portfolio": "Portfolio",
+      "placement": "Placement",
+      "meetings": "Meetings",
+      "statements": "Statements"
+    },
+    "placeholder": {
+      "hello": "Hello, {name}",
+      "welcome": "Welcome",
+      "title": "Your cabinet is being finished",
+      "body": "Meanwhile the full flow is available in the operator console.",
+      "console": "Open the console"
     }
+  },
+  "errors": {
+    "failed": "Something went wrong",
+    "sessionExpiredTitle": "Session expired",
+    "signIn": "Sign in again",
+    "sessionExpired": "Your session expired — sign in again.",
+    "forbidden": "Your role can't do this.",
+    "throttled": "Demo limit reached — try again in a few minutes.",
+    "unreachable": "The registrar service is unreachable — try again in a moment.",
+    "onchain": {
+      "Unauthorized": "this step needs the registrar or paying-agent key — the configured operator wallet does not match",
+      "InvalidAuthority": "authority mismatch — the step must be signed by the authority stored on-chain",
+      "InvestorNotActive": "the investor record is not Active (never registered or suspended)",
+      "InvestorSuspended": "the investor is suspended — reinstate before snapshotting or paying",
+      "SeriesNotActive": "the series is not Active (matured or closed) for this operation",
+      "ActionAlreadyOpen": "another corporate action is still open — complete or cancel it first",
+      "InvalidDates": "dates violate the Almaty-midnight / period rules (record ≤ payment, period = schedule period)",
+      "TooEarly": "the on-chain clock has not reached the scheduled time yet — wait and retry",
+      "WrongStatus": "the action is not in the status this instruction requires",
+      "MintNotPaused": "record date was not struck — the mint must be paused while snapshotting",
+      "MintPaused": "the mint is paused for the record window — complete or cancel the action to resume",
+      "AccountMintMismatch": "token account belongs to a different mint than expected",
+      "AccountOwnerMismatch": "token account belongs to a different owner than expected",
+      "SupplyMismatch": "snapshot units ≠ mint supply — a holder is missing, run the snapshot step again",
+      "Underfunded": "escrow holds less than Σ net + tax + principal — fund the escrow first",
+      "AlreadyProcessed": "already processed — the step is idempotent, nothing to redo",
+      "NothingToDo": "nothing to do (e.g. empty snapshot or already-final action)",
+      "MathOverflow": "amounts exceed u64 in the integer math — split the batch",
+      "RoundingDrift": "per-holder rounding drifted from half-up — snapshot again",
+      "EntitlementCalcMismatch": "accrual days do not match the crate day count for the period",
+      "VotingClosed": "the voting window has ended — votes are no longer accepted",
+      "VotingOpen": "voting is still open — finalize after the deadline or full turnout",
+      "AlreadyVoted": "this wallet already voted (one vote per snapshot entitlement)",
+      "NoQuorum": "turnout below the quorum threshold — the meeting fails for lack of participation",
+      "NotApproved": "meeting result is not Approved — there is nothing to apply",
+      "SupplyNotZero": "bond mint supply is not zero — retire every holder before closing the series",
+      "BatchTooLarge": "too many holders for one transaction — the CLI batches automatically, retry",
+      "InvalidParams": "invalid instruction parameters (e.g. price ≠ face value, or a CHAN announce)",
+      "KycAttestationInvalid": "no live KYC attestation (Solana Attestation Service) matching this wallet and its attributes"
+    }
+  },
+  "forbidden": {
+    "title": "This area is for another role",
+    "body": "You are signed in with a role that can't open this page.",
+    "home": "Go to my cabinet"
   }
 }

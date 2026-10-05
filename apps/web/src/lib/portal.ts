@@ -14,7 +14,12 @@ import {
   getSubscribeInstructionAsync,
 } from "@qupon/client/src/generated";
 import { investorPda, seriesPda } from "@qupon/client/src/lib/pda";
-import { DayCount, type Ymd, accrualDays, ymd } from "@qupon/client/src/lib/daycount";
+import {
+  DayCount,
+  type Ymd,
+  accrualDays,
+  ymd,
+} from "@qupon/client/src/lib/daycount";
 import { Kind, computeEntitlement } from "@qupon/client/src/lib/entitlement";
 import {
   type ActionDTO,
@@ -62,7 +67,9 @@ export async function loadPortal(owner: string): Promise<SeriesRow[]> {
         listActions(s.mint),
       ]);
       const lists = await Promise.all(
-        actions.map((a) => listEntitlements(a.pda).catch(() => [] as EntitlementDTO[])),
+        actions.map((a) =>
+          listEntitlements(a.pda).catch(() => [] as EntitlementDTO[]),
+        ),
       );
       return {
         series: s,
@@ -80,7 +87,8 @@ export function nextCoupon(row: SeriesRow): ScheduleItem | undefined {
   const now = Date.now();
   return (
     row.schedule.find(
-      (i) => i.status !== "Completed" && new Date(i.paymentDate).getTime() >= now,
+      (i) =>
+        i.status !== "Completed" && new Date(i.paymentDate).getTime() >= now,
     ) ?? row.schedule.find((i) => i.status !== "Completed")
   );
 }
@@ -88,7 +96,12 @@ export function nextCoupon(row: SeriesRow): ScheduleItem | undefined {
 function parseYmd(s: string): Ymd {
   const parts = s.split("-").map(Number);
   const [y, m, d] = parts;
-  if (parts.length !== 3 || y === undefined || m === undefined || d === undefined) {
+  if (
+    parts.length !== 3 ||
+    y === undefined ||
+    m === undefined ||
+    d === undefined
+  ) {
     throw new Error(`expected YYYY-MM-DD, got '${s}'`);
   }
   return ymd(y, m, d);
@@ -106,9 +119,14 @@ export function estimateCoupon(
   period: Pick<ScheduleItem, "periodStart" | "periodEnd">,
 ): bigint | undefined {
   const dc = DAY_COUNT_CODES[series.dayCount];
-  if (dc === undefined || !period.periodStart || !period.periodEnd) return undefined;
+  if (dc === undefined || !period.periodStart || !period.periodEnd)
+    return undefined;
   try {
-    const days = accrualDays(dc, parseYmd(period.periodStart), parseYmd(period.periodEnd));
+    const days = accrualDays(
+      dc,
+      parseYmd(period.periodStart),
+      parseYmd(period.periodEnd),
+    );
     return computeEntitlement({
       units: BigInt(units),
       face: BigInt(series.faceValue.minor),
@@ -124,14 +142,18 @@ export function estimateCoupon(
 }
 
 /** Actions an investor can vote on right now: meetings with voting open. */
-export function openMeetings(rows: SeriesRow[]): { row: SeriesRow; action: ActionDTO }[] {
+export function openMeetings(
+  rows: SeriesRow[],
+): { row: SeriesRow; action: ActionDTO }[] {
   const now = Date.now();
   return rows.flatMap((row) =>
     row.actions.flatMap((a) => {
       if (a.kind !== "BMET" || a.status !== "VotingOpen" || !a.votingEndsAt) {
         return [];
       }
-      return new Date(a.votingEndsAt).getTime() > now ? [{ row, action: a }] : [];
+      return new Date(a.votingEndsAt).getTime() > now
+        ? [{ row, action: a }]
+        : [];
     }),
   );
 }
@@ -169,7 +191,10 @@ export async function buildSubscribeIx(
   const investor = await investorPda(pda, owner.address);
   const record = (await fetchInvestor(rpc, investor)).data;
   const { value: cashMintAccount } = await rpc
-    .getAccountInfo(account.cashMint, { commitment: "confirmed", encoding: "base64" })
+    .getAccountInfo(account.cashMint, {
+      commitment: "confirmed",
+      encoding: "base64",
+    })
     .send();
   if (cashMintAccount === null) {
     throw new Error(`cash mint ${account.cashMint} not found on chain`);

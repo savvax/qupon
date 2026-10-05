@@ -1,5 +1,6 @@
 import type { components } from "./api-schema";
 import { mockGet, mockGetText } from "../mocks/api";
+import { BoError, boPost } from "./boClient";
 
 export type Schemas = components["schemas"];
 export type Amount = Schemas["Amount"];
@@ -137,29 +138,19 @@ export async function listActivity(limit = 200): Promise<ActivityLike[]> {
   return body.events ?? [];
 }
 
-/** POST /actions/{pda}/advance — runs one lifecycle step via the qupon CLI. */
+/** Advance one lifecycle step through the session proxy (registrar session required). */
 export async function postAdvance(
   pda: string,
   req: { confirm: boolean; autofund?: boolean },
 ): Promise<AdvanceResponse> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  // The advance call goes through our own server-side route
-  // (app/api/advance/[pda]/route.ts) so ADVANCE_TOKEN never reaches the browser.
-  const res = await fetch(`/api/advance/${pda}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(req),
-  });
-  const raw = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-  if (!res.ok) {
-    // The Go API answers {"error": …} (writeError); onchain names live inside it.
-    const message =
-      typeof raw.error === "string"
-        ? raw.error
-        : `HTTP ${res.status} ${res.statusText}`;
-    throw new ApiError(res.status, `http_${res.status}`, message);
+  try {
+    return await boPost<AdvanceResponse>(
+      `registrar/actions/${pda}/advance`,
+      req,
+    );
+  } catch (e) {
+    if (e instanceof BoError)
+      throw new ApiError(e.status, e.code, e.message, e.onchainError);
+    throw e;
   }
-  return raw as AdvanceResponse;
 }

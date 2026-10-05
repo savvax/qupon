@@ -40,7 +40,8 @@ function prettify(status: string): string {
 }
 
 export function StatusChip({ status }: { status: string }) {
-  const tone = TONES[status] ?? "border-neutral-700 bg-neutral-900 text-neutral-300";
+  const tone =
+    TONES[status] ?? "border-neutral-700 bg-neutral-900 text-neutral-300";
   return (
     <span
       title={status}

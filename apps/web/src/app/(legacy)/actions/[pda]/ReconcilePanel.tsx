@@ -52,24 +52,35 @@ export function ReconcilePanel({ pda }: { pda: string }) {
               {report.ok ? "OK" : "MISMATCH"}
             </span>
             <span className="text-neutral-500">
-              holders {report.holders} · supply {report.supply} · snapshotted {report.unitsSnapshotted}
+              holders {report.holders} · supply {report.supply} · snapshotted{" "}
+              {report.unitsSnapshotted}
             </span>
             {report.checkedAt && (
-              <span className="font-mono text-neutral-600">{formatDateTime(new Date(report.checkedAt * 1000).toISOString())}</span>
+              <span className="font-mono text-neutral-600">
+                {formatDateTime(
+                  new Date(report.checkedAt * 1000).toISOString(),
+                )}
+              </span>
             )}
           </div>
           <div className="grid gap-1 font-mono text-[11px] text-neutral-400">
             <div>
-              hash {report.hashMatches ? "✓ matches" : "✗ differs"} · expected {report.expectedHash} · on-chain {report.onchainHash}
+              hash {report.hashMatches ? "✓ matches" : "✗ differs"} · expected{" "}
+              {report.expectedHash} · on-chain {report.onchainHash}
             </div>
-            <div>totals {report.totalsMatch ? "✓ match" : "✗ differ"} (Σ net+tax+principal vs total_paid)</div>
+            <div>
+              totals {report.totalsMatch ? "✓ match" : "✗ differ"} (Σ
+              net+tax+principal vs total_paid)
+            </div>
           </div>
           {report.mismatches.length > 0 && (
             <ul className="space-y-1 text-red-300">
               {report.mismatches.map((m, i) => (
                 <li key={i} className="font-mono">
                   {m.owner}: {m.reason}
-                  {m.fields && m.fields.length > 0 ? ` (${m.fields.join(", ")})` : ""}
+                  {m.fields && m.fields.length > 0
+                    ? ` (${m.fields.join(", ")})`
+                    : ""}
                 </li>
               ))}
             </ul>

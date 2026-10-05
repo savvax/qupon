@@ -13,23 +13,28 @@ const series = {
 describe("estimateCoupon (TS daycount lib)", () => {
   it("10 units × 1,000 KZT face × 10% × 180/360 = 500.00 KZT (brief vector)", () => {
     expect(
-      estimateCoupon(series, "10", { periodStart: "2026-09-01", periodEnd: "2027-03-01" }),
+      estimateCoupon(series, "10", {
+        periodStart: "2026-09-01",
+        periodEnd: "2027-03-01",
+      }),
     ).toBe(50_000n);
   });
 
   it("65 units → 3,250.00 KZT", () => {
     expect(
-      estimateCoupon(series, "65", { periodStart: "2026-09-01", periodEnd: "2027-03-01" }),
+      estimateCoupon(series, "65", {
+        periodStart: "2026-09-01",
+        periodEnd: "2027-03-01",
+      }),
     ).toBe(325_000n);
   });
 
   it("returns undefined for an unsupported day count", () => {
     expect(
-      estimateCoupon(
-        { ...series, dayCount: "ACT_ACT" },
-        "10",
-        { periodStart: "2026-09-01", periodEnd: "2027-03-01" },
-      ),
+      estimateCoupon({ ...series, dayCount: "ACT_ACT" }, "10", {
+        periodStart: "2026-09-01",
+        periodEnd: "2027-03-01",
+      }),
     ).toBeUndefined();
   });
 });
@@ -66,7 +71,11 @@ describe("vote choices", () => {
 describe("error name extraction", () => {
   it("pulls the Anchor error name out of simulation logs", () => {
     const e = new Error("failed to send transaction", {
-      cause: { logs: ["AnchorError occurred. Error Code: AlreadyVoted. Error Number: 6002."] },
+      cause: {
+        logs: [
+          "AnchorError occurred. Error Code: AlreadyVoted. Error Number: 6002.",
+        ],
+      },
     });
     expect(onchainErrorName(e)).toBe("AlreadyVoted");
     expect(explainError(e)).toContain("AlreadyVoted");
