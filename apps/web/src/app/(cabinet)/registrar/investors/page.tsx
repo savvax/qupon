@@ -27,39 +27,36 @@ export default async function RegistrarInvestors({
     {
       key: "owner",
       header: t("owner"),
-      mono: true,
       render: (r) => <Address value={r.owner} />,
     },
     {
       key: "units",
       header: t("units"),
-      mono: true,
       align: "right",
-      value: (r) => r.units,
+      render: (r) => <span className="num">{r.units}</span>,
     },
     {
       key: "type",
       header: t("type"),
       hideBelow: "md",
-      value: (r) => (r.investorType ? t(`types.${r.investorType}`) : t("none")),
+      render: (r) => (r.investorType ? t(`types.${r.investorType}`) : t("none")),
     },
     {
       key: "residency",
       header: t("residency"),
       hideBelow: "md",
-      value: (r) => (r.residency ? t(`residencies.${r.residency}`) : t("none")),
+      render: (r) => (r.residency ? t(`residencies.${r.residency}`) : t("none")),
     },
     {
       key: "tax",
       header: t("tax"),
       hideBelow: "md",
-      value: (r) =>
+      render: (r) =>
         r.taxRateBps != null ? bpsToPercent(r.taxRateBps) : t("none"),
     },
     {
       key: "kyc",
       header: t("kyc"),
-      mono: true,
       render: (r) =>
         r.kycRef ? (
           <Address value={r.kycRef} />
