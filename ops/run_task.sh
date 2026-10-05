@@ -17,6 +17,22 @@ $(cat "$TASK")
 
 When finished print exactly one final line: DONE:$ID  (or BLOCKED:$ID <reason>)."
 
+# Resume: a previous attempt that died (connection drop, timeout, dirty exit) left its work as a patch vs main.
+# Apply it to this fresh worktree, commit it as WIP and tell the agent to finish instead of starting over.
+NAME=$(basename "$TASK" .md)
+WIP=$(ls -t "$ROOT"/logs/"$NAME".*.wip.patch 2>/dev/null | head -1 || true)
+if [ -n "$WIP" ]; then
+  if git apply --index "$WIP" 2>/dev/null && git commit -qm "wip($ID): resume previous attempt" 2>/dev/null; then
+    PROMPT="$PROMPT
+
+NOTE: a previous attempt at this task was interrupted. Its work is already applied and committed on this branch as 'wip($ID): resume previous attempt' (see: git show --stat HEAD). Review it, finish what is missing, run make verify, commit and print DONE:$ID."
+    echo "[run_task] resumed from $WIP" >&2
+  else
+    git reset -q --hard 2>/dev/null; echo "[run_task] could not apply $WIP (main moved on); starting fresh" >&2
+  fi
+  mv "$WIP" "$WIP.applied" 2>/dev/null || true
+fi
+
 # `timeout` is GNU coreutils; on macOS install with `brew install coreutils` (gtimeout)
 TMO=$(command -v timeout || command -v gtimeout || true)
 run_with_timeout() { if [ -n "$TMO" ]; then "$TMO" "${TIMEOUT_MIN}m" "$@"; else "$@"; fi; }
@@ -62,6 +78,15 @@ if [ -n "$CUR" ] && [ "$CUR" != "$BR" ]; then
   else
     echo "BLOCKED:$ID agent committed on branch $CUR instead of $BR (work kept on $CUR)"
   fi
+fi
+# Salvage: unless the agent finished cleanly (DONE + clean tree), keep everything it did vs main as a patch for the
+# next attempt — the orchestrator deletes this worktree and branch on failure.
+if ! grep -qs "DONE:$ID" "$LOGP".txt "$LOGP".json || [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+  git add -A 2>/dev/null
+  if ! git diff --cached --quiet main 2>/dev/null; then
+    git diff --cached --binary main > "$LOGP.wip.patch" && echo "[run_task] saved work for the next attempt: $LOGP.wip.patch" >&2
+  fi
+  git reset -q 2>/dev/null
 fi
 # Diagnostics: the orchestrator rejects a dirty worktree (clean=N); record what was left behind.
 DIRTY=$(git status --porcelain 2>/dev/null | head -20)
