@@ -17,10 +17,13 @@ anchor build
 anchor deploy --provider.cluster devnet --provider.wallet "$KP"
 PID=$(solana-keygen pubkey "$PKP")
 tmp=$(mktemp); jq --arg p "$PID" '.programId=$p' config/devnet.json > "$tmp" && mv "$tmp" config/devnet.json
-if ! { anchor idl init --provider.cluster "${RPC_URL:-devnet}" --provider.wallet "$KP" --filepath target/idl/qupon_bonds.json "$PID" 2>/dev/null || \
-  anchor idl upgrade --provider.cluster "${RPC_URL:-devnet}" --provider.wallet "$KP" --filepath target/idl/qupon_bonds.json "$PID"; }; then
-  echo "error: failed to publish IDL for $PID" >&2; exit 1
-fi
+# Publish the IDL (Program Metadata Program). Right after an upgrade the write can fail transiently — retry.
+publish_idl() {
+  anchor idl upgrade --provider.cluster "${RPC_URL:-devnet}" --provider.wallet "$KP" --filepath target/idl/qupon_bonds.json "$PID" ||
+    anchor idl init --provider.cluster "${RPC_URL:-devnet}" --provider.wallet "$KP" --filepath target/idl/qupon_bonds.json "$PID"
+}
+ok=0; for i in 1 2 3 4; do publish_idl && { ok=1; break; }; echo "IDL publish attempt $i failed; retrying" >&2; sleep $((i * 15)); done
+[ "$ok" = 1 ] || { echo "error: failed to publish IDL for $PID" >&2; exit 1; }
 # Verify the IDL is actually fetchable on devnet (acceptance criterion of task 014).
 if ! anchor idl fetch --provider.cluster "${RPC_URL:-devnet}" "$PID" >/dev/null; then
   echo "error: IDL for $PID is not fetchable on devnet" >&2; exit 1
