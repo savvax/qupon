@@ -83,6 +83,8 @@ func run() error {
 		}
 		poller := ingest.NewPoller(cfg.RPCURL, program, st, logger)
 		go poller.Run(ctx)
+	} else {
+		logger.Warn("PROGRAM_ID empty: activity poller disabled")
 	}
 
 	// Index all Series accounts at startup so GET /series serves the chain;

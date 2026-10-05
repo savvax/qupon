@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"testing"
 )
@@ -62,5 +64,38 @@ func TestPing(t *testing.T) {
 	defer func() { _ = st.Close() }()
 	if err := st.Ping(context.Background()); err != nil {
 		t.Fatalf("ping: %v", err)
+	}
+}
+func TestListActivityReturnsNewestRows(t *testing.T) {
+	ctx := context.Background()
+	st, err := Open(ctx, filepath.Join(t.TempDir(), "activity.db"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer func() { _ = st.Close() }()
+
+	const limit = 5
+	for i := 1; i <= limit+1; i++ { // insert one row more than the limit
+		if _, err := st.InsertActivity(ctx, Activity{
+			Ts: int64(i), Kind: "Subscribed", Sig: fmt.Sprintf("sig%d", i), Slot: uint64(i),
+			Payload: json.RawMessage(`{"units":"1"}`),
+		}); err != nil {
+			t.Fatalf("insert %d: %v", i, err)
+		}
+	}
+
+	rows, err := st.ListActivity(ctx, limit)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(rows) != limit {
+		t.Fatalf("rows = %d, want %d", len(rows), limit)
+	}
+	// chain order (oldest first) and the NEWEST `limit` rows, not the oldest
+	for i, row := range rows {
+		want := fmt.Sprintf("sig%d", i+2)
+		if row.Sig != want {
+			t.Errorf("rows[%d].Sig = %s, want %s (oldest row must be dropped)", i, row.Sig, want)
+		}
 	}
 }

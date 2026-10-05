@@ -15,28 +15,32 @@ import (
 )
 
 const (
-	pageSize    = 1000 // getSignaturesForAddress page limit
-	backfillCap = 2000 // first run (empty cursor): ingest at most this many recent txs
-	txNotFound  = "not found"
+	defaultPageSize    = 1000 // getSignaturesForAddress page limit
+	defaultBackfillCap = 2000 // first run (empty cursor): ingest at most this many recent txs
+	txNotFound         = "not found"
 )
 
 // Poller keeps the activity table in sync with on-chain qupon_bonds events by
 // polling getSignaturesForAddress + getTransaction every interval.
 type Poller struct {
-	rpc      *rpc.Client
-	program  solana.PublicKey
-	st       *store.Store
-	log      *slog.Logger
-	interval time.Duration
+	rpc         *rpc.Client
+	program     solana.PublicKey
+	st          *store.Store
+	log         *slog.Logger
+	interval    time.Duration
+	pageSize    int // signatures per getSignaturesForAddress call (tests shrink it)
+	backfillCap int // first-run cap only; a cursor always pages back to itself
 }
 
 func NewPoller(rpcURL string, program solana.PublicKey, st *store.Store, log *slog.Logger) *Poller {
 	return &Poller{
-		rpc:      rpc.New(rpcURL),
-		program:  program,
-		st:       st,
-		log:      log,
-		interval: 10 * time.Second,
+		rpc:         rpc.New(rpcURL),
+		program:     program,
+		st:          st,
+		log:         log,
+		interval:    10 * time.Second,
+		pageSize:    defaultPageSize,
+		backfillCap: defaultBackfillCap,
 	}
 }
 
@@ -101,7 +105,7 @@ func (p *Poller) fetchNew(ctx context.Context, cur string) ([]*rpc.TransactionSi
 	var pages []*rpc.TransactionSignature
 	var before solana.Signature
 	for {
-		limit := pageSize
+		limit := p.pageSize
 		opts := &rpc.GetSignaturesForAddressOpts{Limit: &limit}
 		if !before.IsZero() {
 			opts.Before = before
@@ -118,7 +122,10 @@ func (p *Poller) fetchNew(ctx context.Context, cur string) ([]*rpc.TransactionSi
 			break
 		}
 		oldest := page[len(page)-1].Signature
-		if len(page) < pageSize || oldest == until || len(pages) >= backfillCap {
+		// The cap protects only the very first run (empty cursor); with a cursor
+		// we keep paging until it is reached so no signature is ever skipped.
+		if len(page) < p.pageSize || oldest == until ||
+			(until.IsZero() && len(pages) >= p.backfillCap) {
 			break
 		}
 		before = oldest

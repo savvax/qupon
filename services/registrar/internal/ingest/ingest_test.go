@@ -171,3 +171,155 @@ func TestPollRPCErrorLeavesCursor(t *testing.T) {
 		t.Errorf("cursor = %q, want empty after failure", cur)
 	}
 }
+
+// fakeSigs returns n distinct valid signature strings (base58 of 64 bytes).
+func fakeSigs(n int) []string {
+	out := make([]string, n)
+	for i := range out {
+		var s solana.Signature
+		s[0] = byte(i + 1)
+		s[63] = byte(255 - i)
+		out[i] = s.String()
+	}
+	return out
+}
+
+// pagedRPC mimics getSignaturesForAddress paging: `sigs` is newest-first, the
+// handler honors `before`/`until`/`limit` exactly like a devnet node, and
+// getTransaction returns `logs` for every signature.
+func pagedRPC(t *testing.T, sigs []string, logs []string, calls *int) *httptest.Server {
+	t.Helper()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Method string            `json:"method"`
+			Params []json.RawMessage `json:"params"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("decode rpc request: %v", err)
+		}
+		writeResult := func(v any) {
+			_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "result": v})
+		}
+		idx := func(sig string) int { // -1 when absent
+			for i, s := range sigs {
+				if s == sig {
+					return i
+				}
+			}
+			return -1
+		}
+		switch req.Method {
+		case "getSignaturesForAddress":
+			*calls++
+			var opts struct {
+				Before string `json:"before"`
+				Until  string `json:"until"`
+				Limit  int    `json:"limit"`
+			}
+			_ = json.Unmarshal(req.Params[1], &opts)
+			start, end := 0, len(sigs)
+			if opts.Before != "" && idx(opts.Before) >= 0 {
+				start = idx(opts.Before) + 1
+			}
+			if opts.Until != "" && idx(opts.Until) >= 0 {
+				end = idx(opts.Until) // exclusive, like the RPC
+			}
+			page := sigs[start:min(end, len(sigs))]
+			if opts.Limit > 0 && len(page) > opts.Limit {
+				page = page[:opts.Limit]
+			}
+			items := make([]map[string]any, len(page))
+			for i, s := range page {
+				items[i] = map[string]any{"signature": s, "slot": 300 + i, "err": nil, "blockTime": 1767230300}
+			}
+			writeResult(items)
+		case "getTransaction":
+			writeResult(map[string]any{
+				"slot": 312, "blockTime": 1767230300,
+				"meta": map[string]any{"err": nil, "logMessages": logs},
+			})
+		default:
+			t.Errorf("unexpected rpc method %q", req.Method)
+		}
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestPollBackfillsToCursorAcrossPages(t *testing.T) {
+	// newest first; the cursor is older than every signature here
+	var cursorSig solana.Signature
+	cursorSig[0] = 99 // distinct from fakeSigs bytes (1..n)
+	cursor, sigs := cursorSig.String(), fakeSigs(6)
+	var calls int
+	// 6 signatures over 3 pages of 2: the cap must NOT apply once a cursor exists
+	srv := pagedRPC(t, sigs, fixtureLogs(t), &calls)
+	p, st := newPoller(t, srv.URL)
+	p.pageSize = 2
+	p.backfillCap = 3
+	if err := st.SetIngestCursor(t.Context(), cursor); err != nil {
+		t.Fatalf("set cursor: %v", err)
+	}
+
+	if err := p.Poll(t.Context()); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	rows, err := st.ListActivity(t.Context(), 100)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	seen := map[string]bool{}
+	for _, row := range rows {
+		seen[row.Sig] = true
+	}
+	for _, s := range sigs {
+		if !seen[s] {
+			t.Errorf("signature %s missing from activity (skipped)", s)
+		}
+	}
+	if len(rows) != 6*4 { // every tx carries the 4 fixture events
+		t.Fatalf("rows = %d, want %d", len(rows), 6*4)
+	}
+	// chain order: first row belongs to the oldest signature, last to the newest
+	if rows[0].Sig != sigs[len(sigs)-1] || rows[len(rows)-1].Sig != sigs[0] {
+		t.Errorf("order wrong: first=%s last=%s", rows[0].Sig, rows[len(rows)-1].Sig)
+	}
+	if cur, _ := st.IngestCursor(t.Context()); cur != sigs[0] {
+		t.Errorf("cursor = %s, want newest %s", cur, sigs[0])
+	}
+	if calls != 4 { // 3 data pages + 1 empty page proves paging with `before`
+		t.Errorf("getSignaturesForAddress calls = %d, want 4", calls)
+	}
+}
+
+func TestPollFirstRunCapsBackfill(t *testing.T) {
+	sigs := fakeSigs(6) // newest first
+	var calls int
+	srv := pagedRPC(t, sigs, fixtureLogs(t), &calls)
+	p, st := newPoller(t, srv.URL) // empty cursor: first run
+	p.pageSize = 2
+	p.backfillCap = 3
+
+	if err := p.Poll(t.Context()); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	rows, err := st.ListActivity(t.Context(), 100)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	seen := map[string]bool{}
+	for _, row := range rows {
+		seen[row.Sig] = true
+	}
+	if len(seen) != 4 { // cap 3 with pageSize 2 stops after 2 full pages
+		t.Errorf("distinct txs = %d, want 4 (cap page-quantized): %v", len(seen), seen)
+	}
+	if !seen[sigs[0]] {
+		t.Errorf("newest signature missing")
+	}
+	if seen[sigs[4]] || seen[sigs[5]] {
+		t.Errorf("older-than-cap signatures ingested on first run: %v", seen)
+	}
+}

@@ -43,8 +43,10 @@ func (s *Store) InsertActivity(ctx context.Context, a Activity) (bool, error) {
 // ListActivity returns the newest `limit` events in chain order (oldest first).
 func (s *Store) ListActivity(ctx context.Context, limit int) ([]Activity, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, ts, series_mint, action_pda, kind, payload, sig, slot, seq
-		 FROM activity ORDER BY id ASC LIMIT ?`, limit)
+		`SELECT * FROM (
+			SELECT id, ts, series_mint, action_pda, kind, payload, sig, slot, seq
+			FROM activity ORDER BY id DESC LIMIT ?
+		) ORDER BY id ASC`, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list activity: %w", err)
 	}

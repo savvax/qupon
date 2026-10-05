@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	solana "github.com/solana-foundation/solana-go/v2"
@@ -123,7 +124,9 @@ func decodeEvent(raw []byte) (Event, error) {
 		case "u32":
 			ev.Fields[f.name] = binary.LittleEndian.Uint32(chunk)
 		case "u64":
-			ev.Fields[f.name] = binary.LittleEndian.Uint64(chunk)
+			// decimal string: JS loses integer precision above 2^53, and u64
+			// amounts/units must survive the JSON payload to the browser
+			ev.Fields[f.name] = strconv.FormatUint(binary.LittleEndian.Uint64(chunk), 10)
 		case "i64":
 			ev.Fields[f.name] = int64(binary.LittleEndian.Uint64(chunk))
 		case "bool":

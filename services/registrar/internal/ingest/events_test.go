@@ -3,6 +3,7 @@ package ingest
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -41,10 +42,10 @@ func TestParseLogsFixture(t *testing.T) {
 		checks := map[string]any{
 			"series":          fixSeries,
 			"ticker":          "QUPN01",
-			"face_value":      uint64(1000),
+			"face_value":      "1000", // u64 fields decode to decimal strings
 			"coupon_rate_bps": uint32(1000),
 			"frequency":       byte(2),
-			"slot":            uint64(310),
+			"slot":            "310",
 			"timestamp":       int64(1767230000),
 		}
 		if got := f["isin"]; got != "KZ1P01DE06A1" {
@@ -63,12 +64,23 @@ func TestParseLogsFixture(t *testing.T) {
 	t.Run("Subscribed uses brief numbers", func(t *testing.T) {
 		f := events[1].Fields
 		for k, want := range map[string]any{
-			"owner": fixOwner, "units": uint64(10), "price_per_unit": uint64(1000),
-			"cash_paid": uint64(10000), "total_issued": uint64(10),
+			"owner": fixOwner, "units": "10", "price_per_unit": "1000",
+			"cash_paid": "10000", "total_issued": "10",
 		} {
 			if got := f[k]; got != want {
 				t.Errorf("%s = %#v, want %#v", k, got, want)
 			}
+		}
+	})
+
+	t.Run("u64 amounts serialize as JSON strings", func(t *testing.T) {
+		b, err := json.Marshal(events[1].Fields)
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		// JS loses integer precision above 2^53; amounts must be strings
+		if !strings.Contains(string(b), `"cash_paid":"10000"`) {
+			t.Errorf("payload = %s, want cash_paid as decimal string", b)
 		}
 	})
 
@@ -77,7 +89,7 @@ func TestParseLogsFixture(t *testing.T) {
 		if got := f["fully_funded"]; got != true {
 			t.Errorf("fully_funded = %#v, want true", got)
 		}
-		if got := f["amount"]; got != uint64(5000) {
+		if got := f["amount"]; got != "5000" {
 			t.Errorf("amount = %#v, want 5000", got)
 		}
 		if got := f["action"]; got != fixAction {
@@ -88,7 +100,7 @@ func TestParseLogsFixture(t *testing.T) {
 	t.Run("HolderSnapshotted rounding vectors", func(t *testing.T) {
 		f := events[3].Fields
 		for k, want := range map[string]any{
-			"units": uint64(25), "gross": uint64(1250), "tax": uint64(125), "net": uint64(1125),
+			"units": "25", "gross": "1250", "tax": "125", "net": "1125",
 		} {
 			if got := f[k]; got != want {
 				t.Errorf("%s = %#v, want %#v", k, got, want)
