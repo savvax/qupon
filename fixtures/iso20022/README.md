@@ -19,6 +19,7 @@ record at start of day), `IntrstPrd` (180 days, 30/360), `IntrstRateUsdForPmt` =
 `AcctOwnr` (owner pubkey), `SfkpgAcct` (bond ATA, base58), `ConfdBal` = 10 units,
 `CdtDbtInd` = CRDT, `GrssCshAmt` / `WhldgTaxAmt` / `NetCshAmt` / `PstngAmt` (tax_bps = 0),
 `PstngDt` / `ValDt`, `SplmtryData/AddtlInf` with a SIMULATED tx-signature placeholder.
+For REDM/MCAL events, `PstngAmt` = net cash + principal repayment.
 
 ## Scope
 Both files are checked for well-formedness only (`xmllint --noout` or Python

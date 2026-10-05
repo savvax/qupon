@@ -16,7 +16,7 @@
 ## Scenarios (all run on Solana devnet)
 
 ### S0 Issuance
-1. Issuer/registrar creates bond series **QPNb1**: face 1,000 KZT (100,000 tiyn), coupon 10.00% (1000 bps), semi-annual (2), day count 30/360, 2 years, settlement currency tKZT (Token-2022 test tenge, 2 decimals). ISIN-like id `KZ2C0QUPON001` (test), ticker `QPNb1`.
+1. Issuer/registrar creates bond series **QPNb1**: face 1,000 KZT (100,000 tiyn), coupon 10.00% (1000 bps), semi-annual (2), day count 30/360, 2 years, settlement currency tKZT (Token-2022 test tenge, 2 decimals). ISIN-like id `KZ2C0QUPON01` (test), ticker `QPNb1`.
 2. A second series **BTRK-demo** mirrors real KASE bond BTRKb33 (Baiterek, 15.95%, semi-annual, 30/360, 1,000 KZT) but settles in **USDC devnet** — shows multi-currency.
 3. Three investors are registered (individual resident, individual non-resident, legal entity) with tax rates (default 0 bps; configurable). Their ATAs are thawed on registration. A 4th wallet without KYC cannot receive tokens (frozen by default) — show the failure.
 4. Primary placement via `subscribe` = atomic DvP: investor pays price × units in tKZT, program mints units. Units: 10 / 25 / 65 (total 100).

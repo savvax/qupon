@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:seev.036.001.16">
-  <CorpActnConf>
+  <CorpActnMvmntConf>
     <CorpActnGnlInf>
       <CorpActnEvtId>QPNb1-INTR-0001</CorpActnEvtId>
       <EvtTp>INTR</EvtTp>
       <MndtryVlntryEvtTp>MAND</MndtryVlntryEvtTp>
       <UndrlygScty>
         <FinInstrmId>
-          <ISIN>KZ2C0QUPON001</ISIN>
+          <ISIN>KZ2C0QUPON01</ISIN>
         </FinInstrmId>
       </UndrlygScty>
     </CorpActnGnlInf>
@@ -33,5 +33,5 @@
         </AddtlInf>
       </SplmtryData>
     </CorpActnConfDtls>
-  </CorpActnConf>
+  </CorpActnMvmntConf>
 </Document>
