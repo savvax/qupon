@@ -20,6 +20,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/api"
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/config"
+	"github.com/qupon-kz/qupon/services/registrar/internal/execconfig"
 	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/ingest"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
@@ -37,19 +38,38 @@ func main() {
 	}
 }
 
-// indexSeries scans the program for Series accounts and mirrors them into
-// the store so GET /series can serve them without hitting the chain.
+// indexSeries scans the program for Series accounts, mirrors them into the
+// store so GET /series can serve them without hitting the chain, and seeds
+// the series registry (Plan 2 Task 4) the executor config is generated from.
 func indexSeries(ctx context.Context, cl *chain.Client, logger *slog.Logger, st *store.Store) error {
 	recs, err := cl.AllSeries(ctx)
 	if err != nil {
 		return err
 	}
 	for _, rec := range recs {
-		data, err := json.Marshal(rec.Series.View(rec.PDA))
+		view := rec.Series.View(rec.PDA)
+		data, err := json.Marshal(view)
 		if err != nil {
 			return fmt.Errorf("marshal series %s: %w", rec.PDA, err)
 		}
-		if err := st.UpsertSeries(ctx, rec.Series.Mint.String(), data); err != nil {
+		if err := st.UpsertSeries(ctx, view.Mint, data); err != nil {
+			return err
+		}
+		if view.Ticker == "" {
+			continue
+		}
+		terms, err := json.Marshal(map[string]any{
+			"cashMint":      view.CashMint,
+			"isin":          view.ISIN,
+			"faceValue":     view.FaceValue,
+			"couponRateBps": view.CouponRateBps,
+			"frequency":     view.Frequency,
+			"dayCount":      view.DayCount,
+		})
+		if err != nil {
+			return fmt.Errorf("marshal terms %s: %w", rec.PDA, err)
+		}
+		if err := st.UpsertRegistry(ctx, store.RegistryRow{Name: view.Ticker, Mint: view.Mint, Terms: terms}); err != nil {
 			return err
 		}
 	}
@@ -88,15 +108,26 @@ func run() error {
 		logger.Warn("PROGRAM_ID empty: activity poller disabled")
 	}
 
-	// Index all Series accounts at startup so GET /series serves the chain;
-	// failures degrade to the stored mirror (task 051 wires live fixtures).
+	// Index all Series accounts at startup so GET /series serves the chain
+	// and the registry is seeded; failures degrade to the stored mirror.
 	if chainClient != nil {
 		if err := indexSeries(ctx, chainClient, logger, st); err != nil {
 			logger.Warn("series index skipped", "err", err)
 		}
 	}
 
-	exec := executor.New(cfg.QuponCLI, cfg.QuponConfig, logger)
+	// Writable executor config (Plan 2 Task 4): base config + the series
+	// registry, regenerated at startup — new series reach the CLI without a
+	// redeploy or bind mount. Fatal on failure: the executor is unusable
+	// without it.
+	rows, err := st.ListRegistry(ctx)
+	if err != nil {
+		return fmt.Errorf("list series registry: %w", err)
+	}
+	if err := execconfig.Write(cfg.QuponConfig, cfg.ExecConfigPath, rows); err != nil {
+		return fmt.Errorf("write executor config: %w", err)
+	}
+	exec := executor.New(cfg.QuponCLI, cfg.ExecConfigPath, logger)
 
 	srv := &http.Server{
 		Addr: ":" + cfg.Port,

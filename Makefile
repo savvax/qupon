@@ -67,7 +67,8 @@ api: ## run the Go registrar locally (loads .env, defaults PROGRAM_ID from confi
 	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
 	PROGRAM_ID=$${PROGRAM_ID:-$$(jq -r .programId config/devnet.json)}; \
 	QUPON_CLI=$${QUPON_CLI:-$$PWD/ops/qupon}; QUPON_CONFIG=$${QUPON_CONFIG:-$$PWD/config/devnet.json}; \
-	cd services/registrar && PROGRAM_ID="$$PROGRAM_ID" QUPON_CLI="$$QUPON_CLI" QUPON_CONFIG="$$QUPON_CONFIG" go run ./cmd/registrar
+	EXEC_CONFIG_PATH=$${EXEC_CONFIG_PATH:-/tmp/qupon-exec-config.json}; \
+	cd services/registrar && PROGRAM_ID="$$PROGRAM_ID" QUPON_CLI="$$QUPON_CLI" QUPON_CONFIG="$$QUPON_CONFIG" EXEC_CONFIG_PATH="$$EXEC_CONFIG_PATH" go run ./cmd/registrar
 
 openapi-lint: ## lint the registrar OpenAPI spec
 	npx --yes @redocly/cli lint services/registrar/openapi.yaml

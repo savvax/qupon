@@ -82,7 +82,7 @@ type Result struct {
 // Executor execs the qupon CLI. Safe for concurrent use (no shared state).
 type Executor struct {
 	bin     string        // $QUPON_CLI
-	cfgPath string        // config/devnet.json (series name → mint)
+	cfgPath string        // writable config the executor regenerates (base + series registry)
 	timeout time.Duration // per-invocation cap (Timeout)
 	log     *slog.Logger
 }
@@ -119,7 +119,7 @@ func (e *Executor) Run(ctx context.Context, args ...string) (Result, error) {
 	// The binary path is operator config ($QUPON_CLI), never request input —
 	// the args are executor-built constants (step name, series, index).
 	cmd := exec.CommandContext(runCtx, e.bin, full...) // nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command — operator config, not request input
-	cmd.Env = os.Environ()
+	cmd.Env = append(os.Environ(), "QUPON_CONFIG="+e.cfgPath)
 	// The CLI is usually a shell shim around node: on timeout kill the whole process group, or node keeps stdout
 	// open and Wait blocks past the cap. WaitDelay is the backstop if a descendant escapes the group.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

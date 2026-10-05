@@ -10,13 +10,14 @@ import (
 // Config is the registrar service configuration. All values come from
 // flags whose defaults fall back to the documented environment variables.
 type Config struct {
-	RPCURL       string // RPC_URL — Solana devnet RPC endpoint
-	ProgramID    string // PROGRAM_ID — qupon_bonds program id
-	DBPath       string // DB_PATH — SQLite file path
-	QuponCLI     string // QUPON_CLI — path to the qupon CLI executable
-	QuponConfig  string // QUPON_CONFIG — qupon config (series names/mints)
-	AdvanceToken string // ADVANCE_TOKEN — bearer token for POST /actions/{pda}/advance (empty = open, local only)
-	Port         string // PORT — HTTP listen port
+	RPCURL         string // RPC_URL — Solana devnet RPC endpoint
+	ProgramID      string // PROGRAM_ID — qupon_bonds program id
+	DBPath         string // DB_PATH — SQLite file path
+	QuponCLI       string // QUPON_CLI — path to the qupon CLI executable
+	QuponConfig    string // QUPON_CONFIG — base qupon config (series names/mints, baked into the image)
+	ExecConfigPath string // EXEC_CONFIG_PATH — writable config the executor regenerates (base + series registry)
+	AdvanceToken   string // ADVANCE_TOKEN — bearer token for POST /actions/{pda}/advance (empty = open, local only)
+	Port           string // PORT — HTTP listen port
 
 	// Scheduler / autopilot (task 024). Scheduler defaults off; -demo-speed
 	// implies -scheduler with short cadence (2-minute announce lead).
@@ -48,6 +49,7 @@ func FromFlags(args []string) Config {
 		DBPath:           env("DB_PATH", "registrar.db"),
 		QuponCLI:         env("QUPON_CLI", "qupon"),
 		QuponConfig:      env("QUPON_CONFIG", "config/devnet.json"),
+		ExecConfigPath:   env("EXEC_CONFIG_PATH", "/data/qupon-config.json"),
 		AdvanceToken:     env("ADVANCE_TOKEN", ""),
 		Port:             env("PORT", "8080"),
 		Scheduler:        envBool("SCHEDULER"),
@@ -61,7 +63,8 @@ func FromFlags(args []string) Config {
 	fs.StringVar(&c.ProgramID, "program", c.ProgramID, "qupon_bonds program id (PROGRAM_ID)")
 	fs.StringVar(&c.DBPath, "db", c.DBPath, "SQLite database path (DB_PATH)")
 	fs.StringVar(&c.QuponCLI, "cli", c.QuponCLI, "path to the qupon CLI (QUPON_CLI)")
-	fs.StringVar(&c.QuponConfig, "qupon-config", c.QuponConfig, "path to qupon config/devnet.json (QUPON_CONFIG)")
+	fs.StringVar(&c.QuponConfig, "qupon-config", c.QuponConfig, "path to the base qupon config (QUPON_CONFIG)")
+	fs.StringVar(&c.ExecConfigPath, "exec-config", c.ExecConfigPath, "path of the writable executor config (EXEC_CONFIG_PATH)")
 	fs.StringVar(&c.Port, "port", c.Port, "HTTP listen port (PORT)")
 	fs.BoolVar(&c.Scheduler, "scheduler", c.Scheduler, "run the autopilot scheduler (SCHEDULER)")
 	fs.BoolVar(&c.DemoSpeed, "demo-speed", c.DemoSpeed, "demo cadence: implies -scheduler, 2-minute announce lead, autofund (DEMO_SPEED)")

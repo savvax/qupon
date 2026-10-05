@@ -8,8 +8,7 @@ services:
       PROGRAM_ID: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd
       QUPON_CONFIG: /app/config/devnet.json
     volumes:
-      - registrar_data:/data
-      - /opt/qupon/devnet.json:/app/config/devnet.json:ro # config/devnet.json + every on-chain series (series-config.ts)
+      - registrar_data:/data # executor config regenerated here at startup (no bind mount)
     restart: unless-stopped
   web:
     build:
