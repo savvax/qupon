@@ -1,4 +1,5 @@
 ---
+blocked_reason: rebase conflict with main
 id: 026
 title: KASE-style disclosure notice generator (EN/RU) + endpoint
 agent: flash
