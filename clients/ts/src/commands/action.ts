@@ -50,7 +50,8 @@ import {
 
 /** Batch sizing fixed by docs/02-architecture.md (must match the on-chain limits). */
 export const SNAPSHOT_BATCH_MAX = 8;
-export const PAY_BATCH_MAX = 10;
+// On-chain max is 10, but 10 triples (38 unique keys) exceed the 1232-byte tx limit without a lookup table; 8 fit.
+export const PAY_BATCH_MAX = 8;
 
 /**
  * Deterministic batching: sort by owner pubkey ascending, then fixed chunks.
@@ -150,7 +151,7 @@ async function runCancel(opts: ActionOpts, cmd: Command): Promise<void> {
 async function runStrike(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, opts.index === undefined ? "registrar" : "payingAgent");
+	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
 	const { action } = await loadAction(rpc, info, opts.index);
 	const instruction = getStrikeRecordInstruction({
 		authority,
@@ -164,7 +165,7 @@ async function runStrike(opts: ActionOpts, cmd: Command): Promise<void> {
 async function runSnapshot(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, opts.index === undefined ? "registrar" : "payingAgent");
+	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
 	const { action } = await loadAction(rpc, info, opts.index);
 	const investors = await listInvestors(rpc, info.pda);
 	const batches = sortedBatches(investors, h => h.owner, SNAPSHOT_BATCH_MAX);
@@ -199,7 +200,7 @@ async function runSnapshot(opts: ActionOpts, cmd: Command): Promise<void> {
 async function runFinalizeSnapshot(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, opts.index === undefined ? "registrar" : "payingAgent");
+	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
 	const { action } = await loadAction(rpc, info, opts.index);
 	const instruction = getFinalizeSnapshotInstruction({
 		authority,
@@ -223,9 +224,16 @@ async function runFund(opts: FundOpts, cmd: Command): Promise<void> {
 	const { action, account } = await loadAction(rpc, info, opts.index);
 	const cashMint = info.account.cashMint;
 	const cashTokenProgram = await tokenProgramOfMint(rpc, cashMint);
-	// Default: the full escrow requirement (net + tax + principal).
+	// Default: whatever the escrow still lacks (net + tax + principal − balance) — re-runs never over-fund.
 	const need = account.totalNet + account.totalTax + account.totalPrincipal;
-	const amount = opts.amount !== undefined ? parseBigInt(opts.amount, "--amount") : need;
+	const { value: escrowBalance } = await rpc.getTokenAccountBalance(account.escrow).send();
+	const shortfall = need > BigInt(escrowBalance.amount) ? need - BigInt(escrowBalance.amount) : 0n;
+	const amount = opts.amount !== undefined ? parseBigInt(opts.amount, "--amount") : shortfall;
+	if (amount === 0n) {
+		log(`escrow already holds ${escrowBalance.amount} ≥ required ${need}; nothing to fund`);
+		out({ ok: true, command: "action:fund", action, skipped: true });
+		return;
+	}
 	log(`funding ${amount} minor units (required: ${need})`);
 	const instruction = getFundActionInstruction({
 		funder,
@@ -243,7 +251,7 @@ async function runFund(opts: FundOpts, cmd: Command): Promise<void> {
 async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, opts.index === undefined ? "registrar" : "payingAgent");
+	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
 	const { action, account } = await loadAction(rpc, info, opts.index);
 	const cashMint = account.cashMint;
 	const cashTokenProgram = await tokenProgramOfMint(rpc, cashMint);
@@ -286,7 +294,7 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 async function runComplete(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, opts.index === undefined ? "registrar" : "payingAgent");
+	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
 	const { action } = await loadAction(rpc, info, opts.index);
 	const instruction = getCompleteActionInstruction({
 		authority,

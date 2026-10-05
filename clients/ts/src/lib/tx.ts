@@ -3,6 +3,7 @@ import {
   appendTransactionMessageInstructions,
   createSolanaRpc,
   createTransactionMessage,
+  address,
   type Instruction,
   getSignatureFromTransaction,
   pipe,
@@ -52,6 +53,15 @@ export async function waitForConfirmation(rpc: QuponRpc, signature: Signature, t
  * Sign and send one transaction built from `ixs`, retrying once on an expired
  * blockhash, and wait for confirmation. Returns the signature.
  */
+/** ComputeBudget SetComputeUnitLimit: full snapshot/pay batches can exceed the 200k CU default. */
+const COMPUTE_BUDGET = address("ComputeBudget111111111111111111111111111111");
+export function computeUnitLimit(units: number): Instruction {
+  const data = new Uint8Array(5);
+  data[0] = 2; // SetComputeUnitLimit
+  new DataView(data.buffer).setUint32(1, units, true);
+  return { programAddress: COMPUTE_BUDGET, data };
+}
+
 export async function sendInstructions(
   rpc: QuponRpc,
   payer: TransactionSigner,
@@ -67,7 +77,7 @@ export async function sendInstructions(
         createTransactionMessage({ version: 0 }),
         m => setTransactionMessageFeePayerSigner(payer, m),
         m => setTransactionMessageLifetimeUsingBlockhash(blockhash, m),
-        m => appendTransactionMessageInstructions(instructions, m),
+        m => appendTransactionMessageInstructions([computeUnitLimit(600_000), ...instructions], m),
       );
       const transaction = await signTransactionMessageWithSigners(message);
       const signature = getSignatureFromTransaction(transaction);

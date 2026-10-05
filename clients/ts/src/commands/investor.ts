@@ -56,7 +56,7 @@ async function runRegister(opts: RegisterOpts, cmd: Command): Promise<void> {
 		residency: opts.residency === "resident" ? 0 : 1, // 0 Resident, 1 NonResident
 		taxRateBps: parseIntArg(opts.taxBps, "--tax-bps"),
 		// SIMULATED KYC: the on-chain kyc_ref is only a hash of a record id.
-		kycRef: kycRefHash(opts.kyc === "" ? `SIMULATED-KYC:${owner}` : opts.kyc),
+		kycRef: kycRefHash(opts.kyc === undefined || opts.kyc === "" ? `SIMULATED-KYC:${owner}` : opts.kyc),
 	});
 	const investor = await investorPda(info.pda, owner);
 	await sendAndReport(rpc, registrar, [instruction], "investor:register", { investor, owner });
@@ -101,6 +101,9 @@ async function runSubscribe(opts: SubscribeOpts, cmd: Command): Promise<void> {
 	const issuerCash = (
 		await findAssociatedTokenPda({ owner: info.account.issuer, tokenProgram: cashTokenProgram, mint: cashMint })
 	)[0];
+	if ((await rpc.getAccountInfo(issuerCash, { encoding: "base64" }).send()).value === null) {
+		throw new Error(`issuer cash account ${issuerCash} does not exist — create the issuer's ATA for ${cashMint} first`);
+	}
 	const price = opts.price !== undefined ? parseBigInt(opts.price, "--price") : info.account.faceValue;
 	const units = parseBigInt(opts.units, "--units");
 	log(`subscribing ${units} units at ${price} minor units each (DvP: cash → issuer, mint → investor)`);

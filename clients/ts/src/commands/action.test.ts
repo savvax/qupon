@@ -38,7 +38,7 @@ describe("sortedBatches batch shape", () => {
 
 	it("batch limits match the on-chain program (8 snapshot / 10 pay)", () => {
 		expect(SNAPSHOT_BATCH_MAX).toBe(8);
-		expect(PAY_BATCH_MAX).toBe(10);
+		expect(PAY_BATCH_MAX).toBe(8); // tx-size bound, see action.ts
 	});
 });
 
