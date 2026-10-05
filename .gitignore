@@ -30,3 +30,4 @@ tasks/.stop-*
 .vitest/
 apps/web/.vitest/
 apps/web/.vitest/
+.superpowers/
