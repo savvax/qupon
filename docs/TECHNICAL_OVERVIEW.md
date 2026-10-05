@@ -6,7 +6,7 @@ Corporate-actions engine for tokenized bonds on Solana: **identify holders → c
 
 ```mermaid
 flowchart LR
-  UI[Console + investor portal] -->|REST| API[Go registrar service]
+  UI[Next.js web app — public site + cabinets] -->|REST| API[Go registrar service]
   UI -->|wallet-signed vote / subscribe| P
   API -->|exec, JSON| CLI[qupon CLI · Kit + Codama]
   CLI --> P[qupon_bonds program]
@@ -24,6 +24,10 @@ All corporate-action **state and rules live on-chain**; off-chain code only cran
 | `Investor` | `["investor", series, owner]` | KYC attributes from the SAS attestation (`kyc_ref` = attestation address), tax rate, bond and cash accounts, active/suspended |
 | `CorporateAction` | `["action", series, index]` | kind (INTR/REDM/MCAL/PCAL/BMET), dates, rate, per-unit amounts, escrow, status, totals, snapshot hash, votes |
 | `Entitlement` | `["entitlement", action, owner]` | units at the record date, gross/tax/net/principal, paid/retired, vote |
+
+### Back office and security model
+
+The product runs on one origin: the Next.js app is the UI, and a Go registrar service is the back office every write goes through. Issuers and registrars are back-office users — email + password sign-in (bcrypt cost 12, 5 logins/min per email), and the session token is a 32-byte random value stored only as its sha256 digest, kept in an httpOnly `SameSite=Lax` cookie that never reaches client JS (12 h TTL). Investors sign with their own wallets directly against Solana; judges without one use the one-click demo investor — a server-signed custodial wallet labelled DEMO on every screen. The browser cannot talk to a write endpoint directly: it POSTs JSON through one validated proxy (`/api/bo/<allowlisted path>`, same-origin check) that attaches the bearer token server-side. Role checks (RBAC) live only in the Go API — every write route is wrapped in `requireRole`, and the same middleware appends an audit row (user, route, params digest, tx signatures) browsable at `/registrar/activity`. All operator keys (registrar, issuer, paying agent, KYC provider, demo investor) stay server-side on the VPS (mode 600), like keys in an HSM at a depository; the on-chain program still checks every authority itself. Reads stay public with read-only CORS. UI details: `docs/02-architecture.md` (web routes, sessions, proxy, auth endpoints); on-chain trust model: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md).
 
 ## 2. Record-date logic
 

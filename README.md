@@ -8,6 +8,28 @@
 - One command runs every scenario on devnet and writes a report with a link for every transaction: [`reports/demo-full.md`](reports/demo-full.md) (71 transactions)
 - 52 program tests (LiteSVM integration + unit), the brief's worked example as named tests, shared test vectors checked in Rust, Go and TypeScript
 
+## Product tour — every role in the browser
+
+The whole engine is driven from the web app at **https://qupon.85-192-29-7.sslip.io**, in English or Russian, on a laptop or a phone. Open [/login](https://qupon.85-192-29-7.sslip.io/login) and sign in with one click — **demo issuer**, **demo registrar** or **demo investor** (the demo investor is a server-signed custodial wallet, labelled as such on every screen; connect your own wallet instead if you prefer).
+
+| Role | Cabinet | What you can do |
+| --- | --- | --- |
+| Issuer | [`/issuer`](https://qupon.85-192-29-7.sslip.io/issuer) | create a bond series in a 3-step wizard (terms → schedule preview → issue on-chain), announce a coupon / redemption / early call, call a bondholder meeting, fund the escrow |
+| Registrar | [`/registrar`](https://qupon.85-192-29-7.sslip.io/registrar) | onboard an investor (SAS KYC attestation, SIMULATED provider, + on-chain registration), run record date → snapshot → pay → complete step by step, reconcile, download ISO 20022 and the KASE notice, browse the audit trail |
+| Investor | [`/investor`](https://qupon.85-192-29-7.sslip.io/investor) | portfolio with a tx link per payment, subscribe at par (DvP), vote in meetings, seev.036 statements |
+
+Every action step confirms with a toast carrying its explorer link. The screenshots below are real devnet runs driven through this UI (local registrar + the deployed program; log: [`reports/live-check-local.md`](reports/live-check-local.md)):
+
+| Step | Screenshot |
+| --- | --- |
+| Coupon INTR run to **Completed** — 500.00 / 1,250.00 / 3,250.00 ₸ to the 10 / 25 / 65-bond holders | [`reports/ui/live-local/coupon-completed.png`](reports/ui/live-local/coupon-completed.png) |
+| Registrar onboards a fresh wallet: SAS attestation + registration, two txs | [`reports/ui/live-local/registrar-onboarded.png`](reports/ui/live-local/registrar-onboarded.png) |
+| Demo investor subscribes 1 bond DvP (65 → 66) | [`reports/ui/live-local/investor-subscribed.png`](reports/ui/live-local/investor-subscribed.png) |
+| Investor votes For in the meeting (66 of 101 units) | [`reports/ui/live-local/investor-voted.png`](reports/ui/live-local/investor-voted.png) |
+| Meeting approved and applied — coupon rate 10% → 12% on-chain | [`reports/ui/live-local/meeting-applied.png`](reports/ui/live-local/meeting-applied.png) |
+
+Every page × EN/RU × 1440/390 px is swept by `apps/web/e2e/sweep.spec.ts` (no console errors — that is where missing translations surface — and no horizontal scroll at 390 px); the 80 shots live in [`reports/ui/sweep/`](reports/ui/sweep). Public pages need no sign-in: [landing](https://qupon.85-192-29-7.sslip.io/) · [bond board](https://qupon.85-192-29-7.sslip.io/bonds).
+
 ## The problem
 
 KASE became Kazakhstan's first licensed digital-financial-asset platform operator in May 2026 and plans tokenized notes first, bonds and equities from December 2026; the Central Securities Depository may now keep DFA holder registers (July 2026). Tokenizing a bond is the easy part — **servicing it for its whole life** (coupons, redemption, early calls, bondholder meetings) is where depositories spend their effort, and nothing on Solana does it in a standardized, verifiable way. Sources: [`docs/research/01-market-kase-iso20022-prior-art.md`](docs/research/01-market-kase-iso20022-prior-art.md).
@@ -35,7 +57,7 @@ KASE became Kazakhstan's first licensed digital-financial-asset platform operato
 
 ```mermaid
 flowchart LR
-  UI[Next.js console + investor portal] -->|REST| API[Go registrar service]
+  UI[Next.js web app — public site + issuer/registrar/investor cabinets] -->|REST| API[Go registrar service]
   UI -->|wallet-signed vote / subscribe| P
   API -->|exec, JSON| CLI[qupon CLI · @solana/kit + Codama]
   CLI -->|transactions| P[qupon_bonds program · Anchor 1.2]
@@ -51,7 +73,7 @@ flowchart LR
 | Entitlement math  | `crates/entitlement`        | `no_std` Rust crate shared by the program and tests                 |
 | TS client + CLI   | `clients/ts`                | Codama-generated client, `qupon` CLI (JSON on stdout), demo scripts |
 | Registrar service | `services/registrar`        | Go: chain reader, reconciler, ISO 20022, notices, REST read models  |
-| Web app           | `apps/web`                  | Next.js console and investor portal                                 |
+| Web app           | `apps/web`                  | Next.js public site + issuer / registrar / investor cabinets        |
 | Test vectors      | `fixtures/entitlement.json` | One contract for Rust, Go and TS                                    |
 
 ## Record-date mechanism

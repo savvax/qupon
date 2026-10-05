@@ -74,7 +74,7 @@ All code in the repository was written during the hackathon, between 2026-10-05 
 | Project name | Qupon |
 | Description | the Colosseum description above |
 | GitHub | `https://github.com/savvax/qupon` |
-| Website | `https://qupon.85-192-29-7.sslip.io` (read-only investor view without a wallet: `/portal?owner=6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC`) |
+| Website | `https://qupon.85-192-29-7.sslip.io` — public landing and bond board; all three roles in the browser via one-click demo sign-in at `/login` (issuer, registrar, investor — no wallet needed) |
 | Pitch / demo video | `<<FILL: links>>` |
 | Official hackathon submission confirmation | Yes · `<<FILL: Colosseum project link>>` · `<<FILL: Colosseum profile link>>` |
 
@@ -83,7 +83,20 @@ All code in the repository was written during the hackathon, between 2026-10-05 
 Technical overview (architecture, record-date logic, entitlement calculations, settlement flow, Solana components): https://github.com/savvax/qupon/blob/main/docs/TECHNICAL_OVERVIEW.md
 Full devnet run with an explorer link for every transaction (coupon, redemption, bondholder meeting → terms change, early redemption): https://github.com/savvax/qupon/blob/main/reports/demo-full.md
 Program: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd (devnet, verifiable build).
-Implemented vs simulated: bond token, registry, record date, entitlement math, coupons, redemption, burn/close, voting and terms change run on Solana devnet; fiat KZT is simulated by a test Token-2022 mint (USDC devnet is real), KYC is attested on-chain through the Solana Attestation Service by a demo KYC provider (the provider itself is simulated), Swift delivery of the ISO 20022 files and the ARDFM registration of a terms change are simulated, and the KASE notice is generated but not published. Meeting thresholds (50% quorum, 2/3 approval) are series configuration, not a legal claim.
+Product tour with screenshots of every role on devnet: https://github.com/savvax/qupon#product-tour--every-role-in-the-browser
+Implemented vs simulated (same wording as the site's table):
+
+| Element | Status |
+|---|---|
+| Bond token, holder registry, record date, entitlements, coupon payment, redemption, burn and close, voting, terms change, on-chain events | **Implemented** — Running on Solana devnet. |
+| Cash leg | **Partly simulated** — Real token transfers in devnet USDC (Circle) and test tKZT (Token-2022). Fiat tenge and the digital tenge are stood in for by our mint. |
+| KYC | **Provider simulated** — Attested on-chain: a demo KYC-provider key issues a Solana Attestation Service attestation per wallet, and registration refuses wallets without a live, matching one. The provider is not a licensed KYC firm. |
+| ISO 20022 seev.031 / seev.036 | **Delivery simulated** — Generated from on-chain state; Swift delivery is replaced by downloadable files. |
+| ARDFM registration of a terms change | **Simulated** — Represented by a registrar signature step. |
+| KASE disclosure notice | **Not published** — Generated automatically; publication on kase.kz is not integrated. |
+| Multisig issuer approval (Squads) | **Roadmap** — Planned. |
+
+Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are series configuration, not a statement of Kazakh law.
 ```
 
 Checkboxes: scope ✓ · KYC acknowledgement ✓ (a Kazakhstan identity document must be ready for Sumsub after winning) · Earn profile location Kazakhstan, unchanged for 21+ days.
