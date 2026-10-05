@@ -24,5 +24,10 @@ Follow Task 7's checkbox steps in order (tests first). Use only design-system co
 - [ ] Screenshots of the new pages at 1440 and 390 px in EN and RU saved under `reports/ui/` and referenced in the worklog.
 - [ ] `reports/worklog/307.md` written (what changed, deviations from the plan and why).
 
+## Lead notes (found in reviews)
+- `/registrar/activity`: sort newest first (the lead says so; mock data comes oldest first) and show the series ticker instead of the mint address.
+- Placeholder `(cabinet)/Placeholder.tsx` must be gone once 303/306 replace the registrar and investor homes.
+- Playwright: never share `.next` between a running dev server and the e2e web server; a click before hydration can be lost (use `toPass` retries on tabs).
+
 ## Finish
 Run `make verify`, commit on your task branch with `task: 307`, then print exactly `DONE:307` or `BLOCKED:307 <reason>`.
