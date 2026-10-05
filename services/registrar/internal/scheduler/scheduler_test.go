@@ -201,6 +201,7 @@ func TestDecide(t *testing.T) {
 			open: func() *chain.CorporateAction {
 				a := action(8)
 				a.VotingEndsAt = now0.Add(10 * time.Minute).Unix()
+				a.UnitsSnapshotted = 100 // votes outstanding, not full turnout
 				return a
 			}(),
 			investors: 2,

@@ -317,6 +317,73 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/ActivityItem"
+  /schedule:
+    get:
+      summary: Planned coupon actions for every series (autopilot plan view)
+      operationId: listSchedule
+      responses:
+        "200":
+          description: per-series coupon calendar with matched on-chain actions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [series]
+                properties:
+                  series:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        mint: {type: string}
+                        ticker: {type: string}
+                        status: {type: string}
+                        nextCouponDate: {type: string}
+                        items:
+                          type: array
+                          items:
+                            $ref: "#/components/schemas/ScheduleItem"
+  /approvals:
+    get:
+      summary: Scheduler proposals awaiting a human decision (approval gate)
+      operationId: listApprovals
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, executed, all]
+            default: pending
+      responses:
+        "200":
+          description: approval rows (pending by default)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [approvals]
+                properties:
+                  approvals:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Approval"
+  /approvals/{id}/approve:
+    post:
+      summary: Approve a pending scheduler proposal (executes the stored argv)
+      operationId: approveApproval
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: integer, minimum: 1}
+      responses:
+        "200":
+          description: executed; body carries the tx signature and explorer URL
+        "401": {description: missing/wrong ADVANCE_TOKEN bearer}
+        "409":
+          description: >-
+            already executed, or the chain refused the step (stays pending)
+        "404": {description: no such approval}
 components:
   parameters:
     Mint:
@@ -588,6 +655,27 @@ components:
         status:
           type: string
           enum: [Projected, Announced, InProgress, Completed]
+    Approval:
+      description: One scheduler proposal awaiting a human decision (task 024).
+      type: object
+      required: [id, ts, dedupKey, seriesMint, step, args, status]
+      properties:
+        id: {type: integer}
+        ts: {type: integer, description: unix seconds}
+        dedupKey: {type: string}
+        seriesMint: {type: string}
+        actionPda:
+          type: string
+          description: empty for announce decisions
+        step: {type: string, example: "step:strike_record"}
+        args:
+          type: array
+          items: {type: string}
+          description: the exact qupon CLI argv approve runs
+        status: {type: string, enum: [pending, executed]}
+        detail:
+          type: [object, "null"]
+          description: CLI result JSON once executed
     ReconcileReport:
       description: >-
         Registrar recomputation vs chain: entitlements recomputed from bond

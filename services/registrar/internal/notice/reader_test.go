@@ -71,3 +71,71 @@ func TestReaderMissingAction(t *testing.T) {
 		t.Fatalf("err = %v, want ErrActionNotFound", err)
 	}
 }
+
+type fakeActivity struct {
+	sigs []string
+	err  error
+}
+
+func (f fakeActivity) ActionSignatures(context.Context, string) ([]string, error) {
+	return f.sigs, f.err
+}
+
+func TestReaderTxLinksFromActivity(t *testing.T) {
+	pda := solana.PublicKey{4: 4}
+	r := NewReader(fakeChain{action: briefINTR(solana.PublicKey{3: 3}), decimals: 2}, "")
+	r.Activity = fakeActivity{sigs: []string{"SIGAAA111", "SIGBBB222"}}
+	for _, lang := range []string{"en", "ru"} {
+		text, err := r.Notice(context.Background(), pda, lang)
+		if err != nil {
+			t.Fatalf("notice %s: %v", lang, err)
+		}
+		for _, want := range []string{
+			"https://explorer.solana.com/tx/SIGAAA111?cluster=devnet",
+			"https://explorer.solana.com/tx/SIGBBB222?cluster=devnet",
+		} {
+			if !strings.Contains(text, want) {
+				t.Errorf("%s notice lacks %q:\n%s", lang, want, text)
+			}
+		}
+		if strings.Contains(text, "TX_SIGNATURE") {
+			t.Errorf("%s notice still shows the placeholder:\n%s", lang, text)
+		}
+	}
+}
+
+func TestReaderTxLinksFallback(t *testing.T) {
+	pda := solana.PublicKey{4: 4}
+	want := "see explorer for action " + pda.String() +
+		": https://explorer.solana.com/address/" + pda.String() + "?cluster=devnet"
+	for name, act := range map[string]fakeActivity{
+		"no source":  {},
+		"no sigs":    {sigs: []string{}},
+		"feed error": {err: errors.New("boom")},
+	} {
+		r := NewReader(fakeChain{action: briefINTR(solana.PublicKey{3: 3}), decimals: 2}, "")
+		r.Activity = act
+		text, err := r.Notice(context.Background(), pda, "en")
+		if err != nil {
+			t.Fatalf("%s: notice: %v", name, err)
+		}
+		if !strings.Contains(text, want) {
+			t.Errorf("%s: notice lacks fallback %q:\n%s", name, want, text)
+		}
+	}
+}
+
+func TestReaderTxLinksDedupAndCap(t *testing.T) {
+	r := NewReader(fakeChain{action: briefINTR(solana.PublicKey{3: 3}), decimals: 2}, "")
+	r.Activity = fakeActivity{sigs: []string{"s1", "s1", "s2", "s3", "s4", "s5", "s6"}}
+	links := r.txLinks(context.Background(), solana.PublicKey{4: 4})
+	want := []string{"s2", "s3", "s4", "s5", "s6"} // deduped, newest 5, oldest first
+	if len(links) != len(want) {
+		t.Fatalf("links = %v, want %v", links, want)
+	}
+	for i, sig := range want {
+		if links[i] != explorerLink(sig) {
+			t.Errorf("links[%d] = %s, want %s", i, links[i], explorerLink(sig))
+		}
+	}
+}

@@ -65,7 +65,9 @@ func (s *Store) ListApprovals(ctx context.Context, status string) ([]Approval, e
 			return nil, fmt.Errorf("scan approval: %w", err)
 		}
 		a.ActionPDA = pda.String
-		a.Detail = json.RawMessage(detail.String)
+		if detail.Valid && detail.String != "" {
+			a.Detail = json.RawMessage(detail.String)
+		}
 		if raw.Valid {
 			if err := json.Unmarshal([]byte(raw.String), &a.Args); err != nil {
 				return nil, fmt.Errorf("unmarshal approval args: %w", err)
@@ -90,7 +92,9 @@ func (s *Store) ApprovalByID(ctx context.Context, id int64) (Approval, error) {
 		return a, fmt.Errorf("approval %d: %w", id, err)
 	}
 	a.ActionPDA = pda.String
-	a.Detail = json.RawMessage(detail.String)
+	if detail.Valid && detail.String != "" {
+		a.Detail = json.RawMessage(detail.String)
+	}
 	if raw.Valid {
 		if err := json.Unmarshal([]byte(raw.String), &a.Args); err != nil {
 			return a, fmt.Errorf("unmarshal approval args: %w", err)
