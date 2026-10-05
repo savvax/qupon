@@ -1,7 +1,7 @@
 ---
 id: 9026
 title: Notice reader — strip Anchor discriminator, 404 on missing action, scale amounts by cash-mint decimals
-agent: glm
+agent: claude
 tier: T1
 depends_on: [026]
 verify: make verify
