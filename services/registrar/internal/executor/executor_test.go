@@ -102,7 +102,8 @@ func TestRunCliFailureJsonError(t *testing.T) {
 
 func TestRunTimeout(t *testing.T) {
 	dir := t.TempDir()
-	slow := writeFile(t, dir, "slow.sh", "#!/bin/sh\nsleep 5\n")
+	// sleep is a grandchild that holds stdout open (like node under the pnpm bin shim).
+	slow := writeFile(t, dir, "slow.sh", "#!/bin/sh\nsleep 5\necho '{}'\n")
 	if err := os.Chmod(slow, 0o755); err != nil {
 		t.Fatalf("chmod: %v", err)
 	}

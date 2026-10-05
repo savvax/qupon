@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
@@ -114,6 +115,11 @@ func (e *Executor) Run(ctx context.Context, args ...string) (Result, error) {
 	// the args are executor-built constants (step name, series, index).
 	cmd := exec.CommandContext(runCtx, e.bin, full...) // nosemgrep: go.lang.security.audit.dangerous-exec-command.dangerous-exec-command — operator config, not request input
 	cmd.Env = os.Environ()
+	// The CLI is usually a shell shim around node: on timeout kill the whole process group, or node keeps stdout
+	// open and Wait blocks past the cap. WaitDelay is the backstop if a descendant escapes the group.
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) }
+	cmd.WaitDelay = 2 * time.Second
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	err := cmd.Run()
