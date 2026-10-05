@@ -1,7 +1,7 @@
 ---
 id: 043
 title: Consistency sweep: docs/02 vs code, README vs reports, implemented-vs-simulated vs reality
-agent: flash
+agent: claude
 tier: T1
 depends_on: [033]
 verify: make verify
