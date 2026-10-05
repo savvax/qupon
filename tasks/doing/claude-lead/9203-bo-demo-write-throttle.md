@@ -1,7 +1,7 @@
 ---
 id: 9203
 title: Throttle back-office writes made by demo users (protect devnet operator SOL)
-agent: glm
+agent: claude
 tier: T1
 depends_on: [205, 206, 207, 208]
 verify: make verify
