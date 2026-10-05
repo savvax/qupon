@@ -359,3 +359,25 @@ func TestSeriesDiscriminatorMatchesIDL(t *testing.T) {
 		t.Fatalf("Series discriminator = %x, IDL says %x", got, want)
 	}
 }
+
+// On chain the Series account is allocated at its max size, so a None open_action leaves 32 zero bytes of padding
+// (found against devnet: every live Series failed with "32 trailing bytes").
+func TestDecodeSeriesAllocatedPadding(t *testing.T) {
+	in := Series{FaceValue: 100_000, CouponRateBps: 1000, Frequency: 2}
+	padded := append(encodeSeries(&in), make([]byte, 32)...)
+	out, err := DecodeSeries(padded)
+	if err != nil {
+		t.Fatalf("padded None: %v", err)
+	}
+	if out.OpenAction != nil || out.FaceValue != 100_000 {
+		t.Fatalf("decoded %+v", out)
+	}
+	if _, err := DecodeSeries(append(encodeSeries(&in), make([]byte, 33)...)); err == nil {
+		t.Fatal("33 trailing bytes must still be rejected")
+	}
+	junk := append(encodeSeries(&in), make([]byte, 32)...)
+	junk[len(junk)-1] = 7
+	if _, err := DecodeSeries(junk); err == nil {
+		t.Fatal("non-zero padding must be rejected")
+	}
+}

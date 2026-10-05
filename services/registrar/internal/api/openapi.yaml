@@ -1,173 +1,297 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Qupon registrar API
-  version: 0.1.0
+  version: 0.2.0
+  license:
+    name: MIT
   description: |
     Off-chain registrar service for the qupon_bonds corporate-actions engine.
-    Stub — handlers arrive with the reader/reconciler/executor/ISO tasks.
+    Contract for the Go handlers (`internal/api`) and the web client
+    (`apps/web`).
+    All timestamps are ISO 8601 with the Asia/Almaty offset (+05:00).
+    All amounts are `{minor, display, currency}`; minor is a decimal string of
+    minor units (tiyn for tKZT, 1e-6 for USDC).
+servers:
+  - url: http://localhost:8080
+    description: local registrar
+security: []
 paths:
   /healthz:
     get:
       summary: Liveness + database check
+      operationId: healthz
       responses:
         "200":
           description: service healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
         "503":
           description: database unreachable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /openapi.yaml:
     get:
       summary: This document
+      operationId: getOpenapi
       responses:
         "200":
           description: OpenAPI YAML
+          content:
+            application/yaml:
+              schema: {type: string}
   /series:
     get:
-      summary: List series (stub)
+      summary: List series
+      operationId: listSeries
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: series list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SeriesDTO"
   /series/{mint}:
     get:
-      summary: Series terms (stub)
+      summary: Series terms
+      operationId: getSeries
       parameters:
-        - {name: mint, in: path, required: true, schema: {type: string}}
+        - $ref: "#/components/parameters/Mint"
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: series
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeriesDTO"
+        "404":
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /series/{mint}/investors:
     get:
-      summary: Holders of a series (stub)
+      summary: Holders of a series
+      operationId: listInvestors
       parameters:
-        - {name: mint, in: path, required: true, schema: {type: string}}
+        - $ref: "#/components/parameters/Mint"
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: investors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvestorDTO"
   /series/{mint}/schedule:
     get:
-      summary: Coupon schedule (stub)
+      summary: Coupon schedule (computed from issue_date, frequency, day_count)
+      operationId: getSchedule
       parameters:
-        - {name: mint, in: path, required: true, schema: {type: string}}
+        - $ref: "#/components/parameters/Mint"
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: schedule items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ScheduleItem"
   /series/{mint}/actions:
     get:
-      summary: Corporate actions of a series (stub)
+      summary: Corporate actions of a series
+      operationId: listActions
       parameters:
-        - {name: mint, in: path, required: true, schema: {type: string}}
+        - $ref: "#/components/parameters/Mint"
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: actions, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActionDTO"
   /actions/{pda}:
     get:
-      summary: Action detail (stub)
+      summary: Action detail
+      operationId: getAction
       parameters:
-        - {name: pda, in: path, required: true, schema: {type: string}}
+        - $ref: "#/components/parameters/Pda"
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActionDTO"
+        "404":
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /actions/{pda}/entitlements:
     get:
-      summary: Entitlements of an action (stub)
+      summary: Entitlements of an action
+      operationId: listEntitlements
       parameters:
-        - {name: pda, in: path, required: true, schema: {type: string}}
+        - $ref: "#/components/parameters/Pda"
+        - name: offset
+          in: query
+          required: false
+          schema: {type: integer, minimum: 0, default: 0}
+        - name: limit
+          in: query
+          required: false
+          schema: {type: integer, minimum: 1, maximum: 500, default: 100}
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: >-
+            entitlements sorted by owner pubkey ascending (snapshot order)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EntitlementDTO"
   /actions/{pda}/reconcile:
     get:
-      summary: Reconciliation report (stub)
+      summary: Reconciliation report (chain totals vs recomputed math)
+      operationId: reconcileAction
       parameters:
-        - {name: pda, in: path, required: true, schema: {type: string}}
+        - $ref: "#/components/parameters/Pda"
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReconcileReport"
+        "404":
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /actions/{pda}/advance:
     post:
-      summary: Run the next action step through the executor (stub)
+      summary: Run the next action step through the executor (qupon CLI)
+      operationId: advanceAction
       parameters:
-        - {name: pda, in: path, required: true, schema: {type: string}}
+        - $ref: "#/components/parameters/Pda"
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                confirm: {type: boolean}
+              $ref: "#/components/schemas/AdvanceRequest"
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: step result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdvanceResponse"
+        "400":
+          description: no runnable step or validation failure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /actions/{pda}/iso/seev031.xml:
     get:
-      summary: ISO 20022 seev.031.001.15 notification (application/xml)
+      summary: ISO 20022 seev.031 agent notification (announcement)
+      operationId: getSeev031
       parameters:
-        - {name: pda, in: path, required: true, schema: {type: string}}
+        - $ref: "#/components/parameters/Pda"
       responses:
         "200":
-          description: well-formed seev.031 document (XSD out of scope)
+          description: XML document
           content:
             application/xml:
               schema: {type: string}
-        "400":
-          description: invalid pda
         "404":
-          description: action account not found
-        "422":
-          description: action not exportable (e.g. ACT_ACT day count)
-        "503":
-          description: chain reader not configured
-  /actions/{pda}/iso/seev036.zip:
-    get:
-      summary: ZIP of seev.036 confirmations, one per holder (snapshot order)
-      parameters:
-        - {name: pda, in: path, required: true, schema: {type: string}}
-      responses:
-        "200":
-          description: application/zip of per-holder seev.036.001.16 documents
-        "400":
-          description: invalid pda
-        "404":
-          description: action not found or no entitlements snapshotted
-        "503":
-          description: chain reader not configured
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /entitlements/{pda}/iso/seev036.xml:
     get:
-      summary: ISO 20022 seev.036.001.16 confirmation, one holder (xml)
+      summary: ISO 20022 seev.036 instruction (per entitlement)
+      operationId: getSeev036
       parameters:
-        - {name: pda, in: path, required: true, schema: {type: string}}
+        - $ref: "#/components/parameters/Pda"
       responses:
         "200":
-          description: well-formed seev.036 with Solana refs in SplmtryData
+          description: XML document
           content:
             application/xml:
               schema: {type: string}
-        "400":
-          description: invalid pda
         "404":
-          description: entitlement or action account not found
-        "503":
-          description: chain reader not configured
-  /actions/{pda}/notice:
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /actions/{pda}/iso/seev036.zip:
     get:
-      summary: KASE-style disclosure notice (text/markdown)
+      summary: ISO 20022 seev.036 confirmations, ZIP for all holders
+      operationId: getSeev036Zip
       parameters:
-        - {name: pda, in: path, required: true, schema: {type: string}}
-        - {name: lang, in: query, schema: {type: string, enum: [en, ru]}}
+        - $ref: "#/components/parameters/Pda"
       responses:
         "200":
-          description: notice text
+          description: ZIP archive, one seev.036 XML per holder
           content:
-            text/markdown:
-              schema: {type: string}
-        "400":
-          description: invalid pda or lang
+            application/zip:
+              schema: {type: string, format: binary}
         "404":
-          description: action account not found
-        "503":
-          description: chain reader not configured
+          description: not found or no entitlements snapshotted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /actions/{pda}/notice:
+    get:
+      summary: KASE-style notice text
+      operationId: getNotice
+      parameters:
+        - $ref: "#/components/parameters/Pda"
+        - name: lang
+          in: query
+          schema: {type: string, enum: [en, ru], default: en}
+      responses:
+        "200":
+          description: plain-text notice
+          content:
+            text/plain:
+              schema: {type: string}
+        "404":
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /activity:
     get:
       summary: Live activity feed (on-chain program events, ingested by polling)
+      operationId: listActivity
       parameters:
         - name: limit
           in: query
@@ -179,18 +303,401 @@ paths:
             application/json:
               schema:
                 type: object
+                required: [events]
                 properties:
                   events:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        id: {type: integer}
-                        ts: {type: integer}
-                        series_mint: {type: string, nullable: true}
-                        action_pda: {type: string, nullable: true}
-                        kind: {type: string}
-                        payload: {type: object}
-                        sig: {type: string}
-                        slot: {type: integer}
-                        seq: {type: integer}
+                      $ref: "#/components/schemas/ActivityItem"
+components:
+  parameters:
+    Mint:
+      name: mint
+      in: path
+      required: true
+      description: Bond mint pubkey (base58)
+      schema: {type: string}
+    Pda:
+      name: pda
+      in: path
+      required: true
+      description: >-
+        Account pubkey (base58) — CorporateAction or Entitlement PDA
+      schema: {type: string}
+  schemas:
+    Amount:
+      description: Money amount in minor units plus a human display string.
+      type: object
+      required: [minor, display, currency]
+      properties:
+        minor:
+          type: string
+          description: Integer amount in minor units, decimal string
+          example: "1250"
+        display:
+          type: string
+          example: "12.50 KZT"
+        currency:
+          type: string
+          example: tKZT
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: >-
+            machine-readable code (http_404, executor_failed, or the Anchor
+            program error name)
+          example: EntitlementCalcMismatch
+        message:
+          type: string
+          example: accrual days do not match crate day count
+        onchainError:
+          description: raw Anchor/program error when the failure came from-chain
+          type: string
+    Health:
+      type: object
+      required: [ok]
+      properties:
+        ok: {type: boolean}
+        db: {type: string, example: ok}
+    SeriesDTO:
+      type: object
+      required:
+        [mint, cashMint, isin, ticker, faceValue, couponRateBps, frequency,
+         dayCount, issueDate, maturityDate, nextCouponDate, status,
+         totalIssued, quorumBps, approvalBps, explorerUrl]
+      properties:
+        mint: {type: string}
+        cashMint: {type: string}
+        registrar: {type: string}
+        issuer: {type: string}
+        payingAgent: {type: string}
+        isin: {type: string, example: KZ1234567890}
+        ticker: {type: string, example: tKZBOND}
+        faceValue:
+          $ref: "#/components/schemas/Amount"
+        couponRateBps: {type: integer, example: 1000}
+        frequency:
+          type: integer
+          description: coupons per year
+          enum: [1, 2, 4, 12]
+        dayCount:
+          type: string
+          enum: [THIRTY_360, ACT_ACT, ACT_365]
+        issueDate: {type: string, format: date, example: "2026-09-01"}
+        maturityDate: {type: string, format: date, example: "2027-09-01"}
+        nextCouponDate:
+          type: string
+          format: date-time
+          description: ISO 8601 with +05:00
+          example: "2026-12-01T00:00:00+05:00"
+        status:
+          type: string
+          enum: [Active, Matured, Retiring, Closed]
+        totalIssued:
+          type: string
+          description: units in circulation, decimal string
+        quorumBps: {type: integer}
+        approvalBps: {type: integer}
+        openAction:
+          type: [string, "null"]
+        explorerUrl:
+          type: string
+          description: devnet explorer link for the mint
+    InvestorDTO:
+      type: object
+      required: [owner, bondAta, cashAta, units, status]
+      properties:
+        owner: {type: string}
+        bondAta: {type: string}
+        cashAta: {type: string}
+        units:
+          type: string
+          description: bond units held, decimal string
+        status:
+          type: string
+          enum: [Active, Suspended]
+        explorerUrl:
+          type: string
+          description: devnet explorer link for the owner
+    ActionDTO:
+      type: object
+      required:
+        [pda, seriesMint, kind, mandatory, corpId, recordAt, paymentAt, status,
+         perUnitGross, perUnitPrincipal, cashMint, explorerUrl]
+      properties:
+        pda: {type: string}
+        seriesMint: {type: string}
+        kind:
+          type: string
+          enum: [INTR, REDM, MCAL, PCAL, BMET, CHAN]
+          description: >-
+            ISO 20022 corp action event type
+            (INTE/REDM/MCAL/PCAL/METG/CHAN mapped)
+        mandatory:
+          type: string
+          enum: [MAND, VOLU, CHOS]
+        corpId: {type: string, example: QPNb1-INTR-0001}
+        officialId:
+          type: [string, "null"]
+          description: COAF id, may be empty
+        announcedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 with +05:00
+        recordAt:
+          type: string
+          format: date-time
+        paymentAt:
+          type: string
+          format: date-time
+        periodStart:
+          type: [string, "null"]
+          format: date
+        periodEnd:
+          type: [string, "null"]
+          format: date
+        accrualDays:
+          type: [integer, "null"]
+        rateBps:
+          type: [integer, "null"]
+        perUnitGross:
+          $ref: "#/components/schemas/Amount"
+        perUnitPrincipal:
+          $ref: "#/components/schemas/Amount"
+        cashMint: {type: string}
+        escrow: {type: string}
+        status:
+          type: string
+          enum: [Announced, RecordStruck, SnapshotComplete, Funded, Settling,
+                 Completed, Retiring, Cancelled, VotingOpen, Finalized]
+        snapshotSlot:
+          type: [integer, "null"]
+        snapshotHash:
+          type: [string, "null"]
+          description: hex sha256
+        unitsSnapshotted:
+          type: [string, "null"]
+        holdersSnapshotted:
+          type: [integer, "null"]
+        holdersPaid:
+          type: [integer, "null"]
+        totalGross:
+          $ref: "#/components/schemas/Amount"
+        totalTax:
+          $ref: "#/components/schemas/Amount"
+        totalNet:
+          $ref: "#/components/schemas/Amount"
+        totalPaid:
+          $ref: "#/components/schemas/Amount"
+        totalRetired:
+          type: [string, "null"]
+        holdersRetired:
+          type: [integer, "null"]
+        proposalNewRateBps:
+          type: [integer, "null"]
+        proposalNewMaturity:
+          type: [string, "null"]
+          format: date
+        votingEndsAt:
+          type: [string, "null"]
+          format: date-time
+        votesFor:
+          type: [string, "null"]
+        votesAgainst:
+          type: [string, "null"]
+        votesAbstain:
+          type: [string, "null"]
+        result:
+          type: [string, "null"]
+          enum: [Pending, Approved, Rejected, NoQuorum]
+        completedAt:
+          type: [string, "null"]
+          format: date-time
+        factorBps:
+          type: [integer, "null"]
+        explorerUrl:
+          type: string
+          description: devnet explorer link for the action PDA
+    EntitlementDTO:
+      type: object
+      required: [pda, actionPda, owner, units, status]
+      properties:
+        pda: {type: string}
+        actionPda: {type: string}
+        owner: {type: string}
+        units: {type: string}
+        gross:
+          $ref: "#/components/schemas/Amount"
+        tax:
+          $ref: "#/components/schemas/Amount"
+        net:
+          $ref: "#/components/schemas/Amount"
+        principal:
+          $ref: "#/components/schemas/Amount"
+        status:
+          type: string
+          enum: [Snapshotted, Paid, Retired]
+        paidAt:
+          type: [string, "null"]
+          format: date-time
+        vote:
+          type: string
+          enum: [None, For, Against, Abstain]
+        votedAt:
+          type: [string, "null"]
+          format: date-time
+        explorerUrl:
+          type: string
+          description: devnet explorer link for the entitlement PDA
+    ScheduleItem:
+      description: One projected coupon (or redemption) on the series schedule.
+      type: object
+      required: [couponNumber, recordDate, paymentDate, status]
+      properties:
+        couponNumber: {type: integer, example: 2}
+        periodStart: {type: string, format: date}
+        periodEnd: {type: string, format: date}
+        recordDate:
+          type: string
+          format: date-time
+          description: ISO 8601 with +05:00
+        paymentDate:
+          type: string
+          format: date-time
+        amountPerUnit:
+          $ref: "#/components/schemas/Amount"
+        totalAmount:
+          $ref: "#/components/schemas/Amount"
+        actionPda:
+          type: [string, "null"]
+          description: set once announced
+        status:
+          type: string
+          enum: [Projected, Announced, InProgress, Completed]
+    ReconcileReport:
+      description: >-
+        Registrar recomputation vs chain: entitlements recomputed from bond
+        ATA balances (minContextSlot = snapshot_slot), snapshot hash chained
+        sha256(prev ‖ owner ‖ units_le) over investors owner-ascending, and
+        action totals (docs/03-domain.md §4).
+      type: object
+      required:
+        - actionPda
+        - ok
+        - holders
+        - mismatches
+        - expectedHash
+        - onchainHash
+        - hashMatches
+        - supply
+        - unitsSnapshotted
+        - totalsMatch
+      properties:
+        actionPda: {type: string}
+        actionStatus: {type: string, example: Completed}
+        ok: {type: boolean}
+        holders:
+          type: integer
+          description: investors with a non-zero balance at read time
+        mismatches:
+          type: array
+          items:
+            type: object
+            required: [owner, reason]
+            properties:
+              owner: {type: string}
+              reason:
+                type: string
+                enum:
+                  - missing_entitlement
+                  - unexpected_entitlement
+                  - entitlement_mismatch
+                  - ata_mismatch
+              fields:
+                type: array
+                items: {type: string}
+                description: >-
+                  differing fields among units/gross/tax/net/principal
+              expected: {$ref: "#/components/schemas/ReconcileEntry"}
+              onchain: {$ref: "#/components/schemas/ReconcileEntry"}
+        expectedHash:
+          type: string
+          description: base58 sha256 chain recomputed owner-ascending
+        onchainHash: {type: string}
+        hashMatches: {type: boolean}
+        supply: {type: integer, description: bond mint supply at read time}
+        unitsSnapshotted: {type: integer}
+        expectedTotals: {$ref: "#/components/schemas/ReconcileTotals"}
+        onchainTotals: {$ref: "#/components/schemas/ReconcileTotals"}
+        totalsMatch: {type: boolean}
+        checkedAt: {type: integer, description: unix seconds}
+    ReconcileEntry:
+      type: object
+      required: [units, gross, tax, net, principal]
+      properties:
+        units: {type: integer}
+        gross: {type: integer}
+        tax: {type: integer}
+        net: {type: integer}
+        principal: {type: integer}
+    ReconcileTotals:
+      type: object
+      required: [units, holders, gross, tax, net, principal]
+      properties:
+        units: {type: integer}
+        holders: {type: integer}
+        gross: {type: integer}
+        tax: {type: integer}
+        net: {type: integer}
+        principal: {type: integer}
+    AdvanceRequest:
+      type: object
+      required: [confirm]
+      properties:
+        confirm:
+          type: boolean
+          description: must be true; dry-run preview when false
+    AdvanceResponse:
+      type: object
+      required: [step, ok]
+      properties:
+        step:
+          type: string
+          description: >-
+            executed step, e.g. strike_record, snapshot_batch, pay_batch
+        ok: {type: boolean}
+        signature:
+          type: [string, "null"]
+          description: tx signature
+        explorerUrl:
+          type: [string, "null"]
+          description: https://explorer.solana.com/tx/<sig>?cluster=devnet
+        nextStep:
+          type: [string, "null"]
+        error:
+          $ref: "#/components/schemas/Error"
+    ActivityItem:
+      type: object
+      required: [id, ts, kind, sig, slot, seq]
+      properties:
+        id: {type: integer}
+        ts:
+          type: integer
+          description: unix seconds
+        seriesMint:
+          type: [string, "null"]
+        actionPda:
+          type: [string, "null"]
+        kind: {type: string, example: ActionAnnounced}
+        payload: {type: object}
+        sig: {type: string}
+        slot: {type: integer}
+        seq:
+          type: integer
+          description: ingest order within slot
+        explorerUrl:
+          type: string
+          description: https://explorer.solana.com/tx/<sig>?cluster=devnet

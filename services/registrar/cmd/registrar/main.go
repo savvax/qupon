@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -96,6 +97,7 @@ func run() error {
 	srv := &http.Server{
 		Addr: ":" + cfg.Port,
 		Handler: api.New(logger, st, api.Deps{
+			Read:      readModel(chainClient),
 			Notice:    notice.NewReader(cfg.RPCURL, ""),
 			Reconcile: chainReader,
 			Chain:     chainClient,
@@ -106,7 +108,7 @@ func run() error {
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
 	logger.Info("registrar listening",
-		"version", version, "port", cfg.Port, "db", cfg.DBPath, "rpc", cfg.RPCURL, "program", cfg.ProgramID, "cli", cfg.QuponCLI)
+		"version", version, "port", cfg.Port, "db", cfg.DBPath, "rpc", redactURL(cfg.RPCURL), "program", cfg.ProgramID, "cli", cfg.QuponCLI)
 
 	select {
 	case <-ctx.Done():
@@ -120,4 +122,20 @@ func run() error {
 		}
 		return err
 	}
+}
+
+// readModel avoids a typed-nil interface when no PROGRAM_ID is configured.
+func readModel(c *chain.Client) api.ReadModel {
+	if c == nil {
+		return nil
+	}
+	return c
+}
+
+// redactURL drops the query string (Helius puts the API key there) before the URL reaches the logs.
+func redactURL(u string) string {
+	if i := strings.IndexByte(u, '?'); i >= 0 {
+		return u[:i] + "?…"
+	}
+	return u
 }

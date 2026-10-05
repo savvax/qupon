@@ -30,6 +30,21 @@ func NewReader(data []byte) *Reader {
 // Remaining reports how many bytes are left to read.
 func (r *Reader) Remaining() int { return r.buf.Len() }
 
+// RestIsZero reports whether every unread byte is zero (account padding). It does not consume them.
+func (r *Reader) RestIsZero() bool {
+	pos, _ := r.buf.Seek(0, io.SeekCurrent)
+	defer func() { _, _ = r.buf.Seek(pos, io.SeekStart) }()
+	for {
+		b, err := r.buf.ReadByte()
+		if err != nil {
+			return true
+		}
+		if b != 0 {
+			return false
+		}
+	}
+}
+
 // Done reports whether every input byte was consumed.
 func (r *Reader) Done() bool { return r.buf.Len() == 0 }
 

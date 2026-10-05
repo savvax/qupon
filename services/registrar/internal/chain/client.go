@@ -304,3 +304,39 @@ func (c *Client) withRetry(ctx context.Context, call func() error) error {
 	}
 	return fmt.Errorf("rpc failed after %d attempts: %w", rpcAttempts, err)
 }
+
+// ActionRecord pairs a CorporateAction PDA with its decoded state.
+type ActionRecord struct {
+	PDA    solana.PublicKey
+	Action *CorporateAction
+}
+
+// FetchActionsBySeries lists a series' CorporateAction accounts (memcmp on
+// CorporateAction.series at offset 9 = discriminator + bump), oldest first.
+func (c *Client) FetchActionsBySeries(ctx context.Context, series solana.PublicKey) ([]ActionRecord, error) {
+	recs, err := c.GetProgramAccounts(ctx, mustDiscriminator("CorporateAction"),
+		[]rpc.RPCFilterMemcmp{{Offset: 9, Bytes: solana.Base58(series[:])}})
+	if err != nil {
+		return nil, fmt.Errorf("scan actions of %s: %w", series, err)
+	}
+	out := make([]ActionRecord, 0, len(recs))
+	for _, rec := range recs {
+		body, err := stripDiscriminator(rec.Data, "CorporateAction")
+		if err != nil {
+			return nil, fmt.Errorf("scan actions %s: %w", rec.Pubkey, err)
+		}
+		a, err := DecodeCorporateAction(body)
+		if err != nil {
+			return nil, fmt.Errorf("scan actions %s: %w", rec.Pubkey, err)
+		}
+		out = append(out, ActionRecord{PDA: rec.Pubkey, Action: a})
+	}
+	slices.SortFunc(out, func(a, b ActionRecord) int { return int(a.Action.Index) - int(b.Action.Index) })
+	return out, nil
+}
+
+// SeriesPDA derives ["series", mint] under the program.
+func (c *Client) SeriesPDA(mint solana.PublicKey) (solana.PublicKey, error) {
+	pda, _, err := solana.FindProgramAddress([][]byte{[]byte("series"), mint[:]}, c.program)
+	return pda, err
+}

@@ -32,6 +32,7 @@ type Deps struct {
 	Notice    *notice.Reader
 	Reconcile reconcile.Reader
 	Chain     *chain.Client
+	Read      ReadModel // series/investors/schedule/actions/entitlements read models (rest.go)
 }
 
 // New builds the HTTP handler tree.
@@ -113,18 +114,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 		writeJSON(w, http.StatusOK, map[string]any{"events": events})
 	})
 
-	r.Get("/series", func(w http.ResponseWriter, r *http.Request) {
-		rows, err := st.ListSeries(r.Context())
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-		out := make([]json.RawMessage, 0, len(rows))
-		for _, row := range rows {
-			out = append(out, row.Data)
-		}
-		writeJSON(w, http.StatusOK, out)
-	})
+	mountReadModels(r, deps.Read, st)
 
 	r.Get("/actions/{pda}/reconcile", func(w http.ResponseWriter, r *http.Request) {
 		if deps.Reconcile == nil {

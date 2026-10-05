@@ -92,7 +92,8 @@ func DecodeSeries(data []byte) (*Series, error) {
 	if s.Reserved, err = fixed64(r); err != nil {
 		return nil, fmt.Errorf("series: reserved: %w", err)
 	}
-	if !r.Done() {
+	// The account is allocated at max size (open_action Some = 33 bytes); a None leaves 32 zero bytes at the end.
+	if !r.Done() && !(s.OpenAction == nil && r.Remaining() == 32 && r.RestIsZero()) {
 		return nil, fmt.Errorf("series: %d trailing bytes", r.Remaining())
 	}
 	return &s, nil
