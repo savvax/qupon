@@ -156,3 +156,31 @@ func TestInsertRun(t *testing.T) {
 		t.Fatalf("run row = %d/%q, want %d/%q", ts, detail, r.Ts, r.Detail)
 	}
 }
+
+func TestApprovalDedupOnlyWhilePending(t *testing.T) {
+	st, err := Open(t.Context(), filepath.Join(t.TempDir(), "a.db"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	a := Approval{Ts: 1, DedupKey: "mint|0|INTR:pay_batch", SeriesMint: "mint", Step: "pay_batch", Args: []string{"action:pay"}}
+	for range 2 { // two ticks propose the same step: one pending row
+		if err := st.InsertApproval(t.Context(), a); err != nil {
+			t.Fatalf("insert: %v", err)
+		}
+	}
+	pending, err := st.ListApprovals(t.Context(), "pending")
+	if err != nil || len(pending) != 1 {
+		t.Fatalf("pending = %d (%v), want 1", len(pending), err)
+	}
+	if err := st.FinishApproval(t.Context(), pending[0].ID, "sig"); err != nil {
+		t.Fatalf("finish: %v", err)
+	}
+	// The batch is still incomplete: the same step must be proposable again.
+	if err := st.InsertApproval(t.Context(), a); err != nil {
+		t.Fatalf("re-propose: %v", err)
+	}
+	if pending, _ = st.ListApprovals(t.Context(), "pending"); len(pending) != 1 {
+		t.Fatalf("pending after re-propose = %d, want 1", len(pending))
+	}
+}

@@ -20,11 +20,19 @@ export async function POST(
   if (process.env.ADVANCE_TOKEN) {
     headers.Authorization = `Bearer ${process.env.ADVANCE_TOKEN}`;
   }
-  const res = await fetch(`${API_BASE_URL}/actions/${pda}/advance`, {
-    method: "POST",
-    headers,
-    body: await request.text(),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/actions/${pda}/advance`, {
+      method: "POST",
+      headers,
+      body: await request.text(),
+    });
+  } catch (e) {
+    return NextResponse.json(
+      { error: `registrar API unreachable: ${e instanceof Error ? e.message : String(e)}` },
+      { status: 502 },
+    );
+  }
   return new NextResponse(res.body, {
     status: res.status,
     headers: {

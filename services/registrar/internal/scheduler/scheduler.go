@@ -125,6 +125,9 @@ type Scheduler struct {
 
 // Run loops until ctx is cancelled (one decision pass per Tick).
 func (s *Scheduler) Run(ctx context.Context) {
+	if s.Now == nil {
+		s.Now = time.Now // main.go leaves it unset; a nil clock panicked on the first tick
+	}
 	t := time.NewTicker(max(s.Cfg.Tick, time.Second))
 	defer t.Stop()
 	s.Log.Info("scheduler started",
