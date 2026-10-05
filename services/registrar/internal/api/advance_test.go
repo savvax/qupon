@@ -129,14 +129,14 @@ func TestAdvanceLifecycle(t *testing.T) {
 	srv, st, log := advanceServer(t, fc)
 
 	type want struct {
-		code int
-		step string // "" → expect an error body
+		code  int
+		step  string // "" → expect an error body
 		errIn string
 	}
 	// One POST per advance; move the fake chain between calls like devnet would.
 	steps := []struct {
-		body  string
-		want  want
+		body   string
+		want   want
 		mutate func(*chain.CorporateAction)
 	}{
 		{body: `{"confirm":true}`, want: want{200, "strike_record", ""}, mutate: func(a *chain.CorporateAction) { a.Status = 1 }},
@@ -260,5 +260,38 @@ func TestAdvanceValidation(t *testing.T) {
 	_ = resp3.Body.Close()
 	if resp3.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("nil executor status = %d, want 503", resp3.StatusCode)
+	}
+}
+
+func TestAdvanceRequiresTokenWhenSet(t *testing.T) {
+	fc := &fakeChain{action: &chain.CorporateAction{Series: fSeries, Status: 0}}
+	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "api.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	srv := httptest.NewServer(New(slog.New(slog.DiscardHandler), st, Deps{Read: fc, AdvanceToken: "s3cret"}))
+	t.Cleanup(srv.Close)
+	url := srv.URL + "/actions/" + fAction.String() + "/advance"
+	for _, tc := range []struct {
+		auth string
+		want int
+	}{
+		{"", http.StatusUnauthorized},
+		{"Bearer wrong", http.StatusUnauthorized},
+		{"Bearer s3cret", http.StatusServiceUnavailable}, // authorized; no executor configured
+	} {
+		req, _ := http.NewRequest(http.MethodPost, url, strings.NewReader(`{"confirm":true}`))
+		if tc.auth != "" {
+			req.Header.Set("Authorization", tc.auth)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("post: %v", err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != tc.want {
+			t.Errorf("auth %q: status = %d, want %d", tc.auth, resp.StatusCode, tc.want)
+		}
 	}
 }

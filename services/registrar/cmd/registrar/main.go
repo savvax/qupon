@@ -98,11 +98,12 @@ func run() error {
 	srv := &http.Server{
 		Addr: ":" + cfg.Port,
 		Handler: api.New(logger, st, api.Deps{
-			Read:     readModel(chainClient),
-			Notice:   noticeReader(chainClient),
-			Reconcile: chainReader,
-			Chain:    chainClient,
-			Executor: executor.New(cfg.QuponCLI, cfg.QuponConfig, logger),
+			Read:         readModel(chainClient),
+			Notice:       noticeReader(chainClient),
+			Reconcile:    chainReader,
+			Chain:        chainClient,
+			Executor:     executor.New(cfg.QuponCLI, cfg.QuponConfig, logger),
+			AdvanceToken: cfg.AdvanceToken,
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}

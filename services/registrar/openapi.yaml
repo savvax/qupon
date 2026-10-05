@@ -207,6 +207,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+        "401":
+          description: 'ADVANCE_TOKEN is set and the request lacks the header Authorization: Bearer <token>'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: not found
           content:

@@ -66,18 +66,18 @@ func Args(step, series string, index uint32) ([]string, error) {
 // Result is the CLI JSON contract: {ok, signature, slot, error}. The CLI
 // serializes bigint slots as strings; both spellings are accepted.
 type Result struct {
-	OK        bool   `json:"ok"`
-	Signature string `json:"signature"`
+	OK        bool       `json:"ok"`
+	Signature string     `json:"signature"`
 	Slot      flexUint64 `json:"slot"`
-	Error     string `json:"error"`
-	Skipped   bool   `json:"skipped"` // e.g. action:fund with a full escrow
+	Error     string     `json:"error"`
+	Skipped   bool       `json:"skipped"` // e.g. action:fund with a full escrow
 }
 
 // Executor execs the qupon CLI. Safe for concurrent use (no shared state).
 type Executor struct {
-	bin     string         // $QUPON_CLI
-	cfgPath string         // config/devnet.json (series name → mint)
-	timeout time.Duration  // per-invocation cap (Timeout)
+	bin     string        // $QUPON_CLI
+	cfgPath string        // config/devnet.json (series name → mint)
+	timeout time.Duration // per-invocation cap (Timeout)
 	log     *slog.Logger
 }
 

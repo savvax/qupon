@@ -33,8 +33,11 @@ type Deps struct {
 	Notice    *notice.Reader
 	Reconcile reconcile.Reader
 	Chain     *chain.Client
-	Read      ReadModel // series/investors/schedule/actions/entitlements read models (rest.go)
+	Read      ReadModel          // series/investors/schedule/actions/entitlements read models (rest.go)
 	Executor  *executor.Executor // qupon CLI runner (advance.go); nil → /advance answers 503
+	// AdvanceToken (ADVANCE_TOKEN), when set, is required as "Authorization: Bearer <token>" on /advance —
+	// that endpoint signs transactions with the operator keys, so a public deployment must set it.
+	AdvanceToken string
 }
 
 // New builds the HTTP handler tree.
