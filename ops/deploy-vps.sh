@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One command: deploy the registrar API + console to a VPS with Docker Compose and Caddy (automatic HTTPS).
 #   ops/deploy-vps.sh [root@host]          (default root@85.192.29.7; QUPON_HOST overrides <ip-dashes>.sslip.io)
+#   REINDEX=1 ops/deploy-vps.sh            restart the registrar only, so it indexes series made by `make demo-seed`
 # The server needs docker + docker compose. Secrets go over ssh stdin into /opt/qupon/*.env (mode 600) — never
 # into git, argv or logs: RPC_URL (keyed devnet RPC), QUPON_USERS (back-office accounts, optional) and the devnet
 # operator keypairs the executor signs with (registrar, issuer, paying agent, KYC provider, demo investor).
@@ -13,6 +14,13 @@ HOST="${QUPON_HOST:-${IP//./-}.sslip.io}"
 [ -f .env ] && set -a && source .env && set +a
 : "${RPC_URL:?RPC_URL (keyed devnet RPC) missing in .env}"
 SSH=(ssh -o BatchMode=yes "$TARGET")
+
+if [ "${REINDEX:-}" = 1 ]; then
+  # New series created outside the app (make demo-seed): the registrar indexes every Series account at startup.
+  "${SSH[@]}" 'cd /opt/qupon/src/deploy/vps && docker compose restart registrar'
+  curl -fsS -m 30 --retry 10 --retry-delay 3 --retry-all-errors "https://api.$HOST/healthz" >/dev/null && echo "registrar re-indexed"
+  exit 0
+fi
 
 echo "== source → $TARGET:/opt/qupon/src"
 "${SSH[@]}" 'mkdir -p /opt/qupon/src'

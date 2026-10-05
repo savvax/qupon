@@ -60,6 +60,9 @@ demo-coupon: ## run the coupon scenario on devnet, write reports/demo-coupon.md
 demo: ## run the full lifecycle on devnet (S0–S4), write reports/demo-full.md
 	cd clients/ts && pnpm tsx scripts/demo-full.ts
 
+demo-seed: ## devnet: fresh series with 3 KYC'd holders (10/25/65), nothing announced — fresh data for the live demo
+	cd clients/ts && DEMO_SEED=1 pnpm tsx scripts/demo-full.ts
+
 demo-ui: ## devnet: fresh series + announced coupon for clicking through the console (prints the API command)
 	cd clients/ts && DEMO_UI=1 pnpm tsx scripts/demo-full.ts
 

@@ -126,12 +126,17 @@ make api                       # Go registrar on :8080 (REST + ISO 20022 + notic
 
 One VPS, Docker Compose: registrar API (Go + the `qupon` CLI as executor), console (Next.js) and Caddy (automatic HTTPS;
 `sslip.io` resolves the hostnames to the server IP). The web app reads devnet state; wallet actions are signed in the
-browser; lifecycle steps go through a server-side route (`/api/advance/[pda]`) so the registrar's `ADVANCE_TOKEN` never
-reaches the browser bundle. Deploy or update with one command (needs ssh access and the devnet keypairs in `.env`):
+browser; back-office writes go through a session proxy (`/api/bo/*`): the session token lives only in an httpOnly cookie
+and every operator-key action is role-checked by the Go API. Deploy or update with one command (needs ssh access and the
+devnet keypairs in `.env`):
 
 ```bash
 ops/deploy-vps.sh root@85.192.29.7    # rsync → server-side secrets (mode 600) → docker compose build/up → health check
 ```
+
+Fresh demo data (every demo coupon consumes one scheduled period): `make demo-seed` creates a new series with three
+KYC'd holders (10 / 25 / 65 bonds) and nothing announced; `REINDEX=1 ops/deploy-vps.sh` restarts the registrar so the
+cabinets list it.
 
 Env reference: `services/registrar/.env.example`, `apps/web/.env.example`. Server-side secrets written by the deploy script to
 /opt/qupon/registrar.env (mode 600): `RPC_URL`, `DEMO_LOGIN=1`, `QUPON_USERS`, and the operator keypair JSON arrays the

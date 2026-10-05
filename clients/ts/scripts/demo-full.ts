@@ -249,6 +249,15 @@ async function main(): Promise<void> {
   section("S0 — Issuance and holder registry (QPNb1, tKZT)", [`- Series **${qpn}**: face 1,000 KZT (100,000 tiyn), 10% semi-annual, 30E/360, ${demo.series.QPNb1.issueDate} → ${demo.series.QPNb1.maturityDate}`]);
   const q = await issue(qpn, [10n, 25n, 65n], demo.series.QPNb1.issueDate, demo.series.QPNb1.maturityDate, "tKZT", 2);
 
+  if (process.env.DEMO_SEED === "1") {
+    // `make demo-seed`: a fresh series with three KYC'd holders (10/25/65) and no open action — the next visitor
+    // announces the coupon from the issuer cabinet. The registrar indexes it on restart (REINDEX=1 ops/deploy-vps.sh).
+    const mint = (JSON.parse(readFileSync(runCfg, "utf8")) as { series: Record<string, { mint: string }> }).series[qpn]?.mint;
+    log(`seeded ${qpn} (${mint}) — run REINDEX=1 ops/deploy-vps.sh so the live registrar picks it up`);
+    console.log(JSON.stringify({ ok: true, series: qpn, mint }));
+    return;
+  }
+
   if (process.env.DEMO_UI === "1") {
     // `make demo-ui`: stop after announcing INTR #1 — every later step is clicked in the console (/actions/<pda>).
     const ann = step("action:announce INTR #1 (driven from the UI)", ["action:announce", "--series", qpn, "--kind", "INTR", "--record-at", "+180", "--payment-at", "+240", "--corp-id", `Q${short}-INTR-0001`, ...as(REGISTRAR)]);
