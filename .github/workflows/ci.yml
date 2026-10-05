@@ -43,7 +43,7 @@ jobs:
           avm install 1.2.0 && avm use 1.2.0
       - name: golangci-lint
         run: |
-          LINT=github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+          LINT=github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.1
           go install "$LINT"
       - name: program keypair (CI builds only; deploy keypair is never in git)
         run: |
@@ -56,3 +56,4 @@ jobs:
           make client
           git diff --exit-code -- clients/ts/src/generated \
             clients/ts/package.json
+          test -z "$(git status --porcelain -- clients/ts/src/generated)" || { git status --porcelain -- clients/ts/src/generated; exit 1; }

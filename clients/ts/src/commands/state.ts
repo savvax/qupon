@@ -1,5 +1,5 @@
 /** `state:dump` — all PDAs of a series as JSON · `explorer` — devnet explorer links. */
-import { fetchEncodedAccounts, type Address } from "@solana/kit";
+import { type MaybeEncodedAccount, fetchEncodedAccounts, type Address } from "@solana/kit";
 import type { Command } from "commander";
 import { fetchCorporateAction } from "../generated/index.js";
 import { addressLink, txLink } from "../lib/explorer.js";
@@ -23,9 +23,12 @@ interface DumpOpts extends GlobalOptions {
 
 /** Base64 account data per PDA (`--raw`), fetched in one getMultipleAccounts call. */
 async function rawBytes(rpc: Parameters<typeof fetchEncodedAccounts>[0], addresses: Address[]): Promise<Map<Address, string>> {
-	const encoded = await fetchEncodedAccounts(rpc, addresses);
-	// Missing accounts are logged by the fetches above; only map the ones that exist.
-	return new Map(encoded.flatMap(a => (("data" in a) ? [[a.address as Address, String(a.data)] as const] : [])));
+	return rawBase64(await fetchEncodedAccounts(rpc, addresses));
+}
+
+/** Base64 of each existing account's data (missing accounts are logged by the fetches above and skipped). */
+export function rawBase64(encoded: readonly MaybeEncodedAccount[]): Map<Address, string> {
+	return new Map(encoded.flatMap(a => (a.exists ? [[a.address, Buffer.from(a.data).toString("base64")] as const] : [])));
 }
 
 async function runStateDump(opts: DumpOpts, cmd: Command): Promise<void> {
