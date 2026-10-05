@@ -58,11 +58,14 @@
   .num {
     font-variant-numeric: tabular-nums;
   }
-  :focus-visible {
-    outline: none;
-    box-shadow:
-      0 0 0 2px #fff,
-      0 0 0 4px var(--color-g400);
-    border-radius: var(--radius-btn);
-  }
+}
+
+/* Unlayered on purpose: Tailwind utility shadows (e.g. Button's shadow-[...]) live in
+   @layer utilities and would otherwise override this ring for keyboard users. */
+:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px var(--color-g400);
+  border-radius: var(--radius-btn);
 }
