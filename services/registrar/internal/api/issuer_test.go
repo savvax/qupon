@@ -6,7 +6,6 @@ package api
 // before any execution; a registrar session gets 403 with nothing executed.
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -17,7 +16,10 @@ import (
 	"testing"
 	"time"
 
+	solana "github.com/solana-foundation/solana-go/v2"
+
 	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
+	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
@@ -35,9 +37,16 @@ func issuerServer(t *testing.T) (*httptest.Server, *store.Store, string, string,
 	if err := os.WriteFile(bin, data, 0o755); err != nil {
 		t.Fatalf("write fake cli: %v", err)
 	}
+	// QPNb1 → fMint so /issuer/actions/{pda}/fund resolves through the fake
+	// chain (its series carries fMint); the executor config exists up front so
+	// SeriesName works before any /issuer/series call.
 	base := filepath.Join(dir, "base.json")
-	if err := os.WriteFile(base, []byte(`{"programId":"P","series":{"QPNb1":{"mint":"M1"}}}`), 0o644); err != nil {
+	cfg := fmt.Sprintf(`{"programId":"P","series":{"QPNb1":{"mint":"%s"}}}`, fMint)
+	if err := os.WriteFile(base, []byte(cfg), 0o644); err != nil {
 		t.Fatalf("write base cfg: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "exec.json"), []byte(cfg), 0o644); err != nil {
+		t.Fatalf("write exec cfg: %v", err)
 	}
 	st, err := store.Open(t.Context(), filepath.Join(dir, "api.db"))
 	if err != nil {
@@ -45,7 +54,9 @@ func issuerServer(t *testing.T) (*httptest.Server, *store.Store, string, string,
 	}
 	t.Cleanup(func() { _ = st.Close() })
 	svc := &auth.Service{Store: st, Now: time.Now, TTL: time.Hour, Limit: auth.NewLimiter(5, time.Minute)}
+	fc := &fakeChain{action: &chain.CorporateAction{Series: fSeries, Index: 3, Status: 2}}
 	h := New(slog.New(slog.DiscardHandler), st, Deps{
+		Read:       fc,
 		Executor:   executor.New(bin, filepath.Join(dir, "exec.json"), nil),
 		Auth:       svc,
 		BaseConfig: base,
@@ -60,24 +71,7 @@ func issuerServer(t *testing.T) (*httptest.Server, *store.Store, string, string,
 
 func postSeries(t *testing.T, url, token, body string) (int, map[string]any) {
 	t.Helper()
-	req, err := http.NewRequest(http.MethodPost, url+"/issuer/series", strings.NewReader(body))
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("post series: %v", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-	var out map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		t.Fatalf("decode: %v", err)
-	}
-	return resp.StatusCode, out
+	return postJSON(t, url, "/issuer/series", body, token)
 }
 
 const seriesBody = `{"name":"QPN2","isin":"KZ2C0QUPON02","faceValue":100000,"couponRateBps":1000,"frequency":2,"dayCount":"THIRTY_360","issueDate":"2026-07-03","maturityDate":"2028-07-03","cash":"tkzt"}`
@@ -162,5 +156,124 @@ func TestCreateSeriesCliFailureRollsBack(t *testing.T) {
 	audit, err := st.ListAudit(t.Context(), 10)
 	if err != nil || len(audit) != 1 || audit[0].OK {
 		t.Fatalf("audit = %+v %v, want one failed row", audit, err)
+	}
+}
+
+var (
+	fMintB58   = fMint.String()
+	fActionB58 = fAction.String()
+)
+
+func TestIssuerAnnounce(t *testing.T) {
+	srv, _, cliLog, issuer, registrar := issuerServer(t)
+	actions := "/issuer/series/" + fMintB58 + "/actions"
+
+	// Wrong role: 403, nothing executed.
+	if code, out := postJSON(t, srv.URL, actions, `{"kind":"INTR","recordAt":100,"paymentAt":200}`, registrar); code != http.StatusForbidden || out["code"] != "forbidden" {
+		t.Fatalf("registrar token: %d %v, want 403 forbidden", code, out)
+	}
+
+	// Unknown mint: 404 unknown_series, no CLI run.
+	if code, out := postJSON(t, srv.URL, "/issuer/series/"+solana.PublicKey{9: 9}.String()+"/actions", `{"kind":"INTR","recordAt":100,"paymentAt":200}`, issuer); code != http.StatusNotFound || out["code"] != "unknown_series" {
+		t.Fatalf("unknown mint: %d %v, want 404 unknown_series", code, out)
+	}
+
+	// Happy INTR: exact argv, 201 with the action PDA and signatures.
+	t.Setenv("FAKE_CLI_STDOUT", writeT(t, t.TempDir(), "ok.json", `{"ok":true,"action":"Act1","signatures":["sa1"]}`))
+	code, out := postJSON(t, srv.URL, actions, `{"kind":"INTR","recordAt":100,"paymentAt":200}`, issuer)
+	if code != http.StatusCreated || out["action"] != "Act1" {
+		t.Fatalf("announce = %d %v, want 201 action Act1", code, out)
+	}
+	if sigs, _ := out["signatures"].([]any); len(sigs) != 1 || sigs[0] != "sa1" {
+		t.Fatalf("signatures = %v, want [sa1]", out["signatures"])
+	}
+
+	// MCAL with callDate + corpId: optional flags appended in order.
+	code, _ = postJSON(t, srv.URL, actions, `{"kind":"MCAL","recordAt":100,"paymentAt":200,"callDate":"2026-08-20","corpId":"QPN2-MCAL-0001"}`, issuer)
+	if code != http.StatusCreated {
+		t.Fatalf("mcal status = %d, want 201", code)
+	}
+	want := []string{
+		"--json action:announce --series QPNb1 --kind INTR --record-at 100 --payment-at 200",
+		"--json action:announce --series QPNb1 --kind MCAL --record-at 100 --payment-at 200 --call-date 2026-08-20 --corp-id QPN2-MCAL-0001",
+	}
+	if lines := cliLogLines(t, cliLog); len(lines) != 2 || lines[0] != want[0] || lines[1] != want[1] {
+		t.Fatalf("cli argv = %q, want %q", lines, want)
+	}
+
+	// Rejected bodies never reach the CLI.
+	for _, bad := range []string{
+		`{"kind":"MCAL","recordAt":100,"paymentAt":200}`,                              // MCAL without callDate
+		`{"kind":"INTR","recordAt":100,"paymentAt":200,"callDate":"2026-08-20"}`,      // callDate on INTR
+		`{"kind":"PCAL","recordAt":100,"paymentAt":200,"callDate":"2026-08-20"}`,      // PCAL not offered here
+		`{"kind":"INTR","recordAt":200,"paymentAt":100}`,                              // record ≥ payment
+		`{"kind":"INTR","recordAt":100,"paymentAt":200,"corpId":"0123456789abcdef0"}`, // corpId > 16 bytes
+	} {
+		if code, out := postJSON(t, srv.URL, actions, bad, issuer); code != http.StatusBadRequest || out["code"] != "invalid_params" {
+			t.Fatalf("body %s: %d %v, want 400 invalid_params", bad, code, out)
+		}
+	}
+	if lines := cliLogLines(t, cliLog); len(lines) != 2 {
+		t.Fatalf("cli ran for a rejected body: %q", lines)
+	}
+}
+
+func TestIssuerMeeting(t *testing.T) {
+	srv, _, cliLog, issuer, _ := issuerServer(t)
+	meetings := "/issuer/series/" + fMintB58 + "/meetings"
+
+	// rate 0 (or out of range), or voting before record, is rejected before any CLI run.
+	for _, bad := range []string{
+		`{"newRateBps":0,"recordAt":100,"votingEndsAt":200}`,
+		`{"newRateBps":10001,"recordAt":100,"votingEndsAt":200}`,
+		`{"newRateBps":900,"recordAt":200,"votingEndsAt":100}`,
+	} {
+		if code, out := postJSON(t, srv.URL, meetings, bad, issuer); code != http.StatusBadRequest || out["code"] != "invalid_params" {
+			t.Fatalf("body %s: %d %v, want 400 invalid_params", bad, code, out)
+		}
+	}
+
+	t.Setenv("FAKE_CLI_STDOUT", writeT(t, t.TempDir(), "ok.json", `{"ok":true,"action":"Meet1","signatures":["sm1"]}`))
+	if code, out := postJSON(t, srv.URL, meetings, `{"newRateBps":900,"recordAt":100,"votingEndsAt":200}`, issuer); code != http.StatusCreated || out["action"] != "Meet1" {
+		t.Fatalf("meeting = %d %v, want 201 action Meet1", code, out)
+	}
+	want := "--json meeting:announce --series QPNb1 --record-at 100 --voting-ends-at 200 --new-rate-bps 900"
+	if lines := cliLogLines(t, cliLog); len(lines) != 1 || lines[0] != want {
+		t.Fatalf("cli argv = %q, want [%q]", lines, want)
+	}
+}
+
+func TestIssuerFundTwiceSkips(t *testing.T) {
+	srv, st, cliLog, issuer, _ := issuerServer(t)
+	fund := "/issuer/actions/" + fActionB58 + "/fund"
+
+	t.Setenv("FAKE_CLI_STDOUT", writeT(t, t.TempDir(), "ok.json", `{"ok":true,"signature":"sig-fund"}`))
+	code, out := postJSON(t, srv.URL, fund, "{}", issuer)
+	if code != http.StatusOK || out["skipped"] != false {
+		t.Fatalf("first fund = %d %v, want 200 skipped false", code, out)
+	}
+	if sigs, _ := out["signatures"].([]any); len(sigs) != 1 || sigs[0] != "sig-fund" {
+		t.Fatalf("signatures = %v, want [sig-fund]", out["signatures"])
+	}
+
+	// Second operator double-clicks: the escrow is full, the CLI skips, funds never move twice.
+	t.Setenv("FAKE_CLI_STDOUT", writeT(t, t.TempDir(), "skip.json", `{"ok":true,"skipped":true}`))
+	code, out = postJSON(t, srv.URL, fund, "{}", issuer)
+	if code != http.StatusOK || out["skipped"] != true {
+		t.Fatalf("second fund = %d %v, want 200 skipped true", code, out)
+	}
+
+	want := "--json action:fund --series QPNb1 --index 3"
+	if lines := cliLogLines(t, cliLog); len(lines) != 2 || lines[0] != want || lines[1] != want {
+		t.Fatalf("cli argv = %q, want two [%q]", lines, want)
+	}
+	rows, err := st.ListAudit(t.Context(), 10)
+	if err != nil || len(rows) != 2 || !rows[0].OK || !rows[1].OK {
+		t.Fatalf("audit = %+v %v, want two ok rows", rows, err)
+	}
+	for _, row := range rows {
+		if row.Route != "POST "+fund {
+			t.Fatalf("audit route = %q, want %q", row.Route, "POST "+fund)
+		}
 	}
 }

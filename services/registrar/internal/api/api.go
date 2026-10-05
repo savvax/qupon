@@ -186,6 +186,9 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	// Issuer writes (product spec §6): series creation runs the qupon CLI executor.
 	issuer := requireRole(deps.Auth, "issuer")
 	r.With(issuer).Post("/issuer/series", createSeries(deps, st))
+	r.With(issuer).Post("/issuer/series/{mint}/actions", issuerAnnounce(deps, st))
+	r.With(issuer).Post("/issuer/series/{mint}/meetings", issuerMeeting(deps, st))
+	r.With(issuer).Post("/issuer/actions/{pda}/fund", issuerFund(deps, st))
 
 	// Scheduler surface (task 024): planned actions + approval gate (approve executes the CLI → registrar only).
 	r.Get("/approvals", listApprovals(st))
@@ -218,6 +221,9 @@ func corsReadOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
 			h := w.Header()
+			// Wildcard is deliberate: public devnet reads for the investor portal;
+			// credentials are never allowed (no Allow-Credentials header), so
+			// browsers refuse credentialed requests. Writes get no CORS headers.
 			h.Set("Access-Control-Allow-Origin", "*")
 			h.Set("Access-Control-Allow-Methods", "GET, HEAD")
 		}

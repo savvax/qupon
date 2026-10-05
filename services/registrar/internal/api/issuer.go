@@ -14,6 +14,7 @@ import (
 	"math"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/execconfig"
@@ -201,5 +202,214 @@ func createSeries(deps Deps, st *store.Store) http.HandlerFunc {
 		}
 		audit(st, r, req, true, "series "+req.Name+" created (mint "+res.Mint+")", sigs)
 		writeJSON(w, http.StatusCreated, map[string]any{"series": req.Name, "mint": res.Mint, "signatures": sigs})
+	}
+}
+
+// announceRequest is POST /issuer/series/{mint}/actions (openapi.yaml AnnounceRequest).
+type announceRequest struct {
+	Kind      string `json:"kind"`      // INTR | REDM | MCAL
+	RecordAt  int64  `json:"recordAt"`  // record date, unix seconds
+	PaymentAt int64  `json:"paymentAt"` // payment date, unix seconds
+	CallDate  string `json:"callDate"`  // MCAL only: YYYY-MM-DD
+	CorpID    string `json:"corpId"`    // optional, ≤ 16 bytes
+}
+
+// validate mirrors the CLI's announcePlan rules (clients/ts/src/commands/action.ts):
+// callDate is required for MCAL and rejected otherwise; PCAL stays CLI-only.
+func (req *announceRequest) validate() error {
+	switch req.Kind {
+	case "INTR", "REDM":
+		if req.CallDate != "" {
+			return errors.New("callDate only applies to MCAL")
+		}
+	case "MCAL":
+		if _, err := time.Parse("2006-01-02", req.CallDate); err != nil {
+			return errors.New("MCAL requires callDate YYYY-MM-DD")
+		}
+	default:
+		return errors.New("kind must be INTR, REDM or MCAL")
+	}
+	if req.RecordAt <= 0 || req.PaymentAt <= req.RecordAt {
+		return errors.New("recordAt must be a unix ts strictly before paymentAt")
+	}
+	if len(req.CorpID) > 16 {
+		return errors.New("corpId must be at most 16 bytes")
+	}
+	return nil
+}
+
+// issuerAnnounce: CLI `action:announce` (INTR coupon, REDM at maturity, MCAL
+// early call); on-chain schedule checks surface as 409.
+func issuerAnnounce(deps Deps, st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !needExecutor(w, deps) {
+			return
+		}
+		mint, ok := pathKey(w, r, "mint")
+		if !ok {
+			return
+		}
+		var req announceRequest
+		if !decodeJSON(w, r, &req) {
+			return
+		}
+		if err := req.validate(); err != nil {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_params", err.Error())
+			return
+		}
+		name, ok := seriesName(w, deps, mint.String())
+		if !ok {
+			return
+		}
+		// argv built from validated fields only (Plan 2 Global Constraints).
+		args := []string{
+			"action:announce", "--series", name, "--kind", req.Kind,
+			"--record-at", strconv.FormatInt(req.RecordAt, 10),
+			"--payment-at", strconv.FormatInt(req.PaymentAt, 10),
+		}
+		if req.CallDate != "" {
+			args = append(args, "--call-date", req.CallDate)
+		}
+		if req.CorpID != "" {
+			args = append(args, "--corp-id", req.CorpID)
+		}
+		res, err := deps.Executor.Run(r.Context(), args...)
+		if err != nil {
+			writeError(w, http.StatusGatewayTimeout, err.Error())
+			return
+		}
+		if !res.OK {
+			audit(st, r, req, false, res.Error, nil)
+			writeOnchainError(w, res.Error)
+			return
+		}
+		sigs := res.Signatures
+		if sigs == nil {
+			sigs = sigsOf(res.Signature)
+		}
+		audit(st, r, req, true, req.Kind+" announced", sigs)
+		writeJSON(w, http.StatusCreated, map[string]any{"action": res.Action, "signatures": sigs})
+	}
+}
+
+// meetingRequest is POST /issuer/series/{mint}/meetings (openapi.yaml MeetingRequest).
+type meetingRequest struct {
+	NewRateBps   int   `json:"newRateBps"`   // proposed coupon rate, 1..10000 bps
+	RecordAt     int64 `json:"recordAt"`     // record date, unix seconds
+	VotingEndsAt int64 `json:"votingEndsAt"` // voting deadline, unix seconds
+}
+
+func (req *meetingRequest) validate() error {
+	if req.NewRateBps < 1 || req.NewRateBps > 10000 {
+		return errors.New("newRateBps must be 1..10000 bps")
+	}
+	if req.RecordAt <= 0 || req.VotingEndsAt <= req.RecordAt {
+		return errors.New("recordAt must be a unix ts strictly before votingEndsAt")
+	}
+	return nil
+}
+
+// issuerMeeting: CLI `meeting:announce` (bondholder meeting proposing a new
+// coupon rate).
+func issuerMeeting(deps Deps, st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !needExecutor(w, deps) {
+			return
+		}
+		mint, ok := pathKey(w, r, "mint")
+		if !ok {
+			return
+		}
+		var req meetingRequest
+		if !decodeJSON(w, r, &req) {
+			return
+		}
+		if err := req.validate(); err != nil {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_params", err.Error())
+			return
+		}
+		name, ok := seriesName(w, deps, mint.String())
+		if !ok {
+			return
+		}
+		res, err := deps.Executor.Run(r.Context(),
+			"meeting:announce", "--series", name,
+			"--record-at", strconv.FormatInt(req.RecordAt, 10),
+			"--voting-ends-at", strconv.FormatInt(req.VotingEndsAt, 10),
+			"--new-rate-bps", strconv.Itoa(req.NewRateBps))
+		if err != nil {
+			writeError(w, http.StatusGatewayTimeout, err.Error())
+			return
+		}
+		if !res.OK {
+			audit(st, r, req, false, res.Error, nil)
+			writeOnchainError(w, res.Error)
+			return
+		}
+		sigs := res.Signatures
+		if sigs == nil {
+			sigs = sigsOf(res.Signature)
+		}
+		audit(st, r, req, true, "BMET announced", sigs)
+		writeJSON(w, http.StatusCreated, map[string]any{"action": res.Action, "signatures": sigs})
+	}
+}
+
+// issuerFund: CLI `action:fund` on the action at {pda}; the CLI fills only
+// the shortfall, so a second call is idempotent (skipped:true).
+func issuerFund(deps Deps, st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if deps.Read == nil {
+			writeError(w, http.StatusServiceUnavailable, "chain reader not configured (set PROGRAM_ID)")
+			return
+		}
+		if !needExecutor(w, deps) {
+			return
+		}
+		pda, ok := pathKey(w, r, "pda")
+		if !ok {
+			return
+		}
+		action, err := deps.Read.FetchCorporateAction(r.Context(), pda)
+		if err != nil {
+			writeError(w, http.StatusBadGateway, err.Error())
+			return
+		}
+		if action == nil {
+			writeError(w, http.StatusNotFound, "no corporate action at "+pda.String())
+			return
+		}
+		series, err := deps.Read.FetchSeries(r.Context(), action.Series)
+		if err != nil || series == nil {
+			writeError(w, http.StatusBadGateway, fmt.Sprintf("series %s of action %s: %v", action.Series, pda, err))
+			return
+		}
+		name, ok := seriesName(w, deps, series.Mint.String())
+		if !ok {
+			return
+		}
+		res, err := deps.Executor.Run(r.Context(),
+			"action:fund", "--series", name,
+			"--index", strconv.FormatUint(uint64(action.Index), 10))
+		if err != nil {
+			writeError(w, http.StatusGatewayTimeout, err.Error())
+			return
+		}
+		params := map[string]any{"series": name, "index": action.Index}
+		if !res.OK {
+			audit(st, r, params, false, res.Error, nil)
+			writeOnchainError(w, res.Error)
+			return
+		}
+		sigs := res.Signatures
+		if sigs == nil {
+			sigs = sigsOf(res.Signature)
+		}
+		detail := "funded"
+		if res.Skipped {
+			detail = "skipped: escrow already funded"
+		}
+		audit(st, r, params, true, detail, sigs)
+		writeJSON(w, http.StatusOK, map[string]any{"signatures": sigs, "skipped": res.Skipped})
 	}
 }

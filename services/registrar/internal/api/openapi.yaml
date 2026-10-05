@@ -481,6 +481,142 @@ paths:
               schema:
                 $ref: "#/components/schemas/Error"
         "503": {description: executor or base config not configured}
+  /issuer/series/{mint}/actions:
+    post:
+      summary: >-
+        Announce a cash corporate action (INTR coupon, REDM at maturity, MCAL
+        early call) on the series — runs `qupon action:announce` through the
+        executor.
+      operationId: issuerAnnounce
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "#/components/parameters/Mint"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, recordAt, paymentAt]
+              properties:
+                kind: {type: string, enum: [INTR, REDM, MCAL]}
+                recordAt:
+                  type: integer
+                  description: record date, unix seconds
+                paymentAt:
+                  type: integer
+                  description: payment date, unix seconds
+                callDate:
+                  type: string
+                  description: >-
+                    MCAL only — call date YYYY-MM-DD (required for MCAL,
+                    rejected otherwise)
+                corpId:
+                  type: string
+                  description: >-
+                    CORP id, at most 16 bytes (default:
+                    <series>-<KIND>-####)
+      responses:
+        "201":
+          description: announced
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [action, signatures]
+                properties:
+                  action: {type: string, description: CorporateAction PDA}
+                  signatures:
+                    type: array
+                    items: {type: string}
+        "400":
+          description: >-
+            invalid_params — kind, callDate, dates or corpId rejected
+            before any CLI run
+        "401": {description: no valid back-office session}
+        "403": {description: the session's role is not issuer or admin}
+        "404": {description: "unknown_series — mint is not a registered series"}
+        "409":
+          description: >-
+            the chain refused the announcement (onchainError carries the
+            CLI message)
+        "503": {description: executor not configured}
+  /issuer/series/{mint}/meetings:
+    post:
+      summary: >-
+        Announce a bondholder meeting (BMET) proposing a new coupon rate —
+        runs `qupon meeting:announce` through the executor.
+      operationId: issuerMeeting
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "#/components/parameters/Mint"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newRateBps, recordAt, votingEndsAt]
+              properties:
+                newRateBps: {type: integer, minimum: 1, maximum: 10000}
+                recordAt:
+                  type: integer
+                  description: record date, unix seconds
+                votingEndsAt:
+                  type: integer
+                  description: voting deadline, unix seconds
+      responses:
+        "201":
+          description: meeting announced
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [action, signatures]
+                properties:
+                  action: {type: string, description: CorporateAction PDA}
+                  signatures:
+                    type: array
+                    items: {type: string}
+        "400":
+          description: >-
+            invalid_params — rate out of range or voting ends before the
+            record date
+        "401": {description: no valid back-office session}
+        "403": {description: the session's role is not issuer or admin}
+        "404": {description: unknown_series}
+        "409": {description: the chain refused the announcement (onchainError)}
+        "503": {description: executor not configured}
+  /issuer/actions/{pda}/fund:
+    post:
+      summary: >-
+        Fund the action escrow — runs `qupon action:fund` (idempotent: fills
+        only the shortfall, so a second call returns skipped true and moves no
+        funds).
+      operationId: issuerFund
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "#/components/parameters/Pda"
+      responses:
+        "200":
+          description: funded (or skipped — the escrow was already full)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [signatures, skipped]
+                properties:
+                  signatures:
+                    type: array
+                    items: {type: string}
+                  skipped: {type: boolean}
+        "400": {description: pda is not base58}
+        "401": {description: no valid back-office session}
+        "403": {description: the session's role is not issuer or admin}
+        "404":
+          description: no corporate action at the pda, or unknown_series
+        "409": {description: the chain refused the funding (onchainError)}
+        "503": {description: chain reader or executor not configured}
   /me:
     get:
       summary: The signed-in back-office user
