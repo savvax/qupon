@@ -24,6 +24,7 @@ const (
 // polling getSignaturesForAddress + getTransaction every interval.
 type Poller struct {
 	rpc         *rpc.Client
+	fallback    *rpc.Client // public devnet, asked when the primary fails a history call (nil if primary is public)
 	program     solana.PublicKey
 	st          *store.Store
 	log         *slog.Logger
@@ -33,8 +34,15 @@ type Poller struct {
 }
 
 func NewPoller(rpcURL string, program solana.PublicKey, st *store.Store, log *slog.Logger) *Poller {
+	// Keyed RPCs can fail history methods while account reads work (Helius devnet: -32603 on
+	// getSignaturesForAddress/getSignatureStatuses, 2026-10-05); public devnet answers them, rate-limited.
+	var fallback *rpc.Client
+	if rpcURL != rpc.DevNet_RPC {
+		fallback = rpc.New(rpc.DevNet_RPC)
+	}
 	return &Poller{
 		rpc:         rpc.New(rpcURL),
+		fallback:    fallback,
 		program:     program,
 		st:          st,
 		log:         log,
@@ -114,6 +122,9 @@ func (p *Poller) fetchNew(ctx context.Context, cur string) ([]*rpc.TransactionSi
 			opts.Until = until
 		}
 		page, err := p.rpc.GetSignaturesForAddressWithOpts(ctx, p.program, opts)
+		if err != nil && p.fallback != nil {
+			page, err = p.fallback.GetSignaturesForAddressWithOpts(ctx, p.program, opts)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("getSignaturesForAddress: %w", err)
 		}
@@ -141,10 +152,11 @@ func (p *Poller) fetchNew(ctx context.Context, cur string) ([]*rpc.TransactionSi
 // ingestTx fetches one transaction and stores its events.
 func (p *Poller) ingestTx(ctx context.Context, s *rpc.TransactionSignature) error {
 	zero := uint64(0)
-	tx, err := p.rpc.GetTransaction(ctx, s.Signature, &rpc.GetTransactionOpts{
-		Encoding:                       solana.EncodingJSON,
-		MaxSupportedTransactionVersion: &zero,
-	})
+	txOpts := &rpc.GetTransactionOpts{Encoding: solana.EncodingJSON, MaxSupportedTransactionVersion: &zero}
+	tx, err := p.rpc.GetTransaction(ctx, s.Signature, txOpts)
+	if err != nil && p.fallback != nil && !strings.Contains(strings.ToLower(err.Error()), txNotFound) {
+		tx, err = p.fallback.GetTransaction(ctx, s.Signature, txOpts)
+	}
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), txNotFound) {
 			p.log.Warn("ingest: transaction pruned from history", "sig", s.Signature.String())

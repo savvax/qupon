@@ -1,0 +1,7 @@
+# QUPON_HOST defaults to <ip-with-dashes>.sslip.io (resolves to the server IP; Let's Encrypt works without a domain).
+qupon.{$QUPON_HOST} {
+	reverse_proxy web:3000
+}
+api.{$QUPON_HOST} {
+	reverse_proxy registrar:8080
+}

@@ -74,7 +74,7 @@ All code in the repository was written during the hackathon, between 2026-10-05 
 | Project name | Qupon |
 | Description | the Colosseum description above |
 | GitHub | `https://github.com/savvax/qupon` |
-| Website | `<<FILL: deployed console URL (task 032)>>` |
+| Website | `https://qupon.85-192-29-7.sslip.io` (read-only investor view without a wallet: `/portal?owner=6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC`) |
 | Pitch / demo video | `<<FILL: links>>` |
 | Official hackathon submission confirmation | Yes · `<<FILL: Colosseum project link>>` · `<<FILL: Colosseum profile link>>` |
 

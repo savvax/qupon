@@ -35,7 +35,7 @@ import { loadConfig, loadDemoConfig, tkztMintSet, type QuponConfig, type QuponSe
 import { daysFromEpoch, fromUnixUtc, ymd, type Ymd } from "../lib/daycount.js";
 import { loadKeypairFromPath } from "../lib/keys.js";
 import { seriesPda } from "../lib/pda.js";
-import { createRpc, loadEnvFile, sendInstructions, type QuponRpc } from "../lib/tx.js";
+import { signatureStatus, createRpc, loadEnvFile, sendInstructions, type QuponRpc } from "../lib/tx.js";
 
 /** The three global options, accepted before or after the command name. */
 export interface GlobalOptions {
@@ -245,8 +245,7 @@ export async function sendQuiet(
 	label: string,
 ): Promise<TxReport> {
 	const signature = await sendInstructions(rpc, payer, instructions, label);
-	const { value } = await rpc.getSignatureStatuses([signature]).send();
-	return { signature, slot: value[0]?.slot ?? 0n };
+	return { signature, slot: (await signatureStatus(rpc, signature))?.slot ?? 0n };
 }
 
 /** Send, then print `{ok:true, signature, slot, …extra}` on stdout. */

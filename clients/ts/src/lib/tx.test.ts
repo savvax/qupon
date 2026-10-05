@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { anchorErrorFromLogs, computeUnitLimit, isTransient } from "./tx.js";
+import type { Signature } from "@solana/kit";
+import { anchorErrorFromLogs, computeUnitLimit, isTransient, waitForConfirmation } from "./tx.js";
 
 describe("computeUnitLimit", () => {
   it("encodes SetComputeUnitLimit (tag 2, u32 LE) for the ComputeBudget program", () => {
@@ -31,5 +32,22 @@ describe("anchorErrorFromLogs", () => {
   it("is undefined without an Anchor error", () => {
     expect(anchorErrorFromLogs(undefined)).toBeUndefined();
     expect(anchorErrorFromLogs(["Program log: Error: insufficient funds"])).toBeUndefined();
+  });
+});
+
+describe("waitForConfirmation", () => {
+  const sig = "5g4SZtuSXhGy5SBCkptJthvqVHaA2WrFdaP7rxhebZTVwGgtHm3QvUCpUMZXiQaXQ6p5E73cxdmzAFwMSBMRK2h3" as Signature;
+  const statusRpc = (impl: () => unknown) =>
+    ({ getSignatureStatuses: () => ({ send: async () => impl() }) }) as unknown as Parameters<typeof waitForConfirmation>[0];
+  it("asks the fallback RPC when the primary fails the status call", async () => {
+    const primary = statusRpc(() => {
+      throw new Error("JSON-RPC error: Internal JSON-RPC error (Internal error)");
+    });
+    const fallback = statusRpc(() => ({ value: [{ confirmationStatus: "confirmed", err: null }] }));
+    await expect(waitForConfirmation(primary, sig, 5_000, () => fallback)).resolves.toBe(sig);
+  });
+  it("reports an on-chain failure", async () => {
+    const primary = statusRpc(() => ({ value: [{ confirmationStatus: "confirmed", err: { InstructionError: [0, { Custom: 6006 }] } }] }));
+    await expect(waitForConfirmation(primary, sig, 5_000)).rejects.toThrow(/transaction failed/);
   });
 });

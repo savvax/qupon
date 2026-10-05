@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	solana "github.com/solana-foundation/solana-go/v2"
+	"github.com/solana-foundation/solana-go/v2/rpc"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
@@ -67,7 +68,9 @@ func newPoller(t *testing.T, rpcURL string) (*Poller, *store.Store) {
 	}
 	t.Cleanup(func() { _ = st.Close() })
 	program := solana.MustPublicKeyFromBase58("QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd")
-	return NewPoller(rpcURL, program, st, slog.New(slog.DiscardHandler)), st
+	p := NewPoller(rpcURL, program, st, slog.New(slog.DiscardHandler))
+	p.fallback = nil // tests never reach public devnet
+	return p, st
 }
 
 func TestPollIngestsEventsInOrder(t *testing.T) {
@@ -169,6 +172,23 @@ func TestPollRPCErrorLeavesCursor(t *testing.T) {
 	}
 	if cur, _ := st.IngestCursor(t.Context()); cur != "" {
 		t.Errorf("cursor = %q, want empty after failure", cur)
+	}
+}
+
+// A primary that fails history calls is backed by the fallback RPC (public devnet in production).
+func TestPollFallsBackWhenPrimaryFailsHistory(t *testing.T) {
+	primary := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":1,"error":{"code":-32603,"message":"Internal error"}}`))
+	}))
+	defer primary.Close()
+	fallback := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"jsonrpc":"2.0","id":1,"result":[]}`))
+	}))
+	defer fallback.Close()
+	p, _ := newPoller(t, primary.URL)
+	p.fallback = rpc.New(fallback.URL)
+	if err := p.Poll(t.Context()); err != nil {
+		t.Fatalf("poll with fallback: %v", err)
 	}
 }
 

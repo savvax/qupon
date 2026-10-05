@@ -120,23 +120,17 @@ make api                       # Go registrar on :8080 (REST + ISO 20022 + notic
 
 | What | URL |
 |---|---|
-| Console / investor portal (Vercel) | https://qupon.vercel.app |
-| Registrar API (Fly.io) | https://qupon-registrar.fly.dev (`GET /healthz`, OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
+| Console (registrar view) | https://qupon.85-192-29-7.sslip.io |
+| Investor portal — read-only demo investor, no wallet needed | https://qupon.85-192-29-7.sslip.io/portal?owner=6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC |
+| Registrar API | https://api.85-192-29-7.sslip.io/healthz (OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
 
-The web app reads only devnet state; wallet actions are signed in the browser, lifecycle steps go through a server-side route (`/api/advance/[pda]`) so the registrar's `ADVANCE_TOKEN` never reaches the browser bundle.
-
-Deployment steps (the logins are the team's): `HUMAN_TODO.md` → "deploy the API and the console". In short:
+One VPS, Docker Compose: registrar API (Go + the `qupon` CLI as executor), console (Next.js) and Caddy (automatic HTTPS;
+`sslip.io` resolves the hostnames to the server IP). The web app reads devnet state; wallet actions are signed in the
+browser; lifecycle steps go through a server-side route (`/api/advance/[pda]`) so the registrar's `ADVANCE_TOKEN` never
+reaches the browser bundle. Deploy or update with one command (needs ssh access and the devnet keypairs in `.env`):
 
 ```bash
-# API — Fly.io (image: Go API + Node 22 + built qupon CLI; entrypoint writes keypair secrets to 0600 files)
-fly secrets set ADVANCE_TOKEN=… RPC_URL=… QUPON_REGISTRAR_KEYPAIR_JSON=… QUPON_ISSUER_KEYPAIR_JSON=… QUPON_PAYING_AGENT_KEYPAIR_JSON=…
-fly deploy                                   # fly.toml → services/registrar/Dockerfile
-
-# Web — Vercel (root dir apps/web)
-vercel --prod apps/web \
-  --env NEXT_PUBLIC_API_URL=https://qupon-registrar.fly.dev \
-  --env NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com
-cd apps/web && vercel env add ADVANCE_TOKEN   # server-side only, NOT NEXT_PUBLIC_
+ops/deploy-vps.sh root@85.192.29.7    # rsync → server-side secrets (mode 600) → docker compose build/up → health check
 ```
 
 Env reference: `services/registrar/.env.example`, `apps/web/.env.example`.

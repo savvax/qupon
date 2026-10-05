@@ -1,0 +1,34 @@
+# Qupon on one VPS: registrar API + console + Caddy (automatic HTTPS). Started by ops/deploy-vps.sh.
+# Secrets live only on the server in /opt/qupon/*.env (written by the deploy script, mode 600).
+services:
+  registrar:
+    build: { context: ../.., dockerfile: services/registrar/Dockerfile }
+    env_file: /opt/qupon/registrar.env # RPC_URL, ADVANCE_TOKEN, QUPON_*_KEYPAIR_JSON (devnet)
+    environment:
+      PROGRAM_ID: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd
+      QUPON_CONFIG: /app/config/devnet.json
+    volumes:
+      - registrar_data:/data
+      - /opt/qupon/devnet.json:/app/config/devnet.json:ro # config/devnet.json + every on-chain series (series-config.ts)
+    restart: unless-stopped
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+      args: { NEXT_PUBLIC_API_URL: "https://api.${QUPON_HOST}" }
+    env_file: /opt/qupon/web.env # ADVANCE_TOKEN (server-side route only)
+    restart: unless-stopped
+  caddy:
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443"]
+    environment: { QUPON_HOST: "${QUPON_HOST}" }
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [registrar, web]
+    restart: unless-stopped
+volumes:
+  registrar_data:
+  caddy_data:
+  caddy_config:

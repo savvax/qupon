@@ -60,12 +60,32 @@ export function createRpc(): QuponRpc {
   return createSolanaRpcFromTransport(retrying);
 }
 
-/** Wait until a signature reaches at least `confirmed` (no websocket needed). */
-export async function waitForConfirmation(rpc: QuponRpc, signature: Signature, timeoutMs = 60_000): Promise<Signature> {
+type StatusRpc = Pick<QuponRpc, "getSignatureStatuses">;
+let publicDevnet: StatusRpc | undefined;
+const publicDevnetRpc = (): StatusRpc => (publicDevnet ??= createSolanaRpc("https://api.devnet.solana.com"));
+
+/**
+ * Status of one signature. If the primary RPC fails the status call itself (Helius devnet answered
+ * getSignatureStatuses with -32603 "Internal error" on 2026-10-05 while sends worked), ask public devnet.
+ */
+export async function signatureStatus(rpc: StatusRpc, signature: Signature, fallback: () => StatusRpc = publicDevnetRpc) {
+  try {
+    return (await rpc.getSignatureStatuses([signature]).send()).value[0];
+  } catch {
+    return (await fallback().getSignatureStatuses([signature]).send()).value[0];
+  }
+}
+
+/** Wait until a signature reaches at least `confirmed` (no websocket needed; status via {@link signatureStatus}). */
+export async function waitForConfirmation(
+  rpc: StatusRpc,
+  signature: Signature,
+  timeoutMs = 60_000,
+  fallback: () => StatusRpc = publicDevnetRpc,
+): Promise<Signature> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
-    const { value } = await rpc.getSignatureStatuses([signature]).send();
-    const status = value[0];
+    const status = await signatureStatus(rpc, signature, fallback);
     if (status?.err) throw new Error(`transaction failed: ${JSON.stringify(status.err)}`);
     if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") return signature;
     if (Date.now() > deadline) throw new Error(`timeout waiting for confirmation of ${signature}`);
