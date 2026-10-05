@@ -19,12 +19,11 @@ jobs:
         with: {go-version-file: services/registrar/go.mod, cache-dependency-path: services/registrar/go.sum}
       - uses: actions/cache@v4
         with:
+          # Not target/ or ~/.rustup: multi-GB, the post-job save of them killed the run after a green verify.
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ~/.rustup/toolchains
             ~/.cache/solana
-            target
           key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: cargo-${{ runner.os }}-
       - uses: actions/cache@v4
