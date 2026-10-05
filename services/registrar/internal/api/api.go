@@ -38,6 +38,9 @@ type Deps struct {
 	Executor   *executor.Executor // qupon CLI runner (advance.go); nil → /advance answers 503
 	Auth       *auth.Service      // sessions + roles (auth.go, rbac.go); nil → write routes answer 503
 	BaseConfig string             // base CLI config (config/devnet.json) the issuer endpoints merge the registry into
+	// DemoLimit caps writes per demo role (all visitors share it); DemoSeriesLimit caps demo series creation. nil = off.
+	DemoLimit       *auth.Limiter
+	DemoSeriesLimit *auth.Limiter
 	// SignInLimit caps sign-ins (demo and password) per client IP; nil = unlimited (tests).
 	SignInLimit *auth.Limiter
 	// ReadCacheTTL caches GET chain read models (cache.go); 0 disables (tests).
@@ -185,31 +188,34 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	// Writes that sign with the operator keys need a registrar session; /actions/{pda}/advance stays as an alias.
 	registrar := requireRole(deps.Auth, "registrar")
-	r.With(registrar).Post("/registrar/actions/{pda}/advance", advanceAction(deps, st, logger))
-	r.With(registrar).Post("/actions/{pda}/advance", advanceAction(deps, st, logger))
+	// Demo users share accounts, so their writes are capped per role (operator SOL); series creation (rent) per day.
+	write := demoThrottle(deps.DemoLimit, "demo:")
+	seriesCap := demoThrottle(deps.DemoSeriesLimit, "demo-series:")
+	r.With(registrar, write).Post("/registrar/actions/{pda}/advance", advanceAction(deps, st, logger))
+	r.With(registrar, write).Post("/actions/{pda}/advance", advanceAction(deps, st, logger))
 
 	// Issuer writes (product spec §6): series creation runs the qupon CLI executor.
 	issuer := requireRole(deps.Auth, "issuer")
-	r.With(issuer).Post("/issuer/series", createSeries(deps, st))
-	r.With(issuer).Post("/issuer/series/{mint}/actions", issuerAnnounce(deps, st))
-	r.With(issuer).Post("/issuer/series/{mint}/meetings", issuerMeeting(deps, st))
-	r.With(issuer).Post("/issuer/actions/{pda}/fund", issuerFund(deps, st))
+	r.With(issuer, write, seriesCap).Post("/issuer/series", createSeries(deps, st))
+	r.With(issuer, write).Post("/issuer/series/{mint}/actions", issuerAnnounce(deps, st))
+	r.With(issuer, write).Post("/issuer/series/{mint}/meetings", issuerMeeting(deps, st))
+	r.With(issuer, write).Post("/issuer/actions/{pda}/fund", issuerFund(deps, st))
 
 	// Scheduler surface (task 024): planned actions + approval gate (approve executes the CLI → registrar only).
 	r.Get("/approvals", listApprovals(st))
-	r.With(registrar).Post("/registrar/approvals/{id}/approve", approveApproval(deps, st))
-	r.With(registrar).Post("/approvals/{id}/approve", approveApproval(deps, st))
+	r.With(registrar, write).Post("/registrar/approvals/{id}/approve", approveApproval(deps, st))
+	r.With(registrar, write).Post("/approvals/{id}/approve", approveApproval(deps, st))
 
 	// Registrar back-office: investor onboarding (SIMULATED SAS attestation + registration), suspend/reinstate, audit feed.
-	r.With(registrar).Post("/registrar/investors", registrarOnboard(deps, st))
-	r.With(registrar).Post("/registrar/investors/{mint}/{owner}/suspend", registrarSuspend(deps, st, "suspend"))
-	r.With(registrar).Post("/registrar/investors/{mint}/{owner}/reinstate", registrarSuspend(deps, st, "reinstate"))
+	r.With(registrar, write).Post("/registrar/investors", registrarOnboard(deps, st))
+	r.With(registrar, write).Post("/registrar/investors/{mint}/{owner}/suspend", registrarSuspend(deps, st, "suspend"))
+	r.With(registrar, write).Post("/registrar/investors/{mint}/{owner}/reinstate", registrarSuspend(deps, st, "reinstate"))
 	r.With(registrar).Get("/registrar/audit", registrarAudit(st))
 
 	// Demo investor custodial wallet (product spec §4): subscribe/vote signed with QUPON_INVESTOR_KEYPAIR.
 	investorDemo := requireRole(deps.Auth, "investor_demo")
-	r.With(investorDemo).Post("/demo/investor/subscribe", demoSubscribe(deps, st))
-	r.With(investorDemo).Post("/demo/investor/vote", demoVote(deps, st))
+	r.With(investorDemo, write).Post("/demo/investor/subscribe", demoSubscribe(deps, st))
+	r.With(investorDemo, write).Post("/demo/investor/vote", demoVote(deps, st))
 
 	if deps.TestRoutes {
 		r.With(registrar).Get("/_test/registrar", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, http.StatusOK, map[string]string{}) })

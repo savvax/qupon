@@ -11,6 +11,10 @@ info:
     All timestamps are ISO 8601 with the Asia/Almaty offset (+05:00).
     All amounts are `{minor, display, currency}`; minor is a decimal string of
     minor units (tiyn for tKZT, 1e-6 for USDC).
+    Back-office writes by demo users (one-click demo sign-in, shared accounts)
+    are capped per demo role — 60 per hour, and 10 series creations per day —
+    and answer 429 with code `demo_throttled` past the cap. Sign-ins are
+    limited to 20 per client IP per minute (429 `rate_limited`).
 servers:
   - url: http://localhost:8080
     description: local registrar

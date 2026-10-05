@@ -67,3 +67,21 @@ func audit(st *store.Store, r *http.Request, params any, ok bool, detail string,
 		slog.ErrorContext(r.Context(), "audit write failed", "route", r.URL.Path, "err", err)
 	}
 }
+
+// demoThrottle caps writes by demo users (shared accounts anyone can sign in as): `prefix+role` is the limiter key, so
+// the cap is per demo role across all visitors. Real accounts are never throttled; nil limiter = no cap. Must run
+// after requireRole (the user comes from the context).
+func demoThrottle(l *auth.Limiter, prefix string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		if l == nil {
+			return next
+		}
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if u, ok := auth.UserFrom(r.Context()); ok && u.IsDemo && !l.Allow(prefix+u.Role, time.Now()) {
+				writeErrorCode(w, http.StatusTooManyRequests, "demo_throttled", "demo limit reached — try again later")
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}

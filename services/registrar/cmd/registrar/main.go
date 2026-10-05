@@ -145,6 +145,9 @@ func run() error {
 			BaseConfig:   cfg.QuponConfig,
 			ReadCacheTTL: 10 * time.Second,
 			SignInLimit:  auth.NewLimiter(20, time.Minute),
+			// demo accounts are public: bound what they can spend of the operator keys
+			DemoLimit:       auth.NewLimiter(60, time.Hour),
+			DemoSeriesLimit: auth.NewLimiter(10, 24*time.Hour),
 			Auth: &auth.Service{Store: st, Now: time.Now, TTL: 12 * time.Hour, DemoLogin: cfg.DemoLogin,
 				Limit: auth.NewLimiter(5, time.Minute)},
 		}),

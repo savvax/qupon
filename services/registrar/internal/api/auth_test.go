@@ -142,3 +142,31 @@ func TestExpiredSessionIs401(t *testing.T) {
 		t.Fatalf("expired session = %d, want 401", got)
 	}
 }
+
+// Demo users share accounts: their writes are capped per role; real accounts are never throttled.
+func TestDemoWritesAreThrottled(t *testing.T) {
+	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "throttle.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	svc := &auth.Service{Store: st, Now: time.Now, TTL: time.Hour, DemoLogin: true, Limit: auth.NewLimiter(5, time.Minute)}
+	h := New(slog.New(slog.DiscardHandler), st, Deps{Auth: svc, DemoLimit: auth.NewLimiter(2, time.Hour)})
+	if _, err := st.UpsertUser(t.Context(), store.User{Email: "demo-registrar@qupon.demo", Name: "Demo registrar", Role: "registrar", IsDemo: true}, "!"); err != nil {
+		t.Fatal(err)
+	}
+	_, body := doPost(t, h, "/auth/demo", `{"role":"registrar"}`, "")
+	demo, _ := body["token"].(string)
+	real := signIn(t, h, st, svc, "registrar")
+	path := "/registrar/actions/" + fAction.String() + "/advance"
+	for i, want := range []int{http.StatusServiceUnavailable, http.StatusServiceUnavailable, http.StatusTooManyRequests} {
+		if code, b := doPost(t, h, path, `{"confirm":true}`, demo); code != want || (want == http.StatusTooManyRequests && b["code"] != "demo_throttled") {
+			t.Fatalf("demo write %d = %d %v, want %d", i, code, b, want)
+		}
+	}
+	for i := 0; i < 4; i++ {
+		if code, _ := doPost(t, h, path, `{"confirm":true}`, real); code == http.StatusTooManyRequests {
+			t.Fatalf("real registrar throttled on write %d", i)
+		}
+	}
+}
