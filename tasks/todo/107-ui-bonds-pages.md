@@ -1,7 +1,7 @@
 ---
 id: 107
 title: Public /bonds board and /bonds/[mint] page with responsive DataTable
-agent: glm
+agent: claude
 tier: T1
 depends_on: [105]
 verify: make verify
