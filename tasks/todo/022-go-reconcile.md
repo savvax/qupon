@@ -1,4 +1,5 @@
 ---
+blocked_reason: rebase conflict with main
 id: 022
 title: Reconciliation: recompute entitlements from chain balances at snapshot slot and compare with Entitlement PDAs
 agent: glm
