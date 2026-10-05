@@ -226,3 +226,79 @@ func TestSeriesView(t *testing.T) {
 		t.Errorf("terms = %d bps %d", v.FaceValue, v.CouponRateBps)
 	}
 }
+
+func TestFetchEntitlementsByActionFiltersAndSorts(t *testing.T) {
+	action := pk(t, "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM")
+	// Owners deliberately out of ascending order.
+	ownerHi := pk(t, "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo")
+	ownerLo := pk(t, "6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC")
+	disc, err := AccountDiscriminator("Entitlement")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mk := func(owner solana.PublicKey, act solana.PublicKey, units uint64) map[string]any {
+		ent := encodeEntitlement(&Entitlement{Action: act, Owner: owner, Units: units})
+		data := append(append([]byte{}, disc[:]...), ent...)
+		return accountValueJSON(t, data)
+	}
+	var gotFilters []rpc.RPCFilter
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Params []json.RawMessage `json:"params"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		var opts struct {
+			Filters []rpc.RPCFilter `json:"filters"`
+		}
+		_ = json.Unmarshal(req.Params[1], &opts)
+		gotFilters = opts.Filters
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0", "id": 1,
+			"result": []map[string]any{
+				{"pubkey": "AVMoJ7VrsMQ8tPjxWZYeDb9nXZuVhxzXb2S2QZKtcHq", "account": mk(ownerHi, action, 65)},
+				{"pubkey": "EiAZ7r9tVciGeibwdFmjbhhZVeSGXxY2CMuqP71MaN6g", "account": mk(ownerLo, action, 10)},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	cl := testClient(t, srv.URL)
+	recs, err := cl.FetchEntitlementsByAction(t.Context(), action)
+	if err != nil {
+		t.Fatalf("FetchEntitlementsByAction: %v", err)
+	}
+	if len(recs) != 2 {
+		t.Fatalf("got %d records, want 2", len(recs))
+	}
+	if recs[0].Entitlement.Owner != ownerLo || recs[1].Entitlement.Owner != ownerHi {
+		t.Errorf("owners not sorted ascending: %s, %s",
+			recs[0].Entitlement.Owner, recs[1].Entitlement.Owner)
+	}
+	// Filter must be discriminator at 0 + action key at offset 9 (bump u8 first).
+	if len(gotFilters) != 2 {
+		t.Fatalf("filters = %d, want 2", len(gotFilters))
+	}
+	if m := gotFilters[1].Memcmp; m == nil || m.Offset != 9 || solana.PublicKey(m.Bytes) != action {
+		t.Errorf("action memcmp = %+v, want offset 9 key %s", gotFilters[1].Memcmp, action)
+	}
+}
+
+func TestFetchActionMissingYieldsNil(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0", "id": 1,
+			"result": map[string]any{"context": map[string]any{"slot": 1}, "value": nil},
+		})
+	}))
+	defer srv.Close()
+
+	cl := testClient(t, srv.URL)
+	act, err := cl.FetchCorporateAction(t.Context(), pk(t, testProgram))
+	if err != nil || act != nil {
+		t.Fatalf("FetchCorporateAction = (%v, %v), want (nil, nil)", act, err)
+	}
+	ent, err := cl.FetchEntitlement(t.Context(), pk(t, testProgram))
+	if err != nil || ent != nil {
+		t.Fatalf("FetchEntitlement = (%v, %v), want (nil, nil)", ent, err)
+	}
+}

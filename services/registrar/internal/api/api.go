@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	solana "github.com/solana-foundation/solana-go/v2"
 
+	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
@@ -30,6 +31,7 @@ var openapiFS embed.FS
 type Deps struct {
 	Notice    *notice.Reader
 	Reconcile reconcile.Reader
+	Chain     *chain.Client
 }
 
 // New builds the HTTP handler tree.
@@ -164,6 +166,10 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 		}
 		writeJSON(w, http.StatusOK, rep)
 	})
+
+	r.Get("/actions/{pda}/iso/seev031.xml", isoSeev031(deps.Chain))
+	r.Get("/actions/{pda}/iso/seev036.zip", isoSeev036Zip(deps.Chain))
+	r.Get("/entitlements/{pda}/iso/seev036.xml", isoSeev036(deps.Chain))
 
 	return r
 }

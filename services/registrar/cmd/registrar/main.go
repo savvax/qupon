@@ -36,15 +36,7 @@ func main() {
 
 // indexSeries scans the program for Series accounts and mirrors them into
 // the store so GET /series can serve them without hitting the chain.
-func indexSeries(ctx context.Context, cfg config.Config, logger *slog.Logger, st *store.Store) error {
-	if cfg.ProgramID == "" {
-		return errors.New("PROGRAM_ID not set")
-	}
-	program, err := solana.PublicKeyFromBase58(cfg.ProgramID)
-	if err != nil {
-		return fmt.Errorf("bad program id %q: %w", cfg.ProgramID, err)
-	}
-	cl := chain.NewClient(cfg.RPCURL, program, logger)
+func indexSeries(ctx context.Context, cl *chain.Client, logger *slog.Logger, st *store.Store) error {
 	recs, err := cl.AllSeries(ctx)
 	if err != nil {
 		return err
@@ -76,16 +68,18 @@ func run() error {
 	}
 	defer func() { _ = st.Close() }()
 
-	// Event ingestion: poll the program's transactions into the activity feed.
-	// The same client powers the reconcile endpoint (nil when unconfigured).
+	// One chain client feeds the poller, the startup series index, the
+	// reconcile endpoint and the ISO 20022 exports (nil when unconfigured).
+	var chainClient *chain.Client
 	var chainReader reconcile.Reader
 	if cfg.ProgramID != "" {
 		program, err := solana.PublicKeyFromBase58(cfg.ProgramID)
 		if err != nil {
 			return fmt.Errorf("parse program id %q: %w", cfg.ProgramID, err)
 		}
+		chainClient = chain.NewClient(cfg.RPCURL, program, logger)
+		chainReader = chainClient
 		poller := ingest.NewPoller(cfg.RPCURL, program, st, logger)
-		chainReader = chain.NewClient(cfg.RPCURL, program, logger)
 		go poller.Run(ctx)
 	} else {
 		logger.Warn("PROGRAM_ID empty: activity poller disabled")
@@ -93,13 +87,19 @@ func run() error {
 
 	// Index all Series accounts at startup so GET /series serves the chain;
 	// failures degrade to the stored mirror (task 051 wires live fixtures).
-	if err := indexSeries(ctx, cfg, logger, st); err != nil {
-		logger.Warn("series index skipped", "err", err)
+	if chainClient != nil {
+		if err := indexSeries(ctx, chainClient, logger, st); err != nil {
+			logger.Warn("series index skipped", "err", err)
+		}
 	}
 
 	srv := &http.Server{
-		Addr:              ":" + cfg.Port,
-		Handler:           api.New(logger, st, api.Deps{Notice: notice.NewReader(cfg.RPCURL, ""), Reconcile: chainReader}),
+		Addr: ":" + cfg.Port,
+		Handler: api.New(logger, st, api.Deps{
+			Notice:    notice.NewReader(cfg.RPCURL, ""),
+			Reconcile: chainReader,
+			Chain:     chainClient,
+		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

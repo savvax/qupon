@@ -99,20 +99,54 @@ paths:
           description: not implemented yet
   /actions/{pda}/iso/seev031.xml:
     get:
-      summary: ISO 20022 seev.031 notification (stub)
+      summary: ISO 20022 seev.031.001.15 notification (application/xml)
       parameters:
         - {name: pda, in: path, required: true, schema: {type: string}}
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: well-formed seev.031 document (XSD out of scope)
+          content:
+            application/xml:
+              schema: {type: string}
+        "400":
+          description: invalid pda
+        "404":
+          description: action account not found
+        "422":
+          description: action not exportable (e.g. ACT_ACT day count)
+        "503":
+          description: chain reader not configured
+  /actions/{pda}/iso/seev036.zip:
+    get:
+      summary: ZIP of seev.036 confirmations, one per holder (snapshot order)
+      parameters:
+        - {name: pda, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: application/zip of per-holder seev.036.001.16 documents
+        "400":
+          description: invalid pda
+        "404":
+          description: action not found or no entitlements snapshotted
+        "503":
+          description: chain reader not configured
   /entitlements/{pda}/iso/seev036.xml:
     get:
-      summary: ISO 20022 seev.036 instruction (stub)
+      summary: ISO 20022 seev.036.001.16 confirmation, one holder (xml)
       parameters:
         - {name: pda, in: path, required: true, schema: {type: string}}
       responses:
-        "501":
-          description: not implemented yet
+        "200":
+          description: well-formed seev.036 with Solana refs in SplmtryData
+          content:
+            application/xml:
+              schema: {type: string}
+        "400":
+          description: invalid pda
+        "404":
+          description: entitlement or action account not found
+        "503":
+          description: chain reader not configured
   /actions/{pda}/notice:
     get:
       summary: KASE-style disclosure notice (text/markdown)

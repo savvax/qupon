@@ -249,6 +249,25 @@ func (c *Client) AllSeries(ctx context.Context) ([]SeriesRecord, error) {
 	return out, nil
 }
 
+// FetchEntitlement decodes the Entitlement at pda; nil if the account is absent.
+func (c *Client) FetchEntitlement(ctx context.Context, pda solana.PublicKey) (*Entitlement, error) {
+	data, err := c.GetAccount(ctx, pda)
+	if err != nil {
+		return nil, fmt.Errorf("fetch entitlement %s: %w", pda, err)
+	}
+	if data == nil {
+		return nil, nil
+	}
+	body, err := stripDiscriminator(data, "Entitlement")
+	if err != nil {
+		return nil, fmt.Errorf("fetch entitlement %s: %w", pda, err)
+	}
+	return DecodeEntitlement(body)
+}
+
+// ProgramID returns the program the client reads from.
+func (c *Client) ProgramID() solana.PublicKey { return c.program }
+
 // stripDiscriminator verifies and removes the 8-byte Anchor discriminator.
 func stripDiscriminator(data []byte, name string) ([]byte, error) {
 	disc, err := AccountDiscriminator(name)

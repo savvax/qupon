@@ -241,6 +241,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /actions/{pda}/iso/seev036.zip:
+    get:
+      summary: ISO 20022 seev.036 confirmations, ZIP for all holders
+      operationId: getSeev036Zip
+      parameters:
+        - $ref: "#/components/parameters/Pda"
+      responses:
+        "200":
+          description: ZIP archive, one seev.036 XML per holder
+          content:
+            application/zip:
+              schema: {type: string, format: binary}
+        "404":
+          description: not found or no entitlements snapshotted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /actions/{pda}/notice:
     get:
       summary: KASE-style notice text

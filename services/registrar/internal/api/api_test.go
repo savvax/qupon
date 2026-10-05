@@ -313,3 +313,39 @@ func TestReconcileEndpointNoReader(t *testing.T) {
 		t.Fatalf("status = %d, want 503", resp.StatusCode)
 	}
 }
+func TestISOEndpointsNilClientAndBadPDA(t *testing.T) {
+	h, _ := newTestServer(t)
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+
+	good := "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
+	for _, path := range []string{
+		"/actions/" + good + "/iso/seev031.xml",
+		"/actions/" + good + "/iso/seev036.zip",
+		"/entitlements/" + good + "/iso/seev036.xml",
+	} {
+		resp, err := http.Get(srv.URL + path)
+		if err != nil {
+			t.Fatalf("get %s: %v", path, err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusServiceUnavailable {
+			t.Errorf("%s status = %d, want 503 (nil chain client)", path, resp.StatusCode)
+		}
+	}
+
+	for _, path := range []string{
+		"/actions/not-a-pk/iso/seev031.xml",
+		"/actions/not-a-pk/iso/seev036.zip",
+		"/entitlements/not-a-pk/iso/seev036.xml",
+	} {
+		resp, err := http.Get(srv.URL + path)
+		if err != nil {
+			t.Fatalf("get %s: %v", path, err)
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode != http.StatusBadRequest {
+			t.Errorf("%s status = %d, want 400", path, resp.StatusCode)
+		}
+	}
+}
