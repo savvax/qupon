@@ -14,22 +14,22 @@ KASE became Kazakhstan's first licensed digital-financial-asset platform operato
 
 ## What Qupon does
 
-| Verb | How | Where |
-|---|---|---|
-| **Identify holders** | Only KYC'd wallets can hold the bond (Token-2022 `DefaultAccountState = Frozen`; the registrar thaws on registration, which requires the wallet's KYC attestation on the Solana Attestation Service). On the record date the mint is **paused** and every holder is snapshotted on-chain. | `register_investor`, `strike_record`, `snapshot_batch` |
-| **Calculate entitlements** | Integer math in u128, 30E/360 or ACT/365, rounded half-up **per holder**, withholding tax per investor class; the program recomputes everything from civil dates and series terms. | `crates/entitlement`, `announce_action`, `snapshot_batch` |
-| **Settle** | Issuer pre-funds an escrow owned by the action PDA; batches pay net to each holder and tax to a tax vault; reconciliation before the register is resumed. | `fund_action`, `pay_batch`, `complete_action` |
-| **Record** | Every transition emits an event; state lives in PDAs; ISO 20022 seev.031/seev.036 and a KASE-style notice are generated from chain state. | 18 event types, `services/registrar` |
+| Verb                       | How                                                                                                                                                                                                                                                                                       | Where                                                     |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Identify holders**       | Only KYC'd wallets can hold the bond (Token-2022 `DefaultAccountState = Frozen`; the registrar thaws on registration, which requires the wallet's KYC attestation on the Solana Attestation Service). On the record date the mint is **paused** and every holder is snapshotted on-chain. | `register_investor`, `strike_record`, `snapshot_batch`    |
+| **Calculate entitlements** | Integer math in u128, 30E/360 or ACT/365, rounded half-up **per holder**, withholding tax per investor class; the program recomputes everything from civil dates and series terms.                                                                                                        | `crates/entitlement`, `announce_action`, `snapshot_batch` |
+| **Settle**                 | Issuer pre-funds an escrow owned by the action PDA; batches pay net to each holder and tax to a tax vault; reconciliation before the register is resumed.                                                                                                                                 | `fund_action`, `pay_batch`, `complete_action`             |
+| **Record**                 | Every transition emits an event; state lives in PDAs; ISO 20022 seev.031/seev.036 and a KASE-style notice are generated from chain state.                                                                                                                                                 | 18 event types, `services/registrar`                      |
 
 ## Scenarios (all on devnet — see [`reports/demo-full.md`](reports/demo-full.md))
 
-| Scenario | What happens | Proof |
-|---|---|---|
-| S0 Issuance & registry | Token-2022 bond mint with validated extensions, 3 investors registered, an unregistered wallet is refused, DvP subscription 10/25/65 | [subscribe 65 bonds (DvP)](https://explorer.solana.com/tx/CD3gN7Mb15mUfD6NqnzAzY7ppXDKGxLh44j62bEsFuEKtNsCzJxJR5jSrWNpSir2L9kkfhsZ8HALaSL3mSPgDrb?cluster=devnet) · registry refusal in the report |
-| S1 Coupon payment (required 1) | INTR #1: 10 bonds → **500.00**, 25 → 1,250.00, 65 → 3,250.00 (the brief's example) | [INTR #1 action](https://explorer.solana.com/address/DkSQMx7w2UNjLzPxjAfTxRwNr3oYWhhYCod35HXuYP16?cluster=devnet) · [pay](https://explorer.solana.com/tx/4timJdNAASBt2MTVgWR9ryUxk5SAeaDdKxw3dFEwdv1KDEnWKmYNtzy4ivY3hpVrX8nqeDG3fA4ooaHumQUFJzye?cluster=devnet) |
-| S2 Redemption (required 2) | Principal + final coupon, units burned via permanent delegate, mint closed, metadata `status=REDEEMED` | [REDM action](https://explorer.solana.com/address/GmK726FMUFruUwhrWVMGi9uiFqdbLuZYqiKT2ZRrhUZo?cluster=devnet) · [retire](https://explorer.solana.com/tx/5EyyhishaQbpTAG4xP6FeY7HGBsk8Wv4tibn5RqqToyvvzixYVUFKvUSk1XCFcuiJ17sMHJoZmWf7SZyuEFAC8pd?cluster=devnet) · [close](https://explorer.solana.com/tx/3a7g7HtY68C1t4kEhLYJCnKak9fWVPcbEH4YaQoSbPcPBczhyfLrp9Nv2Lr5dTQ9d7EgAXk5HWmby3XhVkvsM2N6?cluster=devnet) |
-| S3 Bondholder meeting → terms change (required 3) | Snapshot-weighted vote 65 For / 25 Against / 10 Abstain → Approved → coupon 10% → 12% on the series and in the token metadata; next coupons 600.00 / 1,500.00 / 3,900.00 | [apply 12%](https://explorer.solana.com/tx/5dLcjcTjiMafLRq4cGKNJYshVnkq5EUgS1JnwVWLitezEKNiSRbRoUQCLeZeAgXHr14TVuVTtezj2m7rNPEg6VSP?cluster=devnet) · [INTR #2 at 12%](https://explorer.solana.com/address/FDxcyBd3hCtPWgXgEypszcvoL6e2k3Aa6m8hoYGCyLdt?cluster=devnet) |
-| S4 Early redemption (bonus) | USDC series (BTRKb33 terms, 15.95%): MCAL after 47 accrued days, burn, close | [MCAL action](https://explorer.solana.com/address/AfQStcMFk4PT2KxoiVLtMV1AaKhftCdaQcHeHjiDPkPo?cluster=devnet) · [close](https://explorer.solana.com/tx/4gWyNCgL6RnCk5e5kiKdziYpVzgXoSCHCuv8HaMfGLHD6QRQ15ibmrd21hGs9cP8UsoraXo8rNC5n4NTxg2GtY9S?cluster=devnet) |
+| Scenario                                          | What happens                                                                                                                                                             | Proof                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S0 Issuance & registry                            | Token-2022 bond mint with validated extensions, 3 investors registered, an unregistered wallet is refused, DvP subscription 10/25/65                                     | [subscribe 65 bonds (DvP)](https://explorer.solana.com/tx/CD3gN7Mb15mUfD6NqnzAzY7ppXDKGxLh44j62bEsFuEKtNsCzJxJR5jSrWNpSir2L9kkfhsZ8HALaSL3mSPgDrb?cluster=devnet) · registry refusal in the report                                                                                                                                                                                                                  |
+| S1 Coupon payment (required 1)                    | INTR #1: 10 bonds → **500.00**, 25 → 1,250.00, 65 → 3,250.00 (the brief's example)                                                                                       | [INTR #1 action](https://explorer.solana.com/address/DkSQMx7w2UNjLzPxjAfTxRwNr3oYWhhYCod35HXuYP16?cluster=devnet) · [pay](https://explorer.solana.com/tx/4timJdNAASBt2MTVgWR9ryUxk5SAeaDdKxw3dFEwdv1KDEnWKmYNtzy4ivY3hpVrX8nqeDG3fA4ooaHumQUFJzye?cluster=devnet)                                                                                                                                                   |
+| S2 Redemption (required 2)                        | Principal + final coupon, units burned via permanent delegate, mint closed, metadata `status=REDEEMED`                                                                   | [REDM action](https://explorer.solana.com/address/GmK726FMUFruUwhrWVMGi9uiFqdbLuZYqiKT2ZRrhUZo?cluster=devnet) · [retire](https://explorer.solana.com/tx/5EyyhishaQbpTAG4xP6FeY7HGBsk8Wv4tibn5RqqToyvvzixYVUFKvUSk1XCFcuiJ17sMHJoZmWf7SZyuEFAC8pd?cluster=devnet) · [close](https://explorer.solana.com/tx/3a7g7HtY68C1t4kEhLYJCnKak9fWVPcbEH4YaQoSbPcPBczhyfLrp9Nv2Lr5dTQ9d7EgAXk5HWmby3XhVkvsM2N6?cluster=devnet) |
+| S3 Bondholder meeting → terms change (required 3) | Snapshot-weighted vote 65 For / 25 Against / 10 Abstain → Approved → coupon 10% → 12% on the series and in the token metadata; next coupons 600.00 / 1,500.00 / 3,900.00 | [apply 12%](https://explorer.solana.com/tx/5dLcjcTjiMafLRq4cGKNJYshVnkq5EUgS1JnwVWLitezEKNiSRbRoUQCLeZeAgXHr14TVuVTtezj2m7rNPEg6VSP?cluster=devnet) · [INTR #2 at 12%](https://explorer.solana.com/address/FDxcyBd3hCtPWgXgEypszcvoL6e2k3Aa6m8hoYGCyLdt?cluster=devnet)                                                                                                                                             |
+| S4 Early redemption (bonus)                       | USDC series (BTRKb33 terms, 15.95%): MCAL after 47 accrued days, burn, close                                                                                             | [MCAL action](https://explorer.solana.com/address/AfQStcMFk4PT2KxoiVLtMV1AaKhftCdaQcHeHjiDPkPo?cluster=devnet) · [close](https://explorer.solana.com/tx/4gWyNCgL6RnCk5e5kiKdziYpVzgXoSCHCuv8HaMfGLHD6QRQ15ibmrd21hGs9cP8UsoraXo8rNC5n4NTxg2GtY9S?cluster=devnet)                                                                                                                                                    |
 
 ## Architecture
 
@@ -45,14 +45,14 @@ flowchart LR
   API --> ISO[ISO 20022 seev.031/036 · KASE notice]
 ```
 
-| Component | Path | Role |
-|---|---|---|
-| On-chain program | `programs/qupon_bonds` | 19 instructions, 4 account types, 32 error codes, 18 events |
-| Entitlement math | `crates/entitlement` | `no_std` Rust crate shared by the program and tests |
-| TS client + CLI | `clients/ts` | Codama-generated client, `qupon` CLI (JSON on stdout), demo scripts |
-| Registrar service | `services/registrar` | Go: chain reader, reconciler, ISO 20022, notices, REST read models |
-| Web app | `apps/web` | Next.js console and investor portal |
-| Test vectors | `fixtures/entitlement.json` | One contract for Rust, Go and TS |
+| Component         | Path                        | Role                                                                |
+| ----------------- | --------------------------- | ------------------------------------------------------------------- |
+| On-chain program  | `programs/qupon_bonds`      | 19 instructions, 4 account types, 32 error codes, 18 events         |
+| Entitlement math  | `crates/entitlement`        | `no_std` Rust crate shared by the program and tests                 |
+| TS client + CLI   | `clients/ts`                | Codama-generated client, `qupon` CLI (JSON on stdout), demo scripts |
+| Registrar service | `services/registrar`        | Go: chain reader, reconciler, ISO 20022, notices, REST read models  |
+| Web app           | `apps/web`                  | Next.js console and investor portal                                 |
+| Test vectors      | `fixtures/entitlement.json` | One contract for Rust, Go and TS                                    |
 
 ## Record-date mechanism
 
@@ -92,15 +92,15 @@ From chain state the registrar serves `seev.031` (corporate action notification)
 
 ## Implemented vs simulated
 
-| Element | Status |
-|---|---|
-| Bond token, holder registry, record date, entitlement math, coupon payment, redemption, burn/close, voting, terms change, on-chain events | **Implemented on Solana devnet** |
-| Cash leg | Real token transfers: USDC devnet (Circle) and test tKZT (Token-2022); fiat KZT and Evo/digital tenge are **simulated** by our mint |
-| KYC | **Attested on-chain, provider simulated**: a KYC-provider keypair issues a Solana Attestation Service attestation per wallet (type, residency, tax rate); `register_investor` refuses a wallet without a live, matching attestation. The provider is a demo keypair, not a licensed KYC firm |
-| ISO 20022 seev.031 / seev.036 | Generated from on-chain state; Swift network delivery **simulated** (downloadable files) |
-| ARDFM registration of terms change | **Simulated** by registrar signature step |
-| KASE disclosure notice | Generated automatically; publication on kase.kz **not** integrated |
-| Multisig issuer approval (Squads) | Roadmap |
+| Element                                                                                                                                   | Status                                                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bond token, holder registry, record date, entitlement math, coupon payment, redemption, burn/close, voting, terms change, on-chain events | **Implemented on Solana devnet**                                                                                                                                                                                                                                                             |
+| Cash leg                                                                                                                                  | Real token transfers: USDC devnet (Circle) and test tKZT (Token-2022); fiat KZT and Evo/digital tenge are **simulated** by our mint                                                                                                                                                          |
+| KYC                                                                                                                                       | **Attested on-chain, provider simulated**: a KYC-provider keypair issues a Solana Attestation Service attestation per wallet (type, residency, tax rate); `register_investor` refuses a wallet without a live, matching attestation. The provider is a demo keypair, not a licensed KYC firm |
+| ISO 20022 seev.031 / seev.036                                                                                                             | Generated from on-chain state; Swift network delivery **simulated** (downloadable files)                                                                                                                                                                                                     |
+| ARDFM registration of terms change                                                                                                        | **Simulated** by registrar signature step                                                                                                                                                                                                                                                    |
+| KASE disclosure notice                                                                                                                    | Generated automatically; publication on kase.kz **not** integrated                                                                                                                                                                                                                           |
+| Multisig issuer approval (Squads)                                                                                                         | Roadmap                                                                                                                                                                                                                                                                                      |
 
 Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are **series configuration**, not asserted as Kazakh law.
 
@@ -118,11 +118,11 @@ make api                       # Go registrar on :8080 (REST + ISO 20022 + notic
 
 ## Deployed (devnet)
 
-| What | URL |
-|---|---|
-| Console (registrar view) | https://qupon.85-192-29-7.sslip.io |
-| Investor portal — read-only demo investor, no wallet needed | https://qupon.85-192-29-7.sslip.io/portal?owner=6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC |
-| Registrar API | https://api.85-192-29-7.sslip.io/healthz (OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
+| What                                                        | URL                                                                                                                      |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Console (registrar view)                                    | https://qupon.85-192-29-7.sslip.io                                                                                       |
+| Investor portal — read-only demo investor, no wallet needed | https://qupon.85-192-29-7.sslip.io/portal?owner=6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC                             |
+| Registrar API                                               | https://api.85-192-29-7.sslip.io/healthz (OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
 
 One VPS, Docker Compose: registrar API (Go + the `qupon` CLI as executor), console (Next.js) and Caddy (automatic HTTPS;
 `sslip.io` resolves the hostnames to the server IP). The web app reads devnet state; wallet actions are signed in the
@@ -133,7 +133,10 @@ reaches the browser bundle. Deploy or update with one command (needs ssh access 
 ops/deploy-vps.sh root@85.192.29.7    # rsync → server-side secrets (mode 600) → docker compose build/up → health check
 ```
 
-Env reference: `services/registrar/.env.example`, `apps/web/.env.example`.
+Env reference: `services/registrar/.env.example`, `apps/web/.env.example`. Server-side secrets written by the deploy script to
+/opt/qupon/registrar.env (mode 600): `RPC_URL`, `DEMO_LOGIN=1`, `QUPON_USERS`, and the operator keypair JSON arrays the
+executor signs with — registrar, issuer, paying agent, KYC provider (`~/.config/qupon/kyc-provider.json`) and the demo
+investor's custodial wallet (`~/.config/qupon/investor3.json`, powers `POST /demo/investor/*`).
 
 ## Reproducible build & verification
 
@@ -158,12 +161,12 @@ The IDL is also readable in the [explorer's IDL tab](https://explorer.solana.com
 
 ## Devnet addresses
 
-| What | Address |
-|---|---|
-| Program | `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` |
-| tKZT (test tenge, Token-2022, 2 decimals) | `HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF` |
-| USDC (Circle devnet) | `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU` |
-| Demo series and wallets | [`config/devnet.json`](config/devnet.json), [`reports/demo-full.md`](reports/demo-full.md) |
+| What                                      | Address                                                                                    |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Program                                   | `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`                                              |
+| tKZT (test tenge, Token-2022, 2 decimals) | `HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF`                                             |
+| USDC (Circle devnet)                      | `4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU`                                             |
+| Demo series and wallets                   | [`config/devnet.json`](config/devnet.json), [`reports/demo-full.md`](reports/demo-full.md) |
 
 ## Roadmap
 

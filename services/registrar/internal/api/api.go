@@ -198,6 +198,11 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r.With(registrar).Post("/registrar/investors/{mint}/{owner}/reinstate", registrarSuspend(deps, st, "reinstate"))
 	r.With(registrar).Get("/registrar/audit", registrarAudit(st))
 
+	// Demo investor custodial wallet (product spec §4): subscribe/vote signed with QUPON_INVESTOR_KEYPAIR.
+	investorDemo := requireRole(deps.Auth, "investor_demo")
+	r.With(investorDemo).Post("/demo/investor/subscribe", demoSubscribe(deps, st))
+	r.With(investorDemo).Post("/demo/investor/vote", demoVote(deps, st))
+
 	if deps.TestRoutes {
 		r.With(registrar).Get("/_test/registrar", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, http.StatusOK, map[string]string{}) })
 	}

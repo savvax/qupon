@@ -42,7 +42,7 @@ paths:
           description: OpenAPI YAML
           content:
             application/yaml:
-              schema: {type: string}
+              schema: { type: string }
   /series:
     get:
       summary: List series
@@ -148,11 +148,11 @@ paths:
         - name: offset
           in: query
           required: false
-          schema: {type: integer, minimum: 0, default: 0}
+          schema: { type: integer, minimum: 0, default: 0 }
         - name: limit
           in: query
           required: false
-          schema: {type: integer, minimum: 1, maximum: 500, default: 100}
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
       responses:
         "200":
           description: >-
@@ -188,7 +188,7 @@ paths:
         Run the next action step through the executor (qupon CLI). Same
         handler as /registrar/actions/{pda}/advance.
       operationId: advanceAction
-      security: [{bearerAuth: []}]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Pda"
       requestBody:
@@ -239,7 +239,7 @@ paths:
           description: XML document
           content:
             application/xml:
-              schema: {type: string}
+              schema: { type: string }
         "404":
           description: not found
           content:
@@ -257,7 +257,7 @@ paths:
           description: XML document
           content:
             application/xml:
-              schema: {type: string}
+              schema: { type: string }
         "404":
           description: not found
           content:
@@ -275,7 +275,7 @@ paths:
           description: ZIP archive, one seev.036 XML per holder
           content:
             application/zip:
-              schema: {type: string, format: binary}
+              schema: { type: string, format: binary }
         "404":
           description: not found or no entitlements snapshotted
           content:
@@ -290,13 +290,13 @@ paths:
         - $ref: "#/components/parameters/Pda"
         - name: lang
           in: query
-          schema: {type: string, enum: [en, ru], default: en}
+          schema: { type: string, enum: [en, ru], default: en }
       responses:
         "200":
           description: plain-text notice
           content:
             text/plain:
-              schema: {type: string}
+              schema: { type: string }
         "404":
           description: not found
           content:
@@ -310,7 +310,7 @@ paths:
       parameters:
         - name: limit
           in: query
-          schema: {type: integer, default: 100, maximum: 500}
+          schema: { type: integer, default: 100, maximum: 500 }
       responses:
         "200":
           description: events in chain order, oldest first
@@ -342,10 +342,10 @@ paths:
                     items:
                       type: object
                       properties:
-                        mint: {type: string}
-                        ticker: {type: string}
-                        status: {type: string}
-                        nextCouponDate: {type: string}
+                        mint: { type: string }
+                        ticker: { type: string }
+                        status: { type: string }
+                        nextCouponDate: { type: string }
                         items:
                           type: array
                           items:
@@ -380,21 +380,21 @@ paths:
         Approve a pending scheduler proposal (executes the stored argv). Also
         served at /registrar/approvals/{id}/approve.
       operationId: approveApproval
-      security: [{bearerAuth: []}]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: id
           in: path
           required: true
-          schema: {type: integer, minimum: 1}
+          schema: { type: integer, minimum: 1 }
       responses:
         "200":
           description: executed; body carries the tx signature and explorer URL
-        "401": {description: no valid back-office session}
-        "403": {description: role is not registrar or admin}
+        "401": { description: no valid back-office session }
+        "403": { description: role is not registrar or admin }
         "409":
           description: >-
             already executed, or the chain refused the step (stays pending)
-        "404": {description: no such approval}
+        "404": { description: no such approval }
   /auth/login:
     post:
       summary: Sign in to the back office with email and password
@@ -407,8 +407,8 @@ paths:
               type: object
               required: [email, password]
               properties:
-                email: {type: string}
-                password: {type: string}
+                email: { type: string }
+                password: { type: string }
       responses:
         "200":
           description: session token (the web keeps it in an httpOnly cookie)
@@ -416,9 +416,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Session"
-        "400": {description: missing email or password}
-        "401": {description: "bad_credentials"}
-        "429": {description: "rate_limited (5 attempts per email per minute)"}
+        "400": { description: missing email or password }
+        "401": { description: "bad_credentials" }
+        "429": { description: "rate_limited (5 attempts per email per minute)" }
   /auth/demo:
     post:
       summary: One-click demo sign-in (only when DEMO_LOGIN=1)
@@ -431,7 +431,7 @@ paths:
               type: object
               required: [role]
               properties:
-                role: {type: string, enum: [issuer, registrar, investor]}
+                role: { type: string, enum: [issuer, registrar, investor] }
       responses:
         "200":
           description: session for the demo user of that role
@@ -439,13 +439,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Session"
-        "400": {description: unknown role}
-        "403": {description: "demo_disabled"}
+        "400": { description: unknown role }
+        "403": { description: "demo_disabled" }
   /auth/logout:
     post:
       summary: End the session
       operationId: authLogout
-      security: [{bearerAuth: []}]
+      security: [{ bearerAuth: [] }]
       responses:
         "204": {description: signed out (also when the token was unknown)}
   /issuer/series:
@@ -485,7 +485,7 @@ paths:
     get:
       summary: The signed-in back-office user
       operationId: me
-      security: [{bearerAuth: []}]
+      security: [{ bearerAuth: [] }]
       responses:
         "200":
           description: current user
@@ -497,7 +497,7 @@ paths:
                 properties:
                   user:
                     $ref: "#/components/schemas/User"
-        "401": {description: no valid session}
+        "401": { description: no valid session }
   /registrar/investors:
     post:
       summary: >-
@@ -505,7 +505,7 @@ paths:
         on the Solana Attestation Service, then the registrar registers the
         investor on-chain
       operationId: registrarOnboard
-      security: [{bearerAuth: []}]
+      security: [{ bearerAuth: [] }]
       requestBody:
         required: true
         content:
@@ -514,11 +514,11 @@ paths:
               type: object
               required: [series, owner, investorType, residency, taxBps]
               properties:
-                series: {type: string, description: bond mint (base58)}
-                owner: {type: string, description: investor wallet (base58)}
-                investorType: {type: string, enum: [individual, legal_entity]}
-                residency: {type: string, enum: [resident, nonresident]}
-                taxBps: {type: integer, minimum: 0, maximum: 10000}
+                series: { type: string, description: bond mint (base58) }
+                owner: { type: string, description: investor wallet (base58) }
+                investorType: { type: string, enum: [individual, legal_entity] }
+                residency: { type: string, enum: [resident, nonresident] }
+                taxBps: { type: integer, minimum: 0, maximum: 10000 }
                 expiryDays:
                   type: integer
                   minimum: 0
@@ -532,70 +532,74 @@ paths:
                 type: object
                 required: [investor, attestation, signatures]
                 properties:
-                  investor: {type: string, description: Investor PDA}
-                  attestation: {type: string, description: SAS attestation PDA}
+                  investor: { type: string, description: Investor PDA }
+                  attestation:
+                    { type: string, description: SAS attestation PDA }
                   signatures:
                     type: array
-                    items: {type: string}
+                    items: { type: string }
         "400":
           description: >-
             malformed input (non-base58 owner/mint, taxBps > 10000, unknown
             investorType or residency)
-        "401": {description: no valid back-office session}
-        "403": {description: role is not registrar or admin}
-        "404": {description: "unknown_series — mint is not a registered series"}
+        "401": { description: no valid back-office session }
+        "403": { description: role is not registrar or admin }
+        "404":
+          { description: "unknown_series — mint is not a registered series" }
         "409":
           description: the chain refused a step (onchainError carries the raw
             message)
-        "503": {description: executor not configured}
+        "503": { description: executor not configured }
   /registrar/investors/{mint}/{owner}/suspend:
     post:
       summary: Suspend an investor (freezes the bond ATA)
       operationId: registrarSuspend
-      security: [{bearerAuth: []}]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Mint"
         - name: owner
           in: path
           required: true
           description: investor wallet (base58)
-          schema: {type: string}
+          schema: { type: string }
       responses:
-        "200": {description: executed; body carries the transaction signatures}
-        "400": {description: mint or owner is not base58}
-        "401": {description: no valid back-office session}
-        "403": {description: role is not registrar or admin}
-        "404": {description: unknown_series}
-        "409": {description: the chain refused the step (onchainError)}
+        "200":
+          { description: executed; body carries the transaction signatures }
+        "400": { description: mint or owner is not base58 }
+        "401": { description: no valid back-office session }
+        "403": { description: role is not registrar or admin }
+        "404": { description: unknown_series }
+        "409": { description: the chain refused the step (onchainError) }
   /registrar/investors/{mint}/{owner}/reinstate:
     post:
       summary: Reinstate a suspended investor
       operationId: registrarReinstate
-      security: [{bearerAuth: []}]
+      security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/Mint"
         - name: owner
           in: path
           required: true
           description: investor wallet (base58)
-          schema: {type: string}
+          schema: { type: string }
       responses:
-        "200": {description: executed; body carries the transaction signatures}
-        "400": {description: mint or owner is not base58}
-        "401": {description: no valid back-office session}
-        "403": {description: role is not registrar or admin}
-        "404": {description: unknown_series}
-        "409": {description: the chain refused the step (onchainError)}
+        "200":
+          { description: executed; body carries the transaction signatures }
+        "400": { description: mint or owner is not base58 }
+        "401": { description: no valid back-office session }
+        "403": { description: role is not registrar or admin }
+        "404": { description: unknown_series }
+        "409": { description: the chain refused the step (onchainError) }
   /registrar/audit:
     get:
       summary: The back-office audit feed (who ran which write, and what it did)
       operationId: registrarAudit
-      security: [{bearerAuth: []}]
+      security: [{ bearerAuth: [] }]
       parameters:
         - name: limit
           in: query
           required: false
-          schema: {type: integer, minimum: 1, maximum: 500, default: 100}
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
       responses:
         "200":
           description: audit rows, newest first
@@ -609,9 +613,57 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/AuditEntry"
-        "400": {description: limit out of range}
-        "401": {description: no valid back-office session}
-        "403": {description: role is not registrar or admin}
+        "400": { description: limit out of range }
+        "401": { description: no valid back-office session }
+        "403": { description: role is not registrar or admin }
+  /demo/investor/subscribe:
+    post:
+      summary: >-
+        Subscribe at par with the demo investor's custodial keypair (judges
+        without a wallet); labelled demo custodial wallet in the UI.
+      operationId: demoSubscribe
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoSubscribeRequest"
+      responses:
+        "200":
+          description: subscribed; tx signature and explorer URL in the body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoResponse"
+        "400": { description: units < 1 or not a base58 mint }
+        "401": { description: no valid session }
+        "403": { description: role is not investor_demo or admin }
+        "404": { description: unknown_series }
+        "409": { description: the chain refused the subscribe (onchainError) }
+  /demo/investor/vote:
+    post:
+      summary: Cast a snapshot-weighted vote with the demo investor's keypair
+      operationId: demoVote
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DemoVoteRequest"
+      responses:
+        "200":
+          description: vote cast; body carries the tx signature and explorer URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoResponse"
+        "400": { description: unknown choice or not a base58 action }
+        "401": { description: no valid session }
+        "403": { description: role is not investor_demo or admin }
+        "404": { description: no corporate action at the PDA }
+        "409": { description: the chain refused the vote (onchainError) }
 components:
   securitySchemes:
     bearerAuth:
@@ -624,46 +676,71 @@ components:
       in: path
       required: true
       description: Bond mint pubkey (base58)
-      schema: {type: string}
+      schema: { type: string }
     Pda:
       name: pda
       in: path
       required: true
       description: >-
         Account pubkey (base58) — CorporateAction or Entitlement PDA
-      schema: {type: string}
+      schema: { type: string }
   schemas:
     User:
       type: object
       required: [id, email, name, role, isDemo]
       properties:
-        id: {type: integer}
-        email: {type: string}
-        name: {type: string}
-        role: {type: string, enum: [issuer, registrar, investor_demo, admin]}
-        isDemo: {type: boolean}
+        id: { type: integer }
+        email: { type: string }
+        name: { type: string }
+        role: { type: string, enum: [issuer, registrar, investor_demo, admin] }
+        isDemo: { type: boolean }
     Session:
       type: object
       required: [token, user]
       properties:
-        token: {type: string}
+        token: { type: string }
         user:
           $ref: "#/components/schemas/User"
     AuditEntry:
       type: object
       required: [id, ts, userId, role, route, params, ok, detail, signatures]
       properties:
-        id: {type: integer}
-        ts: {type: integer, description: unix seconds}
-        userId: {type: integer}
-        role: {type: string}
-        route: {type: string, example: "POST /registrar/investors"}
-        params: {type: object, description: request params JSON}
-        ok: {type: boolean}
-        detail: {type: string}
+        id: { type: integer }
+        ts: { type: integer, description: unix seconds }
+        userId: { type: integer }
+        role: { type: string }
+        route: { type: string, example: "POST /registrar/investors" }
+        params: { type: object, description: request params JSON }
+        ok: { type: boolean }
+        detail: { type: string }
         signatures:
           type: array
-          items: {type: string}
+          items: { type: string }
+    DemoSubscribeRequest:
+      type: object
+      required: [series, units]
+      properties:
+        series:
+          type: string
+          description: bond mint (base58)
+        units: { type: integer, minimum: 1 }
+    DemoVoteRequest:
+      type: object
+      required: [action, choice]
+      properties:
+        action:
+          type: string
+          description: CorporateAction PDA (base58)
+        choice: { type: string, enum: [for, against, abstain] }
+    DemoResponse:
+      description: Demo custodial-wallet action result (always demo:true).
+      type: object
+      required: [demo, ok, signature]
+      properties:
+        demo: { type: boolean }
+        ok: { type: boolean }
+        signature: { type: string }
+        explorerUrl: { type: string }
     Amount:
       description: Money amount in minor units plus a human display string.
       type: object
@@ -699,25 +776,40 @@ components:
       type: object
       required: [ok]
       properties:
-        ok: {type: boolean}
-        db: {type: string, example: ok}
+        ok: { type: boolean }
+        db: { type: string, example: ok }
     SeriesDTO:
       type: object
       required:
-        [mint, cashMint, isin, ticker, faceValue, couponRateBps, frequency,
-         dayCount, issueDate, maturityDate, nextCouponDate, status,
-         totalIssued, quorumBps, approvalBps, explorerUrl]
+        [
+          mint,
+          cashMint,
+          isin,
+          ticker,
+          faceValue,
+          couponRateBps,
+          frequency,
+          dayCount,
+          issueDate,
+          maturityDate,
+          nextCouponDate,
+          status,
+          totalIssued,
+          quorumBps,
+          approvalBps,
+          explorerUrl,
+        ]
       properties:
-        mint: {type: string}
-        cashMint: {type: string}
-        registrar: {type: string}
-        issuer: {type: string}
-        payingAgent: {type: string}
-        isin: {type: string, example: KZ1234567890}
-        ticker: {type: string, example: tKZBOND}
+        mint: { type: string }
+        cashMint: { type: string }
+        registrar: { type: string }
+        issuer: { type: string }
+        payingAgent: { type: string }
+        isin: { type: string, example: KZ1234567890 }
+        ticker: { type: string, example: tKZBOND }
         faceValue:
           $ref: "#/components/schemas/Amount"
-        couponRateBps: {type: integer, example: 1000}
+        couponRateBps: { type: integer, example: 1000 }
         frequency:
           type: integer
           description: coupons per year
@@ -725,8 +817,8 @@ components:
         dayCount:
           type: string
           enum: [THIRTY_360, ACT_ACT, ACT_365]
-        issueDate: {type: string, format: date, example: "2026-09-01"}
-        maturityDate: {type: string, format: date, example: "2027-09-01"}
+        issueDate: { type: string, format: date, example: "2026-09-01" }
+        maturityDate: { type: string, format: date, example: "2027-09-01" }
         nextCouponDate:
           type: string
           format: date-time
@@ -738,8 +830,8 @@ components:
         totalIssued:
           type: string
           description: units in circulation, decimal string
-        quorumBps: {type: integer}
-        approvalBps: {type: integer}
+        quorumBps: { type: integer }
+        approvalBps: { type: integer }
         openAction:
           type: [string, "null"]
         explorerUrl:
@@ -749,9 +841,9 @@ components:
       type: object
       required: [owner, bondAta, cashAta, units, status]
       properties:
-        owner: {type: string}
-        bondAta: {type: string}
-        cashAta: {type: string}
+        owner: { type: string }
+        bondAta: { type: string }
+        cashAta: { type: string }
         units:
           type: string
           description: bond units held, decimal string
@@ -764,11 +856,23 @@ components:
     ActionDTO:
       type: object
       required:
-        [pda, seriesMint, kind, mandatory, corpId, recordAt, paymentAt, status,
-         perUnitGross, perUnitPrincipal, cashMint, explorerUrl]
+        [
+          pda,
+          seriesMint,
+          kind,
+          mandatory,
+          corpId,
+          recordAt,
+          paymentAt,
+          status,
+          perUnitGross,
+          perUnitPrincipal,
+          cashMint,
+          explorerUrl,
+        ]
       properties:
-        pda: {type: string}
-        seriesMint: {type: string}
+        pda: { type: string }
+        seriesMint: { type: string }
         kind:
           type: string
           enum: [INTR, REDM, MCAL, PCAL, BMET, CHAN]
@@ -778,7 +882,7 @@ components:
         mandatory:
           type: string
           enum: [MAND, VOLU, CHOS]
-        corpId: {type: string, example: QPNb1-INTR-0001}
+        corpId: { type: string, example: QPNb1-INTR-0001 }
         officialId:
           type: [string, "null"]
           description: COAF id, may be empty
@@ -806,15 +910,26 @@ components:
           $ref: "#/components/schemas/Amount"
         perUnitPrincipal:
           $ref: "#/components/schemas/Amount"
-        cashMint: {type: string}
-        escrow: {type: string}
+        cashMint: { type: string }
+        escrow: { type: string }
         escrowBalance:
           $ref: "#/components/schemas/Amount"
           description: live escrow token balance (0 before funding)
         status:
           type: string
-          enum: [Announced, RecordStruck, SnapshotComplete, Funded, Settling,
-                 Completed, Retiring, Cancelled, VotingOpen, Finalized]
+          enum:
+            [
+              Announced,
+              RecordStruck,
+              SnapshotComplete,
+              Funded,
+              Settling,
+              Completed,
+              Retiring,
+              Cancelled,
+              VotingOpen,
+              Finalized,
+            ]
         snapshotSlot:
           type: [integer, "null"]
         snapshotHash:
@@ -867,10 +982,10 @@ components:
       type: object
       required: [pda, actionPda, owner, units, status]
       properties:
-        pda: {type: string}
-        actionPda: {type: string}
-        owner: {type: string}
-        units: {type: string}
+        pda: { type: string }
+        actionPda: { type: string }
+        owner: { type: string }
+        units: { type: string }
         gross:
           $ref: "#/components/schemas/Amount"
         tax:
@@ -899,9 +1014,9 @@ components:
       type: object
       required: [couponNumber, recordDate, paymentDate, status]
       properties:
-        couponNumber: {type: integer, example: 2}
-        periodStart: {type: string, format: date}
-        periodEnd: {type: string, format: date}
+        couponNumber: { type: integer, example: 2 }
+        periodStart: { type: string, format: date }
+        periodEnd: { type: string, format: date }
         recordDate:
           type: string
           format: date-time
@@ -924,19 +1039,19 @@ components:
       type: object
       required: [id, ts, dedupKey, seriesMint, step, args, status]
       properties:
-        id: {type: integer}
-        ts: {type: integer, description: unix seconds}
-        dedupKey: {type: string}
-        seriesMint: {type: string}
+        id: { type: integer }
+        ts: { type: integer, description: unix seconds }
+        dedupKey: { type: string }
+        seriesMint: { type: string }
         actionPda:
           type: string
           description: empty for announce decisions
-        step: {type: string, example: "step:strike_record"}
+        step: { type: string, example: "step:strike_record" }
         args:
           type: array
-          items: {type: string}
+          items: { type: string }
           description: the exact qupon CLI argv approve runs
-        status: {type: string, enum: [pending, executed]}
+        status: { type: string, enum: [pending, executed] }
         detail:
           type: [object, "null"]
           description: CLI result JSON once executed
@@ -959,9 +1074,9 @@ components:
         - unitsSnapshotted
         - totalsMatch
       properties:
-        actionPda: {type: string}
-        actionStatus: {type: string, example: Completed}
-        ok: {type: boolean}
+        actionPda: { type: string }
+        actionStatus: { type: string, example: Completed }
+        ok: { type: boolean }
         holders:
           type: integer
           description: investors with a non-zero balance at read time
@@ -971,7 +1086,7 @@ components:
             type: object
             required: [owner, reason]
             properties:
-              owner: {type: string}
+              owner: { type: string }
               reason:
                 type: string
                 enum:
@@ -981,41 +1096,41 @@ components:
                   - ata_mismatch
               fields:
                 type: array
-                items: {type: string}
+                items: { type: string }
                 description: >-
                   differing fields among units/gross/tax/net/principal
-              expected: {$ref: "#/components/schemas/ReconcileEntry"}
-              onchain: {$ref: "#/components/schemas/ReconcileEntry"}
+              expected: { $ref: "#/components/schemas/ReconcileEntry" }
+              onchain: { $ref: "#/components/schemas/ReconcileEntry" }
         expectedHash:
           type: string
           description: base58 sha256 chain recomputed owner-ascending
-        onchainHash: {type: string}
-        hashMatches: {type: boolean}
-        supply: {type: integer, description: bond mint supply at read time}
-        unitsSnapshotted: {type: integer}
-        expectedTotals: {$ref: "#/components/schemas/ReconcileTotals"}
-        onchainTotals: {$ref: "#/components/schemas/ReconcileTotals"}
-        totalsMatch: {type: boolean}
-        checkedAt: {type: integer, description: unix seconds}
+        onchainHash: { type: string }
+        hashMatches: { type: boolean }
+        supply: { type: integer, description: bond mint supply at read time }
+        unitsSnapshotted: { type: integer }
+        expectedTotals: { $ref: "#/components/schemas/ReconcileTotals" }
+        onchainTotals: { $ref: "#/components/schemas/ReconcileTotals" }
+        totalsMatch: { type: boolean }
+        checkedAt: { type: integer, description: unix seconds }
     ReconcileEntry:
       type: object
       required: [units, gross, tax, net, principal]
       properties:
-        units: {type: integer}
-        gross: {type: integer}
-        tax: {type: integer}
-        net: {type: integer}
-        principal: {type: integer}
+        units: { type: integer }
+        gross: { type: integer }
+        tax: { type: integer }
+        net: { type: integer }
+        principal: { type: integer }
     ReconcileTotals:
       type: object
       required: [units, holders, gross, tax, net, principal]
       properties:
-        units: {type: integer}
-        holders: {type: integer}
-        gross: {type: integer}
-        tax: {type: integer}
-        net: {type: integer}
-        principal: {type: integer}
+        units: { type: integer }
+        holders: { type: integer }
+        gross: { type: integer }
+        tax: { type: integer }
+        net: { type: integer }
+        principal: { type: integer }
     AdvanceRequest:
       type: object
       required: [confirm]
@@ -1037,7 +1152,7 @@ components:
           type: string
           description: >-
             executed step, e.g. strike_record, snapshot_batch, pay_batch
-        ok: {type: boolean}
+        ok: { type: boolean }
         signature:
           type: [string, "null"]
           description: tx signature
@@ -1114,7 +1229,7 @@ components:
       type: object
       required: [id, ts, kind, sig, slot, seq]
       properties:
-        id: {type: integer}
+        id: { type: integer }
         ts:
           type: integer
           description: unix seconds
@@ -1122,10 +1237,10 @@ components:
           type: [string, "null"]
         actionPda:
           type: [string, "null"]
-        kind: {type: string, example: ActionAnnounced}
-        payload: {type: object}
-        sig: {type: string}
-        slot: {type: integer}
+        kind: { type: string, example: ActionAnnounced }
+        payload: { type: object }
+        sig: { type: string }
+        slot: { type: integer }
         seq:
           type: integer
           description: ingest order within slot
