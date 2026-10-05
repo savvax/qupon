@@ -117,7 +117,17 @@ export const seev036ZipUrl = (pda: string) =>
 export const seev036Url = (pda: string) =>
   `${API_BASE_URL}/entitlements/${pda}/iso/seev036.xml`;
 
-export const listSeries = () => get<SeriesDTO[]>("/series");
+/** Mints hidden from every list (comma-separated, NEXT_PUBLIC_HIDE_SERIES): leftover devnet test series. */
+const HIDDEN = new Set(
+  (process.env.NEXT_PUBLIC_HIDE_SERIES ?? "")
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean),
+);
+export const listSeries = () =>
+  get<SeriesDTO[]>("/series").then((all) =>
+    HIDDEN.size ? all.filter((s) => !HIDDEN.has(s.mint)) : all,
+  );
 export const getSeries = (mint: string) => get<SeriesDTO>(`/series/${mint}`);
 export const listInvestors = (mint: string) =>
   get<InvestorDTO[]>(`/series/${mint}/investors`);

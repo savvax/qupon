@@ -56,13 +56,21 @@ export interface SeriesRow {
   entitlements: EntitlementDTO[];
 }
 
-/** Load all series with the connected owner's slice (investors/schedule/actions/entitlements). */
+/**
+ * Load every series with the connected owner's slice. Holder lists come first; schedule, actions and entitlements are
+ * fetched only where this wallet is registered — the rest render as "not registered" without N×M extra requests.
+ */
 export async function loadPortal(owner: string): Promise<SeriesRow[]> {
   const series = await listSeries();
+  const holders = await Promise.all(
+    series.map((s) => listInvestors(s.mint).catch(() => [] as InvestorDTO[])),
+  );
   return Promise.all(
-    series.map(async (s): Promise<SeriesRow> => {
-      const [investors, schedule, actions] = await Promise.all([
-        listInvestors(s.mint),
+    series.map(async (s, i): Promise<SeriesRow> => {
+      const me = holders[i]?.find((h) => h.owner === owner);
+      if (!me)
+        return { series: s, me, schedule: [], actions: [], entitlements: [] };
+      const [schedule, actions] = await Promise.all([
         getSchedule(s.mint),
         listActions(s.mint),
       ]);
@@ -73,7 +81,7 @@ export async function loadPortal(owner: string): Promise<SeriesRow[]> {
       );
       return {
         series: s,
-        me: investors.find((i) => i.owner === owner),
+        me,
         schedule,
         actions,
         entitlements: lists.flat().filter((e) => e.owner === owner),

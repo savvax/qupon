@@ -45,8 +45,10 @@ kp() { tr -d ' \n' < "$1"; }
 "${SSH[@]}" 'umask 077; : > /opt/qupon/web.env' # nothing secret for the web yet; kept for compose's env_file
 
 echo "== build (one image at a time: 1 vCPU) and start"
+# Leftover devnet test series stay on-chain but out of the web app (config/hidden-series.txt, one mint per line).
+HIDE=$(grep -v "^#" config/hidden-series.txt | grep . | paste -sd, -)
 # QUPON_HOST persisted next to compose.yml (excluded from rsync --delete), so a manual `docker compose up` keeps routing.
-"${SSH[@]}" "cd /opt/qupon/src/deploy/vps && echo QUPON_HOST=$HOST > .env && docker compose build registrar && docker compose build web && docker compose up -d --remove-orphans"
+"${SSH[@]}" "cd /opt/qupon/src/deploy/vps && printf \"QUPON_HOST=%s\\nQUPON_HIDE_SERIES=%s\\n\" $HOST $HIDE > .env && docker compose build registrar && docker compose build web && docker compose up -d --remove-orphans"
 
 echo "== health"
 for _ in $(seq 1 30); do

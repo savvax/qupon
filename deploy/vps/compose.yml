@@ -14,7 +14,10 @@ services:
     build:
       context: ../..
       dockerfile: apps/web/Dockerfile
-      args: { NEXT_PUBLIC_API_URL: "https://api.${QUPON_HOST}" }
+      args:
+        NEXT_PUBLIC_API_URL: "https://api.${QUPON_HOST}"
+        NEXT_PUBLIC_SITE_URL: "https://qupon.${QUPON_HOST}"
+        NEXT_PUBLIC_HIDE_SERIES: "${QUPON_HIDE_SERIES:-}"
     env_file: /opt/qupon/web.env # server-side only; empty for now
     environment:
       API_INTERNAL_URL: http://registrar:8080 # session proxy talks to the API inside the compose network
