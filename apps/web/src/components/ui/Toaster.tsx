@@ -3,6 +3,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { cx } from "@/lib/ui/cx";
 import { toastStore, type Toast, type ToastKind } from "./toastStore";
+import { Address } from "./Address";
 
 const AUTO_DISMISS_MS = 6000;
 
@@ -53,7 +54,11 @@ function ToastCard({ toast: t }: { toast: Toast }) {
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold">{t.title}</div>
           {t.body && <div className="mt-0.5 text-sm text-n600">{t.body}</div>}
-          {t.tx && <TxLink value={t.tx} />}
+          {t.tx && (
+            <span className="mt-1 block">
+              <Address value={t.tx} kind="tx" />
+            </span>
+          )}
         </div>
         <button
           type="button"
@@ -65,22 +70,5 @@ function ToastCard({ toast: t }: { toast: Toast }) {
         </button>
       </div>
     </div>
-  );
-}
-
-/** Truncated devnet explorer link for a tx signature (Address parity; see Task 2). */
-function TxLink({ value }: { value: string }) {
-  const short =
-    value.length > 12 ? `${value.slice(0, 4)}…${value.slice(-4)}` : value;
-  return (
-    <a
-      href={`https://explorer.solana.com/tx/${value}?cluster=devnet`}
-      target="_blank"
-      rel="noreferrer"
-      title={value}
-      className="num mt-1 inline-block max-w-full truncate font-semibold text-g700 underline decoration-g300 underline-offset-2 hover:decoration-g600"
-    >
-      {short}
-    </a>
   );
 }
