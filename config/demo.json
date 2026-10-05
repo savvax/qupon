@@ -1,0 +1,65 @@
+{
+  "$schema": "./demo.schema.json",
+  "series": {
+    "QPNb1": {
+      "cashMint": "tKZT",
+      "faceValue": 100000,
+      "couponRateBps": 1000,
+      "frequency": 2,
+      "dayCount": "THIRTY_360",
+      "issueDate": "2026-07-03",
+      "maturityDate": "2028-07-03",
+      "couponPeriods": [
+        { "start": "2026-07-03", "end": "2027-01-03", "days": 180 },
+        { "start": "2027-01-03", "end": "2027-07-03", "days": 180 },
+        { "start": "2027-07-03", "end": "2028-01-03", "days": 180 },
+        { "start": "2028-01-03", "end": "2028-07-03", "days": 180 }
+      ],
+      "pricePerUnit": 100000,
+      "investors": [
+        { "index": 0, "units": 10, "type": "individual", "resident": true, "taxBps": 0 },
+        { "index": 1, "units": 25, "type": "individual", "resident": false, "taxBps": 0 },
+        { "index": 2, "units": 65, "type": "legal_entity", "resident": true, "taxBps": 0 }
+      ]
+    },
+    "BTRKdemo": {
+      "cashMint": "USDC",
+      "faceValue": 1000000000,
+      "couponRateBps": 1595,
+      "frequency": 2,
+      "dayCount": "THIRTY_360",
+      "issueDate": "2026-07-03",
+      "maturityDate": "2031-07-03",
+      "couponPeriods": [
+        { "start": "2026-07-03", "end": "2027-01-03", "days": 180 }
+      ],
+      "pricePerUnit": 1000000000,
+      "mcal": {
+        "callDate": "2026-08-20",
+        "accrualStart": "2026-07-03",
+        "accruedDays": 47,
+        "perUnitPrincipal": 1000000000
+      },
+      "investors": [
+        { "index": 0, "units": 30, "type": "individual", "resident": true, "taxBps": 0 },
+        { "index": 1, "units": 30, "type": "individual", "resident": false, "taxBps": 0 },
+        { "index": 2, "units": 40, "type": "legal_entity", "resident": true, "taxBps": 0 }
+      ]
+    }
+  },
+  "offsets": {
+    "recordAtOffsetSec": 90,
+    "paymentAtOffsetSec": 120,
+    "votingWindowSec": 120
+  },
+  "votePlan": {
+    "proposal": { "newRateBps": 1200 },
+    "quorumBps": 5000,
+    "approvalBps": 6667,
+    "votes": [
+      { "units": 65, "choice": "for" },
+      { "units": 25, "choice": "against" },
+      { "units": 10, "choice": "abstain" }
+    ]
+  }
+}

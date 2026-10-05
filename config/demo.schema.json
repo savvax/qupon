@@ -1,0 +1,115 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Qupon demo scenario parameters",
+  "description": "Drives demo scripts (016/019) and the UI seed. Civil dates are for day counting only; real time is compressed via offsets.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["series", "offsets", "votePlan"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "series": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["QPNb1", "BTRKdemo"],
+      "properties": {
+        "QPNb1": { "$ref": "#/definitions/series" },
+        "BTRKdemo": { "$ref": "#/definitions/series" }
+      }
+    },
+    "offsets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recordAtOffsetSec", "paymentAtOffsetSec", "votingWindowSec"],
+      "properties": {
+        "recordAtOffsetSec": { "type": "integer", "minimum": 30, "maximum": 3600 },
+        "paymentAtOffsetSec": { "type": "integer", "minimum": 30, "maximum": 3600 },
+        "votingWindowSec": { "type": "integer", "minimum": 30, "maximum": 3600 }
+      }
+    },
+    "votePlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proposal", "quorumBps", "approvalBps", "votes"],
+      "properties": {
+        "proposal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["newRateBps"],
+          "properties": { "newRateBps": { "type": "integer", "minimum": 0, "maximum": 100000 } }
+        },
+        "quorumBps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "approvalBps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "votes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["units", "choice"],
+            "properties": {
+              "units": { "type": "integer", "minimum": 0 },
+              "choice": { "enum": ["for", "against", "abstain"] }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "investor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "units", "type", "resident", "taxBps"],
+      "properties": {
+        "index": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "units": { "type": "integer", "minimum": 1 },
+        "type": { "enum": ["individual", "legal_entity"] },
+        "resident": { "type": "boolean" },
+        "taxBps": { "type": "integer", "minimum": 0, "maximum": 10000 }
+      }
+    },
+    "period": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end", "days"],
+      "properties": {
+        "start": { "$ref": "#/definitions/civilDate" },
+        "end": { "$ref": "#/definitions/civilDate" },
+        "days": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "mcal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["callDate", "accrualStart", "accruedDays", "perUnitPrincipal"],
+      "properties": {
+        "callDate": { "$ref": "civilDate" },
+        "accrualStart": { "$ref": "civilDate" },
+        "accruedDays": { "type": "integer", "minimum": 1 },
+        "perUnitPrincipal": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "series": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cashMint", "faceValue", "couponRateBps", "frequency", "dayCount", "issueDate", "maturityDate", "couponPeriods", "pricePerUnit", "investors"],
+      "properties": {
+        "cashMint": { "enum": ["tKZT", "USDC"] },
+        "faceValue": { "type": "integer", "minimum": 1 },
+        "couponRateBps": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "frequency": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "dayCount": { "enum": ["THIRTY_360", "ACT_365"] },
+        "issueDate": { "$ref": "civilDate" },
+        "maturityDate": { "$ref": "civilDate" },
+        "couponPeriods": { "type": "array", "minItems": 1, "items": { "$ref": "period" } },
+        "pricePerUnit": { "type": "integer", "minimum": 1 },
+        "mcal": { "$ref": "mcal" },
+        "investors": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "$ref": "investor" } }
+      }
+    },
+    "civilDate": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    }
+  }
+}

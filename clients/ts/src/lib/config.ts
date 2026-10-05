@@ -30,6 +30,70 @@ export interface QuponConfig {
   };
 }
 
+/** Scenario parameters for the devnet demos — drives demo scripts and the UI seed. */
+export interface DemoPeriod {
+  start: string;
+  end: string;
+  days: number;
+}
+export interface DemoInvestor {
+  index: number;
+  units: number;
+  type: "individual" | "legal_entity";
+  resident: boolean;
+  taxBps: number;
+}
+export interface DemoSeries {
+  cashMint: "tKZT" | "USDC";
+  faceValue: number;
+  couponRateBps: number;
+  frequency: number;
+  dayCount: "THIRTY_360" | "ACT_365";
+  issueDate: string;
+  maturityDate: string;
+  couponPeriods: DemoPeriod[];
+  pricePerUnit: number;
+  mcal?: {
+    callDate: string;
+    accrualStart: string;
+    accruedDays: number;
+    perUnitPrincipal: number;
+  };
+  investors: DemoInvestor[];
+}
+export interface DemoConfig {
+  series: Record<"QPNb1" | "BTRKdemo", DemoSeries>;
+  offsets: { recordAtOffsetSec: number; paymentAtOffsetSec: number; votingWindowSec: number };
+  votePlan: {
+    proposal: { newRateBps: number };
+    quorumBps: number;
+    approvalBps: number;
+    votes: { units: number; choice: "for" | "against" | "abstain" }[];
+  };
+}
+
+/** Default path: <repo>/config/demo.json (QUPON_DEMO_CONFIG overrides). */
+export function demoConfigPath(): string {
+  return (
+    process.env.QUPON_DEMO_CONFIG ??
+    new URL("../../../../config/demo.json", import.meta.url).pathname
+  );
+}
+
+export function loadDemoConfig(path = demoConfigPath()): DemoConfig {
+  let raw: string;
+  try {
+    raw = readFileSync(path, "utf8");
+  } catch (e) {
+    throw new Error(`cannot read demo config '${path}': ${(e as Error).message}`, { cause: e });
+  }
+  try {
+    return JSON.parse(raw) as DemoConfig;
+  } catch (e) {
+    throw new Error(`${path}: invalid JSON (${(e as Error).message})`, { cause: e });
+  }
+}
+
 /** Default path: <repo>/config/devnet.json (QUPON_CONFIG overrides). */
 export function configPath(): string {
   return (
