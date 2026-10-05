@@ -46,7 +46,138 @@
     "Abstain": "Abstain",
     "Draft": "Draft"
   },
-  "landing": {},
+  "landing": {
+    "hero": {
+      "badge": "Live on Solana devnet",
+      "title": "Every coupon, redemption and bondholder vote — executed on-chain",
+      "lead": "Record date, per-holder entitlements, escrowed settlement and ISO 20022 reporting for tokenized bonds, under Kazakhstan market rules.",
+      "cta": "Open the demo",
+      "overview": "Technical overview"
+    },
+    "last": {
+      "title": "Last corporate action",
+      "completed": "Completed",
+      "total": "Total paid",
+      "holders": "{count, plural, one {# holder paid} other {# holders paid}}",
+      "steps": "All 6 steps on-chain",
+      "example": "Example from the brief"
+    },
+    "kinds": {
+      "INTR": "Coupon",
+      "REDM": "Redemption",
+      "MCAL": "Early redemption",
+      "PCAL": "Partial redemption",
+      "BMET": "Bondholder meeting",
+      "CHAN": "Terms change"
+    },
+    "strip": {
+      "coupon": "{rate}% coupon",
+      "next": "next {date}",
+      "txs": "{count}{more} on-chain transactions"
+    },
+    "how": {
+      "eyebrow": "How it works",
+      "title": "From record date to payout in five on-chain steps",
+      "register": {
+        "title": "Register",
+        "text": "Investors pass KYC; the provider attests it on Solana (SAS) and the registrar admits the wallet."
+      },
+      "record": {
+        "title": "Record date",
+        "text": "The bond mint is paused and every holder's position is snapshotted on-chain."
+      },
+      "entitle": {
+        "title": "Entitlements",
+        "text": "Per-holder amounts under 30E/360, rounded half-up, with resident and non-resident tax."
+      },
+      "pay": {
+        "title": "Escrow & payout",
+        "text": "The issuer funds an escrow; payouts run in batches and withheld tax goes to a tax vault."
+      },
+      "report": {
+        "title": "Report",
+        "text": "ISO 20022 seev.031 / seev.036 files and a KASE-style notice are generated from chain state."
+      }
+    },
+    "scenarios": {
+      "eyebrow": "Scenarios",
+      "title": "The corporate actions a bond actually lives through",
+      "coupon": {
+        "title": "Coupon",
+        "text": "1,000 ₸ face, 10% paid semi-annually. Holders of 10, 25 and 65 bonds receive 500, 1,250 and 3,250 ₸."
+      },
+      "redemption": {
+        "title": "Redemption",
+        "text": "At maturity holders receive the principal plus the final coupon; the bonds are burned and the series is closed."
+      },
+      "meeting": {
+        "title": "Bondholder meeting",
+        "text": "Holders vote with snapshot weights to raise the coupon from 10% to 12%; quorum and majority are checked on-chain."
+      },
+      "early": {
+        "title": "Early redemption",
+        "text": "The issuer calls the bonds early; interest accrued over the 47 days since the last coupon is paid with the principal."
+      }
+    },
+    "audiences": {
+      "issuers": {
+        "title": "For issuers",
+        "b1": "Issue a series from its terms in minutes",
+        "b2": "Fund each coupon into escrow — the registrar does the rest",
+        "b3": "Call bondholder meetings and change terms with a full audit trail",
+        "cta": "Try as issuer"
+      },
+      "investors": {
+        "title": "For investors",
+        "b1": "Holdings, next coupon and every payout with its transaction",
+        "b2": "Subscribe at par with delivery versus payment",
+        "b3": "Vote in bondholder meetings from your own wallet",
+        "cta": "Try as investor"
+      }
+    },
+    "simulated": {
+      "eyebrow": "Honest scope",
+      "title": "Implemented vs simulated",
+      "note": "Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are series configuration, not a statement of Kazakh law.",
+      "rows": {
+        "core": {
+          "element": "Bond token, holder registry, record date, entitlements, coupon payment, redemption, burn and close, voting, terms change, on-chain events",
+          "badge": "Implemented",
+          "text": "Running on Solana devnet."
+        },
+        "cash": {
+          "element": "Cash leg",
+          "badge": "Partly simulated",
+          "text": "Real token transfers in devnet USDC (Circle) and test tKZT (Token-2022). Fiat tenge and the digital tenge are stood in for by our mint."
+        },
+        "kyc": {
+          "element": "KYC",
+          "badge": "Provider simulated",
+          "text": "Attested on-chain: a demo KYC-provider key issues a Solana Attestation Service attestation per wallet, and registration refuses wallets without a live, matching one. The provider is not a licensed KYC firm."
+        },
+        "iso": {
+          "element": "ISO 20022 seev.031 / seev.036",
+          "badge": "Delivery simulated",
+          "text": "Generated from on-chain state; Swift delivery is replaced by downloadable files."
+        },
+        "ardfm": {
+          "element": "ARDFM registration of a terms change",
+          "badge": "Simulated",
+          "text": "Represented by a registrar signature step."
+        },
+        "notice": {
+          "element": "KASE disclosure notice",
+          "badge": "Not published",
+          "text": "Generated automatically; publication on kase.kz is not integrated."
+        },
+        "squads": {
+          "element": "Multisig issuer approval (Squads)",
+          "badge": "Roadmap",
+          "text": "Planned."
+        }
+      }
+    }
+  },
   "bonds": {},
   "bond": {},
   "login": {},

@@ -323,7 +323,12 @@ const activity = [
     owner: INVESTOR_OWNERS[2],
     net: "325000",
   }),
-  ev(11, 1772084400, "ActionCompleted", ACTION_PDA_1, SIGS[1]!),
+  ev(11, 1772084400, "ActionCompleted", ACTION_PDA_1, SIGS[1]!, {
+    series: MINT_QPNB1,
+    kind: 0,
+    holders_paid: 3,
+    total_paid: "500000",
+  }),
   ev(12, 1772150000, "ActionAnnounced", ACTION_PDA_2, SIGS[2]!),
   ev(13, 1772236400, "RecordStruck", ACTION_PDA_2, SIGS[0]!),
   ev(14, 1772240000, "SnapshotFinalized", ACTION_PDA_2, SIGS[1]!),

@@ -1,15 +1,23 @@
-/** Temporary home until the landing page (task 106). */
-export default function Home() {
+import { Hero } from "./_landing/Hero";
+import { LiveStrip } from "./_landing/LiveStrip";
+import { loadLive } from "./_landing/live";
+import {
+  Audiences,
+  HowItWorks,
+  ImplementedVsSimulated,
+  Scenarios,
+} from "./_landing/sections";
+
+export default async function Home() {
+  const live = await loadLive();
   return (
-    <main className="mx-auto max-w-[1200px] p-8">
-      <h1 className="text-2xl font-bold text-g600">Qupon</h1>
-      <p className="mt-2 text-n600">
-        Corporate actions for tokenized bonds. The console is at{" "}
-        <a className="text-g700 underline" href="/console">
-          /console
-        </a>
-        .
-      </p>
-    </main>
+    <>
+      <Hero live={live} />
+      <LiveStrip live={live} />
+      <HowItWorks />
+      <Scenarios />
+      <Audiences />
+      <ImplementedVsSimulated />
+    </>
   );
 }
