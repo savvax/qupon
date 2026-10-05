@@ -27,6 +27,7 @@ Follow Task 7's checkbox steps in order (tests first). Use only design-system co
 ## Lead notes (found in reviews)
 - `/registrar/activity`: sort newest first (the lead says so; mock data comes oldest first) and show the series ticker instead of the mint address.
 - Placeholder `(cabinet)/Placeholder.tsx` must be gone once 303/306 replace the registrar and investor homes.
+- `/investor` (306): the dev overlay shows "1 Issue" — find and fix the runtime error/hydration warning; the face-value total mixes currencies on one line and truncates ("65,000.00 ₸ + 30,000.00000…") — one line per currency; entitlement-history kind should be a Badge like everywhere else.
 - Playwright: never share `.next` between a running dev server and the e2e web server; a click before hydration can be lost (use `toPass` retries on tabs).
 
 ## Finish
