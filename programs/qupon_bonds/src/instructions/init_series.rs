@@ -83,6 +83,22 @@ pub fn handle_init_series(ctx: Context<InitSeries>, p: InitSeriesParams) -> Resu
         &ctx.accounts.registrar.key(),
     )?;
 
+    // ISIN: 12 ASCII alphanumerics; ticker: printable ASCII, zero-padded.
+    require!(
+        p.isin.iter().all(u8::is_ascii_alphanumeric),
+        QuponError::InvalidParams
+    );
+    let len = p
+        .ticker
+        .iter()
+        .position(|&b| b == 0)
+        .unwrap_or(p.ticker.len());
+    require!(
+        len > 0
+            && p.ticker[..len].iter().all(u8::is_ascii_graphic)
+            && p.ticker[len..].iter().all(|&b| b == 0),
+        QuponError::InvalidParams
+    );
     require!(
         matches!(p.frequency, 1 | 2 | 4 | 12),
         QuponError::InvalidParams
@@ -181,6 +197,11 @@ fn validate_bond_mint(mint: &AccountInfo, series: &Pubkey, registrar: &Pubkey) -
     require!(
         Option::<Pubkey>::from(pointer.metadata_address) == Some(mint.key()),
         QuponError::InvalidMintExtensions
+    );
+    // Only the registrar (or nobody) may re-point the metadata elsewhere.
+    require!(
+        Option::<Pubkey>::from(pointer.authority).is_none_or(|k| k == *registrar),
+        QuponError::InvalidAuthority
     );
     let default_state = state
         .get_extension::<DefaultAccountState>()

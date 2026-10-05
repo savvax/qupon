@@ -149,8 +149,13 @@ impl Env {
         if with(ExtensionType::MetadataPointer) {
             exts.push(ExtensionType::MetadataPointer);
             ixs.push(
-                metadata_pointer::instruction::initialize(&tp, &m, Some(registrar), Some(m))
-                    .unwrap(),
+                metadata_pointer::instruction::initialize(
+                    &tp,
+                    &m,
+                    Some(opts.pointer_authority.unwrap_or(registrar)),
+                    Some(m),
+                )
+                .unwrap(),
             );
         }
         if with(ExtensionType::PermanentDelegate) {
@@ -301,6 +306,7 @@ pub struct BondMintOpts {
     pub decimals: u8,
     pub non_transferable: bool,
     pub keep_registrar_mint_authority: bool,
+    pub pointer_authority: Option<Pubkey>,
 }
 
 pub fn series_pda(mint: &Pubkey) -> Pubkey {

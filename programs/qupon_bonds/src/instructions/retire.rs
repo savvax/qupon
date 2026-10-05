@@ -1,6 +1,6 @@
 //! Redemption tail (03-domain §4): after `complete_action` resumed the mint, burn every holder's units through the
 //! permanent delegate, then close the mint and mark the series REDEEMED.
-use anchor_lang::{prelude::*, system_program};
+use anchor_lang::{prelude::*, system_program, Discriminator};
 use anchor_spl::{
     token_2022::{
         burn_checked, close_account, thaw_account, BurnChecked, CloseAccount, ThawAccount,
@@ -17,7 +17,10 @@ use crate::{
     constants::*,
     error::QuponError,
     events::{SeriesClosed, UnitsRetired},
-    state::{ActionStatus, CorporateAction, Entitlement, EntitlementStatus, Series, SeriesStatus},
+    state::{
+        ActionStatus, CorporateAction, Entitlement, EntitlementStatus, Investor, Series,
+        SeriesStatus,
+    },
     utils::require_operator,
 };
 
@@ -43,6 +46,10 @@ pub struct RetireBatch<'info> {
 
 /// `remaining_accounts` = N × [Entitlement (writable), holder bond ATA (writable)]. Burns whatever the ATA holds
 /// (movements after the record date are economically void). Idempotent: Retired entitlements are skipped.
+///
+/// A pair may also be [Investor, its bond ATA] for a registered wallet that received units after the mint was
+/// resumed but has no Entitlement: those units are burned too (not counted as a holder), so nobody can block
+/// `close_series` by moving a unit to an un-snapshotted investor.
 pub fn handle_retire_batch<'info>(ctx: Context<'info, RetireBatch<'info>>) -> Result<()> {
     let series = &ctx.accounts.series;
     require_operator(series, &ctx.accounts.authority.key())?;
@@ -62,14 +69,38 @@ pub fn handle_retire_batch<'info>(ctx: Context<'info, RetireBatch<'info>>) -> Re
     let clock = Clock::get()?;
 
     for p in rem.chunks(2) {
-        let mut ent: Account<Entitlement> = Account::try_from(&p[0])?;
-        require_keys_eq!(ent.action, action_key, QuponError::InvalidParams);
         let ata: InterfaceAccount<TokenAccount> = InterfaceAccount::try_from(&p[1])?;
         require_keys_eq!(ata.mint, mint_key, QuponError::AccountMintMismatch);
-        require_keys_eq!(ata.owner, ent.owner, QuponError::AccountOwnerMismatch);
-        if ent.status == EntitlementStatus::Retired as u8 {
-            continue;
-        }
+        let is_investor = p[0].owner == &crate::ID
+            && p[0].try_borrow_data()?.starts_with(Investor::DISCRIMINATOR);
+        let mut ent: Option<Account<Entitlement>> = None;
+        let owner = if is_investor {
+            let investor: Account<Investor> = Account::try_from(&p[0])?;
+            require_keys_eq!(
+                investor.series,
+                ctx.accounts.series.key(),
+                QuponError::AccountOwnerMismatch
+            );
+            require_keys_eq!(
+                p[1].key(),
+                investor.bond_ata,
+                QuponError::AccountOwnerMismatch
+            );
+            if ata.amount == 0 {
+                continue;
+            }
+            investor.owner
+        } else {
+            let e: Account<Entitlement> = Account::try_from(&p[0])?;
+            require_keys_eq!(e.action, action_key, QuponError::InvalidParams);
+            if e.status == EntitlementStatus::Retired as u8 {
+                continue;
+            }
+            let o = e.owner;
+            ent = Some(e);
+            o
+        };
+        require_keys_eq!(ata.owner, owner, QuponError::AccountOwnerMismatch);
 
         // A suspended holder's ATA is frozen; the permanent delegate cannot burn from a frozen account.
         if ata.is_frozen() {
@@ -99,23 +130,24 @@ pub fn handle_retire_batch<'info>(ctx: Context<'info, RetireBatch<'info>>) -> Re
                 0,
             )?;
         }
-        ent.status = EntitlementStatus::Retired as u8;
-        ent.exit(&crate::ID)?;
-
         let action = &mut ctx.accounts.action;
         action.total_retired = action
             .total_retired
             .checked_add(burned)
             .ok_or(QuponError::MathOverflow)?;
-        action.holders_retired = action
-            .holders_retired
-            .checked_add(1)
-            .ok_or(QuponError::MathOverflow)?;
+        if let Some(mut e) = ent {
+            e.status = EntitlementStatus::Retired as u8;
+            e.exit(&crate::ID)?;
+            action.holders_retired = action
+                .holders_retired
+                .checked_add(1)
+                .ok_or(QuponError::MathOverflow)?;
+        }
         emit!(UnitsRetired {
             series: action.series,
             action: action_key,
             index: action.index,
-            owner: ent.owner,
+            owner,
             units: burned,
             total_retired: action.total_retired,
             slot: clock.slot,

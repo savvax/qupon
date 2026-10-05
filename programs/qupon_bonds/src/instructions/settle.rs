@@ -317,13 +317,17 @@ pub fn handle_complete_action(ctx: Context<CompleteAction>) -> Result<()> {
 fn next_coupon_after(series: &Series, period_end: i64) -> Result<i64> {
     let months = 12 / u32::from(series.frequency);
     let civil = |ts: i64| -> Result<Ymd> {
-        Ymd::from_unix_utc(ts + ALMATY_UTC_OFFSET_SECS).map_err(math_err)
+        let local = ts
+            .checked_add(ALMATY_UTC_OFFSET_SECS)
+            .ok_or(QuponError::MathOverflow)?;
+        Ymd::from_unix_utc(local).map_err(math_err)
     };
     let (issue, end) = (civil(series.issue_date)?, civil(period_end)?);
     let elapsed =
         (i64::from(end.y) * 12 + i64::from(end.m)) - (i64::from(issue.y) * 12 + i64::from(issue.m));
     let k = u32::try_from(elapsed / i64::from(months) + 1)
         .map_err(|_| error!(QuponError::InvalidDates))?;
-    let next = add_months_almaty(series.issue_date, k * months)?;
+    let total = k.checked_mul(months).ok_or(QuponError::MathOverflow)?;
+    let next = add_months_almaty(series.issue_date, total)?;
     Ok(next.min(series.maturity_date))
 }
