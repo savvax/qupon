@@ -1,0 +1,40 @@
+sequenceDiagram
+    autonumber
+    participant R as Registrar (Go scheduler / CLI)
+    participant P as qupon_bonds program
+    participant M as Bond mint (Token-2022 Pausable)
+    participant E as Entitlement PDAs
+    participant H as Holders
+
+    Note over R: record_at reached<br/>(00:00 Asia/Almaty, start of last day)
+    R->>P: strike_record
+    P->>M: CPI pause (series PDA)
+    P-->>R: event RecordStruck (snapshot_slot)
+
+    loop snapshot_batch (batches of ≤ 8 holders, ascending owner pubkey)
+        R->>P: snapshot_batch [Investor, bond ATA, Entitlement]…
+        P->>E: create/fill Entitlement (units, gross, tax, net)
+        P->>P: snapshot_hash = sha256(prev ‖ owner ‖ units LE)
+        P-->>R: event SnapshotBatch
+    end
+
+    R->>P: finalize_snapshot
+    P->>P: check units_snapshotted == mint.supply<br/>+ rounding drift check (half-up per holder)
+    alt kind == BMET
+        P->>M: CPI resume (voting uses snapshot weights)
+        P-->>R: SnapshotFinalized → VotingOpen
+    else cash action (INTR/REDM/MCAL/PCAL)
+        P-->>R: SnapshotFinalized → SnapshotComplete
+    end
+
+    Note over R,H: mint stays paused: no transfers possible
+    R->>P: fund_action (issuer → escrow ATA)
+    loop pay_batch (batches of ≤ 10 holders)
+        R->>P: pay_batch [Entitlement, Investor, cash ATA]…
+        P->>H: transfer net + principal (escrow → holder)
+        P->>P: transfer tax → tax_vault
+        P-->>R: event PaymentMade (status Paid, idempotent)
+    end
+    R->>P: complete_action
+    P->>M: CPI resume
+    P-->>R: ActionCompleted (Series.period_start advanced / open_action cleared)
