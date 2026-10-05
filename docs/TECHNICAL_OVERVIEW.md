@@ -1,6 +1,6 @@
 # Qupon — technical overview
 
-Corporate-actions engine for tokenized bonds on Solana: **identify holders → calculate entitlements → execute settlement → record on-chain**. Everything below runs on devnet: program [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet) (Anchor 1.2; verifiable build and on-chain IDL — [`reports/verified-build.md`](../reports/verified-build.md)). One command (`make demo`) runs coupon, redemption, bondholder meeting → terms change and early redemption; [`reports/demo-full.md`](../reports/demo-full.md) links all 69 transactions.
+Corporate-actions engine for tokenized bonds on Solana: **identify holders → calculate entitlements → execute settlement → record on-chain**. Everything below runs on devnet: program [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet) (Anchor 1.2; verifiable build and on-chain IDL — [`reports/verified-build.md`](../reports/verified-build.md)). One command (`make demo`) runs coupon, redemption, bondholder meeting → terms change and early redemption; [`reports/demo-full.md`](../reports/demo-full.md) links all 71 transactions.
 
 ## 1. Architecture
 
@@ -21,7 +21,7 @@ All corporate-action **state and rules live on-chain**; off-chain code only cran
 | Account (PDA) | Seeds | Holds |
 |---|---|---|
 | `Series` | `["series", mint]` | terms (face, rate, frequency, day count, dates), authorities, schedule, status, the one open action |
-| `Investor` | `["investor", series, owner]` | KYC attributes (SIMULATED), tax rate, bond and cash accounts, active/suspended |
+| `Investor` | `["investor", series, owner]` | KYC attributes from the SAS attestation (`kyc_ref` = attestation address), tax rate, bond and cash accounts, active/suspended |
 | `CorporateAction` | `["action", series, index]` | kind (INTR/REDM/MCAL/PCAL/BMET), dates, rate, per-unit amounts, escrow, status, totals, snapshot hash, votes |
 | `Entitlement` | `["entitlement", action, owner]` | units at the record date, gross/tax/net/principal, paid/retired, vote |
 
@@ -75,7 +75,7 @@ Records: 18 event types (one per transition), ISO 20022 `seev.031`/`seev.036` an
 | Instruction | Signer | Effect |
 |---|---|---|
 | `init_series` | registrar | validate the mint, create Series + tax vault |
-| `register_investor` / `suspend_investor` / `reinstate_investor` | registrar | KYC record, thaw / freeze the bond account |
+| `register_investor` / `suspend_investor` / `reinstate_investor` | registrar | verify the KYC provider's SAS attestation, thaw / freeze the bond account |
 | `subscribe` / `issue_units` | investor / issuer | atomic DvP at par / free allocation |
 | `announce_action` / `cancel_action` | registrar (issuer for BMET) / registrar | create the action, verify the math on-chain |
 | `strike_record` / `snapshot_batch` / `finalize_snapshot` | registrar or paying agent | record date (pause), snapshot, supply check |
@@ -83,7 +83,7 @@ Records: 18 event types (one per transition), ISO 20022 `seev.031`/`seev.036` an
 | `retire_batch` / `close_series` | operator / registrar | burn via permanent delegate, close the mint |
 | `cast_vote` / `finalize_meeting` / `apply_terms_change` | investor / registrar / registrar | meeting and terms change |
 
-Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). Tests: 50 program tests (LiteSVM integration + unit) including the brief suite; Go and TS mirrors of the math; `make verify` gates every merge.
+Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). Tests: 52 program tests (LiteSVM integration + unit) including the brief suite; Go and TS mirrors of the math; `make verify` gates every merge.
 
 ## Implemented vs simulated
 
@@ -91,11 +91,11 @@ Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). T
 |---|---|
 | Bond token, holder registry, record date, entitlement math, coupon payment, redemption, burn/close, voting, terms change, on-chain events | **Implemented on Solana devnet** |
 | Cash leg | Real token transfers: USDC devnet (Circle) and test tKZT (Token-2022); fiat KZT and Evo/digital tenge are **simulated** by our mint |
-| KYC | **Simulated**: registrar records attributes (type, residency, tax rate); no KYC provider integrated |
+| KYC | **Attested on-chain, provider simulated**: a KYC-provider keypair issues a Solana Attestation Service attestation per wallet (type, residency, tax rate); `register_investor` refuses a wallet without a live, matching attestation. The provider is a demo keypair, not a licensed KYC firm |
 | ISO 20022 seev.031 / seev.036 | Generated from on-chain state; Swift network delivery **simulated** (downloadable files) |
 | ARDFM registration of terms change | **Simulated** by registrar signature step |
 | KASE disclosure notice | Generated automatically; publication on kase.kz **not** integrated |
-| Multisig issuer approval (Squads), SAS KYC attestation | Optional T2; if not shipped, listed as roadmap |
+| Multisig issuer approval (Squads) | Roadmap |
 
 ## Limitations and next steps
 

@@ -2,7 +2,6 @@
  * Shared wiring for the command groups: context (rpc + config), role signers,
  * strict argument parsing, tx reporting and program-account listing.
  */
-import { createHash } from "node:crypto";
 import {
 	AccountRole,
 	address,
@@ -53,13 +52,14 @@ export function withGlobals(cmd: Command): Command {
 		.option("--json", "JSON output (always on)");
 }
 
-export type Role = "registrar" | "issuer" | "payingAgent" | "investor";
+export type Role = "registrar" | "issuer" | "payingAgent" | "investor" | "kycProvider";
 
 const ROLE_ENV: Record<Role, string> = {
 	registrar: "QUPON_REGISTRAR_KEYPAIR",
 	issuer: "QUPON_ISSUER_KEYPAIR",
 	payingAgent: "QUPON_PAYING_AGENT_KEYPAIR",
 	investor: "QUPON_INVESTOR_KEYPAIR",
+	kycProvider: "QUPON_KYC_PROVIDER_KEYPAIR",
 };
 
 export interface Ctx {
@@ -158,11 +158,6 @@ export function padAscii(s: string, n: number): Uint8Array {
 	const field = new Uint8Array(n);
 	field.set(b);
 	return field;
-}
-
-/** SIMULATED KYC: kyc_ref is sha256 of an off-chain record id (no real KYC provider yet). */
-export function kycRefHash(s: string): Uint8Array {
-	return createHash("sha256").update(s).digest();
 }
 
 const DAY_COUNT_CODES: Record<string, number> = { THIRTY_360: 0, ACT_ACT: 1, ACT_365: 2 };

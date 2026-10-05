@@ -172,6 +172,8 @@ const EXPLAIN: Record<string, string> = {
     "day count convention not supported (ACT/ACT is reserved)",
   InvalidParams: "invalid parameter",
   PaymentsIncomplete: "not every snapshotted holder has been paid in full",
+  KycAttestationInvalid:
+    "no live KYC attestation (Solana Attestation Service) for this wallet",
 };
 
 /** Pull the Anchor error name (or Solana custom error code) out of a Kit error. */

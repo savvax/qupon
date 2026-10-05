@@ -40,12 +40,38 @@ export const STEP_LABELS: Record<StepId, string> = {
 /** Steps an action kind walks through, in order. */
 export function stepsForKind(kind: ActionDTO["kind"]): StepId[] {
   if (kind === "BMET") {
-    return ["announce", "strike", "snapshot", "finalize", "votes", "meet_finalize", "apply"];
+    return [
+      "announce",
+      "strike",
+      "snapshot",
+      "finalize",
+      "votes",
+      "meet_finalize",
+      "apply",
+    ];
   }
   if (kind === "REDM" || kind === "MCAL") {
-    return ["announce", "strike", "snapshot", "finalize", "fund", "pay", "complete", "retire", "close"];
+    return [
+      "announce",
+      "strike",
+      "snapshot",
+      "finalize",
+      "fund",
+      "pay",
+      "complete",
+      "retire",
+      "close",
+    ];
   }
-  return ["announce", "strike", "snapshot", "finalize", "fund", "pay", "complete"];
+  return [
+    "announce",
+    "strike",
+    "snapshot",
+    "finalize",
+    "fund",
+    "pay",
+    "complete",
+  ];
 }
 
 /** event kind (ingest) or synthetic advance:<step> (Go) → timeline step. */
@@ -75,12 +101,43 @@ const EVENT_TO_STEP: Record<string, StepId> = {
 };
 
 const DONE_STATUSES: Record<StepId, string[]> = {
-  announce: ["RecordStruck", "SnapshotComplete", "Funded", "Settling", "Completed", "Retiring", "VotingOpen", "Finalized"],
-  strike: ["RecordStruck"].concat(
-    ["SnapshotComplete", "Funded", "Settling", "Completed", "Retiring", "VotingOpen", "Finalized"],
-  ),
-  snapshot: ["SnapshotComplete", "Funded", "Settling", "Completed", "Retiring", "VotingOpen", "Finalized"],
-  finalize: ["SnapshotComplete", "Funded", "Settling", "Completed", "Retiring", "VotingOpen", "Finalized"],
+  announce: [
+    "RecordStruck",
+    "SnapshotComplete",
+    "Funded",
+    "Settling",
+    "Completed",
+    "Retiring",
+    "VotingOpen",
+    "Finalized",
+  ],
+  strike: ["RecordStruck"].concat([
+    "SnapshotComplete",
+    "Funded",
+    "Settling",
+    "Completed",
+    "Retiring",
+    "VotingOpen",
+    "Finalized",
+  ]),
+  snapshot: [
+    "SnapshotComplete",
+    "Funded",
+    "Settling",
+    "Completed",
+    "Retiring",
+    "VotingOpen",
+    "Finalized",
+  ],
+  finalize: [
+    "SnapshotComplete",
+    "Funded",
+    "Settling",
+    "Completed",
+    "Retiring",
+    "VotingOpen",
+    "Finalized",
+  ],
   fund: ["Funded", "Settling", "Completed", "Retiring"],
   pay: ["Completed", "Retiring"],
   complete: ["Completed", "Retiring"],
@@ -92,7 +149,13 @@ const DONE_STATUSES: Record<StepId, string[]> = {
 };
 
 function stepDone(step: StepId, a: ActionDTO, seriesClosed: boolean): boolean {
-  if (step === "retire") return a.holdersRetired != null && a.holdersSnapshotted != null && a.holdersRetired >= a.holdersSnapshotted && a.holdersSnapshotted > 0;
+  if (step === "retire")
+    return (
+      a.holdersRetired != null &&
+      a.holdersSnapshotted != null &&
+      a.holdersRetired >= a.holdersSnapshotted &&
+      a.holdersSnapshotted > 0
+    );
   if (step === "close") return seriesClosed;
   if (step === "apply") return a.status === "Completed" && a.kind === "BMET";
   return DONE_STATUSES[step].includes(a.status);
@@ -103,7 +166,9 @@ function stepDetail(step: StepId, a: ActionDTO): string | undefined {
   const hs = a.holdersSnapshotted ?? 0;
   switch (step) {
     case "snapshot":
-      return a.status === "RecordStruck" ? `${hs} holder${hs === 1 ? "" : "s"} snapshotted` : undefined;
+      return a.status === "RecordStruck"
+        ? `${hs} holder${hs === 1 ? "" : "s"} snapshotted`
+        : undefined;
     case "pay": {
       const paid = a.holdersPaid ?? 0;
       return hs > 0 ? `${paid}/${hs} holders paid` : undefined;
@@ -113,7 +178,10 @@ function stepDetail(step: StepId, a: ActionDTO): string | undefined {
       return hs > 0 ? `${r}/${hs} holders retired` : undefined;
     }
     case "votes": {
-      const voted = BigInt(a.votesFor ?? "0") + BigInt(a.votesAgainst ?? "0") + BigInt(a.votesAbstain ?? "0");
+      const voted =
+        BigInt(a.votesFor ?? "0") +
+        BigInt(a.votesAgainst ?? "0") +
+        BigInt(a.votesAbstain ?? "0");
       const total = BigInt(a.unitsSnapshotted ?? "0");
       if (a.status !== "VotingOpen" || total === 0n) return undefined;
       return `${voted}/${total} units voted`;
@@ -140,10 +208,15 @@ export function buildTimeline(
   const byStep = new Map<StepId, ActivityLike>();
   for (const ev of mine) {
     const step = EVENT_TO_STEP[ev.kind];
-    if (step && (!byStep.has(step) || ev.id >= (byStep.get(step)?.id ?? 0))) byStep.set(step, ev);
+    if (step && (!byStep.has(step) || ev.id >= (byStep.get(step)?.id ?? 0)))
+      byStep.set(step, ev);
   }
   // BMET finalize_snapshot flips to VotingOpen in the same tx — fold it in.
-  if (!byStep.has("votes") && a.kind === "BMET" && DONE_STATUSES.votes.includes(a.status)) {
+  if (
+    !byStep.has("votes") &&
+    a.kind === "BMET" &&
+    DONE_STATUSES.votes.includes(a.status)
+  ) {
     const fin = byStep.get("finalize");
     if (fin) byStep.set("votes", fin);
   }
@@ -171,7 +244,11 @@ export function buildTimeline(
       state,
       detail: stepDetail(step, a),
       signature: ev?.sig && !ev.sig.startsWith("advance-") ? ev.sig : undefined,
-      at: ev ? new Date(ev.ts * 1000).toISOString() : step === "announce" ? a.announcedAt ?? undefined : undefined,
+      at: ev
+        ? new Date(ev.ts * 1000).toISOString()
+        : step === "announce"
+          ? (a.announcedAt ?? undefined)
+          : undefined,
     };
   });
 }
@@ -196,21 +273,33 @@ export function nextStep(a: ActionDTO, now = Date.now()): NextStep {
     case "Funded": // Go executor: always pay (idempotent batches → Settling)
       return { step: "pay", label: STEP_LABELS.pay };
     case "Settling":
-      if (hs > 0 && (a.holdersPaid ?? 0) < hs) return { step: "pay", label: STEP_LABELS.pay };
+      if (hs > 0 && (a.holdersPaid ?? 0) < hs)
+        return { step: "pay", label: STEP_LABELS.pay };
       return { step: "complete", label: STEP_LABELS.complete };
     case "Retiring":
-      if ((a.holdersRetired ?? 0) < hs) return { step: "retire", label: STEP_LABELS.retire };
+      if ((a.holdersRetired ?? 0) < hs)
+        return { step: "retire", label: STEP_LABELS.retire };
       return { step: "close", label: STEP_LABELS.close };
     case "VotingOpen": {
-      const voted = BigInt(a.votesFor ?? "0") + BigInt(a.votesAgainst ?? "0") + BigInt(a.votesAbstain ?? "0");
+      const voted =
+        BigInt(a.votesFor ?? "0") +
+        BigInt(a.votesAgainst ?? "0") +
+        BigInt(a.votesAbstain ?? "0");
       const total = BigInt(a.unitsSnapshotted ?? "0");
-      const open = a.votingEndsAt ? new Date(a.votingEndsAt).getTime() > now : true;
-      if (open && voted < total) return { step: null, wait: "voting still open" };
+      const open = a.votingEndsAt
+        ? new Date(a.votingEndsAt).getTime() > now
+        : true;
+      if (open && voted < total)
+        return { step: null, wait: "voting still open" };
       return { step: "meet_finalize", label: STEP_LABELS.meet_finalize };
     }
     case "Finalized":
-      if (a.result === "Approved") return { step: "apply", label: STEP_LABELS.apply };
-      return { step: null, wait: `meeting ${a.result?.toLowerCase() ?? "not approved"} — nothing to apply` };
+      if (a.result === "Approved")
+        return { step: "apply", label: STEP_LABELS.apply };
+      return {
+        step: null,
+        wait: `meeting ${a.result?.toLowerCase() ?? "not approved"} — nothing to apply`,
+      };
     case "Completed":
       return { step: null, wait: "action completed" };
     case "Cancelled":
@@ -226,37 +315,62 @@ export function nextStep(a: ActionDTO, now = Date.now()): NextStep {
  * CLI stderr, `{"error": …}` and Anchor logs all map.
  */
 export const ERROR_EXPLANATIONS: Record<string, string> = {
-  Unauthorized: "this step needs the registrar or paying-agent key — the configured operator wallet does not match",
-  InvalidAuthority: "authority mismatch — the step must be signed by the authority stored on-chain",
-  InvestorNotActive: "the investor record is not Active (never registered or suspended)",
-  InvestorSuspended: "the investor is suspended — reinstate before snapshotting or paying",
-  SeriesNotActive: "the series is not Active (matured or closed) for this operation",
-  ActionAlreadyOpen: "another corporate action is still open — complete or cancel it first",
-  InvalidDates: "dates violate the Almaty-midnight / period rules (record ≤ payment, period = schedule period)",
-  TooEarly: "the on-chain clock has not reached the scheduled time yet — wait and retry",
+  Unauthorized:
+    "this step needs the registrar or paying-agent key — the configured operator wallet does not match",
+  InvalidAuthority:
+    "authority mismatch — the step must be signed by the authority stored on-chain",
+  InvestorNotActive:
+    "the investor record is not Active (never registered or suspended)",
+  InvestorSuspended:
+    "the investor is suspended — reinstate before snapshotting or paying",
+  SeriesNotActive:
+    "the series is not Active (matured or closed) for this operation",
+  ActionAlreadyOpen:
+    "another corporate action is still open — complete or cancel it first",
+  InvalidDates:
+    "dates violate the Almaty-midnight / period rules (record ≤ payment, period = schedule period)",
+  TooEarly:
+    "the on-chain clock has not reached the scheduled time yet — wait and retry",
   WrongStatus: "the action is not in the status this instruction requires",
-  MintNotPaused: "record date was not struck — the mint must be paused while snapshotting",
-  MintPaused: "the mint is paused for the record window — complete or cancel the action to resume",
-  AccountMintMismatch: "token account belongs to a different mint than expected",
-  AccountOwnerMismatch: "token account belongs to a different owner than expected",
-  SupplyMismatch: "snapshot units ≠ mint supply — a holder is missing, run the snapshot step again",
-  Underfunded: "escrow holds less than Σ net + tax + principal — fund the escrow first",
-  AlreadyProcessed: "already processed — the step is idempotent, nothing to redo",
+  MintNotPaused:
+    "record date was not struck — the mint must be paused while snapshotting",
+  MintPaused:
+    "the mint is paused for the record window — complete or cancel the action to resume",
+  AccountMintMismatch:
+    "token account belongs to a different mint than expected",
+  AccountOwnerMismatch:
+    "token account belongs to a different owner than expected",
+  SupplyMismatch:
+    "snapshot units ≠ mint supply — a holder is missing, run the snapshot step again",
+  Underfunded:
+    "escrow holds less than Σ net + tax + principal — fund the escrow first",
+  AlreadyProcessed:
+    "already processed — the step is idempotent, nothing to redo",
   NothingToDo: "nothing to do (e.g. empty snapshot or already-final action)",
   MathOverflow: "amounts exceed u64 in the integer math — split the batch",
   RoundingDrift: "per-holder rounding drifted from half-up — snapshot again",
-  EntitlementCalcMismatch: "accrual days do not match the crate day count for the period",
+  EntitlementCalcMismatch:
+    "accrual days do not match the crate day count for the period",
   VotingClosed: "the voting window has ended — votes are no longer accepted",
-  VotingOpen: "voting is still open — finalize after the deadline or full turnout",
+  VotingOpen:
+    "voting is still open — finalize after the deadline or full turnout",
   AlreadyVoted: "this wallet already voted (one vote per snapshot entitlement)",
-  NoQuorum: "turnout below the quorum threshold — the meeting fails for lack of participation",
+  NoQuorum:
+    "turnout below the quorum threshold — the meeting fails for lack of participation",
   NotApproved: "meeting result is not Approved — there is nothing to apply",
-  SupplyNotZero: "bond mint supply is not zero — retire every holder before closing the series",
-  BatchTooLarge: "too many holders for one transaction — the CLI batches automatically, retry",
-  InvalidParams: "invalid instruction parameters (e.g. price ≠ face value, or a CHAN announce)",
+  SupplyNotZero:
+    "bond mint supply is not zero — retire every holder before closing the series",
+  BatchTooLarge:
+    "too many holders for one transaction — the CLI batches automatically, retry",
+  InvalidParams:
+    "invalid instruction parameters (e.g. price ≠ face value, or a CHAN announce)",
+  KycAttestationInvalid:
+    "no live KYC attestation (Solana Attestation Service) matching this wallet and its attributes",
 };
 
-const ERROR_NAMES = Object.keys(ERROR_EXPLANATIONS).sort((x, y) => y.length - x.length);
+const ERROR_NAMES = Object.keys(ERROR_EXPLANATIONS).sort(
+  (x, y) => y.length - x.length,
+);
 
 /** Extract the first known on-chain error name from any error text. */
 export function findOnchainError(text: string): string | undefined {
@@ -264,14 +378,18 @@ export function findOnchainError(text: string): string | undefined {
 }
 
 /** owner → tx signature of their EntitlementPaid event (paid-tx column). */
-export function paidTxByOwner(activity: ActivityLike[], actionPda: string): Map<string, string> {
+export function paidTxByOwner(
+  activity: ActivityLike[],
+  actionPda: string,
+): Map<string, string> {
   const out = new Map<string, string>();
   for (const ev of activity) {
     if (ev.kind !== "EntitlementPaid") continue;
     const pda = ev.actionPda ?? ev.action_pda;
     if (pda !== actionPda) continue;
     const owner = payloadOwner(ev);
-    if (owner && ev.sig && !ev.sig.startsWith("advance-")) out.set(owner, ev.sig);
+    if (owner && ev.sig && !ev.sig.startsWith("advance-"))
+      out.set(owner, ev.sig);
   }
   return out;
 }

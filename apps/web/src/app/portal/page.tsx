@@ -364,7 +364,8 @@ export default function PortalPage() {
       {registeredRows.length === 0 ? (
         <p className="text-xs text-neutral-600">
           this wallet is not registered as an investor in any series — ask the
-          registrar to register it first (SIMULATED KYC)
+          registrar to register it first (needs a KYC attestation on the Solana
+          Attestation Service; the KYC provider is SIMULATED)
         </p>
       ) : (
         <form

@@ -2,7 +2,7 @@
 
 Order: Colosseum first (it gives the project link) → Superteam Earn, KASE side track → Superteam Earn, Superteam Kazakhstan general track. Deadline for all three: **2026-10-13 06:59 UTC (11:59 Almaty)**; target Colosseum by Oct 12 20:00, Earn by 21:00. Fields marked `<<FILL: …>>` need the team's own input; everything else is final.
 
-Facts used below (verify before pasting): program `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (devnet, verifiable build — `reports/verified-build.md`), full devnet run with 69 linked transactions — `reports/demo-full.md`, 50 program tests, repo https://github.com/savvax/qupon (must be **public** or shared with hackathon@colosseum.com before submitting).
+Facts used below (verify before pasting): program `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (devnet, verifiable build — `reports/verified-build.md`), full devnet run with 71 linked transactions — `reports/demo-full.md`, 52 program tests, repo https://github.com/savvax/qupon (must be **public** or shared with hackathon@colosseum.com before submitting).
 
 ---
 
@@ -28,7 +28,7 @@ In Qupon the corporate action is an on-chain object. A bond is a Token-2022 mint
 
 A Go registrar service reconciles the chain against its own calculation and exports ISO 20022 seev.031/seev.036 messages and KASE-style disclosure notices, so depositories and brokers can consume the result with tools they already use.
 
-One command runs coupon payments, a redemption, a bondholder meeting and an early redemption on devnet: 69 transactions, each linked in the repository, with every payout checked against the on-chain entitlement.
+One command runs coupon payments, a redemption, a bondholder meeting and an early redemption on devnet: 71 transactions, each linked in the repository, with every payout checked against the on-chain entitlement.
 
 Built for the KASE × Superteam Kazakhstan track: KASE is Kazakhstan's first registered digital-asset platform operator and builds on Solana. Qupon is the servicing layer such a platform needs.
 ```
@@ -83,7 +83,7 @@ All code in the repository was written during the hackathon, between 2026-10-05 
 Technical overview (architecture, record-date logic, entitlement calculations, settlement flow, Solana components): https://github.com/savvax/qupon/blob/main/docs/TECHNICAL_OVERVIEW.md
 Full devnet run with an explorer link for every transaction (coupon, redemption, bondholder meeting → terms change, early redemption): https://github.com/savvax/qupon/blob/main/reports/demo-full.md
 Program: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd (devnet, verifiable build).
-Implemented vs simulated: bond token, registry, record date, entitlement math, coupons, redemption, burn/close, voting and terms change run on Solana devnet; fiat KZT is simulated by a test Token-2022 mint (USDC devnet is real), KYC is simulated by registrar-recorded attributes, Swift delivery of the ISO 20022 files and the ARDFM registration of a terms change are simulated, and the KASE notice is generated but not published. Meeting thresholds (50% quorum, 2/3 approval) are series configuration, not a legal claim.
+Implemented vs simulated: bond token, registry, record date, entitlement math, coupons, redemption, burn/close, voting and terms change run on Solana devnet; fiat KZT is simulated by a test Token-2022 mint (USDC devnet is real), KYC is attested on-chain through the Solana Attestation Service by a demo KYC provider (the provider itself is simulated), Swift delivery of the ISO 20022 files and the ARDFM registration of a terms change are simulated, and the KASE notice is generated but not published. Meeting thresholds (50% quorum, 2/3 approval) are series configuration, not a legal claim.
 ```
 
 Checkboxes: scope ✓ · KYC acknowledgement ✓ (a Kazakhstan identity document must be ready for Sumsub after winning) · Earn profile location Kazakhstan, unchanged for 21+ days.
@@ -96,7 +96,7 @@ Same fields as above; additionally: program registration done by Oct 8 (`<<FILL:
 
 ## Tweet (≤ 280 characters)
 ```
-Tokenization doesn't end at issuance. Qupon services tokenized bonds on @solana: record date → per-holder entitlements → coupons, redemption, votes → ISO 20022. 69 devnet txs, one command. For the @KASE_official × @SuperteamKZ track at @ColosseumOrg <<FILL: repo or video link>>
+Tokenization doesn't end at issuance. Qupon services tokenized bonds on @solana: record date → per-holder entitlements → coupons, redemption, votes → ISO 20022. 71 devnet txs, one command. For the @KASE_official × @SuperteamKZ track at @ColosseumOrg <<FILL: repo or video link>>
 ```
 
 ## Weekly 1-minute updates (Colosseum)

@@ -1,6 +1,6 @@
 # Qupon — full lifecycle on Solana devnet (`make demo`)
 
-Program [QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet) · cluster devnet · run 2026-10-05T03:42:54.136Z
+Program [QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet) · cluster devnet · run 2026-10-05T09:06:36.490Z
 
 **Result:** all scenarios succeeded ✓ (S0 issuance & registry, S1 coupons, S2 redemption, S3 meeting → terms change, S4 early redemption)
 
@@ -8,20 +8,23 @@ _Time compression: each record date is struck ≈45 s after its announcement; co
 
 ## S0 — Issuance and holder registry (QPNb1, tKZT)
 
-- Series **QPNb1-tmf0ae**: face 1,000 KZT (100,000 tiyn), 10% semi-annual, 30E/360, 2026-07-03 → 2028-07-03
-- Bond mint: [2fkKZcp3YrDqR2fGKKj2uBg1svpXDkswSmZ15Ltpdox1](https://explorer.solana.com/address/2fkKZcp3YrDqR2fGKKj2uBg1svpXDkswSmZ15Ltpdox1?cluster=devnet)
+- Series **QPNb1-tmffgw**: face 1,000 KZT (100,000 tiyn), 10% semi-annual, 30E/360, 2026-07-03 → 2028-07-03
+- Bond mint: [E4EHdADP27wBY82ZxyNZPXcH6Rb1jPLQyuociampkFuD](https://explorer.solana.com/address/E4EHdADP27wBY82ZxyNZPXcH6Rb1jPLQyuociampkFuD?cluster=devnet)
 
 | Step | Transaction | Status |
 |---|---|---|
 | create Token-2022 bond mint (extensions validated by init_series) | — | ok |
-| series:init | [tx](https://explorer.solana.com/tx/2Y6C5qFDqkbBUjH5RYLPZdKfVYY8jDj6roH5uDZwpeDawm3G4G5h41A6qHj8GvLQGgspNP7RKdN7tfQQkDmVmpu3?cluster=devnet) | ok |
-| investor:register investor1 (KYC SIMULATED) | [tx](https://explorer.solana.com/tx/5yZsPhqi7tJq256RKD4KeC7DJeF31ubhrdMM1aQVCKP6UdE9s4u69jV9Ci735BxoJUqjXGFj5pbe3gmKXfUucQS7?cluster=devnet) | ok |
-| investor:register investor2 (KYC SIMULATED) | [tx](https://explorer.solana.com/tx/5mmJU9vFDevNajmC9puPBPr4MvvbJu5hs9Z9Wce7wRX9caSXhnkGdui9jtwEzinXDxPUaSVYK2jj5yPhXaVNBaHX?cluster=devnet) | ok |
-| investor:register investor3 (KYC SIMULATED) | [tx](https://explorer.solana.com/tx/4sxQqfD6fi8sgDGdWrjmtU8e8rGdeCRkhrMPnGES1y3WCDrAMPmk8tx2QeTeNeykkxSwmGL4bQJeY5zALmN1n8D?cluster=devnet) | ok |
+| series:init | [tx](https://explorer.solana.com/tx/543yRcbQ1jvscwDaArRXFPZLGmMKUz3rS1Zu2r4EZbTvJvGZUDzybAnhBMxWkHBdSSWSeBxtsHE8DPbCw2AW3UQE?cluster=devnet) | ok |
+| kyc:attest investor1 — SAS attestation by the KYC provider | — | ok |
+| kyc:attest investor2 — SAS attestation by the KYC provider | [tx](https://explorer.solana.com/tx/3UQXaZe2An2YpWMLGGLzrENd37xcR6yoj1CJAXmnMnyS85GX5Wf4JGtPEphd7m5XnHFejtSqcV25qiqGYrwLRyHQ?cluster=devnet) | ok |
+| kyc:attest investor3 — SAS attestation by the KYC provider | [tx](https://explorer.solana.com/tx/63pCBhL7CZgJNSudhet33rrsHmGnbVM7L1yM1zVEkH9qTqYzh1cSiNehXBGWu8yTUKkZVU8t3HzMXgwdKjms8Lcs?cluster=devnet) | ok |
+| investor:register investor1 (checks the SAS attestation) | [tx](https://explorer.solana.com/tx/4qqK8NDmvtw5gQzHvF1vk36C5jUvSeYwDNgPAE7XFz3HpHcvXyNay63NQzQMZ7ki4r5azAsKEBgvDZimGxHcQ7YV?cluster=devnet) | ok |
+| investor:register investor2 (checks the SAS attestation) | [tx](https://explorer.solana.com/tx/55iG2xL1XaVdJdv3mb8gE7i6MX6TwVGppLAcVeKRxM6TAATUB69gbpTx1KSMz81TMVqWwv4kKJuxuPH6ubk1LFpH?cluster=devnet) | ok |
+| investor:register investor3 (checks the SAS attestation) | [tx](https://explorer.solana.com/tx/48mQTuqgiZYFnYJE7B65bVBm8JRxmJuQw2S6uHwLmpTx4PTe9dmAvUaT4w4gH1WLx88Bn9ZtVn9NdRVwZ4EPd1Ac?cluster=devnet) | ok |
 | subscribe from an unregistered wallet (frozen-by-default token account) | — | rejected as expected ✓ |
-| subscribe 10 bonds — DvP investor1 | [tx](https://explorer.solana.com/tx/2Tiaz8Reku7GqavaxvzjxcjLxA61oRbhbERw94KbfeSdAvD3dFee3U4rb3rhdbY5gnJVM8YXQQuUhn2YgwW3ZwrU?cluster=devnet) | ok |
-| subscribe 25 bonds — DvP investor2 | [tx](https://explorer.solana.com/tx/3BwAUwan3q7ypuN6yMNJ77iuwpshqWiaKsPTVtEgSudvN7osVuSaNyxQLepboXiwf4a6PGJqnxBKNNcZZzoXzNrt?cluster=devnet) | ok |
-| subscribe 65 bonds — DvP investor3 | [tx](https://explorer.solana.com/tx/CD3gN7Mb15mUfD6NqnzAzY7ppXDKGxLh44j62bEsFuEKtNsCzJxJR5jSrWNpSir2L9kkfhsZ8HALaSL3mSPgDrb?cluster=devnet) | ok |
+| subscribe 10 bonds — DvP investor1 | [tx](https://explorer.solana.com/tx/MP37yjvgfotpTmYpGLhyxW5VspVwktXiy3oGxsWkjA4MZd4SeUusw3h2HmUdBnpRLW2kHM4vwwTPMogr2muyj9N?cluster=devnet) | ok |
+| subscribe 25 bonds — DvP investor2 | [tx](https://explorer.solana.com/tx/54DChJi7CcyQjohZPEfCEvzp4e7ymeGviEowvD2rPmAuJUnaDBuxQBLwFn2tGjykm9FWp5qxJ68CdztLVY74m3KU?cluster=devnet) | ok |
+| subscribe 65 bonds — DvP investor3 | [tx](https://explorer.solana.com/tx/2JYz2KmdY8GFBdCe9gkorfQP627bzb536BytkSiGYRqjieWz2WkcexEkHzMvGNAK2mUTTTHbc8u9R7K6ga7DQToR?cluster=devnet) | ok |
 
 ## S1 — Coupon payment INTR #1 at 10%
 
@@ -29,15 +32,15 @@ Record date = pause the mint, snapshot every holder on-chain; 10 bonds → 500.0
 
 | Step | Transaction | Status |
 |---|---|---|
-| action:announce INTR #1 (2026-07-03 → 2027-01-03, 180 days, 10%) | [tx](https://explorer.solana.com/tx/4NmLEXBSEaiUJw6hs3245AJmFkFSWjStRZTqMaV4VgWZ4iFvmg9FdJoiEfhKBoTQYskF955MvkC1pFthq6EvhEQN?cluster=devnet) | ok |
-| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/4iAutgTMjpM7tG6oct8H7Cb47UedvLf9sqE1HyhYVUiKXFXEF9g4SVS4mLpp5Dhi1SJ3UWr3CVERNhTnzyV6TAZZ?cluster=devnet) | ok |
-| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/WoXRQDcwBm2DoykGDCKredgUZKWdJ3hv6tRieUXzRV2VVG8WSqDUBZWY29ktJuoWF7P6ASbTPzdh9LmcFuj7fjM?cluster=devnet) | ok |
-| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/VLThaXxfuqgncV5jBg4KMw3DtDsiGp9qd2BeA1nswMGroECgoCGa4qqkrK44vAK1HzthWpz78UuJJsc9yNV4Myv?cluster=devnet) | ok |
-| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/SbWkZPAzaQVWDgrg7b9FNyQdMnAP5sB632yxpSpr9WL4nkmUCzMrH5UGnQmgjJUYiAHx8ZgHyVYmKKJMgL69XtL?cluster=devnet) | ok |
-| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/4timJdNAASBt2MTVgWR9ryUxk5SAeaDdKxw3dFEwdv1KDEnWKmYNtzy4ivY3hpVrX8nqeDG3fA4ooaHumQUFJzye?cluster=devnet) | ok |
-| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/31LCKEnF9aBkfHYPDvcceHDcQ1YigKYqF6sV8C6uuJK5RWKQdyk6XLKXGsWTsM8t4kHz3TuAF61zjoyrmDQ4WWbZ?cluster=devnet) | ok |
+| action:announce INTR #1 (2026-07-03 → 2027-01-03, 180 days, 10%) | [tx](https://explorer.solana.com/tx/3vEYmTBZcUY37bG9zkg5yQRXtD4Epo92oxM7kTfyuqaWBUhapeYC4PWHZircNqBgPGnhS2qjow7nQKkKuwnMbFJ2?cluster=devnet) | ok |
+| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/W4UgRY8o1M79zDk8HdTFtEPQk6Q5nb6s8KM8ozZHFtLVDax5HGvb7io9hXhocBrPPwdUSiCLtmubAtz6kNHCTw7?cluster=devnet) | ok |
+| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/jyfzCHons2efTL9Pjx9t6Ch9aM6BnWNadq42ZxJd6eRHDCMDfZGxrXxXv4jidM5QQbu35oS9V36gYib6Py6qK8Q?cluster=devnet) | ok |
+| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/5xhGXqWaFGDkJWAQpKTjYJmqbTqEHCzH1oyqDqdhQQF4Z8mp4XMUzBZvQcj5hysQepBUYLaQVqv5y7HGwWyDRFL3?cluster=devnet) | ok |
+| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/4WW58BRi3HM9F39ePn8Fh81ArVwUqQu95EzaWaWCBGF2JDu9jUZU3TgbA33Cs7mm4NUWuzhRdgsxVCocpXpA3B2Z?cluster=devnet) | ok |
+| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/3hhF9XXEZH32NpDbChciRzT37siouXBAQhuZXsLcvDv1PJL7JuaArf6PZSg8ihCGxN8b5EgoA9YzqHKBvx7byTeV?cluster=devnet) | ok |
+| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/5msxMxpCJgDn4hh3BGppZbLaPKTd7hwqHNMVYNh75XSai954V75mdAQWVSPCUn4yyy9wVKMZEoMA5ArUAhj1wRx6?cluster=devnet) | ok |
 
-**INTR #1 (2026-07-03 → 2027-01-03, 180 days, 10%)** — action [DkSQMx7w…](https://explorer.solana.com/address/DkSQMx7w2UNjLzPxjAfTxRwNr3oYWhhYCod35HXuYP16?cluster=devnet)
+**INTR #1 (2026-07-03 → 2027-01-03, 180 days, 10%)** — action [27UUWECy…](https://explorer.solana.com/address/27UUWECyfb2yqdjH4Eip2UgkZdCheQTiztnLBfe2ixNt?cluster=devnet)
 
 | Holder | Units | Gross | Tax | Net | Principal | Received on-chain |
 |---|---|---|---|---|---|---|
@@ -51,15 +54,15 @@ Votes weighted by snapshot units: 65 For / 25 Against / 10 Abstain → quorum 10
 
 | Step | Transaction | Status |
 |---|---|---|
-| meeting:announce — issuer proposes 12% | [tx](https://explorer.solana.com/tx/4d5DzWLtk5ywwkvuTdRPpqWtEMWqbTMC8N7ukwc9WqKq5ZEjLwSZz49uqzKioBbYJ3bcqjuLAxb6hC9CgHNjjZWX?cluster=devnet) | ok |
-| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/4N1rV922er9pdXHY1Jo6SE8hrWUWrK4xibULF5Xp5xbLhwm1UtPSifCRcvkBewrP6xsKDYwyiXQLpRSLuKRc4kd?cluster=devnet) | ok |
-| action:snapshot — voting weights | [tx](https://explorer.solana.com/tx/4T477yvq3XJg1zrebbmqEkuJogk3YtVrXHqjDjTy1boGMSoiftHzXJ12UwUHfnJGBvgBitkc8B7BB5rbQZNarr8s?cluster=devnet) | ok |
-| action:finalize-snapshot — voting opens (register resumes) | [tx](https://explorer.solana.com/tx/5NVREi7zWjsBcwkA8BtJ3onaMnFrGFvjPQzHTwVG7bxCWLpjN6ARczDGJSWZYU8LwHnsU2GRhZqM6Vw8vnD4eUzQ?cluster=devnet) | ok |
-| vote For — investor3 (65 bonds) | [tx](https://explorer.solana.com/tx/3TuPN9P7VBbJb285p4uzGSJr7G35SPc6uZogWzjZgbt1seoWp4wZ57bHP9PSTBAVvz5eUr4BcvHQTdaHxkzw8iXa?cluster=devnet) | ok |
-| vote Against — investor2 (25 bonds) | [tx](https://explorer.solana.com/tx/32qxeUVZQpPXnG6Gtk5WYfey9pRcLHeBrf9xTo4UfHdQ6vQx3uURkgdHJdc7B9CKuU7gi54GmUKr3qakjGWfVwHo?cluster=devnet) | ok |
-| vote Abstain — investor1 (10 bonds) | [tx](https://explorer.solana.com/tx/3PEkAoHNWXnt3ZJ2WoDcpreVpKGLDm75TSpHg4vpbYzyZ4UyYpMaTSeUiM1JTZxfrYHZoxLA5eMkoSuqVfjjhg5A?cluster=devnet) | ok |
-| meeting:finalize — Approved | [tx](https://explorer.solana.com/tx/3nJBifRJe3aYYQB3wzE2Ga7rGV9UbQ15rn9UAeSEKgPMdyxPfrYLFB85cwaCnn3matC5sE6wLRaFGiFdSf9Jnu3f?cluster=devnet) | ok |
-| meeting:apply — coupon_rate_bps 1200 on the series and in token metadata | [tx](https://explorer.solana.com/tx/5dLcjcTjiMafLRq4cGKNJYshVnkq5EUgS1JnwVWLitezEKNiSRbRoUQCLeZeAgXHr14TVuVTtezj2m7rNPEg6VSP?cluster=devnet) | ok |
+| meeting:announce — issuer proposes 12% | [tx](https://explorer.solana.com/tx/3bvoddyR6MtwuLbWC5cxx7z6V8jZFZ9ozUmd3HwFjsY6xe4rrVBFwR977pZvxQ9fXghFejZZs9sGdytdJZvfk7RA?cluster=devnet) | ok |
+| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/35Ha45KnZDCVcGyUsFDAPeibr51ewLg6yc6s8FBfKCLmBEaW4Xw56ebyi6KtNVcjDBncTfjvQ3YZqkzBCrpDAaEq?cluster=devnet) | ok |
+| action:snapshot — voting weights | [tx](https://explorer.solana.com/tx/2JWtZXeJUBgRMevzep7fW7Rfr464RqhqcpJDt5HCGnphb66asCiVzPZqPVP7tnMB4rkWft5soVYRWTferNsJT94T?cluster=devnet) | ok |
+| action:finalize-snapshot — voting opens (register resumes) | [tx](https://explorer.solana.com/tx/3LhhkDiwZKUA48hxQy3uVsEd4rMR18wvgvNnCGKkxkFk7NxJfUmuZDEgRkRvCvD4U5bsotNC3SAxRcMoq9xihtWP?cluster=devnet) | ok |
+| vote For — investor3 (65 bonds) | [tx](https://explorer.solana.com/tx/3MdodAE526BJBLNBaALFK8Z5evJJvuAKHST4KEiYftTi6EtJN19Hr1LMr4qPQDccmnW2gGhu3DhLJSkLTQzM3pVi?cluster=devnet) | ok |
+| vote Against — investor2 (25 bonds) | [tx](https://explorer.solana.com/tx/2nRVBweN7tfhYYF68QityX9xVkkEBxQvGwNwQZmhViFHi4aBHW3bktPJzsotDFES13ZUs5tPUp1g4oyVqZSNo4Bx?cluster=devnet) | ok |
+| vote Abstain — investor1 (10 bonds) | [tx](https://explorer.solana.com/tx/2Wz1DaNKJ9bcvwQppWM9t4HHov3KRK3KXKUgim6UyDiG8HCuMVEfMrXxWsZfx9pgksAayeWgfQYT6y5hUxK68EQS?cluster=devnet) | ok |
+| meeting:finalize — Approved | [tx](https://explorer.solana.com/tx/45YceEp795KChZYMSt5BWGHSDJVGXZEuWjph3vvSdfJoBhemQGVvvH9Vmac8yjiyFvYQtCW1u2XrwTo7kH6HGwLe?cluster=devnet) | ok |
+| meeting:apply — coupon_rate_bps 1200 on the series and in token metadata | [tx](https://explorer.solana.com/tx/2L1xfQzoqz2rnXQzfALdV8coZFbQEZbyeueA3jJ42gBaheia3WnVLdWuUr9hWDoBRKXn1VvBQPzfaYHCgyQwPrZv?cluster=devnet) | ok |
 
 ## S1 (cont.) — Coupons at the new rate
 
@@ -67,22 +70,22 @@ INTR #2 and #3 at 12%: 10 bonds → 600.00, 25 → 1,500.00, 65 → 3,900.00.
 
 | Step | Transaction | Status |
 |---|---|---|
-| action:announce INTR #2 (2027-01-03 → 2027-07-03, 12%) | [tx](https://explorer.solana.com/tx/2gxcG1FMiSqTGBXvtDJ8pHB2K3zorLnWRjYhR3qg7BtcLBgK68dKo5m4NNDxfqY4gyYSYAkfJ215MYshAR6Yuc2q?cluster=devnet) | ok |
-| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/2vMrmDYSYq3HHYVt9TPAazUXy87SDvGqHGX43jRFDezmuDK8iAvY4PnEvP5GuDDjw6Dz42ANr3SmzhTzT9NjjD1A?cluster=devnet) | ok |
-| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/3MqMCEcDG7AbmcxpdfssdpBeBC6Wqfefp3Ajv6r11xPjegdqpJznxsJGqyyBWgDohduWpxqBYqHttpnqna4qwPq2?cluster=devnet) | ok |
-| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/513vjUmee1xqSqWixDFUHKSyZHhREknKMov7NVNHyJFeDm9JKA8XxL82ExmQ2DThVEZ88uFv7kmXqeeY18QgFuTG?cluster=devnet) | ok |
-| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/2G63gSstkWHpuXphGbUmo6fEtHb3hdMfi9bLadu47MVAFzFgn15fmSCieYsYjmREedcvSuJjXgmJWyrQzmjajNWX?cluster=devnet) | ok |
-| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/31czJzhrbP9Ak3vjrwTZG1HzaTJPMwmETUVYpSckqr6PzLK4RV96gm6tLzaxGvA5xDH7QfCExN5ZW59Ku2DvHGLK?cluster=devnet) | ok |
-| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/3b9YMaQ47KLK8TkupLCipy27mzTTbgKiRFeyKLmETtEKnbvKVG9FsJ9aG6dWkf8PAQJ8GswKB9piNwmkFDKip3aR?cluster=devnet) | ok |
-| action:announce INTR #3 (2027-07-03 → 2028-01-03, 12%) | [tx](https://explorer.solana.com/tx/4DYdHnNoJHEeUY41zcsxQdgaHsHRUmFJtDjLXAN2FubkvQbmC38Gqc35KxNePqRDcBwzDUkccYGTvmjKLAJXmNqJ?cluster=devnet) | ok |
-| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/ATZmQRtdEMBSbARuhjYBZ1mugmTX3XLf4GbYwCKA2WHvqSkW5MHqPsMyKyMc7heA7FgEaBgTxKKAdaMxHHy7jdC?cluster=devnet) | ok |
-| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/58dPuKqCUh26XDbnRvZ4NoFcNLQZGToXqGpE3BxwZpSrkQZuRHCoUNFgVcvzYFE86Ha9Rs3MpFd4AJk8TNPM42ha?cluster=devnet) | ok |
-| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/x8zVntnmLqwtkawUvSuog1o8wDsBe7ma391FMaXJKQbt8C8NEnZVJiyfsso2bkPp8WgyrwywjJBuRichTt7Bb55?cluster=devnet) | ok |
-| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/3PCmu6y9fJdhGiViLLso6t8yj7WDaYoCXUiMwVVVqjonD7GC42ZuDrSxRbdC5u4iGFqUJx1YaRVy372LbsMpwwgs?cluster=devnet) | ok |
-| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/3qbv1FNyMy73ZtTsdbGYzxtheZbQFSJz94XBWhpwCub6dNJ6wDLdZs2vPvts6v2p8NEwSSVMKg9y9zkBBmqibRkD?cluster=devnet) | ok |
-| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/4zaFWi1c5ts1mBAjGKHHtAkkPVTz3TZBCiWdAfun27Ej3G1SZ8yQARa1Fr5mdvDaXN4cp1yZnirDanoX95hGHm7C?cluster=devnet) | ok |
+| action:announce INTR #2 (2027-01-03 → 2027-07-03, 12%) | [tx](https://explorer.solana.com/tx/2sLfCdqswwY2szx3N4HkzrTUfdxHjfybWYkfratTXPcmUAVhWGsQVMML6FoM7giokH43DK5P6Z1xfsUsQz4kEqJQ?cluster=devnet) | ok |
+| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/46qYt2RZenivJwu9Z89ktpNHyTkae2KynL2VPNZ5tiKarA6s3hPcA4oQZoiaBAizkuGHTYYxHE4GVRV5SoQugnzS?cluster=devnet) | ok |
+| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/5QN8oNMufp2fwDiH4Cuxy1rcg9zcp3uHLJBSTj6ovRx7nQvDqL2LEbnbtatYk9bTP5K86s9uX8cFKFgJP63CXTx3?cluster=devnet) | ok |
+| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/2w5CeBwTkvcb336koGaPm9H494eydUE1N24nDSjq25Sq1yy8rwMXZn7UG7L7vAGb1fbSaaNgf9o29HnowjNNLKjK?cluster=devnet) | ok |
+| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/3niKwSt4mjfTPs6XikL9x8NTR3WkvvJRJHtRxCGc34UCeHbAV7UosSoX3ge6VEm5inYvFtpL71Appj9apsq899dM?cluster=devnet) | ok |
+| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/526op8aJEfStSsfAHX8QYC7V27rZk81bLxrvhJQ5SW5jRyKpDFooxkNNM9yLvGRZzyAcPbRGvHxTadMkFLuArCqj?cluster=devnet) | ok |
+| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/RdHgHUdkTbadfLFSSy87v7uRKoBVfYJXTX6zNzzLLLg3PYmNWuTPuhUMf66DjrTUWSY34HWjC3jU8bNsytwkG9Z?cluster=devnet) | ok |
+| action:announce INTR #3 (2027-07-03 → 2028-01-03, 12%) | [tx](https://explorer.solana.com/tx/61suXawRKwmuoNCQWQnLXQGFE2xhVm8MWe1cqvQ8cTxzCFjxSS53AfMXcqfbCcTvyCkjWBMWNKApk3ERDci24uSk?cluster=devnet) | ok |
+| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/2Md4JfXht5MJoUkdHwGMxVgY8wDwtFGJL8nFvfWgRcpBMk1bUsqnJmpLdoPJTx1ZoTMgMF8hpaEBnG34LJMgF4D7?cluster=devnet) | ok |
+| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/4WDgx7jThnv2hGpxvZzd234XkeRzLCRRhbXaQYEYxAz9gGk8ERzJXSH58vhSbTVpG79ma3kdCkd7ry387gWEgMZr?cluster=devnet) | ok |
+| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/4Hcd3gDrptyhWnjykxT2DNPxnn3GeGYfZXbghHcys9s8oxfF9ufo2XD9GGQckdUfYj9n8RdRsmZRs41KcLjoWcvp?cluster=devnet) | ok |
+| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/2vxfU3c68aibLdKvNQWLJdLGMKKrFrFqxJDerHRyD1yTt3epRFWpKwNikcRrMypL84wNqubXQVbd7zt5p3hetdWP?cluster=devnet) | ok |
+| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/2eY9osFJqeGSCEdMnadi5nv1S1qWKT7ndfySH8Fu1YSPw4rhjKNgNcQVG6tNUm8U45DhwNdppP4a3RogjgVAFiUj?cluster=devnet) | ok |
+| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/Rd8o1nmMo9Z6k1DkCQ5GFyhqpAvBGsozjeA3ohxkns1cd2P5bBo9hwpidd4ftfCqmZ3rEcwd9iDmX8FxUYYR7Dn?cluster=devnet) | ok |
 
-**INTR #2 (2027-01-03 → 2027-07-03, 12%)** — action [FDxcyBd3…](https://explorer.solana.com/address/FDxcyBd3hCtPWgXgEypszcvoL6e2k3Aa6m8hoYGCyLdt?cluster=devnet)
+**INTR #2 (2027-01-03 → 2027-07-03, 12%)** — action [E1WrcW9i…](https://explorer.solana.com/address/E1WrcW9iowYETt3go9pP7bgC9DbpnqoqABLCKFwjzXni?cluster=devnet)
 
 | Holder | Units | Gross | Tax | Net | Principal | Received on-chain |
 |---|---|---|---|---|---|---|
@@ -90,7 +93,7 @@ INTR #2 and #3 at 12%: 10 bonds → 600.00, 25 → 1,500.00, 65 → 3,900.00.
 | investor2 | 25 | 1500.00 tKZT | 0.00 tKZT | 1500.00 tKZT | 0.00 tKZT | 1500.00 tKZT ✓ |
 | investor3 | 65 | 3900.00 tKZT | 0.00 tKZT | 3900.00 tKZT | 0.00 tKZT | 3900.00 tKZT ✓ |
 
-**INTR #3 (2027-07-03 → 2028-01-03, 12%)** — action [ES6AXbZB…](https://explorer.solana.com/address/ES6AXbZBiheVUzJZHHu7p1jrs7bWtsVNjrxNz9pc9Ktg?cluster=devnet)
+**INTR #3 (2027-07-03 → 2028-01-03, 12%)** — action [GarPGDGF…](https://explorer.solana.com/address/GarPGDGFT1mgSi7mxtbxUtAWD2QNFDt58wQjAuwgRpx5?cluster=devnet)
 
 | Holder | Units | Gross | Tax | Net | Principal | Received on-chain |
 |---|---|---|---|---|---|---|
@@ -104,17 +107,17 @@ INTR #2 and #3 at 12%: 10 bonds → 600.00, 25 → 1,500.00, 65 → 3,900.00.
 
 | Step | Transaction | Status |
 |---|---|---|
-| action:announce REDM (2028-01-03 → 2028-07-03, final coupon 12% + principal) | [tx](https://explorer.solana.com/tx/5wCVUxfHXPc1gLRQarm3kzq2gecTrCWJ39C4QxL8SV6KvTck9uZVHh92YehVLavMCoeuA7f4EFQsigQG2wrdjuKx?cluster=devnet) | ok |
-| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/5znwpDkkFdcu46Q5t9SumHpMpYyunEYXWAMcg94EiDVTQ4B8gknDUopQRMvQqTSXH8ZUzXPTEBJyMjLGpwRXVbY2?cluster=devnet) | ok |
-| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/31BF18xFqZvy1vdcUWSduzv4D2AmpySRbZi4vij6bY1sT8vDu7hQqfRytAhmz2tNCTYtFgQni15D7QBQeVKyMT5S?cluster=devnet) | ok |
-| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/4V58cGaiHZCg8epxv454JqsyB1ETp8eDwpiTcvymPXrvV6y5B3h84BEpYYoQBpVc5UR35Q2qVmYwXSXe5ypmgCrd?cluster=devnet) | ok |
-| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/4asLBsLc5m5A675AG66JpcNKgnLdVkwXBkZxPMrofWcLC4urCPtJX57C7mio5PyuFLjA4KSvGh8SpYQvEhRJmvUC?cluster=devnet) | ok |
-| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/5dGhg7BjH5pFrVX2gGpGXVUFua94FmDQrexZ4TvvKzuC9q3c2TTz9kkB7biiKK51gkU8xhr5DCs8EdYkV594yMQR?cluster=devnet) | ok |
-| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/3dLxJSJT275FSGPSc444Ro2nhKSeQ355hb687PMjTChtYx2Vq2zKjv53ccP3USqA3gvqjgGwBpiw6Eyt5DYetMGq?cluster=devnet) | ok |
-| action:retire — burn every unit (permanent delegate) | [tx](https://explorer.solana.com/tx/5EyyhishaQbpTAG4xP6FeY7HGBsk8Wv4tibn5RqqToyvvzixYVUFKvUSk1XCFcuiJ17sMHJoZmWf7SZyuEFAC8pd?cluster=devnet) | ok |
-| series:close — metadata REDEEMED, mint closed, series Closed | [tx](https://explorer.solana.com/tx/3a7g7HtY68C1t4kEhLYJCnKak9fWVPcbEH4YaQoSbPcPBczhyfLrp9Nv2Lr5dTQ9d7EgAXk5HWmby3XhVkvsM2N6?cluster=devnet) | ok |
+| action:announce REDM (2028-01-03 → 2028-07-03, final coupon 12% + principal) | [tx](https://explorer.solana.com/tx/46p4qnwqbatyvvpDSqXKwXfXzbX44Rt8MZkdJRx5RWNex2hh4fHCdz4DSFtCmnnQMeAC6Fo23KZdaBCAFV1qJfqZ?cluster=devnet) | ok |
+| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/3a3pCKehFFU6a62XCZ27NWdxkQYDPJwpZafsNovTeiLDDsJ9YT4tBpp5pxptrfz4MayeSzGhXhtbFBegSZ3maz6s?cluster=devnet) | ok |
+| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/3MDrVXBmAF8HH5KJkUY7TPfgXoiGPjkuM9zYQvekWAa9rFqyHxQsj4aCMWnjRKuBf7MmS9z38uB5ZLrszgdLKjBR?cluster=devnet) | ok |
+| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/2dJEMN2TE6RhMPA6VoRPgm1BNcuSHYCvMpX3RZMmz5HP5Ufn61a2jFNFRYMyfpidnrWzJ5SfAVEhHPZQsSmnbzYc?cluster=devnet) | ok |
+| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/2P42VyPMd3RxETVk8DsojWmUrexU5FDNA4hY6MwetoZsEEPJDy3qTzADG7ZyPMCLDf4VRpwWynSm234Nm94Wcahd?cluster=devnet) | ok |
+| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/4P2MrpRSTpqyw34vG5DGWYHh4VGsCdiLdjALDZWWE6jTYiSzNpWeoVf1L9Jk5o8c8Go1knjMkRqEhNf9jR663oDN?cluster=devnet) | ok |
+| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/28S5o2tQuBC6siGRWVUhcHA6JJN1StRUT4tuN2UfUsLSrQBPQEjmKUtf4UDB9iUz1ZK26SD4eKnPiqedQeiyz828?cluster=devnet) | ok |
+| action:retire — burn every unit (permanent delegate) | [tx](https://explorer.solana.com/tx/2z8sjdYNHSDSzxMMdN1GoMz39q5CPhAqWmnAA4fL5UMRvDVwBkLnLupvFZQkfA2fzuu9epSW1hJUAZPjYF9oNZ76?cluster=devnet) | ok |
+| series:close — metadata REDEEMED, mint closed, series Closed | [tx](https://explorer.solana.com/tx/6496Napntq1fgeQueAvE5TAwxxuL7qu7f6ASGUX1D6NSveiUUZu1vW3hS1X4kDMfSU6b4hjeryuKiEhEmutbSoS3?cluster=devnet) | ok |
 
-**REDM (2028-01-03 → 2028-07-03, final coupon 12% + principal)** — action [GmK726FM…](https://explorer.solana.com/address/GmK726FMUFruUwhrWVMGi9uiFqdbLuZYqiKT2ZRrhUZo?cluster=devnet)
+**REDM (2028-01-03 → 2028-07-03, final coupon 12% + principal)** — action [Ewjbt1BM…](https://explorer.solana.com/address/Ewjbt1BMxiWd1ZTdTpYd9F4hHS1cJKfAWymf6ZRE83WT?cluster=devnet)
 
 | Holder | Units | Gross | Tax | Net | Principal | Received on-chain |
 |---|---|---|---|---|---|---|
@@ -124,35 +127,38 @@ INTR #2 and #3 at 12%: 10 bonds → 600.00, 25 → 1,500.00, 65 → 3,900.00.
 
 ## S0 — Second series in USDC (BTRK-demo, 15.95%)
 
-- Series **BTRK-tmf0ae** mirrors KASE BTRKb33 terms (15.95%, semi-annual, 30E/360) settling in Circle devnet USDC; face scaled to 1 USDC for faucet limits.
-- Bond mint: [4o1fsyKsLabwy47E2i9gcL44fvbghPfP89p42XzrXJxy](https://explorer.solana.com/address/4o1fsyKsLabwy47E2i9gcL44fvbghPfP89p42XzrXJxy?cluster=devnet)
+- Series **BTRK-tmffgw** mirrors KASE BTRKb33 terms (15.95%, semi-annual, 30E/360) settling in Circle devnet USDC; face scaled to 1 USDC for faucet limits.
+- Bond mint: [Fwd4aP1pVyaVU2aD62S15yAJeyrJroCS2QDXWh4FXoGc](https://explorer.solana.com/address/Fwd4aP1pVyaVU2aD62S15yAJeyrJroCS2QDXWh4FXoGc?cluster=devnet)
 
 | Step | Transaction | Status |
 |---|---|---|
 | create Token-2022 bond mint (extensions validated by init_series) | — | ok |
-| series:init | [tx](https://explorer.solana.com/tx/4kBv5LYczmMhNmRQHweF7GM1hsJbe4kjMfAh4T9zEKX3uJVzJ9BZnj6oEAWz3fMezDkxnJ6AqCXJDgXqrDW8s5tJ?cluster=devnet) | ok |
-| investor:register investor1 (KYC SIMULATED) | [tx](https://explorer.solana.com/tx/61S7c5SZsXSbhAcWgXjsbMRxXCP86UiiGGXwgYEGocHN8PjWNAYyRgss3t3NhtLDKF2RHaut8HVEg6EYiQF6ticE?cluster=devnet) | ok |
-| investor:register investor2 (KYC SIMULATED) | [tx](https://explorer.solana.com/tx/54W4ERgSHPGbSGUAGDrChTtSKx2gkzqRFBeBMV75EDAKx3K1bLpZhYm7KSsT6JUJwHQy9q3mhzqog4bR9jnRbPBu?cluster=devnet) | ok |
-| investor:register investor3 (KYC SIMULATED) | [tx](https://explorer.solana.com/tx/5bzHcf8cbw8XmetDQZg4rozJKanozuCsayG8KUqnLN885tuzPUB54FBP266kThM1rWAp4ZkRxqLTiA62fq8DRcKe?cluster=devnet) | ok |
+| series:init | [tx](https://explorer.solana.com/tx/53PWVJ4hsFZkAMU8jnGKbtKi7WeoWXv7rRXhZn1GQaWqUHTGqhy1vub3AfPg3d7Jq7i6BJwEXtYSiTqRmHKUoKLG?cluster=devnet) | ok |
+| kyc:attest investor1 — SAS attestation by the KYC provider | — | ok |
+| kyc:attest investor2 — SAS attestation by the KYC provider | — | ok |
+| kyc:attest investor3 — SAS attestation by the KYC provider | — | ok |
+| investor:register investor1 (checks the SAS attestation) | [tx](https://explorer.solana.com/tx/5yFeTxXuiP8hWcvKpvdPsRiLz97udxkQ74wVuGoiFpFXbVLBASvG2wiGnth8b3iM4kcMkAGM65FXBecsEvv1iyyi?cluster=devnet) | ok |
+| investor:register investor2 (checks the SAS attestation) | [tx](https://explorer.solana.com/tx/3BB7VnEimkhdXdsfwCyuwaLyzezA4B66U61cE4gWPMgfue2XMyMC7tJNFwozwPg5THWudMByPzmxgyY3tehvM8fy?cluster=devnet) | ok |
+| investor:register investor3 (checks the SAS attestation) | [tx](https://explorer.solana.com/tx/63hYFrupDA77CbvJXmNhUfx68VLXiYKxjRftz1QETWWKDNVMw8yupHqBNWPSjw9YY12awLf1NLJQmNepnCVoGMYz?cluster=devnet) | ok |
 | subscribe from an unregistered wallet (frozen-by-default token account) | — | rejected as expected ✓ |
-| subscribe 3 bonds — DvP investor1 | [tx](https://explorer.solana.com/tx/27iPFdTdrrKv6ETR2nnKsVWjQ2ksrKJQGSkeWx1r65iicnFXhr7C9YsFTRJGSae2AY2Gq6E45DwENVPXpcC5hC4n?cluster=devnet) | ok |
-| subscribe 3 bonds — DvP investor2 | [tx](https://explorer.solana.com/tx/55hvXLJdnCxjDELacbAVPpg5NGqsjixrj9mKmdbNzvjfJMFpcY99D3zioRkHW5c3nUiSDbKNFC9cQgtM3g9k7urz?cluster=devnet) | ok |
-| subscribe 4 bonds — DvP investor3 | [tx](https://explorer.solana.com/tx/gNRbRbfPKjh4ySsuWuzsvHEPYkiqbkTrsF7icLZurWRmBRYh827NXB6gxVre9uaVC3Xpf3eguFmRiaPVoSPQxhg?cluster=devnet) | ok |
+| subscribe 3 bonds — DvP investor1 | [tx](https://explorer.solana.com/tx/46VhxxfbdetNUnppCnFTAFuqU6oCpVyfmHACqL7sMmRFLh9X5PcEtELkCSLdTitqNQZ2CrCoY6KxNZ83wb47He3R?cluster=devnet) | ok |
+| subscribe 3 bonds — DvP investor2 | [tx](https://explorer.solana.com/tx/5aeLM8qDrjy1g77FLHghr1ZHb76d6K7zcz2dRonZHdGk99BSEbVqyGqKsVNwsML8xcvyQmyxmGHF2V8UhaMfPGVC?cluster=devnet) | ok |
+| subscribe 4 bonds — DvP investor3 | [tx](https://explorer.solana.com/tx/22PJKCiGiELFetLAEKZTRGqYWCgyHtDvdW72wUXh44qT5nQRL4ewgRSvBukJ6GfUwZcGdboHRLGBUz2WecgAXtuq?cluster=devnet) | ok |
 
 ## S1 — USDC coupon INTR #1 at 15.95%
 
 
 | Step | Transaction | Status |
 |---|---|---|
-| action:announce INTR #1 (180 days, 15.95%) | [tx](https://explorer.solana.com/tx/4EnorN37fEMoca29L86JWWNeVK2FXpfFPW4tArBtRgkuxCGGRRuepGHNC2ZZAkggqv17nAbVqsb4kFUXtJvpCEWS?cluster=devnet) | ok |
-| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/3Ba9nri3xgbHYMCv7crMomp8nrxVhW2SF2uJp9oFVXwBJBSnvfYbShRBQXewWtG7TFE4SWQqX4fDxYp7dUfP3qTs?cluster=devnet) | ok |
-| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/4uQ7h8R8iWR77NPv1zBJvG6diHqVX9FAiMgBCzFv55zyiHr4hpsygJHCUPkpp7PQfyEj8D25qfmqTFFk2HQkrarC?cluster=devnet) | ok |
-| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/5nmLv1z51zvZo7wWvMRCGSRXEF3A9SLon13seAtE5VcULQaE1jjXqMAWxxsMDD6iUMQVuuhB25PnD4XEQrpXu47f?cluster=devnet) | ok |
-| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/2U98HXVdy1oQY4QFjd7rX7DVN6zWskA41GsK1s2segcJvXuDCaDTbDvY73dPY8Yhgo1Y1ViT2vF6usTGmhbrjqBZ?cluster=devnet) | ok |
-| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/5LVM9rW22MHSHufk4aXBJEDhTQmR8SXuH2UTf7pdEQTJge4BDMy4RNtyQWedmFx37wXWEsbUj7WGmJJsWqwfDLyr?cluster=devnet) | ok |
-| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/3ALBqLd23JfLh7KpKeAAmMu8Ln33BNDrLxeNCMBbGkqUfiycJ6HwM4xRC9FW9vEWEASrxW6XeEaqfyeAqeoaiakk?cluster=devnet) | ok |
+| action:announce INTR #1 (180 days, 15.95%) | [tx](https://explorer.solana.com/tx/2R5VzQWk8EoPVhWvB7nj8AsbryVH6okU6PgdCKhsZkRx6qaPvM3vLAWbpJ5LdUmat2riCLFadC4zfsw9uhhE1vN2?cluster=devnet) | ok |
+| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/4nbjJUm9E9pzzBf3FFzxnyMjU53Xnzdjt63ibJt1PaKCFjt4UMUQPFeMtK2hBFPrqeC7jMTkCMRyPmCUTNFiviG1?cluster=devnet) | ok |
+| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/4DDoYzXTmrqjd9b7txq7ZL36ycYaXVrKjPGR53um3NGY5vPv8jYPAqnFSzfRDtzgrjeYnRQ9UhkL1u2PePqHQkBa?cluster=devnet) | ok |
+| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/4P3muwAbxTs2RnzNdhc117VBCTRxAbqGvm58xduMuccUxMfr9abhhYQj5YZ2pokKVAf4PLaRzZ82PqjN5APVdvU?cluster=devnet) | ok |
+| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/5rPLMsZ6DoB8x4NBnmHJ5AdNf2BwDuHw4NyaBrpxoBUjLCoRiB2Z9uRHfW8KyEeufWV3wHQBUSxnujm8VF2D3exh?cluster=devnet) | ok |
+| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/3Nhf4WQG8LPP5Bp1f7FCdQryiu4ZEESGmucwBrth8R9KFFAJWW1NCu1ir3R3USYmBFbkoAqjauAkf2QHYsdQoCwg?cluster=devnet) | ok |
+| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/5zCa4e7otZiMskckFmTMAgJU3e8X3P2dfHgWEznyuADYkKtXzcvpxGns3J8DKB4bJ22W9SsLxi7iaXXQeBtqmTtM?cluster=devnet) | ok |
 
-**INTR #1 (180 days, 15.95%)** — action [6sjHtktG…](https://explorer.solana.com/address/6sjHtktGfzniLWbdFTZPNrNAbbzrCwYr3FTV8QrzcqmN?cluster=devnet)
+**INTR #1 (180 days, 15.95%)** — action [4DZKNwKb…](https://explorer.solana.com/address/4DZKNwKb1AT7uNGWDfmdcLAn5qViXdRYnf5GX1bNVJNW?cluster=devnet)
 
 | Holder | Units | Gross | Tax | Net | Principal | Received on-chain |
 |---|---|---|---|---|---|---|
@@ -166,17 +172,17 @@ Call on 2027-02-20: principal 1 USDC per bond + accrued coupon 1,000,000 × 15.9
 
 | Step | Transaction | Status |
 |---|---|---|
-| action:announce MCAL (2027-01-03 → 2027-02-20, 47 days) | [tx](https://explorer.solana.com/tx/2yqoVD9M99wP6JLZevXUVM3Ug4tQLZoMYmW8B94crWerjNc18RQRn9u4jMvQo9Ut9SidD8SyBPFv6muoiNssrpfF?cluster=devnet) | ok |
-| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/3TEohUnvG7kEhLma7gb9DNuno1UpJTuiLSkxC5uWENuSc87e2MCxMwavweDxpi58U3GkHKF6YhSu2UKiyzf7eaQ4?cluster=devnet) | ok |
-| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/2FYQsuPEE7WVYoWQKVPh22mXBEmnCPFkQui2MpBb2AkMqM1WxcGBowX3aY9agpZmBirNSKx4CbYb679W8a7PEFvb?cluster=devnet) | ok |
-| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/5ketc4JtC9jdAtbPHPSvAvYoKPGBhrpKT7jSDdpDbZFdXG9sP63cKdEK8MWPYbQj5a8tTkwVsH46dYi8qLr1pysc?cluster=devnet) | ok |
-| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/Q3Mx91o1h1AP3gbQtqaSi8ym15VE326HEFuPWK1VZ9axdLMqbEiN7MW6udtKT2WadYKspMPrNpwPSxZvYUsCaVE?cluster=devnet) | ok |
-| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/57tfkGzxw7Tx96tBeEEwaH9p8JkP8iZwUHuRNTxLYEkVZuYMwdejMqyaF5iSmLAhFVRqQZNfCLrTHnq2CSPy5vXb?cluster=devnet) | ok |
-| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/nkbvSe8QCFjyPrRWSTBEgihHpzc5imDy7btVpUfM5ZBmhW2Jt5XsiU7VCu17yZ1J64JdEMBpUFEk2yrLTSk4pMQ?cluster=devnet) | ok |
-| action:retire | [tx](https://explorer.solana.com/tx/2H4k2gFoEtjRywFfvCn5WRBtCmtgNgPB8T5xffZpr7BaF8xeb9H9YdgEp8rLTdtdxnFZMtR8AHMbxFEh8tWoYqPu?cluster=devnet) | ok |
-| series:close | [tx](https://explorer.solana.com/tx/4gWyNCgL6RnCk5e5kiKdziYpVzgXoSCHCuv8HaMfGLHD6QRQ15ibmrd21hGs9cP8UsoraXo8rNC5n4NTxg2GtY9S?cluster=devnet) | ok |
+| action:announce MCAL (2027-01-03 → 2027-02-20, 47 days) | [tx](https://explorer.solana.com/tx/cnhRkuXFw5PBpVEdqppr2GfHsgxRfbthXDxf2S7rCBQWBW6NTrUGS18yURTFyjbNJeBa6bBtGXMKWk4KskAfAgG?cluster=devnet) | ok |
+| action:strike — record date: register frozen (mint paused) | [tx](https://explorer.solana.com/tx/3AtXEjand2sutmPE6eFZXJw2RuDQz45W2kPHYGdznSMAWU1uJ6pGT17w3fr26cZFZjn4g24yRqMmofPRv86iPuZR?cluster=devnet) | ok |
+| action:snapshot — one Entitlement per holder, sha256 chain | [tx](https://explorer.solana.com/tx/4nvAgSAcpmYdPZ1PYaJ8ZRZJ9GqzswCakZN7M9uxwz5jdNcEnsxbqn97BFiDUBrEtKLF125qzr1rhXQzNsdKoHqH?cluster=devnet) | ok |
+| action:finalize-snapshot — Σ units == supply, rounding bound | [tx](https://explorer.solana.com/tx/2gWRBLaTwPmago4E3eQmcPyuh7bugsdjoM3UxFMHPatTE8wFhoGv5K36JCWjB2uQ7WAWeMZ87YBrCVUPMnFhc9uc?cluster=devnet) | ok |
+| action:fund — issuer pre-funds the escrow (net + tax + principal) | [tx](https://explorer.solana.com/tx/4wmNVWdW4QhUGp1inUJ6mmqNF8HyUwzKzqgSu5KTWRVAAzkFvphZyACHfDYnrJvrHTz4HTd1U3dr2h9MipiZTCst?cluster=devnet) | ok |
+| action:pay — holders paid from escrow (action PDA signs) | [tx](https://explorer.solana.com/tx/24qWU2mLt6v72SsoXQkA9hryFAEThkvHHhcnB6ZjgYu388JNBDo6ZTWDKiLqdLoeeE57uxrQk4ZHoMR9pt4UiVgF?cluster=devnet) | ok |
+| action:complete — reconcile, resume register | [tx](https://explorer.solana.com/tx/2zobR93ydqwNjCNFhpCSHA1tbDE7snUEUSYCP9RvcoKm2BSZhLVcX7QCRxhoTwrkuXvgNgywk1W9n67LhFq2hHXd?cluster=devnet) | ok |
+| action:retire | [tx](https://explorer.solana.com/tx/QSsEhMexzeWemCPyfAi7HequfcqBmdfAqQA3aZtdmLjX3UaA76SdAA1XeHq4qKx4NxQGAGPFxhsih6uVuLCDBhS?cluster=devnet) | ok |
+| series:close | [tx](https://explorer.solana.com/tx/5bM6otVvPGYrw9mZNT59EA5oZkcyYdZWkKdnqtPTuzKdFpxdT5vG9d9JAdWx3PYCodv7amkEbAiY78MQtbeXTyqt?cluster=devnet) | ok |
 
-**MCAL (2027-01-03 → 2027-02-20, 47 days)** — action [AfQStcMF…](https://explorer.solana.com/address/AfQStcMFk4PT2KxoiVLtMV1AaKhftCdaQcHeHjiDPkPo?cluster=devnet)
+**MCAL (2027-01-03 → 2027-02-20, 47 days)** — action [tnNXA5hU…](https://explorer.solana.com/address/tnNXA5hUjr6Bup3MMPQe7DCRafzVrpek3tJRic77cKj?cluster=devnet)
 
 | Holder | Units | Gross | Tax | Net | Principal | Received on-chain |
 |---|---|---|---|---|---|---|

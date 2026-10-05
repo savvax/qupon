@@ -1,6 +1,6 @@
 # Verified build — qupon_bonds (task 036)
 
-Date: 2026-10-05 · program id `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (devnet)
+Date: 2026-10-05 (updated after task 041) · program id `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (devnet)
 
 ## Deterministic build
 
@@ -8,7 +8,7 @@ Date: 2026-10-05 · program id `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (de
 solana-verify build --library-name qupon_bonds \
   --base-image solanafoundation/solana-verifiable-build:4.3.0
 solana-verify get-executable-hash target/deploy/qupon_bonds.so
-# 804e0ca8d39a0812874ef95f85b67cbb2e0b42a515949dda43cdfb7450e84fb9
+# 3d419567507446c814766547e41b3ea4a539ffc86c21cd57a7c9e2b6dd510ccb
 ```
 
 - solana-verify **0.5.2**. The default image (3.0.1, cargo 1.84) cannot build our
@@ -18,11 +18,11 @@ solana-verify get-executable-hash target/deploy/qupon_bonds.so
 
 ## On-chain match
 
-- Before this task the chain had the stale 014 binary (`40c78c24…`).
-- Redeployed the docker-built .so with the registrar upgrade authority:
-  tx `yquKoLnTfQWFAy48EoNQRGmBPnRVq2ScrySqoMiKNmjfyYXgC65Ps1MrUbPqPkBdM5nvmEAAXKmsaKC65cte9sy`
+- Current binary (task 041, SAS KYC attestation in `register_investor`): docker-built .so deployed with the
+  registrar upgrade authority, tx `2gLcsLiSogQaWpJkMrG2K5qhT9wNjpyAy45zozNsrXwVsujewZhLAaVMy3z6EixkaaGJp7mJupuz5oE9bqS7FQae`
+  (previous verified binaries: 036 `804e0ca8…`).
 - `solana-verify get-program-hash QPN1zd… -u devnet` →
-  `804e0ca8d39a0812874ef95f85b67cbb2e0b42a515949dda43cdfb7450e84fb9` ✅ matches.
+  `3d419567507446c814766547e41b3ea4a539ffc86c21cd57a7c9e2b6dd510ccb` ✅ matches.
 
 ## Judges: verify from repo
 

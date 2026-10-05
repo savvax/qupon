@@ -354,13 +354,45 @@ pub fn investor_pda(series: &Pubkey, owner: &Pubkey) -> Pubkey {
     .0
 }
 
-pub fn kyc() -> qupon_bonds::KycParams {
+/// SAS attestation PDA `["attestation", credential, schema, nonce = owner]`.
+pub fn attestation_pda(owner: &Pubkey) -> Pubkey {
+    use qupon_bonds::constants::{KYC_CREDENTIAL, KYC_SCHEMA, SAS_PROGRAM_ID};
+    Pubkey::find_program_address(
+        &[
+            b"attestation",
+            KYC_CREDENTIAL.as_ref(),
+            KYC_SCHEMA.as_ref(),
+            owner.as_ref(),
+        ],
+        &SAS_PROGRAM_ID,
+    )
+    .0
+}
+
+/// Default KYC (resident individual, 0% tax) bound to the owner's attestation.
+pub fn kyc_for(owner: &Pubkey) -> qupon_bonds::KycParams {
     qupon_bonds::KycParams {
         investor_type: 0,
         residency: 0,
         tax_rate_bps: 0,
-        kyc_ref: [7; 32],
+        kyc_ref: attestation_pda(owner).to_bytes(),
     }
+}
+
+/// Bytes of a SAS Attestation account (solana-attestation-service state/attestation.rs) for our KYC schema.
+pub fn attestation_bytes(owner: &Pubkey, k: &qupon_bonds::KycParams, expiry: i64) -> Vec<u8> {
+    use qupon_bonds::constants::{KYC_CREDENTIAL, KYC_SCHEMA};
+    let mut d = vec![2u8];
+    d.extend_from_slice(owner.as_ref());
+    d.extend_from_slice(KYC_CREDENTIAL.as_ref());
+    d.extend_from_slice(KYC_SCHEMA.as_ref());
+    d.extend_from_slice(&4u32.to_le_bytes());
+    d.extend_from_slice(&[k.investor_type, k.residency]);
+    d.extend_from_slice(&k.tax_rate_bps.to_le_bytes());
+    d.extend_from_slice(&[9u8; 32]); // signer (the KYC provider)
+    d.extend_from_slice(&expiry.to_le_bytes());
+    d.extend_from_slice(&[0u8; 32]); // token_account: none
+    d
 }
 
 impl Env {
@@ -378,14 +410,33 @@ impl Env {
         }
     }
 
+    /// Write the KYC provider's SAS attestation for `owner` (LiteSVM account, owner = SAS program).
+    pub fn attest(&mut self, owner: &Pubkey, k: &qupon_bonds::KycParams, expiry: i64) {
+        let data = attestation_bytes(owner, k, expiry);
+        let account = solana_account::Account {
+            lamports: self.svm.minimum_balance_for_rent_exemption(data.len()),
+            data,
+            owner: qupon_bonds::constants::SAS_PROGRAM_ID,
+            executable: false,
+            rent_epoch: 0,
+        };
+        self.svm
+            .set_account(attestation_pda(owner), account)
+            .expect("set attestation");
+    }
+
     pub fn register_ix(&self, b: &Bond, signer: &Pubkey, owner: &Pubkey) -> Instruction {
         Instruction::new_with_bytes(
             qupon_bonds::id(),
-            &qupon_bonds::instruction::RegisterInvestor { kyc: kyc() }.data(),
+            &qupon_bonds::instruction::RegisterInvestor {
+                kyc: kyc_for(owner),
+            }
+            .data(),
             qupon_bonds::accounts::RegisterInvestor {
                 registrar: *signer,
                 series: b.series,
                 owner: *owner,
+                kyc_attestation: attestation_pda(owner),
                 investor: investor_pda(&b.series, owner),
                 mint: b.mint,
                 bond_ata: ata(owner, &b.mint, &spl_token_2022::ID),
@@ -401,6 +452,7 @@ impl Env {
     }
 
     pub fn register(&mut self, b: &Bond, owner: &Pubkey) -> TransactionResult {
+        self.attest(owner, &kyc_for(owner), 0);
         let ix = self.register_ix(b, &self.registrar.pubkey(), owner);
         self.send(&[ix], &[])
     }
@@ -677,14 +729,13 @@ impl Env {
         let mut out = vec![];
         for &(u, tax) in holdings {
             let owner = Keypair::new();
+            let k = qupon_bonds::KycParams {
+                tax_rate_bps: tax,
+                ..kyc_for(&owner.pubkey())
+            };
+            self.attest(&owner.pubkey(), &k, 0);
             let mut ix = self.register_ix(b, &self.registrar.pubkey(), &owner.pubkey());
-            ix.data = qupon_bonds::instruction::RegisterInvestor {
-                kyc: qupon_bonds::KycParams {
-                    tax_rate_bps: tax,
-                    ..kyc()
-                },
-            }
-            .data();
+            ix.data = qupon_bonds::instruction::RegisterInvestor { kyc: k }.data();
             self.send(&[ix], &[]).expect("register");
             let ix = self.issue_ix(b, &issuer.pubkey(), &owner.pubkey(), u);
             self.send(&[ix], &[&issuer]).expect("issue");

@@ -14,7 +14,8 @@ DECLARED=$(sed -n 's/^declare_id!("\(.*\)");/\1/p' programs/qupon_bonds/src/lib.
 ln -sf "$PKP" target/deploy/qupon_bonds-keypair.json
 anchor keys sync
 anchor build
-anchor deploy --provider.cluster devnet --provider.wallet "$KP"
+# --no-idl: the IDL goes up below with retries over RPC_URL (Anchor 1.2 deploy would write it once over public devnet and abort on failure)
+anchor deploy --no-idl --provider.cluster devnet --provider.wallet "$KP"   # public devnet: anchor prints the URL (keyed RPC_URL would leak)
 PID=$(solana-keygen pubkey "$PKP")
 tmp=$(mktemp); jq --arg p "$PID" '.programId=$p' config/devnet.json > "$tmp" && mv "$tmp" config/devnet.json
 # Publish the IDL (Program Metadata Program). Right after an upgrade the write can fail transiently — retry.

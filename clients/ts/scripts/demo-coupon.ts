@@ -167,7 +167,8 @@ async function main(): Promise<void> {
   if (mint) header.splice(1, 0, `- Bond mint: [${mint}](${addressLink(mint)})`);
   step("S0 series:init", ["series:init", "--series", name, "--issue-date", demo.series.QPNb1.issueDate, "--maturity-date", demo.series.QPNb1.maturityDate, ...as("QUPON_REGISTRAR_KEYPAIR")], env);
   for (const [i, inv] of investors.entries()) {
-    step(`S0 investor:register investor${i + 1} (SIMULATED KYC)`, ["investor:register", "--series", name, "--owner", inv.address, ...as("QUPON_REGISTRAR_KEYPAIR")], env);
+    step(`S0 kyc:attest investor${i + 1} (SAS attestation, provider SIMULATED)`, ["kyc:attest", "--owner", inv.address, ...as("QUPON_KYC_PROVIDER_KEYPAIR")], env);
+    step(`S0 investor:register investor${i + 1} (checks the SAS attestation)`, ["investor:register", "--series", name, "--owner", inv.address, ...as("QUPON_REGISTRAR_KEYPAIR")], env);
   }
   expectFailure("S0 subscribe from an unregistered wallet", ["subscribe", "--series", name, "--units", "1", ...as("QUPON_OUTSIDER_KEYPAIR")], env);
   for (const [i, inv] of investors.entries()) {

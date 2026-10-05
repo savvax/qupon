@@ -5,8 +5,8 @@
 **Qupon is the corporate-actions engine for tokenized bonds: identify holders → calculate entitlements → settle → record, on-chain, following Kazakhstan market rules and emitting ISO 20022 messages.** Built for the KASE × Superteam Kazakhstan side track of Colosseum's Crypto World's Fair. Devnet only.
 
 - Program: [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet) (Anchor 1.2, Token-2022) — verifiable build, IDL published on-chain
-- One command runs every scenario on devnet and writes a report with a link for every transaction: [`reports/demo-full.md`](reports/demo-full.md) (69 transactions)
-- 50 program tests (LiteSVM integration + unit), the brief's worked example as named tests, shared test vectors checked in Rust, Go and TypeScript
+- One command runs every scenario on devnet and writes a report with a link for every transaction: [`reports/demo-full.md`](reports/demo-full.md) (71 transactions)
+- 52 program tests (LiteSVM integration + unit), the brief's worked example as named tests, shared test vectors checked in Rust, Go and TypeScript
 
 ## The problem
 
@@ -16,7 +16,7 @@ KASE became Kazakhstan's first licensed digital-financial-asset platform operato
 
 | Verb | How | Where |
 |---|---|---|
-| **Identify holders** | Only KYC'd wallets can hold the bond (Token-2022 `DefaultAccountState = Frozen`; the registrar thaws on registration). On the record date the mint is **paused** and every holder is snapshotted on-chain. | `register_investor`, `strike_record`, `snapshot_batch` |
+| **Identify holders** | Only KYC'd wallets can hold the bond (Token-2022 `DefaultAccountState = Frozen`; the registrar thaws on registration, which requires the wallet's KYC attestation on the Solana Attestation Service). On the record date the mint is **paused** and every holder is snapshotted on-chain. | `register_investor`, `strike_record`, `snapshot_batch` |
 | **Calculate entitlements** | Integer math in u128, 30E/360 or ACT/365, rounded half-up **per holder**, withholding tax per investor class; the program recomputes everything from civil dates and series terms. | `crates/entitlement`, `announce_action`, `snapshot_batch` |
 | **Settle** | Issuer pre-funds an escrow owned by the action PDA; batches pay net to each holder and tax to a tax vault; reconciliation before the register is resumed. | `fund_action`, `pay_batch`, `complete_action` |
 | **Record** | Every transition emits an event; state lives in PDAs; ISO 20022 seev.031/seev.036 and a KASE-style notice are generated from chain state. | 18 event types, `services/registrar` |
@@ -47,7 +47,7 @@ flowchart LR
 
 | Component | Path | Role |
 |---|---|---|
-| On-chain program | `programs/qupon_bonds` | 19 instructions, 4 account types, 31 error codes, 18 events |
+| On-chain program | `programs/qupon_bonds` | 19 instructions, 4 account types, 32 error codes, 18 events |
 | Entitlement math | `crates/entitlement` | `no_std` Rust crate shared by the program and tests |
 | TS client + CLI | `clients/ts` | Codama-generated client, `qupon` CLI (JSON on stdout), demo scripts |
 | Registrar service | `services/registrar` | Go: chain reader, reconciler, ISO 20022, notices, REST read models |
@@ -96,11 +96,11 @@ From chain state the registrar serves `seev.031` (corporate action notification)
 |---|---|
 | Bond token, holder registry, record date, entitlement math, coupon payment, redemption, burn/close, voting, terms change, on-chain events | **Implemented on Solana devnet** |
 | Cash leg | Real token transfers: USDC devnet (Circle) and test tKZT (Token-2022); fiat KZT and Evo/digital tenge are **simulated** by our mint |
-| KYC | **Simulated**: registrar records attributes (type, residency, tax rate); no KYC provider integrated |
+| KYC | **Attested on-chain, provider simulated**: a KYC-provider keypair issues a Solana Attestation Service attestation per wallet (type, residency, tax rate); `register_investor` refuses a wallet without a live, matching attestation. The provider is a demo keypair, not a licensed KYC firm |
 | ISO 20022 seev.031 / seev.036 | Generated from on-chain state; Swift network delivery **simulated** (downloadable files) |
 | ARDFM registration of terms change | **Simulated** by registrar signature step |
 | KASE disclosure notice | Generated automatically; publication on kase.kz **not** integrated |
-| Multisig issuer approval (Squads), SAS KYC attestation | Optional T2; if not shipped, listed as roadmap |
+| Multisig issuer approval (Squads) | Roadmap |
 
 Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are **series configuration**, not asserted as Kazakh law.
 
@@ -146,7 +146,7 @@ Env reference: `services/registrar/.env.example`, `apps/web/.env.example`.
 The deployed program is a deterministic `solana-verify` docker build (solana-verify 0.5.2, image `solanafoundation/solana-verifiable-build:4.3.0`):
 
 - Program id: [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet)
-- Build hash (SHA-256, on-chain match confirmed): `804e0ca8d39a0812874ef95f85b67cbb2e0b42a515949dda43cdfb7450e84fb9`
+- Build hash (SHA-256, on-chain match confirmed): `3d419567507446c814766547e41b3ea4a539ffc86c21cd57a7c9e2b6dd510ccb`
 
 ```bash
 # reproduce the build and compare with the deployed program
@@ -173,7 +173,7 @@ The IDL is also readable in the [explorer's IDL tab](https://explorer.solana.com
 
 ## Roadmap
 
-Token ACL (sRFC-37) instead of the custom registry thaw · Squads multisig for issuer/registrar · Solana Attestation Service for KYC · confidential coupon amounts · tax-vault remittance and escrow refunds · KASE disclosure publication · mainnet with a regulated cash leg (digital tenge / bank deposit token).
+Token ACL (sRFC-37) instead of the custom registry thaw · Squads multisig for issuer/registrar · a licensed KYC provider issuing the SAS attestations · confidential coupon amounts · tax-vault remittance and escrow refunds · KASE disclosure publication · mainnet with a regulated cash leg (digital tenge / bank deposit token).
 
 ## License
 

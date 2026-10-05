@@ -51,6 +51,7 @@ const keyPath = (env: string): string => {
 const as = (env: string): string[] => ["--keypair", keyPath(env)];
 const REGISTRAR = "QUPON_REGISTRAR_KEYPAIR";
 const ISSUER = "QUPON_ISSUER_KEYPAIR";
+const KYC_PROVIDER = "QUPON_KYC_PROVIDER_KEYPAIR";
 const INVESTORS = ["QUPON_INVESTOR1_KEYPAIR", "QUPON_INVESTOR2_KEYPAIR", "QUPON_INVESTOR3_KEYPAIR"];
 
 function section(title: string, intro: string[] = []): Section {
@@ -188,7 +189,9 @@ async function issue(name: string, units: bigint[], issueDate: string, maturityD
   const investors = await Promise.all(
     INVESTORS.map(async (envVar, i) => ({ envVar, label: `investor${i + 1}`, address: (await loadKeypairFromPath(keyPath(envVar))).address, units: units[i] ?? 0n })),
   );
-  for (const inv of investors) step(`investor:register ${inv.label} (KYC SIMULATED)`, ["investor:register", "--series", name, "--owner", inv.address, ...as(REGISTRAR)]);
+  // KYC: the (SIMULATED) provider attests each wallet on the Solana Attestation Service; register_investor checks it.
+  for (const inv of investors) step(`kyc:attest ${inv.label} — SAS attestation by the KYC provider`, ["kyc:attest", "--owner", inv.address, ...as(KYC_PROVIDER)]);
+  for (const inv of investors) step(`investor:register ${inv.label} (checks the SAS attestation)`, ["investor:register", "--series", name, "--owner", inv.address, ...as(REGISTRAR)]);
   expectFailure("subscribe from an unregistered wallet (frozen-by-default token account)", ["subscribe", "--series", name, "--units", "1", ...as("QUPON_OUTSIDER_KEYPAIR")]);
   for (const inv of investors) step(`subscribe ${inv.units} bonds — DvP ${inv.label}`, ["subscribe", "--series", name, "--units", String(inv.units), ...as(inv.envVar)]);
   const cfg = JSON.parse(readFileSync(String(env.QUPON_CONFIG), "utf8")) as { tkztMint: string; usdcMint: string };

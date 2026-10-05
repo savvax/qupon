@@ -1,5 +1,6 @@
 mod common;
 
+use anchor_lang::InstructionData;
 use anchor_spl::token_2022::spl_token_2022;
 use common::*;
 use qupon_bonds::{error::QuponError, Investor, InvestorStatus, Series};
@@ -169,4 +170,106 @@ fn only_registrar_registers_and_only_issuer_issues() {
         env.balance(&ata(&alice.pubkey(), &b.mint, &spl_token_2022::ID)),
         0
     );
+}
+
+/// Task 041: registration requires the KYC provider's SAS attestation for this wallet with the same attributes.
+#[test]
+fn registration_requires_a_valid_kyc_attestation() {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let (alice, bob) = (Keypair::new(), Keypair::new());
+    let now = env.now();
+
+    // No attestation account at all.
+    let ix = env.register_ix(&b, &env.registrar.pubkey(), &alice.pubkey());
+    assert_err(env.send(&[ix], &[]), QuponError::KycAttestationInvalid);
+
+    // Bob's attestation presented for Alice (nonce = another wallet).
+    env.attest(&bob.pubkey(), &kyc_for(&bob.pubkey()), 0);
+    let mut ix = env.register_ix(&b, &env.registrar.pubkey(), &alice.pubkey());
+    ix.accounts[3].pubkey = attestation_pda(&bob.pubkey());
+    ix.data = qupon_bonds::instruction::RegisterInvestor {
+        kyc: kyc_for(&bob.pubkey()),
+    }
+    .data();
+    assert_err(env.send(&[ix], &[]), QuponError::KycAttestationInvalid);
+
+    // Expired attestation.
+    env.attest(&alice.pubkey(), &kyc_for(&alice.pubkey()), now - 1);
+    let ix = env.register_ix(&b, &env.registrar.pubkey(), &alice.pubkey());
+    assert_err(env.send(&[ix], &[]), QuponError::KycAttestationInvalid);
+
+    // Attested 10% withholding, registrar submits 0%.
+    let attested = qupon_bonds::KycParams {
+        tax_rate_bps: 1_000,
+        ..kyc_for(&alice.pubkey())
+    };
+    env.attest(&alice.pubkey(), &attested, now + 86_400);
+    let ix = env.register_ix(&b, &env.registrar.pubkey(), &alice.pubkey());
+    assert_err(env.send(&[ix], &[]), QuponError::KycAttestationInvalid);
+
+    // Same bytes but not owned by the SAS program (forged).
+    let mut forged = env
+        .svm
+        .get_account(&attestation_pda(&alice.pubkey()))
+        .unwrap();
+    forged.data = attestation_bytes(&alice.pubkey(), &kyc_for(&alice.pubkey()), 0);
+    forged.owner = anchor_lang::solana_program::system_program::ID;
+    env.svm
+        .set_account(attestation_pda(&alice.pubkey()), forged)
+        .unwrap();
+    let ix = env.register_ix(&b, &env.registrar.pubkey(), &alice.pubkey());
+    assert_err(env.send(&[ix], &[]), QuponError::KycAttestationInvalid);
+
+    // Valid, unexpired attestation with matching attributes → registered, kyc_ref = attestation address.
+    env.attest(&alice.pubkey(), &kyc_for(&alice.pubkey()), now + 86_400);
+    let ix = env.register_ix(&b, &env.registrar.pubkey(), &alice.pubkey());
+    env.send(&[ix], &[]).expect("register with attestation");
+    let inv: Investor = env.account(&investor_pda(&b.series, &alice.pubkey()));
+    assert_eq!(inv.kyc_ref, attestation_pda(&alice.pubkey()).to_bytes());
+}
+
+type Corruption = (&'static str, Box<dyn Fn(&mut Vec<u8>)>);
+
+/// Every field of the attestation is checked: corrupt one at a time, expect the error (never a panic).
+#[test]
+fn kyc_attestation_rejects_each_corrupted_field() {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let alice = Keypair::new();
+    let pda = attestation_pda(&alice.pubkey());
+    let good = attestation_bytes(&alice.pubkey(), &kyc_for(&alice.pubkey()), 0);
+    let cases: Vec<Corruption> = vec![
+        ("discriminator", Box::new(|d| d[0] = 1)),
+        ("credential", Box::new(|d| d[40] ^= 1)),
+        ("schema", Box::new(|d| d[70] ^= 1)),
+        ("data length", Box::new(|d| d[97] = 5)),
+        ("investor type", Box::new(|d| d[101] = 1)),
+        ("residency", Box::new(|d| d[102] = 1)),
+        ("truncated", Box::new(|d| d.truncate(120))),
+    ];
+    env.attest(&alice.pubkey(), &kyc_for(&alice.pubkey()), 0);
+    for (name, corrupt) in cases {
+        let mut acc = env.svm.get_account(&pda).unwrap();
+        acc.data = good.clone();
+        corrupt(&mut acc.data);
+        env.svm.set_account(pda, acc).unwrap();
+        let ix = env.register_ix(&b, &env.registrar.pubkey(), &alice.pubkey());
+        let res = env.send(&[ix], &[]);
+        assert!(res.is_err(), "{name}: corrupted attestation accepted");
+        assert_err(res, QuponError::KycAttestationInvalid);
+    }
+    // kyc_ref must name the attestation that is passed.
+    let mut acc = env.svm.get_account(&pda).unwrap();
+    acc.data = good;
+    env.svm.set_account(pda, acc).unwrap();
+    let mut ix = env.register_ix(&b, &env.registrar.pubkey(), &alice.pubkey());
+    ix.data = qupon_bonds::instruction::RegisterInvestor {
+        kyc: qupon_bonds::KycParams {
+            kyc_ref: [1; 32],
+            ..kyc_for(&alice.pubkey())
+        },
+    }
+    .data();
+    assert_err(env.send(&[ix], &[]), QuponError::KycAttestationInvalid);
 }

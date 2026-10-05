@@ -13,7 +13,7 @@ Scope: the Anchor 1.2 program in `programs/qupon_bonds` (Solana devnet only). Of
 | Series PDA `["series", mint]` | program | mint, freeze/thaw, pause/resume, burn (permanent delegate), close mint | Token-2022 authorities validated in `init_series` |
 | Action PDA `["action", series, index]` | program | owns the escrow; pays holders and the tax vault | ATA derivation + `has_one = escrow` |
 
-KYC is **SIMULATED**: the registrar records attributes and a hash (`kyc_ref`) of the off-chain record.
+KYC: `register_investor` requires a Solana Attestation Service attestation for the wallet, owned by the SAS program (a closed = revoked attestation fails), under our credential/schema constants, not expired, with attributes equal to the registration; `kyc_ref` stores its address. The KYC provider is **SIMULATED** (a devnet keypair). SAS only lets the credential's authorized signers create attestations; a signer later removed from the credential is not re-checked on read (ponytail: pass the credential account and check `authorized_signers` if providers rotate).
 
 ## Invariants the program enforces
 

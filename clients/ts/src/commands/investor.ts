@@ -9,10 +9,10 @@ import {
 	getSubscribeInstructionAsync,
 	getSuspendInvestorInstruction,
 } from "../generated/index.js";
+import { kycAttestationPda, kycRef } from "../lib/kyc.js";
 import { investorPda } from "../lib/pda.js";
 import {
 	initCtx,
-	kycRefHash,
 	loadSeries,
 	log,
 	parseBigInt,
@@ -30,7 +30,6 @@ interface RegisterOpts extends GlobalOptions {
 	type: string;
 	residency: string;
 	taxBps: string;
-	kyc: string;
 }
 
 async function runRegister(opts: RegisterOpts, cmd: Command): Promise<void> {
@@ -49,14 +48,15 @@ async function runRegister(opts: RegisterOpts, cmd: Command): Promise<void> {
 		registrar,
 		series: info.pda,
 		owner,
+		// The KYC provider's SAS attestation for this wallet; attributes below must equal the attested ones.
+		kycAttestation: await kycAttestationPda(owner),
 		mint: info.mint,
 		cashMint,
 		cashTokenProgram: await tokenProgramOfMint(rpc, cashMint),
 		investorType: opts.type === "individual" ? 0 : 1, // 0 Individual, 1 Legal
 		residency: opts.residency === "resident" ? 0 : 1, // 0 Resident, 1 NonResident
 		taxRateBps: parseIntArg(opts.taxBps, "--tax-bps"),
-		// SIMULATED KYC: the on-chain kyc_ref is only a hash of a record id.
-		kycRef: kycRefHash(opts.kyc === undefined || opts.kyc === "" ? `SIMULATED-KYC:${owner}` : opts.kyc),
+		kycRef: await kycRef(owner),
 	});
 	const investor = await investorPda(info.pda, owner);
 	await sendAndReport(rpc, registrar, [instruction], "investor:register", { investor, owner });
@@ -148,13 +148,12 @@ async function runIssue(opts: IssueOpts, cmd: Command): Promise<void> {
 }
 
 export function registerInvestorCommands(program: Command): void {
-	withGlobals(program.command("investor:register").description("register an investor (SIMULATED KYC hash)"))
+	withGlobals(program.command("investor:register").description("register an investor (requires the KYC provider's SAS attestation: kyc:attest)"))
 		.requiredOption("--series <name>", "series name in config/devnet.json")
 		.requiredOption("--owner <address>", "investor wallet")
 		.option("--type <t>", "individual | legal_entity", "individual")
 		.option("--residency <r>", "resident | nonresident", "resident")
 		.option("--tax-bps <n>", "withholding tax in bps", "0")
-		.option("--kyc <ref>", "off-chain KYC record id (SIMULATED; hashed on-chain)")
 		.action(runRegister);
 
 	withGlobals(program.command("investor:suspend").description("suspend an investor (freezes the bond ATA)"))

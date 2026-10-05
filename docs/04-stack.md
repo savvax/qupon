@@ -22,6 +22,8 @@
 | Token ACL (sRFC-37) | program `TACLkU6CiCdkQN2MjoyDkVg2yAH9zkxiHDsiztQ52TP` (devnet) | NOT used in T0/T1 — our own Investor registry + thaw replaces it; mention as compatible roadmap |
 
 ## Gotchas
+- `sas-lib` 1.0.10 declares `@solana/kit ^5` but its instructions/PDAs work with kit 8 (cast the instruction to kit 8 `Instruction`). SAS accounts are pinocchio (1-byte discriminator, no Anchor header): Attestation = disc 2 · nonce · credential · schema · u32 len + data · signer · expiry i64 · token_account; expiry is NOT enforced by SAS on read.
+- Anchor 1.2 `anchor deploy` uploads the IDL itself over the `--provider.cluster` RPC and aborts on failure; `ops/deploy.sh` passes `--no-idl` and uploads with retries over `RPC_URL` afterwards.
 - Kit's preflight failure keeps program logs in `error.context.logs` (not `cause.logs`); `clients/ts/src/lib/tx.ts` extracts the Anchor error name from there so the API/console can show it.
 - Devnet RPC reads (Helius, `confirmed`) can lag a confirmed transaction by ~20 s; UI refreshes must poll until the state moves, not for a fixed few seconds.
 - Go is 1.26, not 1.25: `modernc.org/sqlite` (and x/sys, libc) require go ≥ 1.26, so go.mod says 1.26.0. Local/CI builds hid this by auto-downloading the toolchain; Docker (`GOTOOLCHAIN=local`) does not. CI reads the version from go.mod.

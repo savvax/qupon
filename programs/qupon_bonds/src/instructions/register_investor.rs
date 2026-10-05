@@ -16,14 +16,57 @@ use crate::{
     Investor,
 };
 
-/// KYC attributes recorded by the registrar. KYC itself is SIMULATED (no provider integrated).
+/// KYC attributes; they must equal the KYC provider's SAS attestation for this wallet (`kyc_attestation`).
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct KycParams {
     pub investor_type: u8,
     pub residency: u8,
     pub tax_rate_bps: u16,
-    /// Hash of the off-chain KYC record.
+    /// Address of the SAS attestation the registration relies on.
     pub kyc_ref: [u8; 32],
+}
+
+/// SAS Attestation account (pinocchio layout, solana-attestation-service `state/attestation.rs`): disc u8 = 2,
+/// nonce, credential, schema (32 each), data (u32 len + bytes), signer 32, expiry i64 (0 = never), token_account 32.
+const SAS_ATTESTATION_DISC: u8 = 2;
+const KYC_DATA_LEN: usize = 4; // investor_type u8 · residency u8 · tax_rate_bps u16 (schema KYC_SCHEMA)
+
+/// The investor's KYC must be attested by the KYC provider: the account is a live SAS attestation (closed =
+/// revoked, so ownership is checked) under our credential and schema, issued for this wallet, not expired, and its
+/// attributes equal the ones being registered. SAS itself only lets the credential's authorized signers create it.
+pub fn verify_kyc_attestation(
+    att: &AccountInfo,
+    owner: &Pubkey,
+    kyc: &KycParams,
+    now: i64,
+) -> Result<()> {
+    let bad = || error!(QuponError::KycAttestationInvalid);
+    if *att.owner != SAS_PROGRAM_ID || att.key().to_bytes() != kyc.kyc_ref {
+        return Err(bad());
+    }
+    let d = att.try_borrow_data()?;
+    let tail = 101 + KYC_DATA_LEN; // signer starts here
+    if d.len() < tail + 32 + 8 || d[0] != SAS_ATTESTATION_DISC {
+        return Err(bad());
+    }
+    let key = |r: core::ops::Range<usize>| Pubkey::try_from(&d[r]).map_err(|_| bad());
+    let data_len = u32::from_le_bytes(d[97..101].try_into().map_err(|_| bad())?) as usize;
+    if key(1..33)? != *owner
+        || key(33..65)? != KYC_CREDENTIAL
+        || key(65..97)? != KYC_SCHEMA
+        || data_len != KYC_DATA_LEN
+    {
+        return Err(bad());
+    }
+    let tax = u16::from_le_bytes([d[103], d[104]]);
+    if d[101] != kyc.investor_type || d[102] != kyc.residency || tax != kyc.tax_rate_bps {
+        return Err(bad());
+    }
+    let expiry = i64::from_le_bytes(d[tail + 32..tail + 40].try_into().map_err(|_| bad())?);
+    if expiry != 0 && expiry <= now {
+        return Err(bad());
+    }
+    Ok(())
 }
 
 #[derive(Accounts)]
@@ -39,6 +82,8 @@ pub struct RegisterInvestor<'info> {
     pub series: Box<Account<'info, Series>>,
     /// CHECK: the investor's wallet; any system account can be registered.
     pub owner: UncheckedAccount<'info>,
+    /// CHECK: SAS attestation of the investor's KYC, verified by `verify_kyc_attestation`.
+    pub kyc_attestation: UncheckedAccount<'info>,
     #[account(
         init,
         payer = registrar,
@@ -78,6 +123,13 @@ pub fn handle_register_investor(ctx: Context<RegisterInvestor>, kyc: KycParams) 
         kyc.tax_rate_bps <= BPS_DENOMINATOR,
         QuponError::InvalidParams
     );
+    let clock = Clock::get()?;
+    verify_kyc_attestation(
+        &ctx.accounts.kyc_attestation,
+        &ctx.accounts.owner.key(),
+        &kyc,
+        clock.unix_timestamp,
+    )?;
 
     // DefaultAccountState=Frozen: the new ATA is frozen; only the series PDA (freeze authority) can thaw it.
     if ctx.accounts.bond_ata.is_frozen() {
@@ -94,7 +146,6 @@ pub fn handle_register_investor(ctx: Context<RegisterInvestor>, kyc: KycParams) 
         ))?;
     }
 
-    let clock = Clock::get()?;
     let inv = &mut ctx.accounts.investor;
     inv.bump = ctx.bumps.investor;
     inv.series = ctx.accounts.series.key();

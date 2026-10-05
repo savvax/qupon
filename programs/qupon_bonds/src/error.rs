@@ -65,6 +65,8 @@ pub enum QuponError {
     InvalidParams,
     #[msg("Not every snapshotted holder has been paid in full")]
     PaymentsIncomplete,
+    #[msg("KYC attestation missing, expired or not matching the investor")]
+    KycAttestationInvalid,
 }
 
 /// Map the pure math crate's errors onto program errors (orphan rule forbids `From`).
