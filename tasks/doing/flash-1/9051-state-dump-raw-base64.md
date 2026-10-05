@@ -1,7 +1,7 @@
 ---
 id: 9051
 title: state:dump --raw emits real base64; CI drift check catches untracked files; pin golangci-lint; fix verified-build date
-agent: flash
+agent: claude
 tier: T1
 depends_on: [051, 036]
 verify: make verify
