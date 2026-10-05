@@ -659,6 +659,7 @@ impl Env {
                 series: b.series,
                 action: action_pda(&b.series, index),
                 mint: b.mint,
+                bond_token_program: spl_token_2022::ID,
             }
             .to_account_metas(None),
         )
@@ -837,5 +838,83 @@ impl Env {
             }
             .to_account_metas(None),
         )
+    }
+}
+
+/// BMET: raise the coupon to `new_rate_bps`; voting ends 180 s after `now`.
+pub fn bmet_args(now: i64, new_rate_bps: u32) -> qupon_bonds::AnnounceArgs {
+    qupon_bonds::AnnounceArgs {
+        kind: 4,
+        mandatory: 1,
+        corp_id: corp_id("QPNb1-BMET-0001"),
+        proposal_new_rate_bps: new_rate_bps,
+        voting_ends_at: now + 180,
+        period_start_ymd: 0,
+        period_end_ymd: 0,
+        period_start_ts: 0,
+        period_end_ts: 0,
+        accrual_days: 0,
+        rate_bps: 0,
+        ..intr_args(now)
+    }
+}
+
+impl Env {
+    pub fn vote_ix(&self, b: &Bond, index: u32, owner: &Pubkey, choice: u8) -> Instruction {
+        let action = action_pda(&b.series, index);
+        self.action_ix(
+            qupon_bonds::instruction::CastVote { choice }.data(),
+            qupon_bonds::accounts::CastVote {
+                owner: *owner,
+                series: b.series,
+                action,
+                entitlement: entitlement_pda(&action, owner),
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    pub fn finalize_meeting_ix(&self, b: &Bond, index: u32) -> Instruction {
+        self.action_ix(
+            qupon_bonds::instruction::FinalizeMeeting {}.data(),
+            qupon_bonds::accounts::FinalizeMeeting {
+                registrar: self.registrar.pubkey(),
+                series: b.series,
+                action: action_pda(&b.series, index),
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    pub fn apply_terms_ix(&self, b: &Bond, index: u32) -> Instruction {
+        self.action_ix(
+            qupon_bonds::instruction::ApplyTermsChange {}.data(),
+            qupon_bonds::accounts::ApplyTermsChange {
+                registrar: self.registrar.pubkey(),
+                series: b.series,
+                action: action_pda(&b.series, index),
+                mint: b.mint,
+                bond_token_program: spl_token_2022::ID,
+                system_program: anchor_lang::solana_program::system_program::ID,
+            }
+            .to_account_metas(None),
+        )
+    }
+
+    /// Issuer announces BMET (index 0), record date, strike, snapshot, finalize → VotingOpen.
+    pub fn open_meeting(&mut self, b: &Bond, owners: &[Pubkey], new_rate_bps: u32) -> i64 {
+        let now = self.now();
+        let ix = self.announce_ix(b, &self.issuer.pubkey(), bmet_args(now, new_rate_bps));
+        let issuer = self.issuer.insecure_clone();
+        self.send(&[ix], &[&issuer]).expect("announce BMET");
+        self.set_clock(now + 60);
+        for ix in [
+            self.strike_ix(b, &self.registrar.pubkey(), 0),
+            self.snapshot_ix(b, 0, owners),
+            self.finalize_snapshot_ix(b, 0),
+        ] {
+            self.send(&[ix], &[]).expect("record date");
+        }
+        now + 180
     }
 }

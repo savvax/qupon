@@ -2,7 +2,7 @@
 use anchor_lang::{prelude::*, Discriminator};
 use anchor_spl::{
     token_2022::Token2022,
-    token_2022_extensions::{pausable_pause, PausableToggle},
+    token_2022_extensions::{pausable_pause, pausable_resume, PausableToggle},
     token_interface::{Mint, TokenAccount},
 };
 use entitlement::{DayCount, Kind};
@@ -242,7 +242,9 @@ pub struct FinalizeSnapshot<'info> {
         has_one = series
     )]
     pub action: Box<Account<'info, CorporateAction>>,
+    #[account(mut)]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
+    pub bond_token_program: Program<'info, Token2022>,
 }
 
 pub fn handle_finalize_snapshot(ctx: Context<FinalizeSnapshot>) -> Result<()> {
@@ -279,6 +281,20 @@ pub fn handle_finalize_snapshot(ctx: Context<FinalizeSnapshot>) -> Result<()> {
         require!(ok, QuponError::RoundingDrift);
     }
 
+    if meeting {
+        // Votes are weighted by the snapshot, so trading can resume for the voting window.
+        let mint = ctx.accounts.mint.key();
+        let seeds: &[&[u8]] = &[SERIES_SEED, mint.as_ref(), &[ctx.accounts.series.bump]];
+        pausable_resume(CpiContext::new_with_signer(
+            ctx.accounts.bond_token_program.key(),
+            PausableToggle {
+                token_program_id: ctx.accounts.bond_token_program.to_account_info(),
+                mint: ctx.accounts.mint.to_account_info(),
+                authority: ctx.accounts.series.to_account_info(),
+            },
+            &[seeds],
+        ))?;
+    }
     let action = &mut ctx.accounts.action;
     action.status = if meeting {
         ActionStatus::VotingOpen

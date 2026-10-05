@@ -7,9 +7,12 @@
  */
 
 export * from './announceAction.js';
+export * from './applyTermsChange.js';
 export * from './cancelAction.js';
+export * from './castVote.js';
 export * from './closeSeries.js';
 export * from './completeAction.js';
+export * from './finalizeMeeting.js';
 export * from './finalizeSnapshot.js';
 export * from './fundAction.js';
 export * from './initSeries.js';

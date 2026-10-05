@@ -95,4 +95,19 @@ pub mod qupon_bonds {
     pub fn close_series(ctx: Context<CloseSeries>) -> Result<()> {
         instructions::retire::handle_close_series(ctx)
     }
+
+    /// Vote For (1) / Against (2) / Abstain (3) with the snapshotted units (holder).
+    pub fn cast_vote(ctx: Context<CastVote>, choice: u8) -> Result<()> {
+        instructions::meeting::handle_cast_vote(ctx, choice)
+    }
+
+    /// Close voting and record Approved / Rejected / NoQuorum (registrar).
+    pub fn finalize_meeting(ctx: Context<FinalizeMeeting>) -> Result<()> {
+        instructions::meeting::handle_finalize_meeting(ctx)
+    }
+
+    /// Apply an approved proposal to the series and its token metadata (registrar; ARDFM registration SIMULATED).
+    pub fn apply_terms_change(ctx: Context<ApplyTermsChange>) -> Result<()> {
+        instructions::meeting::handle_apply_terms_change(ctx)
+    }
 }

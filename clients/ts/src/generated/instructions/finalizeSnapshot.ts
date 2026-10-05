@@ -14,8 +14,8 @@ export const FINALIZE_SNAPSHOT_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Arra
 
 export function getFinalizeSnapshotDiscriminatorBytes(): ReadonlyUint8Array { return fixEncoderSize(getBytesEncoder(), 8).encode(FINALIZE_SNAPSHOT_DISCRIMINATOR); }
 
-export type FinalizeSnapshotInstruction<TProgram extends string = typeof QUPON_BONDS_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountSeries extends string | AccountMeta<string> = string, TAccountAction extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountSeries extends string ? ReadonlyAccount<TAccountSeries> : TAccountSeries, TAccountAction extends string ? WritableAccount<TAccountAction> : TAccountAction, TAccountMint extends string ? ReadonlyAccount<TAccountMint> : TAccountMint, ...TRemainingAccounts]>;
+export type FinalizeSnapshotInstruction<TProgram extends string = typeof QUPON_BONDS_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountSeries extends string | AccountMeta<string> = string, TAccountAction extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountBondTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountSeries extends string ? ReadonlyAccount<TAccountSeries> : TAccountSeries, TAccountAction extends string ? WritableAccount<TAccountAction> : TAccountAction, TAccountMint extends string ? WritableAccount<TAccountMint> : TAccountMint, TAccountBondTokenProgram extends string ? ReadonlyAccount<TAccountBondTokenProgram> : TAccountBondTokenProgram, ...TRemainingAccounts]>;
 
 export type FinalizeSnapshotInstructionData = { discriminator: ReadonlyUint8Array;  };
 
@@ -33,14 +33,15 @@ export function getFinalizeSnapshotInstructionDataCodec(): FixedSizeCodec<Finali
     return combineCodec(getFinalizeSnapshotInstructionDataEncoder(), getFinalizeSnapshotInstructionDataDecoder());
 }
 
-export type FinalizeSnapshotInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountSeries extends InstructionAccountInput = InstructionAccountInput, TAccountAction extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput> =  {
+export type FinalizeSnapshotInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountSeries extends InstructionAccountInput = InstructionAccountInput, TAccountAction extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountBondTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
   authority: TAccountAuthority;
 series: TAccountSeries;
 action: TAccountAction;
 mint: TAccountMint;
+bondTokenProgram?: TAccountBondTokenProgram;
 }
 
-export function getFinalizeSnapshotInstruction<TAccountAuthority extends InstructionSignerInput, TAccountSeries extends InstructionAccountInput, TAccountAction extends InstructionAccountInput, TAccountMint extends InstructionAccountInput, TProgramAddress extends Address = typeof QUPON_BONDS_PROGRAM_ADDRESS>(input: FinalizeSnapshotInput<TAccountAuthority, TAccountSeries, TAccountAction, TAccountMint>, config?: { programAddress?: TProgramAddress } ): FinalizeSnapshotInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountSeries, InstructionAccountInputAddress<TAccountSeries>>, ResolvedInstructionAccountMeta<TAccountAction, InstructionAccountInputAddress<TAccountAction>>, ResolvedInstructionAccountMeta<TAccountMint, InstructionAccountInputAddress<TAccountMint>>> {
+export function getFinalizeSnapshotInstruction<TAccountAuthority extends InstructionSignerInput, TAccountSeries extends InstructionAccountInput, TAccountAction extends InstructionAccountInput, TAccountMint extends InstructionAccountInput, TAccountBondTokenProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof QUPON_BONDS_PROGRAM_ADDRESS>(input: FinalizeSnapshotInput<TAccountAuthority, TAccountSeries, TAccountAction, TAccountMint, TAccountBondTokenProgram>, config?: { programAddress?: TProgramAddress } ): FinalizeSnapshotInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountSeries, InstructionAccountInputAddress<TAccountSeries>>, ResolvedInstructionAccountMeta<TAccountAction, InstructionAccountInputAddress<TAccountAction>>, ResolvedInstructionAccountMeta<TAccountMint, InstructionAccountInputAddress<TAccountMint>>, ResolvedInstructionAccountMeta<TAccountBondTokenProgram, InstructionAccountInputAddress<TAccountBondTokenProgram>>> {
   // Program address.
 const programAddress = config?.programAddress ?? QUPON_BONDS_PROGRAM_ADDRESS;
 
@@ -48,13 +49,16 @@ const programAddress = config?.programAddress ?? QUPON_BONDS_PROGRAM_ADDRESS;
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
 
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: false }, series: { value: input.series ?? null, isSigner: false, isWritable: false }, action: { value: input.action ?? null, isSigner: false, isWritable: true }, mint: { value: input.mint ?? null, isSigner: false, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: false }, series: { value: input.series ?? null, isSigner: false, isWritable: false }, action: { value: input.action ?? null, isSigner: false, isWritable: true }, mint: { value: input.mint ?? null, isSigner: false, isWritable: true }, bondTokenProgram: { value: input.bondTokenProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
+// Resolve default values.
+if (!accounts.bondTokenProgram.value) {
+accounts.bondTokenProgram.value = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
+}
 
-
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("series", accounts.series), getAccountMeta("action", accounts.action), getAccountMeta("mint", accounts.mint)], data: getFinalizeSnapshotInstructionDataEncoder().encode({}), programAddress } as FinalizeSnapshotInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountSeries, InstructionAccountInputAddress<TAccountSeries>>, ResolvedInstructionAccountMeta<TAccountAction, InstructionAccountInputAddress<TAccountAction>>, ResolvedInstructionAccountMeta<TAccountMint, InstructionAccountInputAddress<TAccountMint>>>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("series", accounts.series), getAccountMeta("action", accounts.action), getAccountMeta("mint", accounts.mint), getAccountMeta("bondTokenProgram", accounts.bondTokenProgram)], data: getFinalizeSnapshotInstructionDataEncoder().encode({}), programAddress } as FinalizeSnapshotInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountSeries, InstructionAccountInputAddress<TAccountSeries>>, ResolvedInstructionAccountMeta<TAccountAction, InstructionAccountInputAddress<TAccountAction>>, ResolvedInstructionAccountMeta<TAccountMint, InstructionAccountInputAddress<TAccountMint>>, ResolvedInstructionAccountMeta<TAccountBondTokenProgram, InstructionAccountInputAddress<TAccountBondTokenProgram>>>);
 }
 
 export type ParsedFinalizeSnapshotInstruction<TProgram extends string = typeof QUPON_BONDS_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
@@ -63,12 +67,13 @@ authority: TAccountMetas[0];
 series: TAccountMetas[1];
 action: TAccountMetas[2];
 mint: TAccountMetas[3];
+bondTokenProgram: TAccountMetas[4];
 };
 data: FinalizeSnapshotInstructionData; };
 
 export function parseFinalizeSnapshotInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedFinalizeSnapshotInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 4) {
-  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 4 });
+  if (instruction.accounts.length < 5) {
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 5 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {
@@ -76,5 +81,5 @@ const getNextAccount = () => {
   accountIndex += 1;
   return accountMeta;
 }
-  return { programAddress: instruction.programAddress, accounts: { authority: getNextAccount(), series: getNextAccount(), action: getNextAccount(), mint: getNextAccount() }, data: getFinalizeSnapshotInstructionDataDecoder().decode(instruction.data) };
+  return { programAddress: instruction.programAddress, accounts: { authority: getNextAccount(), series: getNextAccount(), action: getNextAccount(), mint: getNextAccount(), bondTokenProgram: getNextAccount() }, data: getFinalizeSnapshotInstructionDataDecoder().decode(instruction.data) };
 }
