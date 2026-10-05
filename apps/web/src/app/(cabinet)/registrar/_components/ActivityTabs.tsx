@@ -21,8 +21,11 @@ export type AuditItem = {
   signatures?: string[] | null;
 };
 
-const almaty = (unixSeconds: number) =>
-  formatDateTime(new Date(unixSeconds * 1000).toISOString());
+const almaty = (unixSeconds: number) => (
+  <span className="num text-xs whitespace-nowrap">
+    {formatDateTime(new Date(unixSeconds * 1000).toISOString())}
+  </span>
+);
 
 const dash = "—";
 
@@ -38,60 +41,48 @@ export function ActivityTabs({
   const roles = useTranslations("cabinet.roles");
 
   const eventCols: Column<ActivityLike>[] = [
-    {
-      key: "ts",
-      header: t("time"),
-      value: (r) => r.ts,
-      render: (r) => almaty(r.ts),
-      mono: true,
-    },
+    { key: "ts", header: t("time"), render: (r) => almaty(r.ts) },
     {
       key: "kind",
       header: t("kind"),
-      value: (r) => r.kind,
       render: (r) => <Badge status={r.kind} />,
     },
     {
       key: "series",
       header: t("series"),
-      value: (r) => r.seriesMint ?? "",
       render: (r) => (r.seriesMint ? <Address value={r.seriesMint} /> : dash),
     },
     {
       key: "sig",
       header: t("tx"),
-      value: (r) => r.sig,
       render: (r) => (r.sig ? <Address value={r.sig} kind="tx" /> : dash),
     },
   ];
 
   const auditCols: Column<AuditItem>[] = [
-    {
-      key: "ts",
-      header: t("time"),
-      value: (r) => r.ts,
-      render: (r) => almaty(r.ts),
-      mono: true,
-    },
+    { key: "ts", header: t("time"), render: (r) => almaty(r.ts) },
     {
       key: "user",
       header: t("user"),
-      value: (r) => r.userId,
       render: (r) => (
-        <span>
+        <span className="num text-xs">
           #{r.userId}
-          <span className="ml-2 text-xs text-n500">
+          <span className="ml-2 text-n500">
             {roles.has(r.role) ? roles(r.role) : r.role}
           </span>
         </span>
       ),
-      mono: true,
     },
-    { key: "route", header: t("route"), value: (r) => r.route, mono: true },
+    {
+      key: "route",
+      header: t("route"),
+      render: (r) => (
+        <span className="text-xs break-all">{r.route}</span>
+      ),
+    },
     {
       key: "ok",
       header: t("result"),
-      value: (r) => (r.ok ? 1 : 0),
       render: (r) =>
         r.ok ? (
           <Badge tone="success">{t("ok")}</Badge>
@@ -102,7 +93,6 @@ export function ActivityTabs({
     {
       key: "sigs",
       header: t("signatures"),
-      value: (r) => r.signatures?.length ?? 0,
       render: (r) =>
         r.signatures && r.signatures.length > 0 ? (
           <span className="flex flex-wrap gap-x-3 gap-y-1">
@@ -127,7 +117,6 @@ export function ActivityTabs({
               columns={eventCols}
               rows={events}
               rowKey={(r) => String(r.id)}
-              initialSort={{ key: "ts", dir: "desc" }}
               empty={t("emptyEvents")}
             />
           ),
@@ -140,7 +129,6 @@ export function ActivityTabs({
               columns={auditCols}
               rows={audit}
               rowKey={(r) => String(r.id)}
-              initialSort={{ key: "ts", dir: "desc" }}
               empty={t("emptyAudit")}
             />
           ),
