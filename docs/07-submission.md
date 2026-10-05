@@ -20,7 +20,9 @@ Order: Colosseum first (gives the project link) → Earn KASE side track → Ear
 - [ ] Scope checkbox + KYC acknowledgement (Kazakhstan document ready for Sumsub after winning)
 - [ ] General KZ track: program registration done by Oct 8; pitch ≤ 2:00; demo ≤ 3:00; every member's Colosseum profile complete
 
-## Draft: product description (EN, ≤ 300 words — agents refine in task 042)
+> **Final texts:** [`docs/SUBMISSION_FINAL.md`](SUBMISSION_FINAL.md) has the copy-paste block for every form field (task 038). The drafts below are kept for history.
+
+## Draft: product description (EN, ≤ 300 words — superseded by SUBMISSION_FINAL.md)
 Qupon is the corporate‑actions engine for tokenized bonds on Solana. Tokenization solved issuance; it did not solve servicing. Every coupon, redemption and bondholder meeting is still a manual, multi‑party reconciliation: the industry spends ~$58B a year on corporate actions, 46% of event data is processed by hand, and over 45% of brokers have lost ≥ $1M to a single error (DTCC, ValueExchange). On Solana, no RWA issuer emits standardized corporate‑action events.
 
 Qupon makes the corporate action a first‑class on‑chain object. A bond is a Token‑2022 mint (frozen by default, pausable, permanent delegate). Investors are onboarded into an on‑chain registry. For each action — coupon (INTR), redemption (REDM), early call (MCAL), bondholder meeting (BMET → CHAN) — the program pauses the mint at the record date, snapshots every holder into an Entitlement account, computes gross/tax/net per holder with Kazakhstan market conventions (record date at the start of the last day of the period, 30/360, holder‑level rounding), requires the issuer to pre‑fund escrow, pays in batches, and records every transition as an event. A Go registrar service schedules actions, reconciles the chain against its own calculation, and exports ISO 20022 seev.031/seev.036 messages and KASE‑style disclosure notices, so custodians and brokers can consume the result with the tools they already have.
