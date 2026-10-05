@@ -13,8 +13,8 @@ export type ErrorDTO = Schemas["Error"];
 export const API_BASE_URL = process.env.API_URL ?? "http://localhost:8080";
 
 /** Serve demo fixtures instead of HTTP while the Go registrar does not exist. */
-const MOCK =
-  process.env.NODE_ENV === "development" && process.env.API_MOCKING !== "disabled";
+export const MOCK_ENABLED = process.env.API_MOCKING === "enabled";
+const MOCK = process.env.NODE_ENV === "development" && MOCK_ENABLED;
 let mockWarned = false;
 
 export class ApiError extends Error {
@@ -34,7 +34,7 @@ async function get<T>(path: string): Promise<T> {
     if (!mockWarned) {
       mockWarned = true;
       console.warn(
-        `[qupon] mock registrar API enabled — set API_MOCKING=disabled and API_URL=<registrar> for the real service`,
+        `[qupon] mock registrar API enabled (API_MOCKING=enabled) — set API_MOCKING=disabled and API_URL=<registrar> for the real service`,
       );
     }
     return mockGet(path) as Promise<T>;

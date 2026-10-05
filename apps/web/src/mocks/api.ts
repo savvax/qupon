@@ -35,7 +35,7 @@ const series: SeriesDTO[] = [
     registrar: REGISTRAR,
     issuer: ISSUER,
     payingAgent: PAYING_AGENT,
-    isin: "KZ2C0QUPON001",
+    isin: "KZ2C0QUPON01",
     ticker: "QPNb1",
     faceValue: kzt("100000", "1,000.00 KZT"),
     couponRateBps: 1000,

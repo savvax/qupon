@@ -28,3 +28,5 @@ tasks/.stop-*
 /services/registrar/registrar
 
 .vitest/
+apps/web/.vitest/
+apps/web/.vitest/
