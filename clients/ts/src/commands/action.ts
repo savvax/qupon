@@ -26,6 +26,7 @@ import { actionPda, entitlementPda } from "../lib/pda.js";
 import type { QuponRpc } from "../lib/tx.js";
 import {
 	almatyDate,
+	almatyMidnight,
 	initCtx,
 	listEntitlements,
 	listInvestors,
@@ -35,6 +36,7 @@ import {
 	parseAt,
 	parseBigInt,
 	parseIntArg,
+	parseYmd,
 	padAscii,
 	ro,
 	sendAndReport,
@@ -62,7 +64,7 @@ export function sortedBatches<T>(items: readonly T[], ownerOf: (item: T) => stri
 }
 
 /** Resolve the working action: --index, else the series' open action. */
-async function loadAction(
+export async function loadAction(
 	rpc: QuponRpc,
 	info: SeriesInfo,
 	indexArg: string | undefined,
@@ -79,6 +81,36 @@ interface AnnounceOpts extends GlobalOptions {
 	paymentAt: string;
 	officialId?: string;
 	corpId?: string;
+	kind: string;
+	callDate?: string;
+	factorBps?: string;
+}
+
+/** Cash kinds `action:announce` accepts (BMET has its own command, CHAN is never announced). */
+export const CASH_KINDS = { INTR: 0, REDM: 1, MCAL: 2, PCAL: 3 } as const;
+export type CashKind = keyof typeof CASH_KINDS;
+
+/**
+ * Period end and factor per kind (checked on-chain against the series schedule):
+ * INTR → next coupon date, REDM → maturity, MCAL/PCAL → the call date (before the next coupon).
+ */
+export function announcePlan(
+	kind: string,
+	s: { nextCouponDate: bigint; maturityDate: bigint },
+	callDate: string | undefined,
+	factorBps: string | undefined,
+): { kind: CashKind; code: number; periodEnd: bigint; factorBps: number } {
+	const k = kind.toUpperCase();
+	if (!(k in CASH_KINDS)) throw new Error(`--kind must be one of ${Object.keys(CASH_KINDS).join("|")}, got '${kind}'`);
+	const code = CASH_KINDS[k as CashKind];
+	const call = k === "MCAL" || k === "PCAL";
+	if (call && callDate === undefined) throw new Error(`--call-date YYYY-MM-DD is required for ${k}`);
+	if (!call && callDate !== undefined) throw new Error(`--call-date only applies to MCAL/PCAL`);
+	const factor = factorBps === undefined ? 0 : parseIntArg(factorBps, "--factor-bps");
+	if (k === "PCAL" && (factor <= 0 || factor >= 10_000)) throw new Error("--factor-bps must be 1..9999 for PCAL");
+	if (k !== "PCAL" && factor !== 0) throw new Error("--factor-bps only applies to PCAL");
+	const periodEnd = k === "INTR" ? s.nextCouponDate : k === "REDM" ? s.maturityDate : almatyMidnight(parseYmd(callDate ?? "", "--call-date"));
+	return { kind: k as CashKind, code, periodEnd, factorBps: factor };
 }
 
 async function runAnnounce(opts: AnnounceOpts, cmd: Command): Promise<void> {
@@ -86,10 +118,10 @@ async function runAnnounce(opts: AnnounceOpts, cmd: Command): Promise<void> {
 	const info = await loadSeries(rpc, cfg, opts.series);
 	const registrar = await signer(cmd, "registrar");
 	const s = info.account;
-	// INTR: the period is the current coupon period and the rate is a series term
-	// (checked on-chain: period_start == Series.period_start, end == next_coupon_date).
+	// The period always starts at Series.period_start and the rate is a series term (checked on-chain).
+	const plan = announcePlan(opts.kind, s, opts.callDate, opts.factorBps);
 	const periodStart = s.periodStart;
-	const periodEnd = s.nextCouponDate;
+	const periodEnd = plan.periodEnd;
 	const startYmd = almatyDate(periodStart);
 	const endYmd = almatyDate(periodEnd);
 	const days = accrualDays(dayCountFromCode(s.dayCount), startYmd, endYmd);
@@ -97,16 +129,16 @@ async function runAnnounce(opts: AnnounceOpts, cmd: Command): Promise<void> {
 	const paymentAt = parseAt(opts.paymentAt, "--payment-at");
 	const index = s.actionCount;
 	const corpId =
-		opts.corpId ?? `${info.name}-INTR-${String(index + 1).padStart(4, "0")}`; // e.g. QPNb1-INTR-0001
+		opts.corpId ?? `${info.name}-${plan.kind}-${String(index + 1).padStart(4, "0")}`; // e.g. QPNb1-INTR-0001
 	const action = await actionPda(info.pda, index);
-	log(`announcing INTR #${index} (${corpId}): ${days} accrual days, period ${periodStart} → ${periodEnd}`);
+	log(`announcing ${plan.kind} #${index} (${corpId}): ${days} accrual days, period ${periodStart} → ${periodEnd}`);
 	const instruction = await getAnnounceActionInstructionAsync({
 		authority: registrar,
 		series: info.pda,
 		action,
 		cashMint: s.cashMint,
 		cashTokenProgram: await tokenProgramOfMint(rpc, s.cashMint),
-		kind: 0, // Interest
+		kind: plan.code,
 		mandatory: 0, // MAND
 		corpId: padAscii(corpId, 16),
 		officialId: padAscii(opts.officialId ?? "", 16),
@@ -118,7 +150,7 @@ async function runAnnounce(opts: AnnounceOpts, cmd: Command): Promise<void> {
 		periodEndTs: periodEnd,
 		accrualDays: days,
 		rateBps: s.couponRateBps,
-		factorBps: 0,
+		factorBps: plan.factorBps,
 		proposalNewRateBps: 0,
 		proposalNewMaturity: 0n,
 		votingEndsAt: 0n,
@@ -127,6 +159,7 @@ async function runAnnounce(opts: AnnounceOpts, cmd: Command): Promise<void> {
 		action,
 		index,
 		corpId,
+		kind: plan.kind,
 		accrualDays: days,
 		rateBps: s.couponRateBps,
 		recordAt,
@@ -308,11 +341,14 @@ async function runComplete(opts: ActionOpts, cmd: Command): Promise<void> {
 const indexOpt = "--index <n>" as const;
 
 export function registerActionCommands(program: Command): void {
-	withGlobals(program.command("action:announce").description("announce an INTR (coupon) action for the current period"))
+	withGlobals(program.command("action:announce").description("announce a cash action: INTR coupon, REDM at maturity, MCAL/PCAL early call"))
 		.requiredOption("--series <name>", "series name in config/devnet.json")
 		.requiredOption("--record-at <ts>", "record date: unix ts or +seconds from now")
 		.requiredOption("--payment-at <ts>", "payment date: unix ts or +seconds from now")
-		.option("--corp-id <id>", "CORP id (default: <series>-INTR-####)")
+		.option("--kind <kind>", "INTR | REDM | MCAL | PCAL", "INTR")
+		.option("--call-date <ymd>", "MCAL/PCAL: call date YYYY-MM-DD (accrued coupon ends here)")
+		.option("--factor-bps <n>", "PCAL: share of face redeemed, bps")
+		.option("--corp-id <id>", "CORP id, ≤ 16 bytes (default: <series>-<KIND>-####)")
 		.option("--official-id <id>", "COAF id assigned by KASE (optional)")
 		.action(runAnnounce);
 
