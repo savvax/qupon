@@ -14,7 +14,10 @@
     "bonds": "Облигации",
     "howItWorks": "Как это работает",
     "forIssuers": "Эмитентам",
-    "forInvestors": "Инвесторам"
+    "forInvestors": "Инвесторам",
+    "tagline": "Корпоративные действия по токенизированным облигациям",
+    "menu": "Меню",
+    "main": "Основное"
   },
   "status": {
     "Active": "Активен",
@@ -46,5 +49,21 @@
   "landing": {},
   "bonds": {},
   "bond": {},
-  "login": {}
+  "login": {},
+  "footer": {
+    "devnet": "Работает в Solana devnet на тестовых токенах — реальные деньги не участвуют.",
+    "source": "Исходный код",
+    "overview": "Техническое описание",
+    "built": "Создано для KASE × Superteam Kazakhstan"
+  },
+  "cabinet": {
+    "nav": "Разделы",
+    "demo": "ДЕМО",
+    "roles": {
+      "issuer": "Эмитент",
+      "registrar": "Регистратор",
+      "investor_demo": "Инвестор",
+      "admin": "Администратор"
+    }
+  }
 }

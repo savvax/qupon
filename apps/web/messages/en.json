@@ -14,7 +14,10 @@
     "bonds": "Bonds",
     "howItWorks": "How it works",
     "forIssuers": "For issuers",
-    "forInvestors": "For investors"
+    "forInvestors": "For investors",
+    "tagline": "Corporate actions for tokenized bonds",
+    "menu": "Menu",
+    "main": "Main"
   },
   "status": {
     "Active": "Active",
@@ -46,5 +49,21 @@
   "landing": {},
   "bonds": {},
   "bond": {},
-  "login": {}
+  "login": {},
+  "footer": {
+    "devnet": "Runs on Solana devnet with test tokens — no real money moves.",
+    "source": "Source code",
+    "overview": "Technical overview",
+    "built": "Built for KASE × Superteam Kazakhstan"
+  },
+  "cabinet": {
+    "nav": "Sections",
+    "demo": "DEMO",
+    "roles": {
+      "issuer": "Issuer",
+      "registrar": "Registrar",
+      "investor_demo": "Investor",
+      "admin": "Administrator"
+    }
+  }
 }

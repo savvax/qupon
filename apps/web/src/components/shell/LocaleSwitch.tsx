@@ -32,7 +32,9 @@ export function LocaleSwitch() {
           disabled={pending}
           className={cx(
             "h-7 rounded-sm px-2 text-xs font-bold uppercase",
-            locale === l ? "bg-g600 text-white" : "text-n600 hover:bg-n50 hover:text-n900",
+            locale === l
+              ? "bg-g600 text-white"
+              : "text-n600 hover:bg-n50 hover:text-n900",
           )}
         >
           {l}

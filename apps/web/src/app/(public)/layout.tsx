@@ -1,6 +1,7 @@
-/** Public pages (new design). PublicShell arrives in task 105. */
+import { PublicShell } from "@/components/shell/PublicShell";
+
 export default function PublicLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <>{children}</>;
+  return <PublicShell>{children}</PublicShell>;
 }
