@@ -5,13 +5,14 @@
  * USDC. Pubkeys are placeholders until real devnet mints land in
  * config/devnet.json.
  */
-import type { ActionDTO, InvestorDTO, ScheduleItem, SeriesDTO } from "../lib/api";
+import type { ActionDTO, EntitlementDTO, InvestorDTO, ScheduleItem, SeriesDTO } from "../lib/api";
 
 const MINT_QPNB1 = "QpNb1Dem0BondMint1111111111111111111111111111";
 const MINT_BTRK = "BTRKDeM0BondMint1111111111111111111111111111";
 const MINT_TKZT = "tKZTDeM0CashMint1111111111111111111111111111";
 const MINT_USDC = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 const ACTION_PDA_1 = "ActnINTR0001Dem0PDA111111111111111111111111111";
+const ACTION_PDA_2 = "ActnBMET0002Dem0PDA1111111111111111111111111111";
 const ESCROW_PDA_1 = "EscrowDem0PDA11111111111111111111111111111111";
 
 const REGISTRAR = "Bnq22GvV6AQcXWeTp6x3uTYkC7HKKrysiFve2uCDqE97";
@@ -167,7 +168,84 @@ const actions: Record<string, ActionDTO[]> = {
       factorBps: null,
       explorerUrl: explorer(ACTION_PDA_1),
     },
+    {
+      pda: ACTION_PDA_2,
+      seriesMint: MINT_QPNB1,
+      kind: "BMET",
+      mandatory: "VOLU",
+      corpId: "QPNb1-BMET-0002",
+      officialId: null,
+      announcedAt: "2026-09-25T10:00:00+05:00",
+      recordAt: "2026-09-26T00:00:00+05:00",
+      paymentAt: "2026-09-26T00:00:00+05:00",
+      periodStart: null,
+      periodEnd: null,
+      accrualDays: null,
+      rateBps: null,
+      perUnitGross: kzt("0", "0.00 KZT"),
+      perUnitPrincipal: kzt("0", "0.00 KZT"),
+      cashMint: MINT_TKZT,
+      status: "VotingOpen",
+      snapshotSlot: 1234,
+      snapshotHash: null,
+      unitsSnapshotted: "100",
+      holdersSnapshotted: 3,
+      holdersPaid: null,
+      totalGross: kzt("0", "0.00 KZT"),
+      totalTax: kzt("0", "0.00 KZT"),
+      totalNet: kzt("0", "0.00 KZT"),
+      totalPaid: kzt("0", "0.00 KZT"),
+      totalRetired: null,
+      holdersRetired: null,
+      proposalNewRateBps: 1200,
+      proposalNewMaturity: null,
+      votingEndsAt: "2099-01-01T00:00:00+05:00",
+      votesFor: null,
+      votesAgainst: null,
+      votesAbstain: null,
+      result: null,
+      completedAt: null,
+      factorBps: null,
+      explorerUrl: explorer(ACTION_PDA_2),
+    },
   ],
+};
+
+/** Entitlements of an action: the brief's numbers (10/25/65 units → 500/1,250/3,250 KZT). */
+const entitlements: Record<string, EntitlementDTO[]> = {
+  [ACTION_PDA_1]: INVESTOR_OWNERS.map((owner, i) => {
+    const gross = ["50000", "125000", "325000"][i] ?? "0";
+    return {
+      pda: `EnTlDem0Pda${i}For${ACTION_PDA_1.slice(0, 4)}1111111111111111111111111`,
+      actionPda: ACTION_PDA_1,
+      owner,
+      units: ["10", "25", "65"][i] ?? "0",
+      gross: kzt(gross, `${(Number(gross) / 100).toFixed(2)} KZT`),
+      tax: kzt("0", "0.00 KZT"),
+      net: kzt(gross, `${(Number(gross) / 100).toFixed(2)} KZT`),
+      principal: kzt("0", "0.00 KZT"),
+      status: "Paid",
+      paidAt: "2026-03-01T12:00:00+05:00",
+      vote: "None",
+      votedAt: null,
+      explorerUrl: explorer(owner),
+    };
+  }),
+  [ACTION_PDA_2]: INVESTOR_OWNERS.map((owner, i) => ({
+    pda: `EnTlDem0Pda${i}For${ACTION_PDA_2.slice(0, 4)}1111111111111111111111111`,
+    actionPda: ACTION_PDA_2,
+    owner,
+    units: ["10", "25", "65"][i] ?? "0",
+    gross: kzt("0", "0.00 KZT"),
+    tax: kzt("0", "0.00 KZT"),
+    net: kzt("0", "0.00 KZT"),
+    principal: kzt("0", "0.00 KZT"),
+    status: "Snapshotted",
+    paidAt: null,
+    vote: "None",
+    votedAt: null,
+    explorerUrl: explorer(owner),
+  })),
 };
 
 /** Serve one registrar API path from the fixtures above. */
@@ -214,6 +292,10 @@ export function mockGet(path: string): Promise<unknown> {
       );
     }
     return respond(actions[mint] ?? []);
+  }
+  const entMatch = /^\/actions\/([^/]+)\/entitlements$/.exec(path);
+  if (entMatch) {
+    return respond(entitlements[entMatch[1]!] ?? []);
   }
   return Promise.reject(notFound());
 }

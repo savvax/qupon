@@ -17,6 +17,12 @@ export function Header() {
         </div>
         <div className="flex items-center gap-4">
           <Link
+            href="/portal"
+            className="text-xs text-neutral-500 hover:text-sky-300"
+          >
+            portal
+          </Link>
+          <Link
             href="/kitchen-sink"
             className="text-xs text-neutral-500 hover:text-sky-300"
           >

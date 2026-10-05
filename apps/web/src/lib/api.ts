@@ -5,6 +5,7 @@ export type Schemas = components["schemas"];
 export type Amount = Schemas["Amount"];
 export type SeriesDTO = Schemas["SeriesDTO"];
 export type InvestorDTO = Schemas["InvestorDTO"];
+export type EntitlementDTO = Schemas["EntitlementDTO"];
 export type ScheduleItem = Schemas["ScheduleItem"];
 export type ActionDTO = Schemas["ActionDTO"];
 export type ErrorDTO = Schemas["Error"];
@@ -65,3 +66,5 @@ export const getSchedule = (mint: string) =>
   get<ScheduleItem[]>(`/series/${mint}/schedule`);
 export const listActions = (mint: string) =>
   get<ActionDTO[]>(`/series/${mint}/actions`);
+export const listEntitlements = (actionPda: string) =>
+  get<EntitlementDTO[]>(`/actions/${actionPda}/entitlements`);
