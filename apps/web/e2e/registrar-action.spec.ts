@@ -8,13 +8,22 @@ test.beforeEach(async ({ page }) => {
   await page.getByRole("button", { name: /Registrar/ }).click();
   await expect(page).toHaveURL(/\/registrar\/actions$/);
   // the URL flips before the client navigation lands; wait for the page itself
-  await expect(page.getByRole("heading", { level: 1, name: "Corporate actions" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Corporate actions" }),
+  ).toBeVisible();
 });
 
 test("actions list opens a completed coupon with every step done and all holders paid", async ({
   page,
 }) => {
-  await page.getByRole("tab", { name: "All" }).click();
+  // a click before hydration is lost: retry until the tab is really active
+  const all = page.getByRole("tab", { name: "All" });
+  await expect(async () => {
+    await all.click();
+    await expect(all).toHaveAttribute("aria-selected", "true", {
+      timeout: 1000,
+    });
+  }).toPass();
   await page.locator(`a[href="/registrar/actions/${INTR}"]`).first().click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Coupon");
   await expect(page.getByText("Action completed")).toBeVisible();

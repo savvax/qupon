@@ -1,5 +1,4 @@
 "use client";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
@@ -14,12 +13,9 @@ const HOME: Record<Role, string> = {
   admin: "/registrar",
 };
 
+/** Full navigation after sign-in: the next page renders on the server with the fresh session cookie. */
 function useEnter(next?: string) {
-  const router = useRouter();
-  return (role: Role) => {
-    router.push(next ?? HOME[role]);
-    router.refresh();
-  };
+  return (role: Role) => window.location.assign(next ?? HOME[role]);
 }
 
 export function SignInCard({ next }: { next?: string }) {

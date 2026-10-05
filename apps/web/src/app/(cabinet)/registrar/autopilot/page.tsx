@@ -6,9 +6,8 @@ import { Approvals } from "../_components/Approvals";
 type Approval = Schemas["Approval"];
 
 const fetchApprovals = async (status: "pending" | "executed") =>
-  (
-    await boFetch<{ approvals: Approval[] }>(`/approvals?status=${status}`)
-  ).approvals ?? [];
+  (await boFetch<{ approvals: Approval[] }>(`/approvals?status=${status}`))
+    .approvals ?? [];
 
 /** Autopilot approvals: the scheduler's pending queue and what it already ran (Plan 3 Task 5). */
 export default async function RegistrarAutopilotPage() {

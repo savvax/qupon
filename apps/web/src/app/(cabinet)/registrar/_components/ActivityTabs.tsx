@@ -76,9 +76,7 @@ export function ActivityTabs({
     {
       key: "route",
       header: t("route"),
-      render: (r) => (
-        <span className="text-xs break-all">{r.route}</span>
-      ),
+      render: (r) => <span className="text-xs break-all">{r.route}</span>,
     },
     {
       key: "ok",

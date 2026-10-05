@@ -12,9 +12,8 @@ export default async function RegistrarActivityPage() {
   let auditDown = false;
   try {
     audit =
-      (
-        await boFetch<{ items: AuditItem[] }>("/registrar/audit?limit=200")
-      ).items ?? [];
+      (await boFetch<{ items: AuditItem[] }>("/registrar/audit?limit=200"))
+        .items ?? [];
   } catch {
     auditDown = true; // session/role gates are enforced by the layout; show a notice
   }

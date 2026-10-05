@@ -42,8 +42,7 @@ export function Approvals({
       success: () => t("approved"),
       call: () =>
         boPost<ApproveResult>(`registrar/approvals/${row.id}/approve`),
-      txs: (res) =>
-        res.signatures ?? (res.signature ? [res.signature] : []),
+      txs: (res) => res.signatures ?? (res.signature ? [res.signature] : []),
     });
     setBusy(null);
     if (r) router.refresh(); // executed rows only appear after the API moved the row
