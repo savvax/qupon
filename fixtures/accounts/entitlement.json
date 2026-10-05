@@ -1,0 +1,18 @@
+{
+  "kind": "entitlement",
+  "pubkey": "7uPjuJHeztAEVUzABaFow4hh71fbCZBh5kXt4F7U6Up",
+  "expected": {
+  "bump": 254,
+  "action": "Cs5Fz2JmjDu52N3GhfLmkzmRGQtP5zazfuxAGmtJPiUj",
+  "owner": "43rqdYRUjYPPieXKZzaN4BWjS31bMbG1BHXsCerA9TKA",
+  "units": 10,
+  "gross": 50000,
+  "tax": 5000,
+  "net": 45000,
+  "principal": 0,
+  "status": 1,
+  "paid_at": 1782932460,
+  "vote": 0,
+  "voted_at": 0
+}
+}

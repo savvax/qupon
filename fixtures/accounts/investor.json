@@ -1,0 +1,17 @@
+{
+  "kind": "investor",
+  "pubkey": "7dRfNC7pGRyVEd1K1r3RWhcGuJSXAW2jXfeSAKR6gJmY",
+  "expected": {
+  "bump": 255,
+  "series": "FFM75BBwFniQGjQ82E6wYu4skMcPW1Jz2kBeizoeFByV",
+  "owner": "43rqdYRUjYPPieXKZzaN4BWjS31bMbG1BHXsCerA9TKA",
+  "bond_ata": "V9gWLRgEqMzW958X6RzWmDBGqWWQvJS2vBCkt3Si86q",
+  "cash_ata": "DurbredKgZ5qQZadkSz4MJWUsetid9Hg1xKVdRfmcp1z",
+  "investor_type": 0,
+  "residency": 0,
+  "tax_rate_bps": 1000,
+  "status": 0,
+  "kyc_ref": "0707070707070707070707070707070707070707070707070707070707070707",
+  "registered_at": 1782932400
+}
+}
