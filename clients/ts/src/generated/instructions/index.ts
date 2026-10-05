@@ -8,6 +8,7 @@
 
 export * from './announceAction.js';
 export * from './cancelAction.js';
+export * from './closeSeries.js';
 export * from './completeAction.js';
 export * from './finalizeSnapshot.js';
 export * from './fundAction.js';
@@ -16,6 +17,7 @@ export * from './issueUnits.js';
 export * from './payBatch.js';
 export * from './registerInvestor.js';
 export * from './reinstateInvestor.js';
+export * from './retireBatch.js';
 export * from './snapshotBatch.js';
 export * from './strikeRecord.js';
 export * from './subscribe.js';

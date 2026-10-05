@@ -759,3 +759,83 @@ impl Env {
         self.send(&[ix], &[]).expect("finalize");
     }
 }
+
+impl Env {
+    /// `setup_bond` with modified series params.
+    pub fn setup_bond_with(&mut self, f: impl FnOnce(&mut InitSeriesParams)) -> Bond {
+        let cash = self.create_cash_mint(spl_token::ID);
+        let (mint, series) = self.create_bond_mint(BondMintOpts::default());
+        let mut p = self.params();
+        f(&mut p);
+        let ix = self.init_series_ix(mint, cash, spl_token::ID, p);
+        self.send(&[ix], &[]).expect("init_series");
+        Bond {
+            mint,
+            series,
+            cash,
+            cash_tp: spl_token::ID,
+        }
+    }
+
+    /// announce(args) → record date → strike → snapshot → finalize → fund exactly → pay → complete (action 0).
+    pub fn settle_action(&mut self, b: &Bond, args: qupon_bonds::AnnounceArgs, owners: &[Pubkey]) {
+        let now = self.now();
+        let ix = self.announce_ix(b, &self.registrar.pubkey(), args);
+        self.send(&[ix], &[]).expect("announce");
+        self.set_clock(now + 60);
+        for ix in [
+            self.strike_ix(b, &self.registrar.pubkey(), 0),
+            self.snapshot_ix(b, 0, owners),
+            self.finalize_snapshot_ix(b, 0),
+        ] {
+            self.send(&[ix], &[]).expect("record date");
+        }
+        let a: qupon_bonds::CorporateAction = self.account(&action_pda(&b.series, 0));
+        let required = a.total_net + a.total_tax + a.total_principal;
+        self.issuer_cash(b);
+        let issuer = self.issuer.insecure_clone();
+        self.fund_cash(b, &issuer.pubkey(), required);
+        let ix = self.fund_ix(b, &issuer.pubkey(), 0, required);
+        self.send(&[ix], &[&issuer]).expect("fund");
+        let ix = self.pay_ix(b, 0, owners);
+        self.send(&[ix], &[]).expect("pay");
+        let ix = self.complete_ix(b, 0);
+        self.send(&[ix], &[]).expect("complete");
+    }
+
+    pub fn retire_ix(&self, b: &Bond, index: u32, owners: &[Pubkey]) -> Instruction {
+        use anchor_lang::solana_program::instruction::AccountMeta;
+        let action = action_pda(&b.series, index);
+        let mut metas = qupon_bonds::accounts::RetireBatch {
+            authority: self.registrar.pubkey(),
+            series: b.series,
+            action,
+            mint: b.mint,
+            bond_token_program: spl_token_2022::ID,
+        }
+        .to_account_metas(None);
+        for o in owners {
+            metas.push(AccountMeta::new(entitlement_pda(&action, o), false));
+            metas.push(AccountMeta::new(
+                ata(o, &b.mint, &spl_token_2022::ID),
+                false,
+            ));
+        }
+        self.action_ix(qupon_bonds::instruction::RetireBatch {}.data(), metas)
+    }
+
+    pub fn close_series_ix(&self, b: &Bond, index: u32) -> Instruction {
+        self.action_ix(
+            qupon_bonds::instruction::CloseSeries {}.data(),
+            qupon_bonds::accounts::CloseSeries {
+                registrar: self.registrar.pubkey(),
+                series: b.series,
+                action: action_pda(&b.series, index),
+                mint: b.mint,
+                bond_token_program: spl_token_2022::ID,
+                system_program: anchor_lang::solana_program::system_program::ID,
+            }
+            .to_account_metas(None),
+        )
+    }
+}

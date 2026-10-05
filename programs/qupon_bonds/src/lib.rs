@@ -85,4 +85,14 @@ pub mod qupon_bonds {
     pub fn complete_action(ctx: Context<CompleteAction>) -> Result<()> {
         instructions::settle::handle_complete_action(ctx)
     }
+
+    /// Burn redeemed units: remaining accounts = N × [Entitlement, holder bond ATA], ≤ 12 (crank).
+    pub fn retire_batch<'info>(ctx: Context<'info, RetireBatch<'info>>) -> Result<()> {
+        instructions::retire::handle_retire_batch(ctx)
+    }
+
+    /// Supply is zero: mark metadata REDEEMED, close the mint, Series → Closed (registrar).
+    pub fn close_series(ctx: Context<CloseSeries>) -> Result<()> {
+        instructions::retire::handle_close_series(ctx)
+    }
 }
