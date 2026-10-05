@@ -918,3 +918,26 @@ impl Env {
         now + 180
     }
 }
+
+impl Env {
+    /// Deterministic clock control: move `unix_timestamp` forward by `seconds`.
+    pub fn fast_forward(&mut self, seconds: i64) {
+        let now = self.now();
+        self.set_clock(now + seconds);
+    }
+}
+
+/// Token-2022 `transfer_checked` of `amount` bond units from `from` (signer) to `to`'s ATA.
+pub fn bond_transfer(b: &Bond, from: &Pubkey, to: &Pubkey, amount: u64) -> Instruction {
+    spl_token_2022::instruction::transfer_checked(
+        &spl_token_2022::ID,
+        &ata(from, &b.mint, &spl_token_2022::ID),
+        &b.mint,
+        &ata(to, &b.mint, &spl_token_2022::ID),
+        from,
+        &[],
+        amount,
+        0,
+    )
+    .unwrap()
+}
