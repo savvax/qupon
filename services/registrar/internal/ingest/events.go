@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strconv"
 	"strings"
@@ -32,7 +33,8 @@ func boolean(name string) field    { return field{name, "bool", 0} }
 func arr(name string, n int) field { return field{name, "bytes", n} }
 
 // layouts mirrors programs/qupon_bonds/src/events.rs field-for-field.
-// Keep in sync with the Rust file when events change.
+// TestLayoutsMatchIDL diffs this table against the generated IDL, so a
+// program change that forgets to update Go fails `make verify`.
 var layouts = map[string][]field{
 	"SeriesInitialized": {pk("series"), pk("mint"), pk("cash_mint"), pk("registrar"), pk("issuer"), pk("paying_agent"),
 		arr("isin", 12), arr("ticker", 16), u64("face_value"), u32("coupon_rate_bps"), u8("frequency"), u8("day_count"),
@@ -43,8 +45,10 @@ var layouts = map[string][]field{
 	"Subscribed":            {pk("series"), pk("owner"), u64("units"), u64("price_per_unit"), u64("cash_paid"), u64("total_issued"), u64("slot"), i64("timestamp")},
 	"UnitsIssued":           {pk("series"), pk("owner"), u64("units"), u64("total_issued"), u64("slot"), i64("timestamp")},
 	"ActionAnnounced": {pk("series"), pk("action"), u32("index"), u8("kind"), u8("mandatory"), arr("corp_id", 16),
-		i64("record_at"), i64("payment_at"), i64("period_start"), i64("period_end"), u32("accrual_days"), u32("rate_bps"),
-		u64("per_unit_gross"), u64("per_unit_principal"), u64("slot"), i64("timestamp")},
+		arr("official_id", 16), i64("record_at"), i64("payment_at"), i64("period_start"), i64("period_end"),
+		u32("accrual_days"), u32("rate_bps"), u64("per_unit_gross"), u64("per_unit_principal"), u16("factor_bps"),
+		pk("cash_mint"), pk("escrow"), u32("proposal_new_rate_bps"), i64("proposal_new_maturity"),
+		i64("voting_ends_at"), u64("slot"), i64("timestamp")},
 	"ActionCancelled": {pk("series"), pk("action"), u32("index"), u64("slot"), i64("timestamp")},
 	"RecordStruck":    {pk("series"), pk("action"), u32("index"), i64("record_at"), u64("snapshot_slot"), u64("slot"), i64("timestamp")},
 	"HolderSnapshotted": {pk("series"), pk("action"), u32("index"), pk("owner"), pk("bond_ata"),
@@ -162,7 +166,8 @@ const programDataPrefix = "Program data: "
 
 // ParseLogs extracts every decodable Anchor event from a transaction's log
 // messages, in log order. Unknown discriminators and non-event lines are
-// skipped (forward compatibility with newer program builds).
+// skipped (forward compatibility with newer program builds); decode failures
+// on known events are logged, never dropped silently.
 func ParseLogs(logs []string) []Event {
 	var out []Event
 	for _, line := range logs {
@@ -171,10 +176,13 @@ func ParseLogs(logs []string) []Event {
 		}
 		raw, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(line, programDataPrefix))
 		if err != nil {
+			slog.Warn("ingest: bad event log encoding", "err", err)
 			continue
 		}
 		ev, err := decodeEvent(raw)
 		if err != nil {
+			// err carries the event name when the discriminator is known
+			slog.Warn("ingest: event decode failed", "err", err)
 			continue
 		}
 		out = append(out, ev)
