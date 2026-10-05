@@ -48,3 +48,14 @@ test("next= cannot redirect off-site", async ({ page }) => {
   await page.getByRole("button", { name: /Investor/ }).click();
   await expect(page).toHaveURL(/\/investor$/);
 });
+
+test("demo sign-in works without JavaScript (form post + redirect)", async ({
+  browser,
+}) => {
+  const ctx = await browser.newContext({ javaScriptEnabled: false });
+  const page = await ctx.newPage();
+  await page.goto("/login?next=/registrar/actions");
+  await page.getByRole("button", { name: /^Registrar/ }).click();
+  await expect(page).toHaveURL(/\/registrar\/actions$/);
+  await ctx.close();
+});

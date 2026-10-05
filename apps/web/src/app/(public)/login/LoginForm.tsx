@@ -137,12 +137,23 @@ export function DemoPanel({ next }: { next?: string }) {
           {t("title")}
         </h2>
         <p className="mt-1.5 text-sm text-p100">{t("lead")}</p>
-        <div className="mt-6 grid gap-3">
+        {/* A plain form posts to the server before hydration (slow phones); once hydrated the click handler takes over. */}
+        <form
+          method="post"
+          action="/api/session/demo"
+          className="mt-6 grid gap-3"
+        >
+          {next && <input type="hidden" name="next" value={next} />}
           {DEMO.map((d) => (
             <button
               key={d.role}
-              type="button"
-              onClick={() => start(d)}
+              type="submit"
+              name="role"
+              value={d.role}
+              onClick={(e) => {
+                e.preventDefault();
+                void start(d);
+              }}
               disabled={!!pending}
               aria-busy={pending === d.role || undefined}
               className="group flex items-center gap-4 rounded-card bg-n0 p-4 text-left text-n900 transition hover:bg-g50 disabled:opacity-70"
@@ -165,7 +176,7 @@ export function DemoPanel({ next }: { next?: string }) {
               </span>
             </button>
           ))}
-        </div>
+        </form>
         {error && (
           <p role="alert" className="mt-4 text-sm font-semibold text-[#ffb4b4]">
             {error}
