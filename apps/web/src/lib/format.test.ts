@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   bpsToPercent,
+  currencyDecimals,
   formatAmount,
   formatDate,
   formatDateTime,
+  formatMinor,
   frequencyLabel,
   shortKey,
+  splitAmountDisplay,
 } from "./format";
 
 describe("shortKey", () => {
@@ -63,5 +66,30 @@ describe("formatAmount", () => {
       currency: "tKZT",
     };
     expect(formatAmount(amt)).toBe("1,000.00 KZT");
+  });
+});
+
+describe("currencyDecimals / formatMinor", () => {
+  it("maps settlement currencies to minor units", () => {
+    expect(currencyDecimals("tKZT")).toBe(2);
+    expect(currencyDecimals("USDC")).toBe(6);
+    expect(currencyDecimals("XSU")).toBe(2); // unknown → 2
+  });
+  it("formats minor units with grouping", () => {
+    expect(formatMinor("100000", 2)).toBe("1,000.00");
+    expect(formatMinor("325000", 2)).toBe("3,250.00");
+    expect(formatMinor("1234567", 6)).toBe("1.234567");
+    expect(formatMinor("-500", 2)).toBe("-5.00");
+    expect(formatMinor("12000", 0)).toBe("12,000");
+  });
+});
+
+describe("splitAmountDisplay", () => {
+  it("separates value and currency code", () => {
+    expect(splitAmountDisplay("1,000.00 KZT")).toEqual(["1,000.00", "KZT"]);
+    expect(splitAmountDisplay("1.00 USDC")).toEqual(["1.00", "USDC"]);
+  });
+  it("keeps bare numbers intact", () => {
+    expect(splitAmountDisplay("12.50")).toEqual(["12.50", ""]);
   });
 });

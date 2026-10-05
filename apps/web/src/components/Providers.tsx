@@ -3,6 +3,7 @@
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import type { ReactNode } from "react";
+import { ToastProvider } from "@/components/ui/Toast";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 // Devnet endpoint; override with NEXT_PUBLIC_RPC_URL (e.g. Helius).
@@ -14,7 +15,9 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
     <ConnectionProvider endpoint={ENDPOINT}>
       <WalletProvider wallets={[]} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
+        <WalletModalProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
   );

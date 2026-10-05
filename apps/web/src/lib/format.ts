@@ -46,3 +46,30 @@ export function frequencyLabel(frequency: number): string {
 export function formatAmount(amount: { display: string }): string {
   return amount.display;
 }
+
+/** Minor-unit decimals per settlement currency; unknown currencies get 2. */
+export function currencyDecimals(currency: string): number {
+  switch (currency) {
+    case "USDC":
+    case "tUSDC":
+      return 6;
+    default:
+      return 2; // KZT, tKZT and anything else the registrar throws at us
+  }
+}
+
+/** "100000" @ 2 → "1,000.00" (BigInt-safe, exact: minor units carry no rounding). */
+export function formatMinor(minor: string, decimals: number): string {
+  const n = BigInt(minor);
+  const abs = n < 0n ? -n : n;
+  const base = 10n ** BigInt(decimals);
+  const whole = (abs / base).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const frac = (abs % base).toString().padStart(decimals, "0");
+  return `${n < 0n ? "-" : ""}${whole}${decimals > 0 ? `.${frac}` : ""}`;
+}
+
+/** "1,000.00 KZT" → ["1,000.00", "KZT"]. Display without a unit → [display, ""]. */
+export function splitAmountDisplay(display: string): [string, string] {
+  const m = display.trim().match(/^(.+?)(?:\s+([A-Za-z][A-Za-z0-9]{1,9}))?$/);
+  return m ? [m[1] ?? display, m[2] ?? ""] : [display, ""];
+}

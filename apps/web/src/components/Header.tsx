@@ -1,6 +1,7 @@
 "use client";
 
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import Link from "next/link";
 
 export function Header() {
   return (
@@ -14,7 +15,15 @@ export function Header() {
             corporate actions for tokenized bonds · solana devnet
           </div>
         </div>
-        <WalletMultiButton className="!h-8 !rounded !text-xs" />
+        <div className="flex items-center gap-4">
+          <Link
+            href="/kitchen-sink"
+            className="text-xs text-neutral-500 hover:text-sky-300"
+          >
+            ui kit
+          </Link>
+          <WalletMultiButton className="!h-8 !rounded !text-xs" />
+        </div>
       </div>
     </header>
   );

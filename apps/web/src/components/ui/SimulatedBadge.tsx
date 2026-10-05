@@ -1,4 +1,3 @@
-// Minimal stub — replaced by the full UI kit in task 050 (keep props stable).
 // Any simulated integration (KYC, ARDFM registration, Swift delivery, fiat)
 // must be labelled with this badge in the UI.
 export function SimulatedBadge({ label }: { label?: string }) {
