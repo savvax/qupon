@@ -16,3 +16,9 @@
 - Added 9126 (notice shows real tx links from the activity feed).
 - Z.ai 5h quota was exhausted 06:34–08:40; the lead executed 016, 018, 019, 027, 9026 meanwhile.
 - Human next: make the GitHub repo public (or share with hackathon@colosseum.com), Colosseum/Earn registrations, KZ program registration by Oct 8, record the Oct 6 update video, fill <<FILL>> fields in docs/SUBMISSION_FINAL.md.
+
+## 2026-10-05 13:45 Almaty — planner pass 3 (lead)
+- **Every T0/T1 task is done** (done: 72). **Gate 2 reached Mon 13:35**: one coupon clicked through the console on devnet, production web build — reports/ui-walkthrough.md (screens + every tx link). CI on GitHub green since 43a75d9.
+- Lead review passes today found and fixed real bugs in GLM merges: 024 scheduler nil-clock panic + approvals dedup stall (9024), 032 deploy image that could not run (9032), executor timeout leaving node alive (9023), UI walkthrough fixes (9030).
+- Next: T2. Lead takes 041 (SAS KYC attestation — program change, redeploy, re-run make demo + verified build) then 040 (Squads 2-of-3 funding, client-only). 042/053 need ALLOW_T2=1 for the GLM workers (restart via ops/tmux.sh).
+- Human next: deploy (HUMAN_TODO checklist), make repo public, registrations, Oct 6 update video (material: reports/ui-walkthrough.md, reports/demo-full.md).
