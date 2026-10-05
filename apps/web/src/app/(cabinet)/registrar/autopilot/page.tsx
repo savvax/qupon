@@ -1,0 +1,28 @@
+import { getTranslations } from "next-intl/server";
+import type { Schemas } from "@/lib/api";
+import { boFetch } from "@/lib/bo";
+import { Approvals } from "../_components/Approvals";
+
+type Approval = Schemas["Approval"];
+
+const fetchApprovals = async (status: "pending" | "executed") =>
+  (
+    await boFetch<{ approvals: Approval[] }>(`/approvals?status=${status}`)
+  ).approvals ?? [];
+
+/** Autopilot approvals: the scheduler's pending queue and what it already ran (Plan 3 Task 5). */
+export default async function RegistrarAutopilotPage() {
+  const t = await getTranslations("registrar.autopilot");
+  // Public read; degrade to empty lists when the scheduler surface is absent.
+  const [pending, executed] = await Promise.all([
+    fetchApprovals("pending").catch(() => [] as Approval[]),
+    fetchApprovals("executed").catch(() => [] as Approval[]),
+  ]);
+  return (
+    <main className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6">
+      <h1 className="text-2xl font-bold">{t("title")}</h1>
+      <p className="mt-1 mb-6 text-sm text-n600">{t("lead")}</p>
+      <Approvals pending={pending} executed={executed} />
+    </main>
+  );
+}

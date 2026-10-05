@@ -339,6 +339,93 @@ const activity = [
   }),
 ];
 
+/** Back-office fixtures (Plan 3 Task 5): operator audit trail + scheduler approvals. */
+const nowSec = () => Math.floor(Date.now() / 1000);
+
+const auditTrail = [
+  {
+    id: 3,
+    ts: nowSec() - 3_600,
+    userId: 1,
+    role: "registrar",
+    route: "POST /registrar/actions/" + ACTION_PDA_1 + "/advance",
+    params: { pda: ACTION_PDA_1, confirm: true },
+    ok: true,
+    detail: "snapshot_batch",
+    signatures: [SIGS[0]],
+  },
+  {
+    id: 2,
+    ts: nowSec() - 86_400,
+    userId: 1,
+    role: "registrar",
+    route: "POST /registrar/investors",
+    params: {
+      series: MINT_QPNB1,
+      owner: INVESTOR_OWNERS[0],
+      investorType: "individual",
+      residency: "resident",
+      taxBps: 1000,
+    },
+    ok: true,
+    detail: "onboard",
+    signatures: [SIGS[1], SIGS[2]],
+  },
+  {
+    id: 1,
+    ts: nowSec() - 172_800,
+    userId: 2,
+    role: "issuer",
+    route: "POST /issuer/series",
+    params: { name: "QPNb1", isin: "KZ2C0QUPON01" },
+    ok: false,
+    detail: "series_exists",
+    signatures: [],
+  },
+];
+
+const approvals = [
+  {
+    id: 1,
+    ts: nowSec() - 1_800,
+    dedupKey: "QPNb1:INTR:1:strike_record",
+    seriesMint: MINT_QPNB1,
+    actionPda: ACTION_PDA_1,
+    step: "step:strike_record",
+    args: [
+      "--json",
+      "action:advance",
+      "--series",
+      "QPNb1",
+      "--index",
+      "1",
+      "--step",
+      "strike_record",
+    ],
+    status: "pending",
+  },
+  {
+    id: 2,
+    ts: nowSec() - 43_200,
+    dedupKey: "QPNb1:INTR:1:snapshot_batch",
+    seriesMint: MINT_QPNB1,
+    actionPda: ACTION_PDA_1,
+    step: "step:snapshot_batch",
+    args: [
+      "--json",
+      "action:advance",
+      "--series",
+      "QPNb1",
+      "--index",
+      "1",
+      "--step",
+      "snapshot_batch",
+    ],
+    status: "executed",
+    detail: { ok: true, signature: SIGS[2], slot: 1234 },
+  },
+];
+
 function mockReconcile(pda: string) {
   const ents = entitlements[pda] ?? [];
   const ok = pda !== ACTION_PDA_2; // meetings reconcile against snapshot weights
@@ -369,6 +456,11 @@ export function mockGet(path: string): Promise<unknown> {
 
   if (path === "/series") return delay(series);
   if (path.startsWith("/activity")) return delay(activity);
+  if (path.startsWith("/registrar/audit")) return delay({ items: auditTrail });
+  if (path.startsWith("/approvals")) {
+    const want = path.includes("executed") ? "executed" : "pending";
+    return delay({ approvals: approvals.filter((a) => a.status === want) });
+  }
   const reconcileMatch = /^\/actions\/([^/]+)\/reconcile$/.exec(path);
   if (reconcileMatch) {
     return delay(mockReconcile(reconcileMatch[1]!));

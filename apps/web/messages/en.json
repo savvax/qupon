@@ -349,6 +349,45 @@
       "KycAttestationInvalid": "no live KYC attestation (Solana Attestation Service) matching this wallet and its attributes"
     }
   },
+  "registrar": {
+    "activity": {
+      "title": "Activity",
+      "lead": "Every on-chain event and every operator write, newest first.",
+      "onchain": "On-chain",
+      "audit": "Operator audit",
+      "time": "Time (Almaty)",
+      "kind": "Event",
+      "series": "Series",
+      "tx": "Transaction",
+      "user": "User",
+      "role": "Role",
+      "route": "Route",
+      "result": "Result",
+      "ok": "OK",
+      "failed": "Failed",
+      "signatures": "Signatures",
+      "emptyEvents": "No on-chain events yet.",
+      "emptyAudit": "No operator writes recorded yet.",
+      "unreachable": "The audit trail is unavailable — try again in a moment."
+    },
+    "autopilot": {
+      "title": "Autopilot approvals",
+      "lead": "The scheduler plans corporate-action steps; a registrar approves each one before it touches the chain.",
+      "pending": "Pending",
+      "executed": "Executed",
+      "series": "Series",
+      "action": "Action",
+      "step": "Step",
+      "argv": "Command",
+      "time": "Time (Almaty)",
+      "tx": "Transaction",
+      "approve": "Approve",
+      "approving": "Executing the approved step…",
+      "approved": "Step executed",
+      "emptyPending": "Nothing waits for approval — the autopilot is idle.",
+      "emptyExecuted": "No steps executed through approvals yet."
+    }
+  },
   "forbidden": {
     "title": "This area is for another role",
     "body": "You are signed in with a role that can't open this page.",
