@@ -125,6 +125,7 @@ var (
 
 // SeriesDTO is openapi.yaml#/components/schemas/SeriesDTO.
 type SeriesDTO struct {
+	PDA            string  `json:"pda"` // Series account; activity events name their series by it
 	Mint           string  `json:"mint"`
 	CashMint       string  `json:"cashMint"`
 	Registrar      string  `json:"registrar"`
@@ -147,13 +148,14 @@ type SeriesDTO struct {
 	ExplorerURL    string  `json:"explorerUrl"`
 }
 
-func seriesDTO(s *chain.Series, m money) SeriesDTO {
+func seriesDTO(pda solana.PublicKey, s *chain.Series, m money) SeriesDTO {
 	var open *string
 	if s.OpenAction != nil {
 		v := s.OpenAction.String()
 		open = &v
 	}
 	return SeriesDTO{
+		PDA:  pda.String(),
 		Mint: s.Mint.String(), CashMint: s.CashMint.String(), Registrar: s.Registrar.String(),
 		Issuer: s.Issuer.String(), PayingAgent: s.PayingAgent.String(),
 		ISIN: trimBytes(s.ISIN[:]), Ticker: trimBytes(s.Ticker[:]), FaceValue: m.amount(s.FaceValue),
@@ -435,14 +437,14 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 				fail(w, err)
 				return
 			}
-			out = append(out, seriesDTO(rec.Series, m))
+			out = append(out, seriesDTO(rec.PDA, rec.Series, m))
 		}
 		writeJSON(w, http.StatusOK, out)
 	})
 
 	r.Get("/series/{mint}", need(func(w http.ResponseWriter, r *http.Request) {
-		if _, s, m, ok := loadSeries(w, r); ok {
-			writeJSON(w, http.StatusOK, seriesDTO(s, m))
+		if pda, s, m, ok := loadSeries(w, r); ok {
+			writeJSON(w, http.StatusOK, seriesDTO(pda, s, m))
 		}
 	}))
 

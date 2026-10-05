@@ -1,4 +1,9 @@
-import { listActivity, listPublicSeries, type SeriesDTO } from "@/lib/api";
+import {
+  eventSeries,
+  listActivity,
+  listPublicSeries,
+  type SeriesDTO,
+} from "@/lib/api";
 
 /** ISO 20022 event codes in on-chain `ActionKind` order (state.rs). */
 export const KIND_CODES = [
@@ -36,7 +41,7 @@ export async function loadLive(): Promise<Live> {
     .filter((e) => e.kind === "ActionCompleted")
     .sort((a, b) => b.ts - a.ts)[0];
   const p = done?.payload ?? {};
-  const s = series.find((x) => x.mint === (done?.seriesMint ?? p.series));
+  const s = done ? eventSeries(done, series) : undefined;
   return {
     active: series.filter((x) => x.status === "Active"),
     txCount: new Set(activity.map((e) => e.sig)).size,

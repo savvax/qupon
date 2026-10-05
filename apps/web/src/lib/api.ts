@@ -84,6 +84,8 @@ export type ActivityLike = {
   actionPda?: string | null;
   action_pda?: string | null;
   seriesMint?: string | null;
+  /** snake_case from the Go store; despite the name it holds the Series account (PDA), not the bond mint */
+  series_mint?: string | null;
   payload?: Record<string, unknown> | null;
   explorerUrl?: string;
 };
@@ -171,4 +173,16 @@ export async function postAdvance(
       throw new ApiError(e.status, e.code, e.message, e.onchainError);
     throw e;
   }
+}
+
+/** The series an activity event belongs to: events name it by its Series account (PDA); mocks use the mint. */
+export function eventSeries(
+  ev: ActivityLike,
+  series: SeriesDTO[],
+): SeriesDTO | undefined {
+  const key =
+    ev.seriesMint ??
+    ev.series_mint ??
+    (ev.payload?.series as string | undefined);
+  return key ? series.find((s) => s.pda === key || s.mint === key) : undefined;
 }

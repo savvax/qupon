@@ -53,18 +53,17 @@ export function ActivityTabs({
     {
       key: "series",
       header: t("series"),
-      render: (r) =>
-        r.seriesMint ? (
-          tickers[r.seriesMint] ? (
-            <span className="font-semibold text-n900" title={r.seriesMint}>
-              {tickers[r.seriesMint]}
-            </span>
-          ) : (
-            <Address value={r.seriesMint} />
-          )
+      render: (r) => {
+        const key = r.seriesMint ?? r.series_mint;
+        if (!key) return dash;
+        return tickers[key] ? (
+          <span className="font-semibold text-n900" title={key}>
+            {tickers[key]}
+          </span>
         ) : (
-          dash
-        ),
+          <Address value={key} />
+        );
+      },
     },
     {
       key: "sig",

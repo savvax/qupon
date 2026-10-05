@@ -395,6 +395,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/issuer/series/{mint}/actions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Announce a cash corporate action (INTR coupon, REDM at maturity, MCAL early call) on the series — runs `qupon action:announce` through the executor. */
+    post: operations["issuerAnnounce"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/issuer/series/{mint}/meetings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Announce a bondholder meeting (BMET) proposing a new coupon rate — runs `qupon meeting:announce` through the executor. */
+    post: operations["issuerMeeting"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/issuer/actions/{pda}/fund": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Fund the action escrow — runs `qupon action:fund` (idempotent: fills only the shortfall, so a second call returns skipped true and moves no funds). */
+    post: operations["issuerFund"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/me": {
     parameters: {
       query?: never;
@@ -480,6 +531,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/demo/investor/subscribe": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Subscribe at par with the demo investor's custodial keypair (judges without a wallet); labelled demo custodial wallet in the UI. */
+    post: operations["demoSubscribe"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/demo/investor/vote": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cast a snapshot-weighted vote with the demo investor's keypair */
+    post: operations["demoVote"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -510,6 +595,24 @@ export interface components {
       detail: string;
       signatures: string[];
     };
+    DemoSubscribeRequest: {
+      /** @description bond mint (base58) */
+      series: string;
+      units: number;
+    };
+    DemoVoteRequest: {
+      /** @description CorporateAction PDA (base58) */
+      action: string;
+      /** @enum {string} */
+      choice: "for" | "against" | "abstain";
+    };
+    /** @description Demo custodial-wallet action result (always demo:true). */
+    DemoResponse: {
+      demo: boolean;
+      ok: boolean;
+      signature: string;
+      explorerUrl?: string;
+    };
     /** @description Money amount in minor units plus a human display string. */
     Amount: {
       /**
@@ -539,6 +642,8 @@ export interface components {
       db?: string;
     };
     SeriesDTO: {
+      /** @description Series account (PDA); activity events name their series by it */
+      pda?: string;
       mint: string;
       cashMint: string;
       registrar?: string;
@@ -1626,6 +1731,237 @@ export interface operations {
       };
     };
   };
+  issuerAnnounce: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Bond mint pubkey (base58) */
+        mint: components["parameters"]["Mint"];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @enum {string} */
+          kind: "INTR" | "REDM" | "MCAL";
+          /** @description record date, unix seconds */
+          recordAt: number;
+          /** @description payment date, unix seconds */
+          paymentAt: number;
+          /** @description MCAL only — call date YYYY-MM-DD (required for MCAL, rejected otherwise) */
+          callDate?: string;
+          /** @description CORP id, at most 16 bytes (default: <series>-<KIND>-####) */
+          corpId?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description announced */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description CorporateAction PDA */
+            action: string;
+            signatures: string[];
+          };
+        };
+      };
+      /** @description invalid_params — kind, callDate, dates or corpId rejected before any CLI run */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid back-office session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the session's role is not issuer or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description unknown_series — mint is not a registered series */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the chain refused the announcement (onchainError carries the CLI message) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description executor not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  issuerMeeting: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Bond mint pubkey (base58) */
+        mint: components["parameters"]["Mint"];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          newRateBps: number;
+          /** @description record date, unix seconds */
+          recordAt: number;
+          /** @description voting deadline, unix seconds */
+          votingEndsAt: number;
+        };
+      };
+    };
+    responses: {
+      /** @description meeting announced */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description CorporateAction PDA */
+            action: string;
+            signatures: string[];
+          };
+        };
+      };
+      /** @description invalid_params — rate out of range or voting ends before the record date */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid back-office session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the session's role is not issuer or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description unknown_series */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the chain refused the announcement (onchainError) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description executor not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  issuerFund: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+        pda: components["parameters"]["Pda"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description funded (or skipped — the escrow was already full) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            signatures: string[];
+            skipped: boolean;
+          };
+        };
+      };
+      /** @description pda is not base58 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid back-office session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the session's role is not issuer or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no corporate action at the pda, or unknown_series */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the chain refused the funding (onchainError) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description chain reader or executor not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   me: {
     parameters: {
       query?: never;
@@ -1893,6 +2229,124 @@ export interface operations {
       };
       /** @description role is not registrar or admin */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  demoSubscribe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DemoSubscribeRequest"];
+      };
+    };
+    responses: {
+      /** @description subscribed; tx signature and explorer URL in the body */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DemoResponse"];
+        };
+      };
+      /** @description units < 1 or not a base58 mint */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description role is not investor_demo or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description unknown_series */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the chain refused the subscribe (onchainError) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  demoVote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DemoVoteRequest"];
+      };
+    };
+    responses: {
+      /** @description vote cast; body carries the tx signature and explorer URL */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DemoResponse"];
+        };
+      };
+      /** @description unknown choice or not a base58 action */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description role is not investor_demo or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no corporate action at the PDA */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the chain refused the vote (onchainError) */
+      409: {
         headers: {
           [name: string]: unknown;
         };

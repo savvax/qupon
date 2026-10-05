@@ -940,6 +940,9 @@ components:
           explorerUrl,
         ]
       properties:
+        pda:
+          type: string
+          description: Series account (PDA); activity events name their series by it
         mint: { type: string }
         cashMint: { type: string }
         registrar: { type: string }

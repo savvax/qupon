@@ -28,6 +28,8 @@ Every action step confirms with a toast carrying its explorer link. The screensh
 | Investor votes For in the meeting (66 of 101 units) | [`reports/ui/live-local/investor-voted.png`](reports/ui/live-local/investor-voted.png) |
 | Meeting approved and applied — coupon rate 10% → 12% on-chain | [`reports/ui/live-local/meeting-applied.png`](reports/ui/live-local/meeting-applied.png) |
 
+The deployed site is checked the same way — live e2e 4/4 and a full coupon through the cabinets on production: [`reports/live-deploy.md`](reports/live-deploy.md), screenshots in [`reports/ui/live/`](reports/ui/live).
+
 Every page × EN/RU × 1440/390 px is swept by `apps/web/e2e/sweep.spec.ts` (no console errors — that is where missing translations surface — and no horizontal scroll at 390 px); the 80 shots live in [`reports/ui/sweep/`](reports/ui/sweep). Public pages need no sign-in: [landing](https://qupon.85-192-29-7.sslip.io/) · [bond board](https://qupon.85-192-29-7.sslip.io/bonds).
 
 ## The problem

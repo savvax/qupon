@@ -17,7 +17,13 @@ export default async function RegistrarActivityPage() {
     listSeries().catch(() => []),
   ]);
   const events = [...raw].sort((x, y) => y.ts - x.ts || y.id - x.id);
-  const tickers = Object.fromEntries(series.map((x) => [x.mint, x.ticker]));
+  // events name their series by PDA (live) or mint (mocks)
+  const tickers = Object.fromEntries(
+    series.flatMap((x) => [
+      [x.mint, x.ticker],
+      ...(x.pda ? [[x.pda, x.ticker]] : []),
+    ]),
+  );
   let audit: AuditItem[] = [];
   let auditDown = false;
   try {
