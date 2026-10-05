@@ -553,28 +553,80 @@ components:
           enum: [Projected, Announced, InProgress, Completed]
     ReconcileReport:
       description: >-
-        Chain state vs recomputed entitlement math (registrar reconciler).
+        Registrar recomputation vs chain: entitlements recomputed from bond
+        ATA balances (minContextSlot = snapshot_slot), snapshot hash chained
+        sha256(prev ‖ owner ‖ units_le) over investors owner-ascending, and
+        action totals (docs/03-domain.md §4).
       type: object
-      required: [actionPda, ok, checks]
+      required:
+        - actionPda
+        - ok
+        - holders
+        - mismatches
+        - expectedHash
+        - onchainHash
+        - hashMatches
+        - supply
+        - unitsSnapshotted
+        - totalsMatch
       properties:
         actionPda: {type: string}
+        actionStatus: {type: string, example: Completed}
         ok: {type: boolean}
-        snapshotHashMatches: {type: boolean}
-        totalsMatch:
-          type: boolean
-          description: >-
-            total_paid == total_net and holders_paid == holders_snapshotted
-        checks:
+        holders:
+          type: integer
+          description: investors with a non-zero balance at read time
+        mismatches:
           type: array
           items:
             type: object
-            required: [name, ok]
+            required: [owner, reason]
             properties:
-              name: {type: string, example: rounding_half_up_per_holder}
-              ok: {type: boolean}
-              detail:
-                type: [string, "null"]
-        checkedAt: {type: string, format: date-time}
+              owner: {type: string}
+              reason:
+                type: string
+                enum:
+                  - missing_entitlement
+                  - unexpected_entitlement
+                  - entitlement_mismatch
+                  - ata_mismatch
+              fields:
+                type: array
+                items: {type: string}
+                description: >-
+                  differing fields among units/gross/tax/net/principal
+              expected: {$ref: "#/components/schemas/ReconcileEntry"}
+              onchain: {$ref: "#/components/schemas/ReconcileEntry"}
+        expectedHash:
+          type: string
+          description: base58 sha256 chain recomputed owner-ascending
+        onchainHash: {type: string}
+        hashMatches: {type: boolean}
+        supply: {type: integer, description: bond mint supply at read time}
+        unitsSnapshotted: {type: integer}
+        expectedTotals: {$ref: "#/components/schemas/ReconcileTotals"}
+        onchainTotals: {$ref: "#/components/schemas/ReconcileTotals"}
+        totalsMatch: {type: boolean}
+        checkedAt: {type: integer, description: unix seconds}
+    ReconcileEntry:
+      type: object
+      required: [units, gross, tax, net, principal]
+      properties:
+        units: {type: integer}
+        gross: {type: integer}
+        tax: {type: integer}
+        net: {type: integer}
+        principal: {type: integer}
+    ReconcileTotals:
+      type: object
+      required: [units, holders, gross, tax, net, principal]
+      properties:
+        units: {type: integer}
+        holders: {type: integer}
+        gross: {type: integer}
+        tax: {type: integer}
+        net: {type: integer}
+        principal: {type: integer}
     AdvanceRequest:
       type: object
       required: [confirm]

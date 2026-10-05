@@ -115,6 +115,30 @@ type Entitlement struct {
 	VotedAt   int64
 }
 
+// ActionStatusName maps an ActionStatus code (state.rs) to its name.
+func ActionStatusName(code uint8) string {
+	actionStatusNames := [...]string{
+		"Announced", "RecordStruck", "SnapshotComplete", "Funded", "Settling",
+		"Completed", "Retiring", "Cancelled", "VotingOpen", "Finalized",
+	}
+	if int(code) < len(actionStatusNames) {
+		return actionStatusNames[code]
+	}
+	return "Unknown"
+}
+
+// InvestorRecord pairs an Investor account with its PDA.
+type InvestorRecord struct {
+	PDA      solana.PublicKey
+	Investor *Investor
+}
+
+// EntitlementRecord pairs an Entitlement account with its PDA.
+type EntitlementRecord struct {
+	PDA         solana.PublicKey
+	Entitlement *Entitlement
+}
+
 // SeriesView is the JSON projection served by GET /series: pubkeys as base58
 // and fixed-width ascii fields trimmed of their zero padding.
 type SeriesView struct {

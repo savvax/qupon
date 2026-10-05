@@ -1,6 +1,9 @@
 package api
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -8,6 +11,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	solana "github.com/solana-foundation/solana-go/v2"
+
+	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
+	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -18,7 +25,7 @@ func newTestServer(t *testing.T) (http.Handler, *store.Store) {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { _ = st.Close() })
-	return New(slog.New(slog.DiscardHandler), st, nil), st
+	return New(slog.New(slog.DiscardHandler), st, Deps{}), st
 }
 
 func TestHealthz(t *testing.T) {
@@ -180,5 +187,129 @@ func TestNoticeParamValidation(t *testing.T) {
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("nil reader status = %d, want 503", resp.StatusCode)
+	}
+}
+
+// fakeReconcileReader serves the reconcile endpoint tests: one happy INTR
+// action over a single 100-unit holder (brief coupon → 500 000 tiyn).
+type fakeReconcileReader struct {
+	found bool
+}
+
+var (
+	recSeries = solana.PublicKey{8: 8}
+	recMint   = solana.PublicKey{7: 7}
+	recOwner  = solana.PublicKey{0: 1}
+	recATA    = solana.PublicKey{0: 2}
+)
+
+func recHash() [32]byte {
+	var buf [72]byte // zero prev ‖ zero owner ‖ units LE — sha256 chain over one holder
+	copy(buf[32:64], recOwner[:])
+	binary.LittleEndian.PutUint64(buf[64:], 100)
+	return sha256.Sum256(buf[:])
+}
+
+func (f *fakeReconcileReader) FetchSeries(context.Context, solana.PublicKey) (*chain.Series, error) {
+	return &chain.Series{Mint: recMint, FaceValue: 100_000}, nil
+}
+
+func (f *fakeReconcileReader) FetchCorporateAction(context.Context, solana.PublicKey) (*chain.CorporateAction, error) {
+	if !f.found {
+		return nil, nil
+	}
+	return &chain.CorporateAction{
+		Series: recSeries, Status: 5, AccrualDays: 180, RateBps: 1000,
+		SnapshotHash: recHash(), UnitsSnapshotted: 100, HoldersSnapshotted: 1,
+		TotalGross: 500_000, TotalNet: 500_000,
+	}, nil
+}
+
+func (f *fakeReconcileReader) FetchMint(context.Context, solana.PublicKey) (*chain.Mint, error) {
+	return &chain.Mint{Supply: 100}, nil
+}
+
+func (f *fakeReconcileReader) FetchInvestorsBySeries(context.Context, solana.PublicKey) ([]chain.InvestorRecord, error) {
+	return []chain.InvestorRecord{{Investor: &chain.Investor{Owner: recOwner, BondATA: recATA}}}, nil
+}
+
+func (f *fakeReconcileReader) FetchEntitlementsByAction(context.Context, solana.PublicKey) ([]chain.EntitlementRecord, error) {
+	return []chain.EntitlementRecord{{Entitlement: &chain.Entitlement{
+		Owner: recOwner, Units: 100, Gross: 500_000, Net: 500_000,
+	}}}, nil
+}
+
+func (f *fakeReconcileReader) FetchTokenAccountAt(_ context.Context, addr solana.PublicKey, _ uint64) (*chain.TokenAccount, error) {
+	if addr != recATA {
+		return nil, nil
+	}
+	return &chain.TokenAccount{Mint: recMint, Owner: recOwner, Amount: 100}, nil
+}
+
+func TestReconcileEndpoint(t *testing.T) {
+	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "reconcile.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	handler := New(slog.New(slog.DiscardHandler), st, Deps{Reconcile: &fakeReconcileReader{found: true}})
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	pda := solana.PublicKey{9: 9}.String()
+
+	// happy path: 200, ok:true, run row recorded with status ok.
+	resp, err := http.Get(srv.URL + "/actions/" + pda + "/reconcile")
+	if err != nil {
+		t.Fatalf("get reconcile: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	var rep reconcile.Report
+	if err := json.NewDecoder(resp.Body).Decode(&rep); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if !rep.Ok || rep.Holders != 1 || rep.ExpectedTotals.Gross != 500_000 {
+		t.Fatalf("report = ok:%v holders:%d gross:%d, want ok:true 1 500000",
+			rep.Ok, rep.Holders, rep.ExpectedTotals.Gross)
+	}
+
+	// 400 on a malformed pda.
+	resp2, err := http.Get(srv.URL + "/actions/notabase58/reconcile")
+	if err != nil {
+		t.Fatalf("get bad pda: %v", err)
+	}
+	defer func() { _ = resp2.Body.Close() }()
+	if resp2.StatusCode != http.StatusBadRequest {
+		t.Fatalf("bad pda status = %d, want 400", resp2.StatusCode)
+	}
+
+	// 404 when the action account is absent.
+	srv404 := httptest.NewServer(New(slog.New(slog.DiscardHandler), st, Deps{Reconcile: &fakeReconcileReader{found: false}}))
+	defer srv404.Close()
+	resp3, err := http.Get(srv404.URL + "/actions/" + pda + "/reconcile")
+	if err != nil {
+		t.Fatalf("get missing action: %v", err)
+	}
+	defer func() { _ = resp3.Body.Close() }()
+	if resp3.StatusCode != http.StatusNotFound {
+		t.Fatalf("missing action status = %d, want 404", resp3.StatusCode)
+	}
+}
+
+func TestReconcileEndpointNoReader(t *testing.T) {
+	handler, _ := newTestServer(t) // nil reader: PROGRAM_ID unset
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/actions/" + solana.PublicKey{9: 9}.String() + "/reconcile")
+	if err != nil {
+		t.Fatalf("get reconcile: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want 503", resp.StatusCode)
 	}
 }

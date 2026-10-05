@@ -21,6 +21,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/config"
 	"github.com/qupon-kz/qupon/services/registrar/internal/ingest"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
+	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -76,12 +77,15 @@ func run() error {
 	defer func() { _ = st.Close() }()
 
 	// Event ingestion: poll the program's transactions into the activity feed.
+	// The same client powers the reconcile endpoint (nil when unconfigured).
+	var chainReader reconcile.Reader
 	if cfg.ProgramID != "" {
 		program, err := solana.PublicKeyFromBase58(cfg.ProgramID)
 		if err != nil {
 			return fmt.Errorf("parse program id %q: %w", cfg.ProgramID, err)
 		}
 		poller := ingest.NewPoller(cfg.RPCURL, program, st, logger)
+		chainReader = chain.NewClient(cfg.RPCURL, program, logger)
 		go poller.Run(ctx)
 	} else {
 		logger.Warn("PROGRAM_ID empty: activity poller disabled")
@@ -95,7 +99,7 @@ func run() error {
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(logger, st, notice.NewReader(cfg.RPCURL, "")),
+		Handler:           api.New(logger, st, api.Deps{Notice: notice.NewReader(cfg.RPCURL, ""), Reconcile: chainReader}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

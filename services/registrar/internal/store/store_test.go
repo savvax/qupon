@@ -99,3 +99,27 @@ func TestListActivityReturnsNewestRows(t *testing.T) {
 		}
 	}
 }
+
+func TestInsertRun(t *testing.T) {
+	ctx := context.Background()
+	st, err := Open(ctx, filepath.Join(t.TempDir(), "runs.db"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer func() { _ = st.Close() }()
+
+	r := Run{Ts: 1_770_000_000, ActionPDA: "ActionPDA1", Step: "reconcile", Status: "ok", Detail: `{"ok":true}`}
+	if err := st.InsertRun(ctx, r); err != nil {
+		t.Fatalf("insert run: %v", err)
+	}
+	var ts int64
+	var detail string
+	if err := st.db.QueryRowContext(ctx,
+		`SELECT ts, detail FROM runs WHERE action_pda = ? AND step = 'reconcile'`, r.ActionPDA,
+	).Scan(&ts, &detail); err != nil {
+		t.Fatalf("query run: %v", err)
+	}
+	if ts != r.Ts || detail != r.Detail {
+		t.Fatalf("run row = %d/%q, want %d/%q", ts, detail, r.Ts, r.Detail)
+	}
+}

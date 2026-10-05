@@ -91,9 +91,10 @@ func DecodeMint(data []byte) (*Mint, error) {
 	return m, nil
 }
 
-// FetchTokenAccount reads and decodes a token account; nil if absent.
-func (c *Client) FetchTokenAccount(ctx context.Context, addr solana.PublicKey) (*TokenAccount, error) {
-	data, err := c.GetAccount(ctx, addr)
+// FetchTokenAccountAt reads and decodes a token account pinned to minSlot
+// (0 = unset); nil if absent.
+func (c *Client) FetchTokenAccountAt(ctx context.Context, addr solana.PublicKey, minSlot uint64) (*TokenAccount, error) {
+	data, err := c.GetAccountAt(ctx, addr, minSlot)
 	if err != nil {
 		return nil, fmt.Errorf("fetch token account %s: %w", addr, err)
 	}
@@ -101,6 +102,11 @@ func (c *Client) FetchTokenAccount(ctx context.Context, addr solana.PublicKey) (
 		return nil, nil
 	}
 	return DecodeTokenAccount(data)
+}
+
+// FetchTokenAccount reads and decodes a token account; nil if absent.
+func (c *Client) FetchTokenAccount(ctx context.Context, addr solana.PublicKey) (*TokenAccount, error) {
+	return c.FetchTokenAccountAt(ctx, addr, 0)
 }
 
 // FetchMint reads and decodes a Token-2022 mint; nil if absent.

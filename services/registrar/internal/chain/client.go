@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/borsh"
@@ -55,10 +56,21 @@ type AccountRecord struct {
 // GetAccount returns the raw account data (discriminator included);
 // a missing account yields (nil, nil).
 func (c *Client) GetAccount(ctx context.Context, key solana.PublicKey) ([]byte, error) {
+	return c.GetAccountAt(ctx, key, 0)
+}
+
+// GetAccountAt is GetAccount with minContextSlot: the RPC node answers from
+// a bank at or past minSlot (0 = unset), never an older one. This is not a
+// historical query — snapshot balances are read as current balances while the
+// mint is paused (docs/03-domain.md §4).
+func (c *Client) GetAccountAt(ctx context.Context, key solana.PublicKey, minSlot uint64) ([]byte, error) {
 	var out []byte
 	err := c.withRetry(ctx, func() error {
-		res, err := c.rpc.GetAccountInfoWithOpts(ctx, key,
-			&rpc.GetAccountInfoOpts{Commitment: defaultCommitm_})
+		opts := &rpc.GetAccountInfoOpts{Commitment: defaultCommitm_}
+		if minSlot > 0 {
+			opts.MinContextSlot = &minSlot
+		}
+		res, err := c.rpc.GetAccountInfoWithOpts(ctx, key, opts)
 		if err != nil {
 			return err
 		}
@@ -125,6 +137,91 @@ func (c *Client) FetchSeries(ctx context.Context, pda solana.PublicKey) (*Series
 		return nil, fmt.Errorf("fetch series %s: %w", pda, err)
 	}
 	return DecodeSeries(body)
+}
+
+// FetchCorporateAction decodes the CorporateAction at pda; nil if absent.
+func (c *Client) FetchCorporateAction(ctx context.Context, pda solana.PublicKey) (*CorporateAction, error) {
+	data, err := c.GetAccount(ctx, pda)
+	if err != nil {
+		return nil, fmt.Errorf("fetch action %s: %w", pda, err)
+	}
+	if data == nil {
+		return nil, nil
+	}
+	body, err := stripDiscriminator(data, "CorporateAction")
+	if err != nil {
+		return nil, fmt.Errorf("fetch action %s: %w", pda, err)
+	}
+	return DecodeCorporateAction(body)
+}
+
+// FetchInvestorsBySeries lists a series' Investor accounts sorted by owner
+// pubkey ascending (bytes) — the snapshot order (docs/03-domain.md §4).
+// memcmp: bump u8 then series pubkey → body offset 1 = absolute offset 9.
+func (c *Client) FetchInvestorsBySeries(ctx context.Context, series solana.PublicKey) ([]InvestorRecord, error) {
+	recs, err := c.GetProgramAccounts(ctx, mustDiscriminator("Investor"),
+		[]rpc.RPCFilterMemcmp{{Offset: 9, Bytes: solana.Base58(series[:])}})
+	if err != nil {
+		return nil, fmt.Errorf("scan investors of %s: %w", series, err)
+	}
+	out := make([]InvestorRecord, 0, len(recs))
+	for _, rec := range recs {
+		body, err := stripDiscriminator(rec.Data, "Investor")
+		if err != nil {
+			return nil, fmt.Errorf("scan investors %s: %w", rec.Pubkey, err)
+		}
+		inv, err := DecodeInvestor(body)
+		if err != nil {
+			return nil, fmt.Errorf("scan investors %s: %w", rec.Pubkey, err)
+		}
+		out = append(out, InvestorRecord{PDA: rec.Pubkey, Investor: inv})
+	}
+	sortByInvestorOwner(out)
+	return out, nil
+}
+
+// FetchEntitlementsByAction lists an action's Entitlement accounts sorted by
+// owner pubkey ascending (bytes). memcmp offset 9 = bump u8 + action pubkey.
+func (c *Client) FetchEntitlementsByAction(ctx context.Context, action solana.PublicKey) ([]EntitlementRecord, error) {
+	recs, err := c.GetProgramAccounts(ctx, mustDiscriminator("Entitlement"),
+		[]rpc.RPCFilterMemcmp{{Offset: 9, Bytes: solana.Base58(action[:])}})
+	if err != nil {
+		return nil, fmt.Errorf("scan entitlements of %s: %w", action, err)
+	}
+	out := make([]EntitlementRecord, 0, len(recs))
+	for _, rec := range recs {
+		body, err := stripDiscriminator(rec.Data, "Entitlement")
+		if err != nil {
+			return nil, fmt.Errorf("scan entitlements %s: %w", rec.Pubkey, err)
+		}
+		e, err := DecodeEntitlement(body)
+		if err != nil {
+			return nil, fmt.Errorf("scan entitlements %s: %w", rec.Pubkey, err)
+		}
+		out = append(out, EntitlementRecord{PDA: rec.Pubkey, Entitlement: e})
+	}
+	sortByEntitlementOwner(out)
+	return out, nil
+}
+
+func sortByEntitlementOwner(recs []EntitlementRecord) {
+	slices.SortFunc(recs, func(a, b EntitlementRecord) int {
+		return bytes.Compare(a.Entitlement.Owner[:], b.Entitlement.Owner[:])
+	})
+}
+
+func sortByInvestorOwner(recs []InvestorRecord) {
+	slices.SortFunc(recs, func(a, b InvestorRecord) int {
+		return bytes.Compare(a.Investor.Owner[:], b.Investor.Owner[:])
+	})
+}
+
+func mustDiscriminator(name string) [8]byte {
+	disc, err := AccountDiscriminator(name)
+	if err != nil {
+		panic(err) // sha256 of a fixed name cannot fail
+	}
+	return disc
 }
 
 // AllSeries scans the program for every Series account (startup index pass).
