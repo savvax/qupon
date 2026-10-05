@@ -3,7 +3,7 @@ id: 401
 title: Production polish: security headers, 404/500 pages in the new design, icon, OG image, page titles
 agent: glm
 tier: T1
-depends_on: [307]
+depends_on: [302]
 verify: make verify
 timeout_min: 120
 ---
