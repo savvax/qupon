@@ -1,29 +1,13 @@
 /**
- * Create the Token-2022 bond mint for a series (docs/02-architecture.md
- * "Creation sequence"): MetadataPointer→mint, PermanentDelegate/Pausable/
- * MintCloseAuthority = series PDA, DefaultAccountState=Frozen, decimals 0,
- * temporary registrar mint authority handed to the series PDA, TokenMetadata
- * with update authority = registrar (the program requires that signer for
- * metadata CPIs). Idempotent per series: skips when the mint already exists.
+ * Thin wrapper over src/lib/bondMintFlow.ts (the series:create CLI command
+ * and this script share it). Idempotent per series.
  *
  * Usage: pnpm tsx scripts/create-bond-mint.ts --series QPNb1
  */
-import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { address, createKeyPairFromBytes, createKeyPairFromPrivateKeyBytes, createSignerFromKeyPair, writeKeyPair, type KeyPairSigner } from "@solana/kit";
-import { TOKEN_2022_PROGRAM_ADDRESS, fetchMint } from "@solana-program/token-2022";
-import { configPath, loadConfig, updateConfig, type QuponConfig } from "../src/lib/config.js";
-import { loadKeypair } from "../src/lib/keys.js";
-import { seriesPda } from "../src/lib/pda.js";
-import {
-	METADATA_RESERVE_BYTES,
-	bondMetadataFields,
-	bondMintSize,
-	buildCreateBondMintInstructions,
-	buildMetadataFieldInstructions,
-} from "../src/lib/bondMint.js";
+import { configPath } from "../src/lib/config.js";
 import { addressLink } from "../src/lib/explorer.js";
-import { createRpc, loadEnvFile, sendInstructions, type QuponRpc } from "../src/lib/tx.js";
+import { ensureBondMint } from "../src/lib/bondMintFlow.js";
+import { createRpc, loadEnvFile } from "../src/lib/tx.js";
 
 function log(...args: unknown[]): void {
 	console.error(...args);
@@ -36,112 +20,12 @@ function parseArgs(argv: string[]): string {
 	return name;
 }
 
-function seriesConfig(cfg: QuponConfig, name: string) {
-	const s = cfg.series[name];
-	if (s === undefined) throw new Error(`series '${name}' not in config/devnet.json (have: ${Object.keys(cfg.series).join(", ")})`);
-	return s;
-}
-
-async function mintExistsOnChain(rpc: QuponRpc, mint: string): Promise<boolean> {
-	try {
-		const account = await fetchMint(rpc, address(mint));
-		return account.exists && account.programAddress === TOKEN_2022_PROGRAM_ADDRESS;
-	} catch {
-		return false;
-	}
-}
-
-/** Reuse a stable mint keypair per series so re-running after a failed tx is safe. */
-async function loadOrCreateMintKeypair(name: string): Promise<KeyPairSigner> {
-	const path = `${homedir()}/.config/qupon/bond-mint-${name}.json`;
-	if (existsSync(path)) {
-		const bytes = JSON.parse(readFileSync(path, "utf8")) as number[];
-		log("reusing mint keypair", path);
-		return createSignerFromKeyPair(await createKeyPairFromBytes(new Uint8Array(bytes)));
-	}
-	// generateKeyPair() makes non-extractable keys; build from random bytes so it can be persisted
-	const keypair = await createKeyPairFromPrivateKeyBytes(crypto.getRandomValues(new Uint8Array(32)), true);
-	await writeKeyPair(keypair, path);
-	return createSignerFromKeyPair(keypair);
-}
-
 async function main(): Promise<void> {
 	loadEnvFile();
 	const name = parseArgs(process.argv.slice(2));
-	const cfgPath = configPath();
-	const cfg = loadConfig(cfgPath);
-	const sc = seriesConfig(cfg, name);
-	const rpc = createRpc();
-	const registrar = await loadKeypair("QUPON_REGISTRAR_KEYPAIR");
-
-	if (sc.mint !== "" && (await mintExistsOnChain(rpc, sc.mint))) {
-		log(`series.${name}.mint ${sc.mint} already exists — nothing to do.`);
-		console.log(JSON.stringify({ series: name, mint: sc.mint, created: false }));
-		return;
-	}
-
-	const mintSigner = await loadOrCreateMintKeypair(name);
-	const mint = mintSigner.address;
-	const series = await seriesPda(mint);
-	log(`series PDA for ${mint}: ${series}`);
-
-	// resume path: mint keypair exists but create tx never landed — metadata fields only
-	if (await mintExistsOnChain(rpc, mint)) {
-		log(`mint ${mint} already on-chain — skipping create, writing metadata fields only`);
-		const fields = bondMetadataFields(sc, Math.floor(Date.now() / 1000));
-		const fieldsSig = await sendInstructions(rpc, registrar, buildMetadataFieldInstructions({ mint, registrar, fields }), `bond metadata ${name}`);
-		console.log(JSON.stringify({ series: name, mint, seriesPda: series, created: false, resumed: true, metadataTx: fieldsSig, explorer: addressLink(mint) }));
-		return;
-	}
-
-	const space = bondMintSize(series, registrar.address);
-	const lamports = BigInt(await rpc.getMinimumBalanceForRentExemption(BigInt(space + METADATA_RESERVE_BYTES)).send());
-	log(`mint space ${space} + ${METADATA_RESERVE_BYTES} B metadata reserve, rent ${lamports} lamports`);
-
-	// tx 1 — account + extensions + mint + TokenMetadata + authority handoff
-	const createSig = await sendInstructions(
-		rpc,
-		registrar,
-		buildCreateBondMintInstructions({
-			mint: mintSigner,
-			series,
-			registrar,
-			lamports,
-			name: `Qupon Bond ${name}`,
-			symbol: name,
-			uri: `https://qupon.example/${name}.json`,
-		}),
-		`create bond mint ${name}`,
-	);
-	log(`mint created (tx ${createSig})`);
-	const seriesEntry = { ...sc, mint };
-	updateConfig(cfgPath, { series: { ...cfg.series, [name]: seriesEntry } });
-	log(`series.${name}.mint written to ${cfgPath}`);
-
-	// tx 2 — additional metadata fields (registrar = update authority)
-	const fields = bondMetadataFields(sc, Math.floor(Date.now() / 1000));
-	const fieldsSig = await sendInstructions(
-		rpc,
-		registrar,
-		buildMetadataFieldInstructions({ mint, registrar, fields }),
-		`bond metadata ${name}`,
-	);
-
-	console.log(
-		JSON.stringify({
-			series: name,
-			mint,
-			seriesPda: series,
-			created: true,
-			createTx: createSig,
-			metadataTx: fieldsSig,
-			explorer: addressLink(mint),
-			extensions: ["MetadataPointer", "TokenMetadata", "PermanentDelegate", "PausableConfig", "MintCloseAuthority", "DefaultAccountState(Frozen)"],
-			space,
-			lamports: lamports.toString(),
-			metadataFields: Object.fromEntries(fields.map(f => [f.field, f.value])),
-		}),
-	);
+	const res = await ensureBondMint({ rpc: createRpc(), cfgPath: configPath(), name });
+	log(`bond mint ${res.mint} (${addressLink(res.mint)})`);
+	console.log(JSON.stringify({ series: name, mint: res.mint, created: res.created, signatures: res.signatures }));
 }
 
 main().catch(e => {

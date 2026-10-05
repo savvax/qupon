@@ -6,6 +6,7 @@ import {
 	fetchInvestor,
 	getIssueUnitsInstruction,
 	getRegisterInvestorInstructionAsync,
+	getReinstateInvestorInstruction,
 	getSubscribeInstructionAsync,
 	getSuspendInvestorInstruction,
 } from "../generated/index.js";
@@ -84,6 +85,24 @@ async function runSuspend(opts: SuspendOpts, cmd: Command): Promise<void> {
 	await sendAndReport(rpc, registrar, [instruction], "investor:suspend", { investor, owner });
 }
 
+async function runReinstate(opts: SuspendOpts, cmd: Command): Promise<void> {
+	const { rpc, cfg } = await initCtx(cmd);
+	const info = await loadSeries(rpc, cfg, opts.series);
+	const registrar = await signer(cmd, "registrar");
+	const owner = address(opts.owner);
+	const investor = await investorPda(info.pda, owner);
+	const bondAta = (await fetchInvestor(rpc, investor)).data.bondAta;
+	const instruction = getReinstateInvestorInstruction({
+		registrar,
+		series: info.pda,
+		investor,
+		mint: info.mint,
+		bondAta,
+		bondTokenProgram: await tokenProgramOfMint(rpc, info.mint),
+	});
+	await sendAndReport(rpc, registrar, [instruction], "investor:reinstate", { investor, owner });
+}
+
 interface SubscribeOpts extends GlobalOptions {
 	series: string;
 	units: string;
@@ -160,6 +179,11 @@ export function registerInvestorCommands(program: Command): void {
 		.requiredOption("--series <name>", "series name in config/devnet.json")
 		.requiredOption("--owner <address>", "investor wallet")
 		.action(runSuspend);
+
+	withGlobals(program.command("investor:reinstate").description("reinstate a suspended investor (thaws the bond ATA)"))
+		.requiredOption("--series <name>", "series name in config/devnet.json")
+		.requiredOption("--owner <address>", "investor wallet")
+		.action(runReinstate);
 
 	withGlobals(program.command("subscribe").description("placement at par: pay cash, receive bonds (investor signs)"))
 		.requiredOption("--series <name>", "series name in config/devnet.json")

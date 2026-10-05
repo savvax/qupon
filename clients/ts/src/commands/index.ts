@@ -8,10 +8,12 @@ import { registerActionCommands } from "./action.js";
 import { registerInvestorCommands } from "./investor.js";
 import { registerLifecycleCommands } from "./lifecycle.js";
 import { registerSeriesCommands } from "./series.js";
+import { registerSeriesCreateCommand } from "./seriesCreate.js";
 import { registerStateCommands } from "./state.js";
 
 export function registerCommands(program: Command): void {
 	registerSeriesCommands(program);
+	registerSeriesCreateCommand(program);
 	registerInvestorCommands(program);
 	registerKycCommands(program);
 	registerActionCommands(program);
