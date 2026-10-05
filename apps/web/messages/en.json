@@ -178,8 +178,68 @@
       }
     }
   },
-  "bonds": {},
-  "bond": {},
+  "bonds": {
+    "title": "Bonds",
+    "lead": "Tokenized bonds serviced by Qupon on Solana devnet — terms, coupon schedule and every corporate action, straight from the chain.",
+    "colBond": "Bond",
+    "colFace": "Face value",
+    "colCoupon": "Coupon",
+    "colFrequency": "Frequency",
+    "colNextCoupon": "Next coupon",
+    "colStatus": "Status",
+    "filterActive": "Active",
+    "filterAll": "All",
+    "emptyActive": "No active bonds yet.",
+    "unavailable": {
+      "title": "The registrar service is unavailable",
+      "body": "Bond data comes from the registrar API, which is not answering right now.",
+      "retry": "Try again"
+    }
+  },
+  "bond": {
+    "back": "All bonds",
+    "freqAnnual": "Annual",
+    "freqSemiAnnual": "Semi-annual",
+    "freqQuarterly": "Quarterly",
+    "freqMonthly": "Monthly",
+    "kpi": {
+      "face": "Face value",
+      "coupon": "Coupon",
+      "next": "Next coupon",
+      "issued": "Bonds issued"
+    },
+    "tabs": {
+      "schedule": "Schedule",
+      "actions": "Corporate actions",
+      "terms": "Terms"
+    },
+    "cols": {
+      "period": "Period",
+      "record": "Record date",
+      "payment": "Payment date",
+      "perUnit": "Per bond",
+      "status": "Status",
+      "action": "Corporate action",
+      "account": "Account"
+    },
+    "emptySchedule": "No schedule yet.",
+    "emptyActions": "No corporate actions yet.",
+    "terms": {
+      "isin": "ISIN",
+      "mint": "Bond mint",
+      "cash": "Cash leg",
+      "face": "Face value",
+      "rate": "Coupon rate",
+      "frequency": "Frequency",
+      "dayCount": "Day count",
+      "issue": "Issue date",
+      "maturity": "Maturity date",
+      "quorum": "Meeting quorum",
+      "approval": "Meeting approval",
+      "issuer": "Issuer",
+      "registrar": "Registrar"
+    }
+  },
   "login": {
     "title": "Sign in to the back office",
     "lead": "Issuers and registrars sign in with the account their organisation was given.",

@@ -1,124 +1,108 @@
-"use client";
-
-import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { cx } from "@/lib/ui/cx";
+import { cellShownFrom, visibleColumns, type Bp } from "@/lib/ui/table";
 
 export type Column<T> = {
   key: string;
   header: ReactNode;
-  /** Sort key: string or number. Numeric-aware compare keeps "0009" < "0010". */
-  value: (row: T) => string | number;
-  /** Cell renderer; defaults to the raw value. */
-  render?: (row: T) => ReactNode;
   align?: "left" | "right";
-  /** Monospace + tabular figures (pubkeys, amounts, dates). */
-  mono?: boolean;
+  render: (row: T) => ReactNode;
+  /** Hidden below the breakpoint (table cells); also dropped from the mobile cards. */
+  hideBelow?: Bp;
 };
 
-const collator = new Intl.Collator(undefined, {
-  numeric: true,
-  sensitivity: "base",
-});
-
-/** Sortable, dense data table. Client component: sort state is local. */
+/**
+ * Responsive data table: a real `<table>` from 640 px up, stacked cards below.
+ * Presentational — safe in server and client components.
+ */
 export function DataTable<T>({
   columns,
   rows,
   rowKey,
-  initialSort,
-  empty = "no rows",
+  empty,
 }: {
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string;
-  initialSort?: { key: string; dir: "asc" | "desc" };
   empty?: ReactNode;
 }) {
-  const [sort, setSort] = useState(initialSort ?? null);
-  const sorted = useMemo(() => {
-    if (!sort) return rows;
-    const col = columns.find((c) => c.key === sort.key);
-    if (!col) return rows;
-    const dir = sort.dir === "asc" ? 1 : -1;
-    return [...rows].sort((a, b) => {
-      const va = col.value(a);
-      const vb = col.value(b);
-      if (typeof va === "number" && typeof vb === "number")
-        return (va - vb) * dir;
-      return collator.compare(String(va), String(vb)) * dir;
-    });
-  }, [rows, columns, sort]);
-
-  const toggle = (key: string) =>
-    setSort((s) =>
-      s?.key === key
-        ? { key, dir: s.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: "asc" },
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-card border border-dashed border-n300 bg-n0 px-6 py-10 text-center text-sm text-n600">
+        {empty}
+      </div>
     );
-
+  }
   return (
-    <div className="overflow-x-auto rounded border border-neutral-800">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-neutral-800 bg-neutral-900/60 text-left text-xs uppercase tracking-wider text-neutral-500">
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className={`px-3 py-2 font-medium ${col.align === "right" ? "text-right" : ""}`}
-                aria-sort={
-                  sort?.key === col.key
-                    ? sort.dir === "asc"
-                      ? "ascending"
-                      : "descending"
-                    : "none"
-                }
-              >
-                <button
-                  type="button"
-                  onClick={() => toggle(col.key)}
-                  className="inline-flex items-center gap-1 hover:text-neutral-300"
+    <div className="overflow-hidden rounded-card border border-n200 bg-n0">
+      {/* ≥ 640 px: real table; per-column hideBelow via responsive cell classes */}
+      <div className="hidden overflow-x-auto sm:block">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-n200 bg-n50 text-left text-[11px] font-bold uppercase tracking-[0.06em] text-n500">
+              {columns.map((col) => (
+                <th
+                  key={col.key}
+                  scope="col"
+                  className={cx(
+                    "px-4 py-3",
+                    col.align === "right" && "text-right",
+                    col.hideBelow && cellShownFrom(col.hideBelow),
+                  )}
                 >
                   {col.header}
-                  <span className="text-[9px] normal-case">
-                    {sort?.key === col.key
-                      ? sort.dir === "asc"
-                        ? "▲"
-                        : "▼"
-                      : "↕"}
-                  </span>
-                </button>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.length === 0 && (
-            <tr>
-              <td
-                className="px-3 py-2 text-neutral-600"
-                colSpan={columns.length}
-              >
-                {empty}
-              </td>
-            </tr>
-          )}
-          {sorted.map((row) => (
-            <tr
-              key={rowKey(row)}
-              className="border-b border-neutral-800/60 last:border-0 hover:bg-neutral-900/40"
-            >
-              {columns.map((col) => (
-                <td
-                  key={col.key}
-                  className={`px-3 py-2 ${col.align === "right" ? "text-right" : ""} ${col.mono ? "font-mono text-xs tabular-nums" : ""}`}
-                >
-                  {col.render ? col.render(row) : col.value(row)}
-                </td>
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr
+                key={rowKey(row)}
+                className="relative border-b border-n100 transition-colors last:border-0 hover:bg-n50/60"
+              >
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    className={cx(
+                      "px-4 py-3 align-middle",
+                      col.align === "right" && "text-right",
+                      col.hideBelow && cellShownFrom(col.hideBelow),
+                    )}
+                  >
+                    {col.render(row)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* < 640 px: one card per row, same columns minus those hidden below sm */}
+      <ul className="divide-y divide-n100 sm:hidden">
+        {rows.map((row) => (
+          <li key={rowKey(row)} className="space-y-1.5 px-4 py-4">
+            {visibleColumns(columns, "sm").map((col) => (
+              <div
+                key={col.key}
+                className="flex items-baseline justify-between gap-4"
+              >
+                <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.06em] text-n500">
+                  {col.header}
+                </span>
+                <span
+                  className={cx(
+                    "min-w-0 text-right text-sm",
+                    col.align === "right" && "num",
+                  )}
+                >
+                  {col.render(row)}
+                </span>
+              </div>
+            ))}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

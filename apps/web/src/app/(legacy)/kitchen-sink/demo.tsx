@@ -1,8 +1,8 @@
 "use client";
 
 import { AmountCell } from "@/components/ui/AmountCell";
-import { DataTable } from "@/components/ui/DataTable";
-import type { Column } from "@/components/ui/DataTable";
+import { LegacyDataTable as DataTable } from "@/components/ui/LegacyDataTable";
+import type { Column } from "@/components/ui/LegacyDataTable";
 import { ExplorerLink } from "@/components/ui/ExplorerLink";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { useToast } from "@/components/ui/Toast";
