@@ -448,6 +448,39 @@ paths:
       security: [{bearerAuth: []}]
       responses:
         "204": {description: signed out (also when the token was unknown)}
+  /issuer/series:
+    post:
+      summary: >-
+        Create a bond series: validate the terms, reserve the name, then run
+        `qupon series:create` (Token-2022 bond mint + init_series) through the
+        executor. Rolls the registry row back and returns 409 on a CLI failure.
+      operationId: createSeries
+      security: [{bearerAuth: []}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SeriesCreateRequest"
+      responses:
+        "201":
+          description: series created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeriesCreateResponse"
+        "400": {description: "invalid_params — rejected before any CLI run"}
+        "401": {description: no valid back-office session (bearer token)}
+        "403": {description: the session's role is not issuer or admin}
+        "409":
+          description: >-
+            series_exists (name taken) or onchain (CLI failure,
+            onchainError carries the CLI message)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503": {description: executor or base config not configured}
   /me:
     get:
       summary: The signed-in back-office user
@@ -1024,6 +1057,59 @@ components:
           description: true when the step was not executed (dry run)
         error:
           $ref: "#/components/schemas/Error"
+    SeriesCreateRequest:
+      type: object
+      required:
+        - name
+        - isin
+        - faceValue
+        - couponRateBps
+        - frequency
+        - dayCount
+        - issueDate
+        - maturityDate
+        - cash
+      properties:
+        name:
+          type: string
+          description: 1-16 characters of A-Z a-z 0-9 -
+        isin:
+          type: string
+          description: 12 characters — 2 letters, 9 alphanumerics, 1 check digit
+        faceValue:
+          type: integer
+          format: int64
+          description: face value in minor units (> 0)
+        couponRateBps:
+          type: integer
+          description: coupon rate in bps, 1..10000 (1000 = 10%)
+        frequency:
+          type: integer
+          enum: [1, 2, 4, 12]
+          description: coupons per year
+        dayCount:
+          type: string
+          enum: [THIRTY_360, ACT_365]
+        issueDate:
+          type: string
+          description: YYYY-MM-DD
+        maturityDate:
+          type: string
+          description: YYYY-MM-DD, after the issue date
+        cash:
+          type: string
+          enum: [tkzt, usdc]
+          description: cash leg mint alias
+    SeriesCreateResponse:
+      type: object
+      required: [series, mint, signatures]
+      properties:
+        series: {type: string}
+        mint: {type: string}
+        signatures:
+          type: array
+          items: {type: string}
+          description: tx signatures (mint create, metadata, init_series)
     ActivityItem:
       type: object
       required: [id, ts, kind, sig, slot, seq]

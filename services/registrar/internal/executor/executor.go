@@ -80,6 +80,10 @@ type Result struct {
 		Signature string     `json:"signature"`
 		Slot      flexUint64 `json:"slot"`
 	} `json:"results"`
+	// series:create prints {ok, series, mint, signatures:[…]} instead of one signature.
+	Series     string   `json:"series"`
+	Mint       string   `json:"mint"`
+	Signatures []string `json:"signatures"`
 }
 
 // Executor execs the qupon CLI. Safe for concurrent use (no shared state).
@@ -97,6 +101,9 @@ func New(bin, cfgPath string, logger *slog.Logger) *Executor {
 	}
 	return &Executor{bin: bin, cfgPath: cfgPath, timeout: Timeout, log: logger}
 }
+
+// ConfigPath is the writable executor config path (the execconfig.Write target).
+func (e *Executor) ConfigPath() string { return e.cfgPath }
 
 // flexUint64 accepts both 123 and "123" (the CLI serializes bigint slots
 // as strings).

@@ -35,6 +35,14 @@ func (s *Store) InsertRegistry(ctx context.Context, r RegistryRow) error {
 	return nil
 }
 
+// DeleteRegistry drops a series row (rollback of a placeholder whose CLI run failed).
+func (s *Store) DeleteRegistry(ctx context.Context, name string) error {
+	if _, err := s.db.ExecContext(ctx, `DELETE FROM series_registry WHERE name = ?`, name); err != nil {
+		return fmt.Errorf("delete registry %s: %w", name, err)
+	}
+	return nil
+}
+
 // UpsertRegistry registers a series or updates its mint and terms by name.
 func (s *Store) UpsertRegistry(ctx context.Context, r RegistryRow) error {
 	terms := "null"

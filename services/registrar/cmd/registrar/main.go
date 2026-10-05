@@ -137,11 +137,12 @@ func run() error {
 	srv := &http.Server{
 		Addr: ":" + cfg.Port,
 		Handler: api.New(logger, st, api.Deps{
-			Read:      readModel(chainClient),
-			Notice:    noticeReader(chainClient, st),
-			Reconcile: chainReader,
-			Chain:     chainClient,
-			Executor:  exec,
+			Read:       readModel(chainClient),
+			Notice:     noticeReader(chainClient, st),
+			Reconcile:  chainReader,
+			Chain:      chainClient,
+			Executor:   exec,
+			BaseConfig: cfg.QuponConfig,
 			Auth: &auth.Service{Store: st, Now: time.Now, TTL: 12 * time.Hour, DemoLogin: cfg.DemoLogin,
 				Limit: auth.NewLimiter(5, time.Minute)},
 		}),

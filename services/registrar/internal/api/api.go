@@ -31,12 +31,13 @@ var openapiFS embed.FS
 // Deps are optional backends behind some endpoints; a nil field makes that endpoint answer 503.
 // Add a field here (not a positional parameter) when a task needs a new backend.
 type Deps struct {
-	Notice    *notice.Reader
-	Reconcile reconcile.Reader
-	Chain     *chain.Client
-	Read      ReadModel          // series/investors/schedule/actions/entitlements read models (rest.go)
-	Executor  *executor.Executor // qupon CLI runner (advance.go); nil → /advance answers 503
-	Auth      *auth.Service      // sessions + roles (auth.go, rbac.go); nil → write routes answer 503
+	Notice     *notice.Reader
+	Reconcile  reconcile.Reader
+	Chain      *chain.Client
+	Read       ReadModel          // series/investors/schedule/actions/entitlements read models (rest.go)
+	Executor   *executor.Executor // qupon CLI runner (advance.go); nil → /advance answers 503
+	Auth       *auth.Service      // sessions + roles (auth.go, rbac.go); nil → write routes answer 503
+	BaseConfig string             // base CLI config (config/devnet.json) the issuer endpoints merge the registry into
 	// TestRoutes registers GET /_test/registrar (role-gated no-op) for RBAC tests; never set in production.
 	TestRoutes bool
 }
@@ -182,6 +183,10 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r.With(registrar).Post("/registrar/actions/{pda}/advance", advanceAction(deps, st, logger))
 	r.With(registrar).Post("/actions/{pda}/advance", advanceAction(deps, st, logger))
 
+	// Issuer writes (product spec §6): series creation runs the qupon CLI executor.
+	issuer := requireRole(deps.Auth, "issuer")
+	r.With(issuer).Post("/issuer/series", createSeries(deps, st))
+
 	// Scheduler surface (task 024): planned actions + approval gate (approve executes the CLI → registrar only).
 	r.Get("/approvals", listApprovals(st))
 	r.With(registrar).Post("/registrar/approvals/{id}/approve", approveApproval(deps, st))
@@ -202,7 +207,8 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 // corsLocalhost allows the Next.js dev console (localhost:3000) to call the API.
 // corsReadOnly lets any origin read (the investor portal fetches from the browser; the data is public devnet
-// state). Writes get no CORS headers: the console reaches POST /advance through its own server route.
+// state; browsers refuse credentialed requests with a wildcard origin). Writes get no CORS headers: the
+// console reaches POST /advance through its own server route.
 func corsReadOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
