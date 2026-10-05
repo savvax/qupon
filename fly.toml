@@ -1,0 +1,36 @@
+# Fly.io deployment for the Qupon registrar (devnet).
+# One command: fly deploy --dockerfile services/registrar/Dockerfile
+app = "qupon-registrar"
+primary_region = "ams"
+
+[build]
+  dockerfile = "services/registrar/Dockerfile"
+
+[env]
+  PORT = "8080"
+  # Devnet, no secrets:
+  RPC_URL = "https://api.devnet.solana.com"
+  PROGRAM_ID = "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"
+  QUPON_CONFIG = "/data/config/devnet.json"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.checks]
+    [http_service.checks.health]
+      type = "http"
+      path = "/healthz"
+      interval = "30s"
+      timeout = "5s"
+
+[[mounts]]
+  source = "qupon_data"
+  destination = "/data"
+
+# Secrets (never in git) — set with:
+#   fly secrets set ADVANCE_TOKEN=<token>
+#   fly sftp put config/devnet.json // copy qupon config onto the volume

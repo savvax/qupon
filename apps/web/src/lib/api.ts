@@ -12,8 +12,12 @@ export type ReconcileReport = Schemas["ReconcileReport"];
 export type AdvanceResponse = Schemas["AdvanceResponse"];
 export type ErrorDTO = Schemas["Error"];
 
-/** Base URL of the Go registrar service (server-side env). */
-export const API_BASE_URL = process.env.API_URL ?? "http://localhost:8080";
+/** Base URL of the Go registrar service. NEXT_PUBLIC_API_URL is inlined for
+ * browser callers (postAdvance); server components can also set API_URL. */
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  process.env.API_URL ??
+  "http://localhost:8080";
 
 /** Serve demo fixtures instead of HTTP while the Go registrar does not exist. */
 export const MOCK_ENABLED = process.env.API_MOCKING === "enabled";
@@ -79,18 +83,27 @@ export type ActivityLike = {
   explorerUrl?: string;
 };
 
-export async function getNoticeText(pda: string, lang: "en" | "ru"): Promise<string> {
+export async function getNoticeText(
+  pda: string,
+  lang: "en" | "ru",
+): Promise<string> {
   if (MOCK) return mockGetText(`/actions/${pda}/notice?lang=${lang}`);
-  const res = await fetch(`${API_BASE_URL}/actions/${pda}/notice?lang=${lang}`, {
-    cache: "no-store",
-  });
+  const res = await fetch(
+    `${API_BASE_URL}/actions/${pda}/notice?lang=${lang}`,
+    {
+      cache: "no-store",
+    },
+  );
   if (!res.ok) throw new Error(`notice ${lang}: HTTP ${res.status}`);
   return res.text();
 }
 
-export const seev031Url = (pda: string) => `${API_BASE_URL}/actions/${pda}/iso/seev031.xml`;
-export const seev036ZipUrl = (pda: string) => `${API_BASE_URL}/actions/${pda}/iso/seev036.zip`;
-export const seev036Url = (pda: string) => `${API_BASE_URL}/entitlements/${pda}/iso/seev036.xml`;
+export const seev031Url = (pda: string) =>
+  `${API_BASE_URL}/actions/${pda}/iso/seev031.xml`;
+export const seev036ZipUrl = (pda: string) =>
+  `${API_BASE_URL}/actions/${pda}/iso/seev036.zip`;
+export const seev036Url = (pda: string) =>
+  `${API_BASE_URL}/entitlements/${pda}/iso/seev036.xml`;
 
 export const listSeries = () => get<SeriesDTO[]>("/series");
 export const getSeries = (mint: string) => get<SeriesDTO>(`/series/${mint}`);
@@ -109,7 +122,8 @@ export async function getReconcile(pda: string): Promise<ReconcileReport> {
 }
 
 export async function listActivity(limit = 200): Promise<ActivityLike[]> {
-  if (MOCK) return (await mockGet(`/activity?limit=${limit}`)) as ActivityLike[];
+  if (MOCK)
+    return (await mockGet(`/activity?limit=${limit}`)) as ActivityLike[];
   const res = await fetch(`${API_BASE_URL}/activity?limit=${limit}`);
   if (!res.ok) return []; // the feed is evidence, not a dependency
   const body = (await res.json()) as { events?: ActivityLike[] };
@@ -121,11 +135,12 @@ export async function postAdvance(
   pda: string,
   req: { confirm: boolean; autofund?: boolean },
 ): Promise<AdvanceResponse> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  // Optional bearer token for deployments that set ADVANCE_TOKEN on the API.
-  const token = process.env.NEXT_PUBLIC_ADVANCE_TOKEN;
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_BASE_URL}/actions/${pda}/advance`, {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  // The advance call goes through our own server-side route
+  // (app/api/advance/[pda]/route.ts) so ADVANCE_TOKEN never reaches the browser.
+  const res = await fetch(`/api/advance/${pda}`, {
     method: "POST",
     headers,
     body: JSON.stringify(req),
@@ -134,7 +149,9 @@ export async function postAdvance(
   if (!res.ok) {
     // The Go API answers {"error": …} (writeError); onchain names live inside it.
     const message =
-      typeof raw.error === "string" ? raw.error : `HTTP ${res.status} ${res.statusText}`;
+      typeof raw.error === "string"
+        ? raw.error
+        : `HTTP ${res.status} ${res.statusText}`;
     throw new ApiError(res.status, `http_${res.status}`, message);
   }
   return raw as AdvanceResponse;

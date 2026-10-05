@@ -116,6 +116,31 @@ make demo                      # S0–S4 on devnet → reports/demo-full.md
 make api                       # Go registrar on :8080 (REST + ISO 20022 + notices)
 ```
 
+## Deployed (devnet)
+
+| What | URL |
+|---|---|
+| Console / investor portal (Vercel) | https://qupon.vercel.app |
+| Registrar API (Fly.io) | https://qupon-registrar.fly.dev (`GET /healthz`, OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
+
+The web app reads only devnet state; wallet actions are signed in the browser, lifecycle steps go through a server-side route (`/api/advance/[pda]`) so the registrar's `ADVANCE_TOKEN` never reaches the browser bundle.
+
+One command each (human performs the logins — see `reports/questions/032-deployment.md`):
+
+```bash
+# API — Fly.io (multi-stage image: Go API + Node 22 + built qupon CLI)
+fly deploy --dockerfile services/registrar/Dockerfile   # config in fly.toml
+fly secrets set ADVANCE_TOKEN=<token>
+
+# Web — Vercel (root dir apps/web, Next.js auto-detected)
+vercel --prod apps/web \
+  --env NEXT_PUBLIC_API_URL=https://qupon-registrar.fly.dev \
+  --env NEXT_PUBLIC_RPC_URL=https://api.devnet.solana.com
+cd apps/web && vercel env add ADVANCE_TOKEN   # server-side only, NOT NEXT_PUBLIC_
+```
+
+Env reference: `services/registrar/.env.example`, `apps/web/.env.example`.
+
 ## Reproducible build & verification
 
 The deployed program is a deterministic `solana-verify` docker build (solana-verify 0.5.2, image `solanafoundation/solana-verifiable-build:4.3.0`):
