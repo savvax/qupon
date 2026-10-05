@@ -76,6 +76,15 @@ function assertNonNegative(name: string, v: bigint | number | undefined): void {
 	}
 }
 
+/** u64::MAX — Rust-side inputs and Entitlement fields are u64. */
+const U64_MAX = (1n << 64n) - 1n;
+
+/** Mirrors Rust u64 inputs/outputs: reject values that would not fit. */
+function assertU64(name: string, v: bigint): void {
+	if (v < 0n || v > U64_MAX) {
+		throw new MathError("Overflow", `${name}=${String(v)}`);
+	}
+}
 /** Per-holder entitlement (§2), bigint throughout. */
 export function computeEntitlement(input: EntitlementInput): Entitlement {
 	assertNonNegative("units", input.units);
@@ -84,6 +93,8 @@ export function computeEntitlement(input: EntitlementInput): Entitlement {
 	assertNonNegative("days", input.days);
 	assertNonNegative("taxBps", input.taxBps);
 	assertNonNegative("factorBps", input.factorBps);
+	assertU64("units", input.units);
+	assertU64("face", input.face);
 
 	const den = BPS * BigInt(basis(input.dayCount));
 	const perUnitNum = input.face * BigInt(input.rateBps) * BigInt(input.days);
@@ -92,12 +103,16 @@ export function computeEntitlement(input: EntitlementInput): Entitlement {
 	const net = gross - tax;
 	if (net < 0n) throw new MathError("Overflow", `net=${net}`); // mirrors checked_sub
 	const full = input.units * input.face;
+	assertU64("gross", gross);
+	assertU64("tax", tax);
+	assertU64("net", net);
 	let principal = 0n;
 	if (input.kind === Kind.Redemption || input.kind === Kind.EarlyRedemption) {
 		principal = full;
 	} else if (input.kind === Kind.PartialRedemption) {
 		principal = roundHalfUp(full * BigInt(input.factorBps ?? 0), BPS);
 	}
+	assertU64("principal", principal);
 	return { gross, tax, net, principal };
 }
 

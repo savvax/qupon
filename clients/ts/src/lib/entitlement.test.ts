@@ -2,7 +2,14 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DayCount } from "./daycount.js";
-import { BPS, type Kind, Kind as K, computeEntitlement, roundHalfUp } from "./entitlement.js";
+import {
+	BPS,
+	type Kind,
+	Kind as K,
+	computeEntitlement,
+	roundingWithinTolerance,
+	roundHalfUp,
+} from "./entitlement.js";
 
 interface Case {
 	id: string;
@@ -125,6 +132,63 @@ describe("property: Σ holders within holders/2 of supply × exact per-unit", ()
 		const sum = splits[0]!.reduce((acc, u) => acc + compute({ ...fixtures.cases[0]!, units: Number(u) }).gross, 0n);
 		expect(sum).toBe(BigInt(t.sum_gross));
 		expect(Number(sum) - t.supply * t.per_unit_gross).toBeLessThanOrEqual(t.max_drift_allowed);
+	});
+});
+
+describe("u64 overflow parity with Rust", () => {
+	const base = {
+		rateBps: 1000,
+		dayCount: DayCount.Thirty360,
+		days: 180,
+		taxBps: 0,
+		kind: K.Interest,
+	};
+	const u64Max = (1n << 64n) - 1n;
+	it("rejects units or face above u64::MAX", () => {
+		expect(() => computeEntitlement({ ...base, units: u64Max + 1n, face: 1n })).toThrow(/Overflow/);
+		expect(() => computeEntitlement({ ...base, units: 1n, face: u64Max + 1n })).toThrow(/Overflow/);
+	});
+	it("rejects gross/principal above u64::MAX", () => {
+		// face × units ≈ u128 → gross ≫ u64
+		expect(() =>
+			computeEntitlement({ ...base, units: u64Max, face: u64Max }),
+		).toThrow(/Overflow/);
+		// principal = units × face overflows u64
+		expect(() =>
+			computeEntitlement({ ...base, kind: K.Redemption, units: 1n << 32n, face: 1n << 32n }),
+		).toThrow(/Overflow/);
+	});
+});
+
+describe("roundingWithinTolerance (MCAL 47 days, face 100k, 1595bps)", () => {
+	const p = {
+		supply: 10n,
+		holders: 1,
+		face: 100_000n,
+		rateBps: 1595,
+		dayCount: DayCount.Thirty360 as const,
+		days: 47,
+	};
+	it("accepts the per-holder-rounded sum (20,824), not 10 × rounded per-unit (20,820)", () => {
+		expect(roundingWithinTolerance({ ...p, sumGross: 20_824n })).toBe(true);
+	});
+	it("rejects a sum beyond holders/2 drift (20,826)", () => {
+		expect(roundingWithinTolerance({ ...p, sumGross: 20_826n })).toBe(false);
+	});
+	it("accepts the fixture totals_check", () => {
+		const t = fixtures.totals_check;
+		const c0 = fixtures.cases[0]!;
+		expect(
+			roundingWithinTolerance({
+				supply: BigInt(t.supply),
+				holders: 3,
+				face: BigInt(c0.face),
+				rateBps: c0.rate_bps,
+				dayCount: DC[c0.day_count],
+				days: c0.days,
+				sumGross: BigInt(t.sum_gross),
+			}),
+		).toBe(true);
 	});
 });
 
