@@ -659,10 +659,16 @@ components:
       properties:
         confirm:
           type: boolean
-          description: must be true; dry-run preview when false
+          description: must be true; refuses without explicit confirmation
+        autofund:
+          type: boolean
+          description: >-
+            fund the escrow from the paying agent (demo mode) when the
+            action waits for funding
+          default: false
     AdvanceResponse:
       type: object
-      required: [step, ok]
+      required: [step, ok, status]
       properties:
         step:
           type: string
@@ -672,11 +678,20 @@ components:
         signature:
           type: [string, "null"]
           description: tx signature
+        slot:
+          type: [integer, "null"]
+          description: confirmation slot
         explorerUrl:
           type: [string, "null"]
           description: https://explorer.solana.com/tx/<sig>?cluster=devnet
+        status:
+          type: string
+          description: action status re-read from the chain after the step
         nextStep:
           type: [string, "null"]
+        preview:
+          type: boolean
+          description: true when the step was not executed (dry run)
         error:
           $ref: "#/components/schemas/Error"
     ActivityItem:

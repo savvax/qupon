@@ -20,6 +20,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/api"
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/config"
+	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/ingest"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
@@ -97,10 +98,11 @@ func run() error {
 	srv := &http.Server{
 		Addr: ":" + cfg.Port,
 		Handler: api.New(logger, st, api.Deps{
-			Read:      readModel(chainClient),
-			Notice:    noticeReader(chainClient),
+			Read:     readModel(chainClient),
+			Notice:   noticeReader(chainClient),
 			Reconcile: chainReader,
-			Chain:     chainClient,
+			Chain:    chainClient,
+			Executor: executor.New(cfg.QuponCLI, cfg.QuponConfig, logger),
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 	}

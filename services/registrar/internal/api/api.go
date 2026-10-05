@@ -18,6 +18,7 @@ import (
 	solana "github.com/solana-foundation/solana-go/v2"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
+	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
@@ -33,6 +34,7 @@ type Deps struct {
 	Reconcile reconcile.Reader
 	Chain     *chain.Client
 	Read      ReadModel // series/investors/schedule/actions/entitlements read models (rest.go)
+	Executor  *executor.Executor // qupon CLI runner (advance.go); nil → /advance answers 503
 }
 
 // New builds the HTTP handler tree.
@@ -160,6 +162,8 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r.Get("/actions/{pda}/iso/seev031.xml", isoSeev031(deps.Chain))
 	r.Get("/actions/{pda}/iso/seev036.zip", isoSeev036Zip(deps.Chain))
 	r.Get("/entitlements/{pda}/iso/seev036.xml", isoSeev036(deps.Chain))
+
+	r.Post("/actions/{pda}/advance", advanceAction(deps, st, logger))
 
 	return r
 }
