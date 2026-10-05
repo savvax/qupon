@@ -19,6 +19,7 @@ import {
   getAction,
   getNoticeText,
   getSeries,
+  listInvestors,
   listActivity,
   listEntitlements,
   seev031Url,
@@ -85,13 +86,14 @@ export default async function RegistrarActionPage({
     if (status === 404 || status === 400) notFound();
     throw e;
   });
-  const [series, entitlements, activity, noticeEn, noticeRu] =
+  const [series, entitlements, activity, noticeEn, noticeRu, investors] =
     await Promise.all([
       getSeries(action.seriesMint).catch(() => null),
       listEntitlements(pda).catch(() => [] as EntitlementDTO[]),
       listActivity(200),
       getNoticeText(pda, "en").catch(() => "notice unavailable"),
       getNoticeText(pda, "ru").catch(() => "уведомление недоступно"),
+      listInvestors(action.seriesMint).catch(() => undefined),
     ]);
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
   const [t, ts, tk, tstep] = await Promise.all([
@@ -103,7 +105,7 @@ export default async function RegistrarActionPage({
 
   const ids = stepsForKind(action.kind);
   const timeline = buildTimeline(action, activity, series?.status === "Closed");
-  const next = nextStep(action);
+  const next = nextStep(action, Date.now(), investors?.length);
   const paidTx = paidTxByOwner(activity, pda);
   const label = (id: StepId) => tstep(`do.${id}`);
   const status = (s: string) => (
@@ -359,14 +361,16 @@ export default async function RegistrarActionPage({
               )}
             </p>
           )}
-          {action.status === "RecordStruck" && holders > 0 && (
-            <StepButton
-              pda={pda}
-              label={label("finalize")}
-              status={action.status}
-              secondary
-            />
-          )}
+          {action.status === "RecordStruck" &&
+            holders > 0 &&
+            next.step === "snapshot" && (
+              <StepButton
+                pda={pda}
+                label={label("finalize")}
+                status={action.status}
+                secondary
+              />
+            )}
           {next.step === "apply" && (
             <Badge tone="neutral">{t("simulatedArdfm")}</Badge>
           )}

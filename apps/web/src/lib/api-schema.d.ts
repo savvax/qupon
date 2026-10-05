@@ -4,1886 +4,1900 @@
  */
 
 export interface paths {
-    "/healthz": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Liveness + database check */
-        get: operations["healthz"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/healthz": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/openapi.yaml": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** This document */
-        get: operations["getOpenapi"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Liveness + database check */
+    get: operations["healthz"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/openapi.yaml": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/series": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List series */
-        get: operations["listSeries"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** This document */
+    get: operations["getOpenapi"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/series": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/series/{mint}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Series terms */
-        get: operations["getSeries"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List series */
+    get: operations["listSeries"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/series/{mint}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/series/{mint}/investors": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Holders of a series */
-        get: operations["listInvestors"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Series terms */
+    get: operations["getSeries"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/series/{mint}/investors": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/series/{mint}/schedule": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Coupon schedule (computed from issue_date, frequency, day_count) */
-        get: operations["getSchedule"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Holders of a series */
+    get: operations["listInvestors"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/series/{mint}/schedule": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/series/{mint}/actions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Corporate actions of a series */
-        get: operations["listActions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Coupon schedule (computed from issue_date, frequency, day_count) */
+    get: operations["getSchedule"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/series/{mint}/actions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/actions/{pda}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Action detail */
-        get: operations["getAction"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Corporate actions of a series */
+    get: operations["listActions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/actions/{pda}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/actions/{pda}/entitlements": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Entitlements of an action */
-        get: operations["listEntitlements"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Action detail */
+    get: operations["getAction"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/actions/{pda}/entitlements": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/actions/{pda}/reconcile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Reconciliation report (chain totals vs recomputed math) */
-        get: operations["reconcileAction"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Entitlements of an action */
+    get: operations["listEntitlements"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/actions/{pda}/reconcile": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/actions/{pda}/advance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Run the next action step through the executor (qupon CLI). Same handler as /registrar/actions/{pda}/advance. */
-        post: operations["advanceAction"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Reconciliation report (chain totals vs recomputed math) */
+    get: operations["reconcileAction"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/actions/{pda}/advance": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/actions/{pda}/iso/seev031.xml": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ISO 20022 seev.031 agent notification (announcement) */
-        get: operations["getSeev031"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Run the next action step through the executor (qupon CLI). Same handler as /registrar/actions/{pda}/advance. */
+    post: operations["advanceAction"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/actions/{pda}/iso/seev031.xml": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/entitlements/{pda}/iso/seev036.xml": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ISO 20022 seev.036 instruction (per entitlement) */
-        get: operations["getSeev036"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** ISO 20022 seev.031 agent notification (announcement) */
+    get: operations["getSeev031"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/entitlements/{pda}/iso/seev036.xml": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/actions/{pda}/iso/seev036.zip": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** ISO 20022 seev.036 confirmations, ZIP for all holders */
-        get: operations["getSeev036Zip"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** ISO 20022 seev.036 instruction (per entitlement) */
+    get: operations["getSeev036"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/actions/{pda}/iso/seev036.zip": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/actions/{pda}/notice": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** KASE-style notice text */
-        get: operations["getNotice"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** ISO 20022 seev.036 confirmations, ZIP for all holders */
+    get: operations["getSeev036Zip"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/actions/{pda}/notice": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/activity": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Live activity feed (on-chain program events, ingested by polling) */
-        get: operations["listActivity"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** KASE-style notice text */
+    get: operations["getNotice"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/activity": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/schedule": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Planned coupon actions for every series (autopilot plan view) */
-        get: operations["listSchedule"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Live activity feed (on-chain program events, ingested by polling) */
+    get: operations["listActivity"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/schedule": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/approvals": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Scheduler proposals awaiting a human decision (approval gate) */
-        get: operations["listApprovals"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Planned coupon actions for every series (autopilot plan view) */
+    get: operations["listSchedule"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/approvals": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/approvals/{id}/approve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Approve a pending scheduler proposal (executes the stored argv). Also served at /registrar/approvals/{id}/approve. */
-        post: operations["approveApproval"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Scheduler proposals awaiting a human decision (approval gate) */
+    get: operations["listApprovals"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/approvals/{id}/approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Sign in to the back office with email and password */
-        post: operations["authLogin"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Approve a pending scheduler proposal (executes the stored argv). Also served at /registrar/approvals/{id}/approve. */
+    post: operations["approveApproval"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/demo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** One-click demo sign-in (only when DEMO_LOGIN=1) */
-        post: operations["authDemo"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Sign in to the back office with email and password */
+    post: operations["authLogin"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/demo": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** End the session */
-        post: operations["authLogout"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** One-click demo sign-in (only when DEMO_LOGIN=1) */
+    post: operations["authDemo"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/logout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/issuer/series": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a bond series: validate the terms, reserve the name, then run `qupon series:create` (Token-2022 bond mint + init_series) through the executor. Rolls the registry row back and returns 409 on a CLI failure. */
-        post: operations["createSeries"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** End the session */
+    post: operations["authLogout"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/issuer/series": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The signed-in back-office user */
-        get: operations["me"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Create a bond series: validate the terms, reserve the name, then run `qupon series:create` (Token-2022 bond mint + init_series) through the executor. Rolls the registry row back and returns 409 on a CLI failure. */
+    post: operations["createSeries"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/registrar/investors": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Onboard an investor: the KYC provider (SIMULATED) attests the wallet on the Solana Attestation Service, then the registrar registers the investor on-chain */
-        post: operations["registrarOnboard"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** The signed-in back-office user */
+    get: operations["me"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/registrar/investors": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/registrar/investors/{mint}/{owner}/suspend": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Suspend an investor (freezes the bond ATA) */
-        post: operations["registrarSuspend"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Onboard an investor: the KYC provider (SIMULATED) attests the wallet on the Solana Attestation Service, then the registrar registers the investor on-chain */
+    post: operations["registrarOnboard"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/registrar/investors/{mint}/{owner}/suspend": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/registrar/investors/{mint}/{owner}/reinstate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reinstate a suspended investor */
-        post: operations["registrarReinstate"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Suspend an investor (freezes the bond ATA) */
+    post: operations["registrarSuspend"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/registrar/investors/{mint}/{owner}/reinstate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/registrar/audit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** The back-office audit feed (who ran which write, and what it did) */
-        get: operations["registrarAudit"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Reinstate a suspended investor */
+    post: operations["registrarReinstate"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/registrar/audit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    /** The back-office audit feed (who ran which write, and what it did) */
+    get: operations["registrarAudit"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        User: {
-            id: number;
-            email: string;
-            name: string;
-            /** @enum {string} */
-            role: "issuer" | "registrar" | "investor_demo" | "admin";
-            isDemo: boolean;
-        };
-        Session: {
-            token: string;
-            user: components["schemas"]["User"];
-        };
-        AuditEntry: {
-            id: number;
-            /** @description unix seconds */
-            ts: number;
-            userId: number;
-            role: string;
-            /** @example POST /registrar/investors */
-            route: string;
-            /** @description request params JSON */
-            params: Record<string, never>;
-            ok: boolean;
-            detail: string;
-            signatures: string[];
-        };
-        /** @description Money amount in minor units plus a human display string. */
-        Amount: {
-            /**
-             * @description Integer amount in minor units, decimal string
-             * @example 1250
-             */
-            minor: string;
-            /** @example 12.50 KZT */
-            display: string;
-            /** @example tKZT */
-            currency: string;
-        };
-        Error: {
-            /**
-             * @description machine-readable code (http_404, executor_failed, or the Anchor program error name)
-             * @example EntitlementCalcMismatch
-             */
-            code: string;
-            /** @example accrual days do not match crate day count */
-            message: string;
-            /** @description raw Anchor/program error when the failure came from-chain */
-            onchainError?: string;
-        };
-        Health: {
-            ok: boolean;
-            /** @example ok */
-            db?: string;
-        };
-        SeriesDTO: {
-            mint: string;
-            cashMint: string;
-            registrar?: string;
-            issuer?: string;
-            payingAgent?: string;
-            /** @example KZ1234567890 */
-            isin: string;
-            /** @example tKZBOND */
-            ticker: string;
-            faceValue: components["schemas"]["Amount"];
-            /** @example 1000 */
-            couponRateBps: number;
-            /**
-             * @description coupons per year
-             * @enum {integer}
-             */
-            frequency: 1 | 2 | 4 | 12;
-            /** @enum {string} */
-            dayCount: "THIRTY_360" | "ACT_ACT" | "ACT_365";
-            /**
-             * Format: date
-             * @example 2026-09-01
-             */
-            issueDate: string;
-            /**
-             * Format: date
-             * @example 2027-09-01
-             */
-            maturityDate: string;
-            /**
-             * Format: date-time
-             * @description ISO 8601 with +05:00
-             * @example 2026-12-01T00:00:00+05:00
-             */
-            nextCouponDate: string;
-            /** @enum {string} */
-            status: "Active" | "Matured" | "Retiring" | "Closed";
-            /** @description units in circulation, decimal string */
-            totalIssued: string;
-            quorumBps: number;
-            approvalBps: number;
-            openAction?: string | null;
-            /** @description devnet explorer link for the mint */
-            explorerUrl: string;
-        };
-        InvestorDTO: {
-            owner: string;
-            bondAta: string;
-            cashAta: string;
-            /** @description bond units held, decimal string */
-            units: string;
-            /**
-             * @description from the on-chain investor record
-             * @enum {string}
-             */
-            investorType?: "individual" | "legal_entity";
-            /** @enum {string} */
-            residency?: "resident" | "nonresident";
-            /** @description withholding tax rate, basis points (1000 = 10%) */
-            taxRateBps?: number;
-            /** @description Solana Attestation Service attestation PDA (base58); empty when the record has none */
-            kycRef?: string;
-            /** @enum {string} */
-            status: "Active" | "Suspended";
-            /** @description devnet explorer link for the owner */
-            explorerUrl?: string;
-        };
-        ActionDTO: {
-            pda: string;
-            seriesMint: string;
-            /**
-             * @description ISO 20022 corp action event type (INTE/REDM/MCAL/PCAL/METG/CHAN mapped)
-             * @enum {string}
-             */
-            kind: "INTR" | "REDM" | "MCAL" | "PCAL" | "BMET" | "CHAN";
-            /** @enum {string} */
-            mandatory: "MAND" | "VOLU" | "CHOS";
-            /** @example QPNb1-INTR-0001 */
-            corpId: string;
-            /** @description COAF id, may be empty */
-            officialId?: string | null;
-            /**
-             * Format: date-time
-             * @description ISO 8601 with +05:00
-             */
-            announcedAt?: string;
-            /** Format: date-time */
-            recordAt: string;
-            /** Format: date-time */
-            paymentAt: string;
-            /** Format: date */
-            periodStart?: string | null;
-            /** Format: date */
-            periodEnd?: string | null;
-            accrualDays?: number | null;
-            rateBps?: number | null;
-            perUnitGross: components["schemas"]["Amount"];
-            perUnitPrincipal: components["schemas"]["Amount"];
-            cashMint: string;
-            escrow?: string;
-            /** @description live escrow token balance (0 before funding) */
-            escrowBalance?: components["schemas"]["Amount"];
-            /** @enum {string} */
-            status: "Announced" | "RecordStruck" | "SnapshotComplete" | "Funded" | "Settling" | "Completed" | "Retiring" | "Cancelled" | "VotingOpen" | "Finalized";
-            snapshotSlot?: number | null;
-            /** @description hex sha256 */
-            snapshotHash?: string | null;
-            unitsSnapshotted?: string | null;
-            holdersSnapshotted?: number | null;
-            holdersPaid?: number | null;
-            totalGross?: components["schemas"]["Amount"];
-            totalTax?: components["schemas"]["Amount"];
-            totalNet?: components["schemas"]["Amount"];
-            totalPaid?: components["schemas"]["Amount"];
-            totalRetired?: string | null;
-            holdersRetired?: number | null;
-            proposalNewRateBps?: number | null;
-            /** Format: date */
-            proposalNewMaturity?: string | null;
-            /** Format: date-time */
-            votingEndsAt?: string | null;
-            votesFor?: string | null;
-            votesAgainst?: string | null;
-            votesAbstain?: string | null;
-            /** @enum {string|null} */
-            result?: "Pending" | "Approved" | "Rejected" | "NoQuorum" | null;
-            /** Format: date-time */
-            completedAt?: string | null;
-            factorBps?: number | null;
-            /** @description devnet explorer link for the action PDA */
-            explorerUrl: string;
-        };
-        EntitlementDTO: {
-            pda: string;
-            actionPda: string;
-            owner: string;
-            units: string;
-            gross?: components["schemas"]["Amount"];
-            tax?: components["schemas"]["Amount"];
-            net?: components["schemas"]["Amount"];
-            principal?: components["schemas"]["Amount"];
-            /** @enum {string} */
-            status: "Snapshotted" | "Paid" | "Retired";
-            /** Format: date-time */
-            paidAt?: string | null;
-            /** @enum {string} */
-            vote?: "None" | "For" | "Against" | "Abstain";
-            /** Format: date-time */
-            votedAt?: string | null;
-            /** @description devnet explorer link for the entitlement PDA */
-            explorerUrl?: string;
-        };
-        /** @description One projected coupon (or redemption) on the series schedule. */
-        ScheduleItem: {
-            /** @example 2 */
-            couponNumber: number;
-            /** Format: date */
-            periodStart?: string;
-            /** Format: date */
-            periodEnd?: string;
-            /**
-             * Format: date-time
-             * @description ISO 8601 with +05:00
-             */
-            recordDate: string;
-            /** Format: date-time */
-            paymentDate: string;
-            amountPerUnit?: components["schemas"]["Amount"];
-            totalAmount?: components["schemas"]["Amount"];
-            /** @description set once announced */
-            actionPda?: string | null;
-            /** @enum {string} */
-            status: "Projected" | "Announced" | "InProgress" | "Completed";
-        };
-        /** @description One scheduler proposal awaiting a human decision (task 024). */
-        Approval: {
-            id: number;
-            /** @description unix seconds */
-            ts: number;
-            dedupKey: string;
-            seriesMint: string;
-            /** @description empty for announce decisions */
-            actionPda?: string;
-            /** @example step:strike_record */
-            step: string;
-            /** @description the exact qupon CLI argv approve runs */
-            args: string[];
-            /** @enum {string} */
-            status: "pending" | "executed";
-            /** @description CLI result JSON once executed */
-            detail?: Record<string, never> | null;
-        };
-        /** @description Registrar recomputation vs chain: entitlements recomputed from bond ATA balances (minContextSlot = snapshot_slot), snapshot hash chained sha256(prev ‖ owner ‖ units_le) over investors owner-ascending, and action totals (docs/03-domain.md §4). */
-        ReconcileReport: {
-            actionPda: string;
-            /** @example Completed */
-            actionStatus?: string;
-            ok: boolean;
-            /** @description investors with a non-zero balance at read time */
-            holders: number;
-            mismatches: {
-                owner: string;
-                /** @enum {string} */
-                reason: "missing_entitlement" | "unexpected_entitlement" | "entitlement_mismatch" | "ata_mismatch";
-                /** @description differing fields among units/gross/tax/net/principal */
-                fields?: string[];
-                expected?: components["schemas"]["ReconcileEntry"];
-                onchain?: components["schemas"]["ReconcileEntry"];
-            }[];
-            /** @description base58 sha256 chain recomputed owner-ascending */
-            expectedHash: string;
-            onchainHash: string;
-            hashMatches: boolean;
-            /** @description bond mint supply at read time */
-            supply: number;
-            unitsSnapshotted: number;
-            expectedTotals?: components["schemas"]["ReconcileTotals"];
-            onchainTotals?: components["schemas"]["ReconcileTotals"];
-            totalsMatch: boolean;
-            /** @description unix seconds */
-            checkedAt?: number;
-        };
-        ReconcileEntry: {
-            units: number;
-            gross: number;
-            tax: number;
-            net: number;
-            principal: number;
-        };
-        ReconcileTotals: {
-            units: number;
-            holders: number;
-            gross: number;
-            tax: number;
-            net: number;
-            principal: number;
-        };
-        AdvanceRequest: {
-            /** @description must be true; refuses without explicit confirmation */
-            confirm: boolean;
-            /**
-             * @description fund the escrow from the paying agent (demo mode) when the action waits for funding
-             * @default false
-             */
-            autofund: boolean;
-        };
-        AdvanceResponse: {
-            /** @description executed step, e.g. strike_record, snapshot_batch, pay_batch */
-            step: string;
-            ok: boolean;
-            /** @description tx signature */
-            signature?: string | null;
-            /** @description confirmation slot */
-            slot?: number | null;
-            /** @description https://explorer.solana.com/tx/<sig>?cluster=devnet */
-            explorerUrl?: string | null;
-            /** @description action status re-read from the chain after the step */
-            status: string;
-            nextStep?: string | null;
-            /** @description true when the step was not executed (dry run) */
-            preview?: boolean;
-            error?: components["schemas"]["Error"];
-        };
-        SeriesCreateRequest: {
-            /** @description 1-16 characters of A-Z a-z 0-9 - */
-            name: string;
-            /** @description 12 characters — 2 letters, 9 alphanumerics, 1 check digit */
-            isin: string;
-            /**
-             * Format: int64
-             * @description face value in minor units (> 0)
-             */
-            faceValue: number;
-            /** @description coupon rate in bps, 1..10000 (1000 = 10%) */
-            couponRateBps: number;
-            /**
-             * @description coupons per year
-             * @enum {integer}
-             */
-            frequency: 1 | 2 | 4 | 12;
-            /** @enum {string} */
-            dayCount: "THIRTY_360" | "ACT_365";
-            /** @description YYYY-MM-DD */
-            issueDate: string;
-            /** @description YYYY-MM-DD, after the issue date */
-            maturityDate: string;
-            /**
-             * @description cash leg mint alias
-             * @enum {string}
-             */
-            cash: "tkzt" | "usdc";
-        };
-        SeriesCreateResponse: {
-            series: string;
-            mint: string;
-            /** @description tx signatures (mint create, metadata, init_series) */
-            signatures: string[];
-        };
-        ActivityItem: {
-            id: number;
-            /** @description unix seconds */
-            ts: number;
-            seriesMint?: string | null;
-            actionPda?: string | null;
-            /** @example ActionAnnounced */
-            kind: string;
-            payload?: Record<string, never>;
-            sig: string;
-            slot: number;
-            /** @description ingest order within slot */
-            seq: number;
-            /** @description https://explorer.solana.com/tx/<sig>?cluster=devnet */
-            explorerUrl?: string;
-        };
+  schemas: {
+    User: {
+      id: number;
+      email: string;
+      name: string;
+      /** @enum {string} */
+      role: "issuer" | "registrar" | "investor_demo" | "admin";
+      isDemo: boolean;
     };
-    responses: never;
-    parameters: {
-        /** @description Bond mint pubkey (base58) */
-        Mint: string;
-        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-        Pda: string;
+    Session: {
+      token: string;
+      user: components["schemas"]["User"];
     };
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    AuditEntry: {
+      id: number;
+      /** @description unix seconds */
+      ts: number;
+      userId: number;
+      role: string;
+      /** @example POST /registrar/investors */
+      route: string;
+      /** @description request params JSON */
+      params: Record<string, never>;
+      ok: boolean;
+      detail: string;
+      signatures: string[];
+    };
+    /** @description Money amount in minor units plus a human display string. */
+    Amount: {
+      /**
+       * @description Integer amount in minor units, decimal string
+       * @example 1250
+       */
+      minor: string;
+      /** @example 12.50 KZT */
+      display: string;
+      /** @example tKZT */
+      currency: string;
+    };
+    Error: {
+      /**
+       * @description machine-readable code (http_404, executor_failed, or the Anchor program error name)
+       * @example EntitlementCalcMismatch
+       */
+      code: string;
+      /** @example accrual days do not match crate day count */
+      message: string;
+      /** @description raw Anchor/program error when the failure came from-chain */
+      onchainError?: string;
+    };
+    Health: {
+      ok: boolean;
+      /** @example ok */
+      db?: string;
+    };
+    SeriesDTO: {
+      mint: string;
+      cashMint: string;
+      registrar?: string;
+      issuer?: string;
+      payingAgent?: string;
+      /** @example KZ1234567890 */
+      isin: string;
+      /** @example tKZBOND */
+      ticker: string;
+      faceValue: components["schemas"]["Amount"];
+      /** @example 1000 */
+      couponRateBps: number;
+      /**
+       * @description coupons per year
+       * @enum {integer}
+       */
+      frequency: 1 | 2 | 4 | 12;
+      /** @enum {string} */
+      dayCount: "THIRTY_360" | "ACT_ACT" | "ACT_365";
+      /**
+       * Format: date
+       * @example 2026-09-01
+       */
+      issueDate: string;
+      /**
+       * Format: date
+       * @example 2027-09-01
+       */
+      maturityDate: string;
+      /**
+       * Format: date-time
+       * @description ISO 8601 with +05:00
+       * @example 2026-12-01T00:00:00+05:00
+       */
+      nextCouponDate: string;
+      /** @enum {string} */
+      status: "Active" | "Matured" | "Retiring" | "Closed";
+      /** @description units in circulation, decimal string */
+      totalIssued: string;
+      quorumBps: number;
+      approvalBps: number;
+      openAction?: string | null;
+      /** @description devnet explorer link for the mint */
+      explorerUrl: string;
+    };
+    InvestorDTO: {
+      owner: string;
+      bondAta: string;
+      cashAta: string;
+      /** @description bond units held, decimal string */
+      units: string;
+      /**
+       * @description from the on-chain investor record
+       * @enum {string}
+       */
+      investorType?: "individual" | "legal_entity";
+      /** @enum {string} */
+      residency?: "resident" | "nonresident";
+      /** @description withholding tax rate, basis points (1000 = 10%) */
+      taxRateBps?: number;
+      /** @description Solana Attestation Service attestation PDA (base58); empty when the record has none */
+      kycRef?: string;
+      /** @enum {string} */
+      status: "Active" | "Suspended";
+      /** @description devnet explorer link for the owner */
+      explorerUrl?: string;
+    };
+    ActionDTO: {
+      pda: string;
+      seriesMint: string;
+      /**
+       * @description ISO 20022 corp action event type (INTE/REDM/MCAL/PCAL/METG/CHAN mapped)
+       * @enum {string}
+       */
+      kind: "INTR" | "REDM" | "MCAL" | "PCAL" | "BMET" | "CHAN";
+      /** @enum {string} */
+      mandatory: "MAND" | "VOLU" | "CHOS";
+      /** @example QPNb1-INTR-0001 */
+      corpId: string;
+      /** @description COAF id, may be empty */
+      officialId?: string | null;
+      /**
+       * Format: date-time
+       * @description ISO 8601 with +05:00
+       */
+      announcedAt?: string;
+      /** Format: date-time */
+      recordAt: string;
+      /** Format: date-time */
+      paymentAt: string;
+      /** Format: date */
+      periodStart?: string | null;
+      /** Format: date */
+      periodEnd?: string | null;
+      accrualDays?: number | null;
+      rateBps?: number | null;
+      perUnitGross: components["schemas"]["Amount"];
+      perUnitPrincipal: components["schemas"]["Amount"];
+      cashMint: string;
+      escrow?: string;
+      /** @description live escrow token balance (0 before funding) */
+      escrowBalance?: components["schemas"]["Amount"];
+      /** @enum {string} */
+      status:
+        | "Announced"
+        | "RecordStruck"
+        | "SnapshotComplete"
+        | "Funded"
+        | "Settling"
+        | "Completed"
+        | "Retiring"
+        | "Cancelled"
+        | "VotingOpen"
+        | "Finalized";
+      snapshotSlot?: number | null;
+      /** @description hex sha256 */
+      snapshotHash?: string | null;
+      unitsSnapshotted?: string | null;
+      holdersSnapshotted?: number | null;
+      holdersPaid?: number | null;
+      totalGross?: components["schemas"]["Amount"];
+      totalTax?: components["schemas"]["Amount"];
+      totalNet?: components["schemas"]["Amount"];
+      totalPaid?: components["schemas"]["Amount"];
+      totalRetired?: string | null;
+      holdersRetired?: number | null;
+      proposalNewRateBps?: number | null;
+      /** Format: date */
+      proposalNewMaturity?: string | null;
+      /** Format: date-time */
+      votingEndsAt?: string | null;
+      votesFor?: string | null;
+      votesAgainst?: string | null;
+      votesAbstain?: string | null;
+      /** @enum {string|null} */
+      result?: "Pending" | "Approved" | "Rejected" | "NoQuorum" | null;
+      /** Format: date-time */
+      completedAt?: string | null;
+      factorBps?: number | null;
+      /** @description devnet explorer link for the action PDA */
+      explorerUrl: string;
+    };
+    EntitlementDTO: {
+      pda: string;
+      actionPda: string;
+      owner: string;
+      units: string;
+      gross?: components["schemas"]["Amount"];
+      tax?: components["schemas"]["Amount"];
+      net?: components["schemas"]["Amount"];
+      principal?: components["schemas"]["Amount"];
+      /** @enum {string} */
+      status: "Snapshotted" | "Paid" | "Retired";
+      /** Format: date-time */
+      paidAt?: string | null;
+      /** @enum {string} */
+      vote?: "None" | "For" | "Against" | "Abstain";
+      /** Format: date-time */
+      votedAt?: string | null;
+      /** @description devnet explorer link for the entitlement PDA */
+      explorerUrl?: string;
+    };
+    /** @description One projected coupon (or redemption) on the series schedule. */
+    ScheduleItem: {
+      /** @example 2 */
+      couponNumber: number;
+      /** Format: date */
+      periodStart?: string;
+      /** Format: date */
+      periodEnd?: string;
+      /**
+       * Format: date-time
+       * @description ISO 8601 with +05:00
+       */
+      recordDate: string;
+      /** Format: date-time */
+      paymentDate: string;
+      amountPerUnit?: components["schemas"]["Amount"];
+      totalAmount?: components["schemas"]["Amount"];
+      /** @description set once announced */
+      actionPda?: string | null;
+      /** @enum {string} */
+      status: "Projected" | "Announced" | "InProgress" | "Completed";
+    };
+    /** @description One scheduler proposal awaiting a human decision (task 024). */
+    Approval: {
+      id: number;
+      /** @description unix seconds */
+      ts: number;
+      dedupKey: string;
+      seriesMint: string;
+      /** @description empty for announce decisions */
+      actionPda?: string;
+      /** @example step:strike_record */
+      step: string;
+      /** @description the exact qupon CLI argv approve runs */
+      args: string[];
+      /** @enum {string} */
+      status: "pending" | "executed";
+      /** @description CLI result JSON once executed */
+      detail?: Record<string, never> | null;
+    };
+    /** @description Registrar recomputation vs chain: entitlements recomputed from bond ATA balances (minContextSlot = snapshot_slot), snapshot hash chained sha256(prev ‖ owner ‖ units_le) over investors owner-ascending, and action totals (docs/03-domain.md §4). */
+    ReconcileReport: {
+      actionPda: string;
+      /** @example Completed */
+      actionStatus?: string;
+      ok: boolean;
+      /** @description investors with a non-zero balance at read time */
+      holders: number;
+      mismatches: {
+        owner: string;
+        /** @enum {string} */
+        reason:
+          | "missing_entitlement"
+          | "unexpected_entitlement"
+          | "entitlement_mismatch"
+          | "ata_mismatch";
+        /** @description differing fields among units/gross/tax/net/principal */
+        fields?: string[];
+        expected?: components["schemas"]["ReconcileEntry"];
+        onchain?: components["schemas"]["ReconcileEntry"];
+      }[];
+      /** @description base58 sha256 chain recomputed owner-ascending */
+      expectedHash: string;
+      onchainHash: string;
+      hashMatches: boolean;
+      /** @description bond mint supply at read time */
+      supply: number;
+      unitsSnapshotted: number;
+      expectedTotals?: components["schemas"]["ReconcileTotals"];
+      onchainTotals?: components["schemas"]["ReconcileTotals"];
+      totalsMatch: boolean;
+      /** @description unix seconds */
+      checkedAt?: number;
+    };
+    ReconcileEntry: {
+      units: number;
+      gross: number;
+      tax: number;
+      net: number;
+      principal: number;
+    };
+    ReconcileTotals: {
+      units: number;
+      holders: number;
+      gross: number;
+      tax: number;
+      net: number;
+      principal: number;
+    };
+    AdvanceRequest: {
+      /** @description must be true; refuses without explicit confirmation */
+      confirm: boolean;
+      /**
+       * @description fund the escrow from the paying agent (demo mode) when the action waits for funding
+       * @default false
+       */
+      autofund: boolean;
+    };
+    AdvanceResponse: {
+      /** @description executed step, e.g. strike_record, snapshot_batch, pay_batch */
+      step: string;
+      ok: boolean;
+      /** @description tx signature */
+      signature?: string | null;
+      /** @description confirmation slot */
+      slot?: number | null;
+      /** @description https://explorer.solana.com/tx/<sig>?cluster=devnet */
+      explorerUrl?: string | null;
+      /** @description action status re-read from the chain after the step */
+      status: string;
+      nextStep?: string | null;
+      /** @description true when the step was not executed (dry run) */
+      preview?: boolean;
+      error?: components["schemas"]["Error"];
+    };
+    SeriesCreateRequest: {
+      /** @description 1-16 characters of A-Z a-z 0-9 - */
+      name: string;
+      /** @description 12 characters — 2 letters, 9 alphanumerics, 1 check digit */
+      isin: string;
+      /**
+       * Format: int64
+       * @description face value in minor units (> 0)
+       */
+      faceValue: number;
+      /** @description coupon rate in bps, 1..10000 (1000 = 10%) */
+      couponRateBps: number;
+      /**
+       * @description coupons per year
+       * @enum {integer}
+       */
+      frequency: 1 | 2 | 4 | 12;
+      /** @enum {string} */
+      dayCount: "THIRTY_360" | "ACT_365";
+      /** @description YYYY-MM-DD */
+      issueDate: string;
+      /** @description YYYY-MM-DD, after the issue date */
+      maturityDate: string;
+      /**
+       * @description cash leg mint alias
+       * @enum {string}
+       */
+      cash: "tkzt" | "usdc";
+    };
+    SeriesCreateResponse: {
+      series: string;
+      mint: string;
+      /** @description tx signatures (mint create, metadata, init_series) */
+      signatures: string[];
+    };
+    ActivityItem: {
+      id: number;
+      /** @description unix seconds */
+      ts: number;
+      seriesMint?: string | null;
+      actionPda?: string | null;
+      /** @example ActionAnnounced */
+      kind: string;
+      payload?: Record<string, never>;
+      sig: string;
+      slot: number;
+      /** @description ingest order within slot */
+      seq: number;
+      /** @description https://explorer.solana.com/tx/<sig>?cluster=devnet */
+      explorerUrl?: string;
+    };
+  };
+  responses: never;
+  parameters: {
+    /** @description Bond mint pubkey (base58) */
+    Mint: string;
+    /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+    Pda: string;
+  };
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    healthz: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description service healthy */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Health"];
-                };
-            };
-            /** @description database unreachable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
+  healthz: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getOpenapi: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description service healthy */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description OpenAPI YAML */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/yaml": string;
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Health"];
         };
+      };
+      /** @description database unreachable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
     };
-    listSeries: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description series list */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SeriesDTO"][];
-                };
-            };
-        };
+  };
+  getOpenapi: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getSeries: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Bond mint pubkey (base58) */
-                mint: components["parameters"]["Mint"];
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description OpenAPI YAML */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description series */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SeriesDTO"];
-                };
-            };
-            /** @description not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
+        content: {
+          "application/yaml": string;
         };
+      };
     };
-    listInvestors: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Bond mint pubkey (base58) */
-                mint: components["parameters"]["Mint"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description investors */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InvestorDTO"][];
-                };
-            };
-        };
+  };
+  listSeries: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    getSchedule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Bond mint pubkey (base58) */
-                mint: components["parameters"]["Mint"];
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description series list */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description schedule items */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScheduleItem"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["SeriesDTO"][];
         };
+      };
     };
-    listActions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Bond mint pubkey (base58) */
-                mint: components["parameters"]["Mint"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description actions, newest first */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActionDTO"][];
-                };
-            };
-        };
+  };
+  getSeries: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Bond mint pubkey (base58) */
+        mint: components["parameters"]["Mint"];
+      };
+      cookie?: never;
     };
-    getAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-                pda: components["parameters"]["Pda"];
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description series */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description action */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActionDTO"];
-                };
-            };
-            /** @description not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["SeriesDTO"];
         };
+      };
+      /** @description not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
     };
-    listEntitlements: {
-        parameters: {
-            query?: {
-                offset?: number;
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-                pda: components["parameters"]["Pda"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description entitlements sorted by owner pubkey ascending (snapshot order) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntitlementDTO"][];
-                };
-            };
-        };
+  };
+  listInvestors: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Bond mint pubkey (base58) */
+        mint: components["parameters"]["Mint"];
+      };
+      cookie?: never;
     };
-    reconcileAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-                pda: components["parameters"]["Pda"];
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description investors */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description report */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReconcileReport"];
-                };
-            };
-            /** @description not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["InvestorDTO"][];
         };
+      };
     };
-    advanceAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-                pda: components["parameters"]["Pda"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AdvanceRequest"];
-            };
-        };
-        responses: {
-            /** @description step result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AdvanceResponse"];
-                };
-            };
-            /** @description no runnable step or validation failure */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description no valid back-office session (bearer token) */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description the session's role is not registrar or admin */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
+  };
+  getSchedule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Bond mint pubkey (base58) */
+        mint: components["parameters"]["Mint"];
+      };
+      cookie?: never;
     };
-    getSeev031: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-                pda: components["parameters"]["Pda"];
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description schedule items */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description XML document */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/xml": string;
-                };
-            };
-            /** @description not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["ScheduleItem"][];
         };
+      };
     };
-    getSeev036: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-                pda: components["parameters"]["Pda"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description XML document */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/xml": string;
-                };
-            };
-            /** @description not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
+  };
+  listActions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Bond mint pubkey (base58) */
+        mint: components["parameters"]["Mint"];
+      };
+      cookie?: never;
     };
-    getSeev036Zip: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-                pda: components["parameters"]["Pda"];
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description actions, newest first */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description ZIP archive, one seev.036 XML per holder */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/zip": string;
-                };
-            };
-            /** @description not found or no entitlements snapshotted */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["ActionDTO"][];
         };
+      };
     };
-    getNotice: {
-        parameters: {
-            query?: {
-                lang?: "en" | "ru";
-            };
-            header?: never;
-            path: {
-                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-                pda: components["parameters"]["Pda"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description plain-text notice */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/plain": string;
-                };
-            };
-            /** @description not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
+  };
+  getAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+        pda: components["parameters"]["Pda"];
+      };
+      cookie?: never;
     };
-    listActivity: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description action */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description events in chain order, oldest first */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        events: components["schemas"]["ActivityItem"][];
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["ActionDTO"];
         };
+      };
+      /** @description not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
     };
-    listSchedule: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description per-series coupon calendar with matched on-chain actions */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        series: {
-                            mint?: string;
-                            ticker?: string;
-                            status?: string;
-                            nextCouponDate?: string;
-                            items?: components["schemas"]["ScheduleItem"][];
-                        }[];
-                    };
-                };
-            };
-        };
+  };
+  listEntitlements: {
+    parameters: {
+      query?: {
+        offset?: number;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+        pda: components["parameters"]["Pda"];
+      };
+      cookie?: never;
     };
-    listApprovals: {
-        parameters: {
-            query?: {
-                status?: "pending" | "executed" | "all";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description entitlements sorted by owner pubkey ascending (snapshot order) */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description approval rows (pending by default) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        approvals: components["schemas"]["Approval"][];
-                    };
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["EntitlementDTO"][];
         };
+      };
     };
-    approveApproval: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description executed; body carries the tx signature and explorer URL */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description no valid back-office session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description role is not registrar or admin */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description no such approval */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description already executed, or the chain refused the step (stays pending) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  reconcileAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+        pda: components["parameters"]["Pda"];
+      };
+      cookie?: never;
     };
-    authLogin: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description report */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    email: string;
-                    password: string;
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["ReconcileReport"];
         };
-        responses: {
-            /** @description session token (the web keeps it in an httpOnly cookie) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Session"];
-                };
-            };
-            /** @description missing email or password */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description bad_credentials */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description rate_limited (5 attempts per email per minute) */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
     };
-    authDemo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @enum {string} */
-                    role: "issuer" | "registrar" | "investor";
-                };
-            };
-        };
-        responses: {
-            /** @description session for the demo user of that role */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Session"];
-                };
-            };
-            /** @description unknown role */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description demo_disabled */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  advanceAction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+        pda: components["parameters"]["Pda"];
+      };
+      cookie?: never;
     };
-    authLogout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description signed out (also when the token was unknown) */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdvanceRequest"];
+      };
     };
-    createSeries: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description step result */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SeriesCreateRequest"];
-            };
+        content: {
+          "application/json": components["schemas"]["AdvanceResponse"];
         };
-        responses: {
-            /** @description series created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SeriesCreateResponse"];
-                };
-            };
-            /** @description invalid_params — rejected before any CLI run */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description no valid back-office session (bearer token) */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description the session's role is not issuer or admin */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description series_exists (name taken) or onchain (CLI failure, onchainError carries the CLI message) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description executor or base config not configured */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description no runnable step or validation failure */
+      400: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description no valid back-office session (bearer token) */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description the session's role is not registrar or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
     };
-    me: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description current user */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        user: components["schemas"]["User"];
-                    };
-                };
-            };
-            /** @description no valid session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  getSeev031: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+        pda: components["parameters"]["Pda"];
+      };
+      cookie?: never;
     };
-    registrarOnboard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description XML document */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** @description bond mint (base58) */
-                    series: string;
-                    /** @description investor wallet (base58) */
-                    owner: string;
-                    /** @enum {string} */
-                    investorType: "individual" | "legal_entity";
-                    /** @enum {string} */
-                    residency: "resident" | "nonresident";
-                    taxBps: number;
-                    /** @description KYC validity in days (default 365, 0 = no expiry) */
-                    expiryDays?: number;
-                };
-            };
+        content: {
+          "application/xml": string;
         };
-        responses: {
-            /** @description attested and registered */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @description Investor PDA */
-                        investor: string;
-                        /** @description SAS attestation PDA */
-                        attestation: string;
-                        signatures: string[];
-                    };
-                };
-            };
-            /** @description malformed input (non-base58 owner/mint, taxBps > 10000, unknown investorType or residency) */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description no valid back-office session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description role is not registrar or admin */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description unknown_series — mint is not a registered series */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description the chain refused a step (onchainError carries the raw message) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description executor not configured */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+      };
+      /** @description not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
     };
-    registrarSuspend: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Bond mint pubkey (base58) */
-                mint: components["parameters"]["Mint"];
-                /** @description investor wallet (base58) */
-                owner: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description executed; body carries the transaction signatures */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description mint or owner is not base58 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description no valid back-office session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description role is not registrar or admin */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description unknown_series */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description the chain refused the step (onchainError) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  getSeev036: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+        pda: components["parameters"]["Pda"];
+      };
+      cookie?: never;
     };
-    registrarReinstate: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Bond mint pubkey (base58) */
-                mint: components["parameters"]["Mint"];
-                /** @description investor wallet (base58) */
-                owner: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description XML document */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description executed; body carries the transaction signatures */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description mint or owner is not base58 */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description no valid back-office session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description role is not registrar or admin */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description unknown_series */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description the chain refused the step (onchainError) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+        content: {
+          "application/xml": string;
         };
+      };
+      /** @description not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
     };
-    registrarAudit: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description audit rows, newest first */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        items: components["schemas"]["AuditEntry"][];
-                    };
-                };
-            };
-            /** @description limit out of range */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description no valid back-office session */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description role is not registrar or admin */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
+  };
+  getSeev036Zip: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+        pda: components["parameters"]["Pda"];
+      };
+      cookie?: never;
     };
+    requestBody?: never;
+    responses: {
+      /** @description ZIP archive, one seev.036 XML per holder */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/zip": string;
+        };
+      };
+      /** @description not found or no entitlements snapshotted */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getNotice: {
+    parameters: {
+      query?: {
+        lang?: "en" | "ru";
+      };
+      header?: never;
+      path: {
+        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+        pda: components["parameters"]["Pda"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description plain-text notice */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "text/plain": string;
+        };
+      };
+      /** @description not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  listActivity: {
+    parameters: {
+      query?: {
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description events in chain order, oldest first */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            events: components["schemas"]["ActivityItem"][];
+          };
+        };
+      };
+    };
+  };
+  listSchedule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description per-series coupon calendar with matched on-chain actions */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            series: {
+              mint?: string;
+              ticker?: string;
+              status?: string;
+              nextCouponDate?: string;
+              items?: components["schemas"]["ScheduleItem"][];
+            }[];
+          };
+        };
+      };
+    };
+  };
+  listApprovals: {
+    parameters: {
+      query?: {
+        status?: "pending" | "executed" | "all";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description approval rows (pending by default) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            approvals: components["schemas"]["Approval"][];
+          };
+        };
+      };
+    };
+  };
+  approveApproval: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description executed; body carries the tx signature and explorer URL */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid back-office session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description role is not registrar or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no such approval */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description already executed, or the chain refused the step (stays pending) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  authLogin: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          email: string;
+          password: string;
+        };
+      };
+    };
+    responses: {
+      /** @description session token (the web keeps it in an httpOnly cookie) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Session"];
+        };
+      };
+      /** @description missing email or password */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description bad_credentials */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description rate_limited (5 attempts per email per minute) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  authDemo: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @enum {string} */
+          role: "issuer" | "registrar" | "investor";
+        };
+      };
+    };
+    responses: {
+      /** @description session for the demo user of that role */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Session"];
+        };
+      };
+      /** @description unknown role */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description demo_disabled */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  authLogout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description signed out (also when the token was unknown) */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  createSeries: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SeriesCreateRequest"];
+      };
+    };
+    responses: {
+      /** @description series created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SeriesCreateResponse"];
+        };
+      };
+      /** @description invalid_params — rejected before any CLI run */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid back-office session (bearer token) */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the session's role is not issuer or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description series_exists (name taken) or onchain (CLI failure, onchainError carries the CLI message) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description executor or base config not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  me: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description current user */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            user: components["schemas"]["User"];
+          };
+        };
+      };
+      /** @description no valid session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  registrarOnboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** @description bond mint (base58) */
+          series: string;
+          /** @description investor wallet (base58) */
+          owner: string;
+          /** @enum {string} */
+          investorType: "individual" | "legal_entity";
+          /** @enum {string} */
+          residency: "resident" | "nonresident";
+          taxBps: number;
+          /** @description KYC validity in days (default 365, 0 = no expiry) */
+          expiryDays?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description attested and registered */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Investor PDA */
+            investor: string;
+            /** @description SAS attestation PDA */
+            attestation: string;
+            signatures: string[];
+          };
+        };
+      };
+      /** @description malformed input (non-base58 owner/mint, taxBps > 10000, unknown investorType or residency) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid back-office session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description role is not registrar or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description unknown_series — mint is not a registered series */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the chain refused a step (onchainError carries the raw message) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description executor not configured */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  registrarSuspend: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Bond mint pubkey (base58) */
+        mint: components["parameters"]["Mint"];
+        /** @description investor wallet (base58) */
+        owner: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description executed; body carries the transaction signatures */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description mint or owner is not base58 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid back-office session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description role is not registrar or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description unknown_series */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the chain refused the step (onchainError) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  registrarReinstate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Bond mint pubkey (base58) */
+        mint: components["parameters"]["Mint"];
+        /** @description investor wallet (base58) */
+        owner: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description executed; body carries the transaction signatures */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description mint or owner is not base58 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid back-office session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description role is not registrar or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description unknown_series */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description the chain refused the step (onchainError) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  registrarAudit: {
+    parameters: {
+      query?: {
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description audit rows, newest first */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            items: components["schemas"]["AuditEntry"][];
+          };
+        };
+      };
+      /** @description limit out of range */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description no valid back-office session */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description role is not registrar or admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
 }

@@ -64,6 +64,21 @@ describe("nextStep (mirror of Go executor.NextStep)", () => {
     expect(nextStep({ ...base, status: "RecordStruck" })).toMatchObject({
       step: "snapshot",
     });
+    // every registered investor snapshotted → finalize (executor.NextStep), not another snapshot
+    expect(
+      nextStep(
+        { ...base, status: "RecordStruck", holdersSnapshotted: 3 },
+        Date.now(),
+        3,
+      ),
+    ).toMatchObject({ step: "finalize" });
+    expect(
+      nextStep(
+        { ...base, status: "RecordStruck", holdersSnapshotted: 2 },
+        Date.now(),
+        3,
+      ),
+    ).toMatchObject({ step: "snapshot" });
     expect(nextStep({ ...base, status: "SnapshotComplete" })).toMatchObject({
       step: "fund",
     });

@@ -271,12 +271,19 @@ export type NextStep = { step: StepId | null; label?: string; wait?: string };
  * `autofund` is always sent by the console: the operator pressing
  * "Fund escrow (issuer)" IS the issuer approval.
  */
-export function nextStep(a: ActionDTO, now = Date.now()): NextStep {
+export function nextStep(
+  a: ActionDTO,
+  now = Date.now(),
+  /** registered investors of the series — executor.NextStep finalizes once every one is snapshotted */
+  investors?: number,
+): NextStep {
   const hs = a.holdersSnapshotted ?? 0;
   switch (a.status) {
     case "Announced":
       return { step: "strike", label: STEP_LABELS.strike };
     case "RecordStruck":
+      if (investors !== undefined && hs > 0 && hs >= investors)
+        return { step: "finalize", label: STEP_LABELS.finalize };
       return { step: "snapshot", label: STEP_LABELS.snapshot };
     case "SnapshotComplete":
       return { step: "fund", label: STEP_LABELS.fund };
