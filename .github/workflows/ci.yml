@@ -16,7 +16,7 @@ jobs:
         with: {node-version: 22}
       - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
       - uses: actions/setup-go@v5
-        with: {go-version: "1.25", cache: true}
+        with: {go-version-file: services/registrar/go.mod, cache-dependency-path: services/registrar/go.sum}
       - uses: actions/cache@v4
         with:
           path: |
