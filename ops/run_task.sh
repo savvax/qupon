@@ -63,4 +63,7 @@ if [ -n "$CUR" ] && [ "$CUR" != "$BR" ]; then
     echo "BLOCKED:$ID agent committed on branch $CUR instead of $BR (work kept on $CUR)"
   fi
 fi
+# Diagnostics: the orchestrator rejects a dirty worktree (clean=N); record what was left behind.
+DIRTY=$(git status --porcelain 2>/dev/null | head -20)
+[ -n "$DIRTY" ] && { echo "[run_task] worktree not clean after agent:"; echo "$DIRTY"; [ -d "$(git rev-parse --git-path rebase-merge)" ] || [ -d "$(git rev-parse --git-path rebase-apply)" ] && echo "[run_task] a rebase is still in progress"; } >&2
 exit $rc
