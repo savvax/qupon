@@ -51,3 +51,13 @@ export function prettifyStatus(status: string): string {
   const s = status.replace(/([a-z])([A-Z])/g, "$1 $2");
   return s.charAt(0) + s.slice(1).toLowerCase();
 }
+
+/** ISO 20022 corporate-action kind → badge tone. */
+export const KIND_TONE: Record<string, Tone> = {
+  INTR: "success",
+  REDM: "info",
+  MCAL: "warn",
+  PCAL: "warn",
+  BMET: "violet",
+  CHAN: "neutral",
+};

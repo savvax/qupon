@@ -392,5 +392,140 @@
     "title": "This area is for another role",
     "body": "You are signed in with a role that can't open this page.",
     "home": "Go to my cabinet"
+  },
+  "action": {
+    "breadcrumb": "Corporate actions",
+    "sending": "{step}: sending the transaction…",
+    "stepDone": "{step} — confirmed",
+    "readOnly": "This series was created outside Qupon's registry, so its steps can't be run from here.",
+    "simulatedArdfm": "ARDFM registration — simulated",
+    "wait": {
+      "voting": "Voting is open",
+      "notApproved": "Meeting not approved — nothing to apply",
+      "completed": "Action completed",
+      "cancelled": "Action cancelled"
+    },
+    "kpi": {
+      "perBond": "Per bond",
+      "escrow": "Escrow",
+      "holders": "Holders",
+      "record": "Record date",
+      "proposal": "Coupon proposal",
+      "turnout": "Turnout",
+      "paidOf": "{paid} of {total} paid"
+    },
+    "funding": {
+      "title": "Funding",
+      "escrow": "Escrow vs required",
+      "funded": "Fully funded",
+      "paidOut": "Paid out to holders",
+      "awaiting": "Awaiting snapshot",
+      "under": "Underfunded",
+      "rule": "Required = Σ net + tax across holders.",
+      "ruleWithPrincipal": "Required = Σ net + tax + principal across holders."
+    },
+    "meeting": {
+      "title": "Bondholder meeting",
+      "proposal": "Coupon",
+      "for": "For",
+      "against": "Against",
+      "abstain": "Abstain",
+      "thresholds": "Quorum {quorum}% of units · approval {approval}% of votes cast",
+      "ends": "Voting ends {at}",
+      "ended": "ended",
+      "left": "{time} left",
+      "days": "{d} d {h} h"
+    },
+    "facts": {
+      "title": "Facts",
+      "corpId": "Corporate action id",
+      "coaf": "COAF",
+      "record": "Record date",
+      "payment": "Payment date",
+      "period": "Accrual period",
+      "days": "{n} days",
+      "snapshot": "Snapshot",
+      "snapshotValue": "slot {slot} · {units} units · {holders} holders"
+    },
+    "ent": {
+      "title": "Entitlements",
+      "owner": "Holder",
+      "units": "Units",
+      "gross": "Gross",
+      "tax": "Tax",
+      "net": "Net",
+      "principal": "Principal",
+      "status": "Status",
+      "tx": "Payment tx",
+      "empty": "Entitlements appear after the snapshot step.",
+      "vote": "Vote",
+      "notVoted": "Not voted",
+      "votedAt": "Voted at"
+    },
+    "timeline": "Timeline",
+    "reconcile": {
+      "title": "Reconcile",
+      "lead": "Re-reads the chain and checks the snapshot hash and payout totals.",
+      "run": "Run",
+      "rerun": "Run again",
+      "ok": "OK",
+      "mismatch": "Mismatch",
+      "summary": "{holders} holders · supply {supply}",
+      "hash": "Snapshot hash matches the holders on-chain",
+      "totals": "Σ net + tax + principal equals the amount paid"
+    },
+    "downloads": {
+      "title": "ISO 20022",
+      "seev031": "agent notification (XML)",
+      "seev036": "payment confirmation for every holder",
+      "simulated": "Swift delivery — simulated"
+    },
+    "notice": {
+      "title": "KASE notice",
+      "language": "Notice language",
+      "copy": "Copy",
+      "copied": "Copied",
+      "simulated": "Publication on kase.kz — simulated"
+    },
+    "list": {
+      "title": "Corporate actions",
+      "lead": "Every coupon, redemption and meeting across the registry. Open one to run its next step.",
+      "action": "Action",
+      "kind": "Type",
+      "open": "Open",
+      "done": "Completed",
+      "all": "All",
+      "empty": "No corporate actions here."
+    }
+  },
+  "steps": {
+    "do": {
+      "announce": "Announce",
+      "strike": "Strike record date",
+      "snapshot": "Snapshot holders",
+      "finalize": "Finalize snapshot",
+      "fund": "Fund escrow",
+      "pay": "Pay holders",
+      "complete": "Complete",
+      "retire": "Retire bonds",
+      "close": "Close series",
+      "votes": "Collect votes",
+      "meet_finalize": "Count the votes",
+      "apply": "Apply terms change"
+    },
+    "done": {
+      "announce": "Announced",
+      "strike": "Record date",
+      "snapshot": "Snapshot",
+      "finalize": "Finalized",
+      "fund": "Funded",
+      "pay": "Paid",
+      "complete": "Completed",
+      "retire": "Retired",
+      "close": "Closed",
+      "votes": "Voting",
+      "meet_finalize": "Result",
+      "apply": "Terms applied"
+    }
   }
 }

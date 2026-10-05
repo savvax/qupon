@@ -10,6 +10,8 @@ export type WriteOpts<T> = {
   call: () => Promise<T>;
   /** Signatures to show; the first one becomes the toast's explorer link. */
   txs?: (r: T) => string[];
+  /** Also called on failure with the explained text (e.g. to keep the error visible inline). */
+  onError?: (e: BoError, text: string) => void;
 };
 
 /**
@@ -37,10 +39,12 @@ export function useRunWrite() {
         const text: ErrorText = Object.assign((k: string) => t(k), {
           has: (k: string) => t.has(k),
         });
+        const explained = explainBoError(e, text);
+        o.onError?.(e, explained);
         toast.update(id, {
           kind: "error",
           title: e.status === 401 ? t("sessionExpiredTitle") : t("failed"),
-          body: explainBoError(e, text),
+          body: explained,
           action:
             e.status === 401
               ? {
