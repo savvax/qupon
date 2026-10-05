@@ -85,6 +85,15 @@ async function main(): Promise<void> {
 	const series = await seriesPda(mint);
 	log(`series PDA for ${mint}: ${series}`);
 
+	// resume path: mint keypair exists but create tx never landed — metadata fields only
+	if (await mintExistsOnChain(rpc, mint)) {
+		log(`mint ${mint} already on-chain — skipping create, writing metadata fields only`);
+		const fields = bondMetadataFields(sc, Math.floor(Date.now() / 1000));
+		const fieldsSig = await sendInstructions(rpc, registrar, buildMetadataFieldInstructions({ mint, registrar, fields }), `bond metadata ${name}`);
+		console.log(JSON.stringify({ series: name, mint, seriesPda: series, created: false, resumed: true, metadataTx: fieldsSig, explorer: addressLink(mint) }));
+		return;
+	}
+
 	const space = bondMintSize(series, registrar.address);
 	const lamports = BigInt(await rpc.getMinimumBalanceForRentExemption(BigInt(space + METADATA_RESERVE_BYTES)).send());
 	log(`mint space ${space} + ${METADATA_RESERVE_BYTES} B metadata reserve, rent ${lamports} lamports`);
@@ -105,6 +114,9 @@ async function main(): Promise<void> {
 		`create bond mint ${name}`,
 	);
 	log(`mint created (tx ${createSig})`);
+	const seriesEntry = { ...sc, mint };
+	updateConfig(cfgPath, { series: { ...cfg.series, [name]: seriesEntry } });
+	log(`series.${name}.mint written to ${cfgPath}`);
 
 	// tx 2 — additional metadata fields (registrar = update authority)
 	const fields = bondMetadataFields(sc, Math.floor(Date.now() / 1000));
@@ -114,11 +126,6 @@ async function main(): Promise<void> {
 		buildMetadataFieldInstructions({ mint, registrar, fields }),
 		`bond metadata ${name}`,
 	);
-
-	const seriesEntry = { ...sc, mint };
-	const updated = { ...cfg.series, [name]: seriesEntry };
-	updateConfig(cfgPath, { series: updated });
-	log(`series.${name}.mint written to ${cfgPath}`);
 
 	console.log(
 		JSON.stringify({

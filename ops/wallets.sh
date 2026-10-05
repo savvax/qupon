@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Create devnet keypairs for the demo roles, airdrop SOL (best effort), write pubkeys into config/devnet.json.
+[ "${BASH_VERSINFO[0]:-0}" -ge 4 ] || { echo "needs bash >= 4 (brew install bash)"; exit 1; }
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$ROOT"
 export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
