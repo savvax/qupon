@@ -6,7 +6,7 @@
  * generated Kit client shared with the CLI.
  */
 import { findAssociatedTokenPda } from "@solana-program/token-2022";
-import { type Address, type TransactionPartialSigner, address } from "@solana/kit";
+import { type Address, type TransactionSigner, address } from "@solana/kit";
 import {
   fetchInvestor,
   fetchSeries,
@@ -140,7 +140,7 @@ export function openMeetings(rows: SeriesRow[]): { row: SeriesRow; action: Actio
 export async function buildVoteIx(
   seriesMint: string,
   actionPda: Address,
-  owner: TransactionPartialSigner,
+  owner: TransactionSigner,
   choice: number,
 ) {
   return getCastVoteInstructionAsync({
@@ -159,7 +159,7 @@ export async function buildVoteIx(
 export async function buildSubscribeIx(
   rpc: PortalRpc,
   seriesMint: string,
-  owner: TransactionPartialSigner,
+  owner: TransactionSigner,
   units: bigint,
   pricePerUnit: bigint,
 ) {

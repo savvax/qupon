@@ -6,7 +6,8 @@ import type { ReactNode } from "react";
 import { ToastProvider } from "@/components/ui/Toast";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
-// Devnet endpoint; override with NEXT_PUBLIC_RPC_URL (e.g. Helius).
+// Devnet endpoint; override with NEXT_PUBLIC_RPC_URL. NEXT_PUBLIC_* is inlined into the browser bundle, so use a
+// keyless or domain-restricted endpoint here — never the keyed RPC_URL from .env.
 const ENDPOINT = process.env.NEXT_PUBLIC_RPC_URL ?? "https://api.devnet.solana.com";
 
 // No explicit adapters needed: Phantom, Backpack and Solflare all implement

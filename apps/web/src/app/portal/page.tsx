@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import type { MessageSignerWalletAdapter } from "@solana/wallet-adapter-base";
-import { type Instruction, type TransactionPartialSigner, address } from "@solana/kit";
+import { type Instruction, type TransactionSigner, address } from "@solana/kit";
 import { AmountCell } from "@/components/ui/AmountCell";
 import { ExplorerLink } from "@/components/ui/ExplorerLink";
 import { StatusChip } from "@/components/ui/StatusChip";
@@ -54,10 +53,12 @@ export default function PortalPage() {
   const [rows, setRows] = useState<SeriesRow[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [lastTx, setLastTx] = useState<{ label: string; signature: string } | null>(null);
+  const [lastTx, setLastTx] = useState<{
+    label: string;
+    signature: string;
+  } | null>(null);
   const [subSeries, setSubSeries] = useState<string>("");
   const [subUnits, setSubUnits] = useState("1");
-  const [subPrice, setSubPrice] = useState("");
 
   const owner = publicKey?.toBase58();
 
@@ -93,30 +94,35 @@ export default function PortalPage() {
     async (
       key: string,
       label: string,
-      build: (signer: TransactionPartialSigner) => Promise<Instruction>,
+      build: (signer: TransactionSigner) => Promise<Instruction>,
     ) => {
       if (!owner || !wallet) return;
-      const adapter = wallet.adapter as MessageSignerWalletAdapter;
-      if (typeof adapter.signMessage !== "function") {
+      if (!("signTransaction" in wallet.adapter)) {
         toast.push({
-          message: `${wallet.adapter.name} does not support signing`,
+          message: `${wallet.adapter.name} cannot sign transactions`,
           kind: "error",
         });
         return;
       }
+      // One signer object for fee payer and instruction accounts (Kit rejects two signers with one address).
+      const signer = walletTransactionSigner(wallet.adapter, address(owner));
       setBusy(key);
       try {
-        const signature = await signAndSendWithWallet(
-          adapter,
-          address(owner),
-          portalRpc(),
-          [await build(walletTransactionSigner(adapter, address(owner)))],
-        );
+        const signature = await signAndSendWithWallet(signer, portalRpc(), [
+          await build(signer),
+        ]);
         setLastTx({ label, signature });
-        toast.push({ message: `${label} confirmed`, kind: "success", signature });
+        toast.push({
+          message: `${label} confirmed`,
+          kind: "success",
+          signature,
+        });
         await load(owner);
       } catch (e) {
-        toast.push({ message: `${label} failed — ${explainError(e)}`, kind: "error" });
+        toast.push({
+          message: `${label} failed — ${explainError(e)}`,
+          kind: "error",
+        });
       } finally {
         setBusy(null);
       }
@@ -148,12 +154,14 @@ export default function PortalPage() {
   );
 
   const subRow = rows?.find((r) => r.series.mint === subSeries);
-  const subDecimals = subRow ? currencyDecimals(subRow.series.faceValue.currency) : 2;
+  const subDecimals = subRow
+    ? currencyDecimals(subRow.series.faceValue.currency)
+    : 2;
   const subUnitsN = Number(subUnits);
-  const subPriceMinor = subPrice === "" ? null : BigInt(Math.round(Number(subPrice) * 10 ** subDecimals));
+  // Placement at par: the program requires price_per_unit == face value (subscribe.rs).
   const subTotal =
-    subPriceMinor !== null && Number.isFinite(subUnitsN) && subUnitsN > 0
-      ? subPriceMinor * BigInt(Math.floor(subUnitsN))
+    subRow && Number.isFinite(subUnitsN) && subUnitsN > 0
+      ? BigInt(subRow.series.faceValue.minor) * BigInt(Math.floor(subUnitsN))
       : null;
 
   return (
@@ -199,7 +207,9 @@ export default function PortalPage() {
           <tbody>
             {(rows ?? []).map((row) => {
               const units = row.me?.units;
-              const next = row.series.nextCouponDate ? nextCoupon(row) : undefined;
+              const next = row.series.nextCouponDate
+                ? nextCoupon(row)
+                : undefined;
               const est =
                 units !== undefined && next
                   ? estimateCoupon(row.series, units, next)
@@ -218,8 +228,12 @@ export default function PortalPage() {
                     </span>
                   </td>
                   <td className={td}>
-                    {row.me ? <StatusChip status={row.me.status} /> : (
-                      <span className="text-xs text-neutral-500">not registered</span>
+                    {row.me ? (
+                      <StatusChip status={row.me.status} />
+                    ) : (
+                      <span className="text-xs text-neutral-500">
+                        not registered
+                      </span>
                     )}
                   </td>
                   <td className={`${td} text-right font-mono tabular-nums`}>
@@ -228,7 +242,9 @@ export default function PortalPage() {
                   <td className={`${td} text-right font-mono tabular-nums`}>
                     {units !== undefined
                       ? `${formatMinor(
-                          (BigInt(row.series.faceValue.minor) * BigInt(units)).toString(),
+                          (
+                            BigInt(row.series.faceValue.minor) * BigInt(units)
+                          ).toString(),
                           decimals,
                         )} ${row.series.faceValue.currency}`
                       : "—"}
@@ -262,13 +278,16 @@ export default function PortalPage() {
 
       <SectionTitle>Open meetings</SectionTitle>
       {meetings.length === 0 && (
-        <p className="text-xs text-neutral-600">no meeting is open for voting</p>
+        <p className="text-xs text-neutral-600">
+          no meeting is open for voting
+        </p>
       )}
       <div className="space-y-3">
         {meetings.map(({ row, action }) => {
           const mine = row.entitlements.find((e) => e.actionPda === action.pda);
           const proposal =
-            action.proposalNewRateBps !== null && action.proposalNewRateBps !== undefined
+            action.proposalNewRateBps !== null &&
+            action.proposalNewRateBps !== undefined
               ? `coupon ${bpsToPercent(row.series.couponRateBps)} → ${bpsToPercent(action.proposalNewRateBps)}`
               : action.proposalNewMaturity
                 ? `maturity → ${action.proposalNewMaturity}`
@@ -285,7 +304,10 @@ export default function PortalPage() {
                   <span className="ml-2 text-sm">{proposal}</span>
                 </div>
                 <span className="text-xs text-neutral-500">
-                  voting ends {action.votingEndsAt ? formatDateTime(action.votingEndsAt) : "—"}{" "}
+                  voting ends{" "}
+                  {action.votingEndsAt
+                    ? formatDateTime(action.votingEndsAt)
+                    : "—"}{" "}
                   · <ExplorerLink value={action.pda} kind="address" />
                 </span>
               </div>
@@ -309,8 +331,16 @@ export default function PortalPage() {
                     type="button"
                     disabled={busy !== null}
                     onClick={() =>
-                      run(`vote-${action.pda}-${name}`, `Vote ${name} · ${action.corpId}`, (s) =>
-                        buildVoteIx(row.series.mint, address(action.pda), s, VOTE_CHOICES[name]),
+                      run(
+                        `vote-${action.pda}-${name}`,
+                        `Vote ${name} · ${action.corpId}`,
+                        (s) =>
+                          buildVoteIx(
+                            row.series.mint,
+                            address(action.pda),
+                            s,
+                            VOTE_CHOICES[name],
+                          ),
                       )
                     }
                     className={voteBtn(
@@ -343,14 +373,16 @@ export default function PortalPage() {
             ev.preventDefault();
             if (!subRow || !owner) return;
             const units = BigInt(Math.floor(subUnitsN));
-            const price =
-              subPriceMinor ?? BigInt(subRow.series.faceValue.minor); // default: par
+            const price = BigInt(subRow.series.faceValue.minor); // at par
             const key = "subscribe";
-            void run(
-              key,
-              `Subscribe ${units} × ${subRow.series.ticker}`,
-              (s) =>
-                buildSubscribeIx(portalRpc(), subRow.series.mint, s, units, price),
+            void run(key, `Subscribe ${units} × ${subRow.series.ticker}`, (s) =>
+              buildSubscribeIx(
+                portalRpc(),
+                subRow.series.mint,
+                s,
+                units,
+                price,
+              ),
             );
           }}
         >
@@ -379,22 +411,15 @@ export default function PortalPage() {
               className="ml-2 w-20 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 font-mono text-sm text-neutral-200"
             />
           </label>
-          <label className="text-xs text-neutral-400">
-            price / unit ({subRow?.series.faceValue.currency ?? ""})
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              placeholder={
-                subRow
-                  ? formatMinor(subRow.series.faceValue.minor, subDecimals)
-                  : undefined
-              }
-              value={subPrice}
-              onChange={(e) => setSubPrice(e.target.value)}
-              className="ml-2 w-28 rounded border border-neutral-700 bg-neutral-900 px-2 py-1 font-mono text-sm text-neutral-200"
-            />
-          </label>
+          <span className="text-xs text-neutral-400">
+            price / unit{" "}
+            <span className="font-mono text-neutral-200">
+              {subRow
+                ? `${formatMinor(subRow.series.faceValue.minor, subDecimals)} ${subRow.series.faceValue.currency}`
+                : "—"}
+            </span>{" "}
+            <span className="text-neutral-600">(placement at par)</span>
+          </span>
           <span className="text-xs text-neutral-500">
             total{" "}
             <span className="font-mono">
@@ -405,7 +430,9 @@ export default function PortalPage() {
           </span>
           <button
             type="submit"
-            disabled={busy !== null || !Number.isFinite(subUnitsN) || subUnitsN < 1}
+            disabled={
+              busy !== null || !Number.isFinite(subUnitsN) || subUnitsN < 1
+            }
             className={`${btn} text-sky-300`}
           >
             {busy === "subscribe" ? "signing…" : "subscribe (DvP)"}
@@ -436,10 +463,16 @@ export default function PortalPage() {
               >
                 <td className={`${td} font-mono text-xs`}>
                   {action?.corpId ?? shortKey(e.actionPda)}{" "}
-                  <span className="text-neutral-500">({row.series.ticker})</span>
+                  <span className="text-neutral-500">
+                    ({row.series.ticker})
+                  </span>
                 </td>
-                <td className={`${td} font-mono text-xs`}>{action?.kind ?? "—"}</td>
-                <td className={`${td} text-right font-mono tabular-nums`}>{e.units}</td>
+                <td className={`${td} font-mono text-xs`}>
+                  {action?.kind ?? "—"}
+                </td>
+                <td className={`${td} text-right font-mono tabular-nums`}>
+                  {e.units}
+                </td>
                 <td className={`${td} text-right`}>
                   {e.gross ? <AmountCell amount={e.gross} /> : "—"}
                 </td>

@@ -1,21 +1,23 @@
 "use client";
 
 /**
- * Bridge: wallet-adapter (web3.js 1.x wallets) → Kit `TransactionSigner`.
- * Phantom/Backpack/Solflare sign the serialized transaction message bytes via
- * `signMessage`; the returned ed25519 signature is a valid transaction
- * signature over the same bytes. All instruction building stays in Kit
- * (generated client); wallet-adapter is only used for signing.
+ * Bridge: wallet-adapter wallets → Kit signer. All instruction building stays in Kit (generated client); the
+ * wallet only signs, through its standard `signTransaction` (wallets refuse `signMessage` over transaction bytes).
+ * web3.js 1.x is used here only as the wire format the wallet adapter expects.
  */
 import {
   type Address,
   type Instruction,
-  type SignatureDictionary,
-  type TransactionPartialSigner,
+  type Transaction,
+  type TransactionModifyingSigner,
+  type TransactionWithinSizeLimit,
+  type TransactionWithLifetime,
   appendTransactionMessageInstructions,
   createSolanaRpc,
   createTransactionMessage,
   getSignatureFromTransaction,
+  getTransactionDecoder,
+  getTransactionEncoder,
   pipe,
   sendTransactionWithoutConfirmingFactory,
   setTransactionMessageFeePayerSigner,
@@ -23,39 +25,80 @@ import {
   type Signature,
   signTransactionMessageWithSigners,
 } from "@solana/kit";
-import type { MessageSignerWalletAdapter } from "@solana/wallet-adapter-base";
+import type { SignerWalletAdapter } from "@solana/wallet-adapter-base";
+import { VersionedTransaction } from "@solana/web3.js";
 
 /** RPC type produced by {@link portalRpc} (Kit, same endpoint as ConnectionProvider). */
 export type PortalRpc = ReturnType<typeof createSolanaRpc>;
 
-/** Devnet RPC for portal transactions; override with NEXT_PUBLIC_RPC_URL. */
+/**
+ * Devnet RPC for portal transactions. NEXT_PUBLIC_* values are inlined into the browser bundle: use a keyless or
+ * domain-restricted endpoint here, never the keyed RPC_URL from .env.
+ */
 export function portalRpc(): PortalRpc {
   return createSolanaRpc(
     process.env.NEXT_PUBLIC_RPC_URL ?? "https://api.devnet.solana.com",
   );
 }
 
-/** A wallet adapter wrapped as a Kit `TransactionPartialSigner`. */
+/** The minimal wallet surface we need (lets tests use a fake wallet). */
+export type TransactionSigningWallet = Pick<
+  SignerWalletAdapter,
+  "signTransaction"
+>;
+
+/**
+ * A wallet as a Kit `TransactionModifyingSigner`: the Kit transaction is serialized, signed by the wallet with
+ * `signTransaction`, and the wallet's signed bytes are decoded back — wallets may add instructions before signing,
+ * so we send exactly what was signed.
+ */
 export function walletTransactionSigner(
-  adapter: MessageSignerWalletAdapter,
+  wallet: TransactionSigningWallet,
   owner: Address,
-): TransactionPartialSigner {
+): TransactionModifyingSigner {
   return {
     address: owner,
-    async signTransactions(transactions) {
+    async modifyAndSignTransactions(transactions) {
       return Promise.all(
-        transactions.map(async ({ messageBytes }) => {
-          // SAFETY: the wallet signs the serialized transaction message bytes;
-          // the raw 64-byte ed25519 signature is exactly Kit's SignatureBytes
-          // over the same bytes, so the transaction is validly signed.
-          const signature = await adapter.signMessage(
-            messageBytes as unknown as Uint8Array,
+        transactions.map(async (tx) => {
+          const unsigned = VersionedTransaction.deserialize(
+            new Uint8Array(getTransactionEncoder().encode(tx)),
           );
-          return { [owner]: signature } as SignatureDictionary;
+          const signed = await wallet.signTransaction(unsigned);
+          const out = getTransactionDecoder().decode(
+            signed.serialize(),
+          ) as Transaction;
+          const sig = out.signatures[owner];
+          if (!sig || sig.every((b) => b === 0)) {
+            throw new Error("the wallet did not sign the transaction");
+          }
+          // Keep the lifetime Kit attached to the input (the wallet signs the same blockhash we gave it).
+          return {
+            ...out,
+            ...("lifetimeConstraint" in tx
+              ? { lifetimeConstraint: tx.lifetimeConstraint }
+              : {}),
+          } as Transaction &
+            TransactionWithinSizeLimit &
+            TransactionWithLifetime;
         }),
       );
     },
   };
+}
+
+/** v0 message with the wallet as fee payer (and signer of its instruction accounts). */
+export function walletTransactionMessage(
+  signer: TransactionModifyingSigner,
+  blockhash: Parameters<typeof setTransactionMessageLifetimeUsingBlockhash>[0],
+  instructions: Instruction[],
+) {
+  return pipe(
+    createTransactionMessage({ version: 0 }),
+    (m) => setTransactionMessageFeePayerSigner(signer, m),
+    (m) => setTransactionMessageLifetimeUsingBlockhash(blockhash, m),
+    (m) => appendTransactionMessageInstructions(instructions, m),
+  );
 }
 
 /**
@@ -64,22 +107,16 @@ export function walletTransactionSigner(
  * node-only). Returns the signature.
  */
 export async function signAndSendWithWallet(
-  adapter: MessageSignerWalletAdapter,
-  owner: Address,
+  signer: TransactionModifyingSigner,
   rpc: PortalRpc,
   instructions: Instruction[],
 ): Promise<Signature> {
-  const signer = walletTransactionSigner(adapter, owner);
   const { value: blockhash } = await rpc
     .getLatestBlockhash({ commitment: "confirmed" })
     .send();
-  const message = pipe(
-    createTransactionMessage({ version: 0 }),
-    (m) => setTransactionMessageFeePayerSigner(signer, m),
-    (m) => setTransactionMessageLifetimeUsingBlockhash(blockhash, m),
-    (m) => appendTransactionMessageInstructions(instructions, m),
+  const transaction = await signTransactionMessageWithSigners(
+    walletTransactionMessage(signer, blockhash, instructions),
   );
-  const transaction = await signTransactionMessageWithSigners(message);
   const signature = getSignatureFromTransaction(transaction);
   await sendTransactionWithoutConfirmingFactory({ rpc })(transaction, {
     commitment: "confirmed",
@@ -129,8 +166,10 @@ const EXPLAIN: Record<string, string> = {
   NotApproved: "proposal not approved",
   SupplyNotZero: "mint supply is not zero",
   BatchTooLarge: "batch too large",
-  EntitlementCalcMismatch: "entitlement figures do not match on-chain computation",
-  UnsupportedDayCount: "day count convention not supported (ACT/ACT is reserved)",
+  EntitlementCalcMismatch:
+    "entitlement figures do not match on-chain computation",
+  UnsupportedDayCount:
+    "day count convention not supported (ACT/ACT is reserved)",
   InvalidParams: "invalid parameter",
   PaymentsIncomplete: "not every snapshotted holder has been paid in full",
 };
@@ -139,7 +178,8 @@ const EXPLAIN: Record<string, string> = {
 export function onchainErrorName(e: unknown): string | undefined {
   let text: string;
   if (e instanceof Error) {
-    const cause = (e as { cause?: { logs?: string[]; message?: string } }).cause;
+    const cause = (e as { cause?: { logs?: string[]; message?: string } })
+      .cause;
     text = `${e.message}\n${cause?.logs?.join("\n") ?? ""}\n${cause?.message ?? ""}`;
   } else {
     text = String(e);
