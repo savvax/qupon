@@ -7,10 +7,14 @@ test("gallery: no console errors, visible focus, no overflow at 390 px", async (
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   await page.goto("/ui");
   await page.keyboard.press("Tab");
-  const ring = await page.evaluate(
-    () => getComputedStyle(document.activeElement as Element).boxShadow,
-  );
-  expect(ring).toContain("69, 174, 106");
+  // Buttons animate box-shadow (100 ms): poll until the focus ring has faded in.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => getComputedStyle(document.activeElement as Element).boxShadow,
+      ),
+    )
+    .toContain("69, 174, 106");
   await page.screenshot({
     path: "../../reports/ui/gallery-1440.png",
     fullPage: true,
