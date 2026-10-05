@@ -79,6 +79,14 @@ if [ -n "$CUR" ] && [ "$CUR" != "$BR" ]; then
     echo "BLOCKED:$ID agent committed on branch $CUR instead of $BR (work kept on $CUR)"
   fi
 fi
+# Agents often print DONE and then run gofmt/prettier without committing (023, 9126 were rejected 3× for clean=N).
+# Commit the leftovers on the task branch; the orchestrator's own `make verify` still gates the merge.
+if [ "$rc" -eq 0 ] && grep -qs "DONE:$ID" "$LOGP".txt "$LOGP".json && [ -n "$(git status --porcelain 2>/dev/null)" ] \
+  && [ "$(git rev-parse --abbrev-ref HEAD 2>/dev/null)" = "$BR" ]; then
+  git add -A && git commit -qm "chore: commit changes the agent left uncommitted after DONE
+
+task: $ID" && echo "[run_task] committed leftover changes after DONE" >&2
+fi
 # Salvage: unless the agent finished cleanly (DONE + clean tree), keep everything it did vs main as a patch for the
 # next attempt — the orchestrator deletes this worktree and branch on failure.
 if ! grep -qs "DONE:$ID" "$LOGP".txt "$LOGP".json || [ -n "$(git status --porcelain 2>/dev/null)" ]; then

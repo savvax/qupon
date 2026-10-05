@@ -13,8 +13,7 @@ jobs:
           sudo apt-get install -y pkg-config libssl-dev libudev-dev
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - uses: pnpm/action-setup@v4
-        with: {version: 9}
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
       - uses: actions/setup-go@v5
         with: {go-version: "1.25", cache: true}
       - uses: actions/cache@v4
