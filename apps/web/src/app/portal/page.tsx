@@ -47,6 +47,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** investor3 of the demo runs (65 bonds): the read-only view judges can open without a wallet. */
+const DEMO_INVESTOR = "6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC";
+const BASE58_ADDRESS = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
 export default function PortalPage() {
   const { publicKey, wallet } = useWallet();
   const toast = useToast();
@@ -60,7 +64,14 @@ export default function PortalPage() {
   const [subSeries, setSubSeries] = useState<string>("");
   const [subUnits, setSubUnits] = useState("1");
 
-  const owner = publicKey?.toBase58();
+  // `?owner=<address>` shows any investor read-only (no wallet); a connected wallet always wins.
+  const [viewAs, setViewAs] = useState<string | null>(null);
+  useEffect(() => {
+    const o = new URLSearchParams(window.location.search).get("owner");
+    if (o && BASE58_ADDRESS.test(o)) setViewAs(o);
+  }, []);
+  const owner = publicKey?.toBase58() ?? viewAs ?? undefined;
+  const readOnly = !publicKey;
 
   const load = useCallback(async (o: string) => {
     try {
@@ -78,8 +89,19 @@ export default function PortalPage() {
 
   const meetings = useMemo(() => (rows ? openMeetings(rows) : []), [rows]);
 
+  // Subscription needs an Active series (subscribe.rs) and a registration in it.
   const registeredRows = useMemo(
-    () => rows?.filter((r) => r.me !== undefined) ?? [],
+    () =>
+      rows?.filter((r) => r.me !== undefined && r.series.status === "Active") ??
+      [],
+    [rows],
+  );
+  // Closed series the wallet no longer holds are history (entitlements below), not holdings.
+  const holdingRows = useMemo(
+    () =>
+      rows?.filter(
+        (r) => r.series.status !== "Closed" || Number(r.me?.units ?? 0) > 0,
+      ) ?? [],
     [rows],
   );
 
@@ -141,6 +163,15 @@ export default function PortalPage() {
         <div className="flex justify-center">
           <WalletMultiButton />
         </div>
+        <p className="mt-6 text-xs text-neutral-500">
+          no wallet?{" "}
+          <a
+            href={`/portal?owner=${DEMO_INVESTOR}`}
+            className="text-sky-300 hover:underline"
+          >
+            view a demo investor read-only
+          </a>
+        </p>
       </section>
     );
   }
@@ -176,6 +207,12 @@ export default function PortalPage() {
         </div>
         <WalletMultiButton className="!h-8 !rounded !text-xs" />
       </div>
+      {readOnly && (
+        <p className="mt-3 rounded border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          read-only view of this investor — connect the investor&apos;s wallet
+          to vote or subscribe
+        </p>
+      )}
 
       {lastTx && (
         <div className="mt-4 rounded border border-neutral-800 bg-neutral-900/60 px-3 py-2 text-xs">
@@ -205,11 +242,12 @@ export default function PortalPage() {
             </tr>
           </thead>
           <tbody>
-            {(rows ?? []).map((row) => {
+            {holdingRows.map((row) => {
               const units = row.me?.units;
-              const next = row.series.nextCouponDate
-                ? nextCoupon(row)
-                : undefined;
+              const next =
+                row.series.nextCouponDate && row.series.status !== "Closed"
+                  ? nextCoupon(row)
+                  : undefined;
               const est =
                 units !== undefined && next
                   ? estimateCoupon(row.series, units, next)
@@ -228,7 +266,9 @@ export default function PortalPage() {
                     </span>
                   </td>
                   <td className={td}>
-                    {row.me ? (
+                    {row.series.status === "Closed" ? (
+                      <StatusChip status="Closed" />
+                    ) : row.me ? (
                       <StatusChip status={row.me.status} />
                     ) : (
                       <span className="text-xs text-neutral-500">
@@ -361,7 +401,11 @@ export default function PortalPage() {
       </div>
 
       <SectionTitle>Subscribe (primary placement, atomic DvP)</SectionTitle>
-      {registeredRows.length === 0 ? (
+      {readOnly ? (
+        <p className="text-xs text-neutral-600">
+          read-only view — connect the investor&apos;s wallet to subscribe
+        </p>
+      ) : registeredRows.length === 0 ? (
         <p className="text-xs text-neutral-600">
           this wallet is not registered as an investor in any series — ask the
           registrar to register it first (needs a KYC attestation on the Solana

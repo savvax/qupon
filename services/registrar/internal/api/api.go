@@ -44,7 +44,7 @@ type Deps struct {
 func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID, middleware.Recoverer)
-	r.Use(loggerMiddleware(logger), corsLocalhost)
+	r.Use(loggerMiddleware(logger), corsReadOnly)
 
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
@@ -180,13 +180,14 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 }
 
 // corsLocalhost allows the Next.js dev console (localhost:3000) to call the API.
-func corsLocalhost(next http.Handler) http.Handler {
+// corsReadOnly lets any origin read (the investor portal fetches from the browser; the data is public devnet
+// state). Writes get no CORS headers: the console reaches POST /advance through its own server route.
+func corsReadOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Origin") == "http://localhost:3000" {
+		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
 			h := w.Header()
-			h.Set("Access-Control-Allow-Origin", "http://localhost:3000")
-			h.Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-			h.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			h.Set("Access-Control-Allow-Origin", "*")
+			h.Set("Access-Control-Allow-Methods", "GET, HEAD")
 		}
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)

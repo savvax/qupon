@@ -101,20 +101,28 @@ func TestActivityLimit(t *testing.T) {
 	}
 }
 
-func TestCORSLocalhost(t *testing.T) {
+func TestCORSReadOnly(t *testing.T) {
 	handler, _ := newTestServer(t)
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
 
-	req, _ := http.NewRequest(http.MethodOptions, srv.URL+"/series", nil)
-	req.Header.Set("Origin", "http://localhost:3000")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("options: %v", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "http://localhost:3000" {
-		t.Fatalf("allow-origin = %q", got)
+	for _, tc := range []struct {
+		method, path, want string
+	}{
+		{http.MethodGet, "/healthz", "*"},                                          // portal reads from any origin
+		{http.MethodOptions, "/series", "*"},                                       // preflight
+		{http.MethodPost, "/actions/11111111111111111111111111111111/advance", ""}, // writes: same-origin only
+	} {
+		req, _ := http.NewRequest(tc.method, srv.URL+tc.path, nil)
+		req.Header.Set("Origin", "https://qupon.vercel.app")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("%s %s: %v", tc.method, tc.path, err)
+		}
+		_ = resp.Body.Close()
+		if got := resp.Header.Get("Access-Control-Allow-Origin"); got != tc.want {
+			t.Errorf("%s %s allow-origin = %q, want %q", tc.method, tc.path, got, tc.want)
+		}
 	}
 }
 

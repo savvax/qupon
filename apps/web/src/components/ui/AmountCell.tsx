@@ -13,9 +13,11 @@ export function AmountCell({
   className?: string;
 }) {
   if (!amount) return <span className="font-mono text-neutral-600">—</span>;
-  const [value, unit] = amount.display
+  const [raw, unit] = amount.display
     ? splitAmountDisplay(amount.display)
     : [formatMinor(amount.minor, currencyDecimals(amount.currency)), amount.currency];
+  // The API's display is ungrouped ("105000.00"); group the integer part like formatMinor does.
+  const value = raw.replace(/^-?\d+/, (whole) => whole.replace(/\B(?=(\d{3})+(?!\d))/g, ","));
   return (
     <span className={`font-mono tabular-nums ${className}`}>
       {value}
