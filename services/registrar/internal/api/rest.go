@@ -34,9 +34,6 @@ type ReadModel interface {
 	FetchMint(ctx context.Context, mint solana.PublicKey) (*chain.Mint, error)
 }
 
-// USDCDevnet is Circle's devnet USDC mint; any other cash mint is the test tenge (tKZT).
-const USDCDevnet = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
-
 var almaty = time.FixedZone("Asia/Almaty", 5*3600)
 
 // Amount is a money value in minor units with a display string.
@@ -63,10 +60,7 @@ func (m money) amount(v uint64) Amount {
 }
 
 func cashMoney(ctx context.Context, rm ReadModel, cashMint solana.PublicKey) (money, error) {
-	cur := "tKZT"
-	if cashMint.String() == USDCDevnet {
-		cur = "USDC"
-	}
+	cur := chain.CashCurrency(cashMint)
 	m, err := rm.FetchMint(ctx, cashMint)
 	if err != nil {
 		return money{}, fmt.Errorf("cash mint %s: %w", cashMint, err)

@@ -22,18 +22,26 @@ const IssuerNameDefault = "Qupon Issuer Demo"
 // ErrActionNotFound is returned when the action PDA has no on-chain account.
 var ErrActionNotFound = errors.New("notice: action account not found")
 
-// Reader builds notices from on-chain state over RPC.
+// Chain is what the notice needs from the chain; *chain.Client implements it (discriminators verified and
+// stripped there; a missing account comes back as nil).
+type Chain interface {
+	FetchCorporateAction(ctx context.Context, pda solana.PublicKey) (*chain.CorporateAction, error)
+	FetchSeries(ctx context.Context, pda solana.PublicKey) (*chain.Series, error)
+	FetchMint(ctx context.Context, mint solana.PublicKey) (*chain.Mint, error)
+}
+
+// Reader builds notices from on-chain state.
 type Reader struct {
-	rpc        *rpc.Client
+	chain      Chain
 	IssuerName string
 }
 
-// NewReader creates a Reader for the given RPC endpoint.
-func NewReader(rpcURL, issuerName string) *Reader {
+// NewReader creates a Reader over the chain client.
+func NewReader(c Chain, issuerName string) *Reader {
 	if issuerName == "" {
 		issuerName = IssuerNameDefault
 	}
-	return &Reader{rpc: rpc.New(rpcURL), IssuerName: issuerName}
+	return &Reader{chain: c, IssuerName: issuerName}
 }
 
 func date(unix int64) string { return time.Unix(unix, 0).In(almaty).Format("2006-01-02") }
@@ -47,22 +55,28 @@ func fixedString(b []byte) string {
 	return string(b)
 }
 
-// FetchAction loads the CorporateAction and its Series and assembles notice Data.
+// FetchAction loads the CorporateAction, its Series and cash mint and assembles notice Data.
 func (r *Reader) FetchAction(ctx context.Context, pda solana.PublicKey, lang string) (Data, error) {
-	act, err := r.rpc.GetAccountInfoWithOpts(ctx, pda, &rpc.GetAccountInfoOpts{Commitment: rpc.CommitmentConfirmed})
-	if err != nil {
-		return Data{}, fmt.Errorf("get action account: %w", err)
-	}
-	if act.Value == nil || act.Value.Owner.String() == "" || len(act.Value.Data.GetBinary()) == 0 {
+	action, err := r.chain.FetchCorporateAction(ctx, pda)
+	if errors.Is(err, rpc.ErrNotFound) || (err == nil && action == nil) {
 		return Data{}, ErrActionNotFound
 	}
-	action, err := chain.DecodeCorporateAction(act.Value.Data.GetBinary())
 	if err != nil {
-		return Data{}, fmt.Errorf("decode action: %w", err)
+		return Data{}, fmt.Errorf("fetch action: %w", err)
 	}
-	series, err := r.fetchSeries(ctx, action.Series)
+	series, err := r.chain.FetchSeries(ctx, action.Series)
 	if err != nil {
-		return Data{}, err
+		return Data{}, fmt.Errorf("fetch series: %w", err)
+	}
+	if series == nil {
+		return Data{}, fmt.Errorf("series account %s not found", action.Series)
+	}
+	mint, err := r.chain.FetchMint(ctx, action.CashMint)
+	if err != nil {
+		return Data{}, fmt.Errorf("fetch cash mint: %w", err)
+	}
+	if mint == nil {
+		return Data{}, fmt.Errorf("cash mint %s not found", action.CashMint)
 	}
 
 	d := Data{
@@ -74,37 +88,24 @@ func (r *Reader) FetchAction(ctx context.Context, pda solana.PublicKey, lang str
 		ISIN:           fixedString(series.ISIN[:]),
 		Ticker:         fixedString(series.Ticker[:]),
 		TotalNet:       action.TotalNet,
-		Ccy:            "KZT", // ponytail: single settlement currency in demo; derive from cash mint decimals later
+		Ccy:            chain.CashCurrency(action.CashMint),
+		Decimals:       mint.Decimals,
 		Holders:        int(action.HoldersSnapshotted),
 		RecordDate:     date(action.RecordAt),
 		NextCouponDate: date(series.NextCouponDate),
-		Principal:      uint64(action.UnitsSnapshotted) * action.PerUnitPrincipal,
-		FinalCoupon:    action.TotalGross,
+		Principal:      action.TotalPrincipal,
+		FinalCoupon:    action.TotalNet, // coupon part actually paid (net of withholding)
 		Days:           action.AccrualDays,
 		OldRateBps:     series.CouponRateBps,
 		NewRateBps:     action.ProposalNewRateBps,
 		EffectiveDate:  date(action.PaymentAt),
 	}
-	// MCAL accrued net per unit, 2-decimal minor units: net × 100 / units.
-	if action.UnitsSnapshotted > 0 {
-		d.AccruedNetMinor = action.TotalNet * 100 / action.UnitsSnapshotted
+	// MCAL accrued coupon (total, net of tax) rendered with 2 decimals.
+	d.AccruedNetMinor = action.TotalNet
+	for range max(int(mint.Decimals)-2, 0) {
+		d.AccruedNetMinor /= 10
 	}
 	return d, nil
-}
-
-func (r *Reader) fetchSeries(ctx context.Context, pk solana.PublicKey) (*chain.Series, error) {
-	acc, err := r.rpc.GetAccountInfoWithOpts(ctx, pk, &rpc.GetAccountInfoOpts{Commitment: rpc.CommitmentConfirmed})
-	if err != nil {
-		return nil, fmt.Errorf("get series account: %w", err)
-	}
-	if acc.Value == nil || len(acc.Value.Data.GetBinary()) == 0 {
-		return nil, fmt.Errorf("series account %s not found", pk)
-	}
-	s, err := chain.DecodeSeries(acc.Value.Data.GetBinary())
-	if err != nil {
-		return nil, fmt.Errorf("decode series: %w", err)
-	}
-	return s, nil
 }
 
 // Notice renders the full notice text for an action PDA.

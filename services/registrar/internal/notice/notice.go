@@ -33,6 +33,7 @@ type Data struct {
 	Ticker          string
 	TotalNet        uint64 // INTR/REDM total net paid, minor units
 	Ccy             string
+	Decimals        uint8 // cash mint decimals; amounts below are minor units of it (0 = already whole units)
 	Holders         int
 	RecordDate      string // ISO 8601, start of day Almaty
 	TxLinks         []string
@@ -78,6 +79,18 @@ func Amount(v uint64) string {
 		b.WriteRune(r)
 	}
 	return b.String()
+}
+
+// money renders minor units of a mint with `dec` decimals: (500000, 2) → "5,000.00".
+func money(v uint64, dec uint8) string {
+	if dec == 0 {
+		return Amount(v)
+	}
+	p := uint64(1)
+	for range dec {
+		p *= 10
+	}
+	return fmt.Sprintf("%s.%0*d", Amount(v/p), int(dec), v%p)
 }
 
 // Amount2 renders a minor-unit amount with a 2-decimal fraction (e.g. 1,874.20).
@@ -132,14 +145,14 @@ func renderINTR(d Data, links string) (string, error) {
 			"Payment was settled on Solana devnet, transaction(s): %s. "+
 			"The next coupon payment is scheduled for %s.",
 			d.PaymentDate, d.IssuerName, OrdinalEN(d.CouponNumber), d.ISIN, d.Ticker,
-			Amount(d.TotalNet), d.Ccy, d.Holders, d.RecordDate, links, d.NextCouponDate), nil
+			money(d.TotalNet, d.Decimals), d.Ccy, d.Holders, d.RecordDate, links, d.NextCouponDate), nil
 	case "ru":
 		return fmt.Sprintf("/KASE, %s/ – %s выплатил(а) %s купон по облигациям %s (%s). "+
 			"Сумма выплаты: %s %s, держателей: %d, дата фиксации реестра: %s (начало дня, Алматы). "+
 			"Расчёты проведены в Solana devnet, транзакции: %s. "+
 			"Следующая выплата купона: %s.",
 			d.PaymentDate, d.IssuerName, OrdinalRU(d.CouponNumber), d.ISIN, d.Ticker,
-			Amount(d.TotalNet), d.Ccy, d.Holders, d.RecordDate, links, d.NextCouponDate), nil
+			money(d.TotalNet, d.Decimals), d.Ccy, d.Holders, d.RecordDate, links, d.NextCouponDate), nil
 	default:
 		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)
 	}
@@ -154,7 +167,7 @@ func renderREDM(d Data, links string) (string, error) {
 			"to %d holders of record as of %s (start of day, Almaty). "+
 			"Payment was settled on Solana devnet, transaction(s): %s. The bonds have been delisted from KASE.",
 			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
-			Amount(d.Principal), d.Ccy, Amount(d.FinalCoupon), d.Ccy, Amount(total), d.Ccy,
+			money(d.Principal, d.Decimals), d.Ccy, money(d.FinalCoupon, d.Decimals), d.Ccy, money(total, d.Decimals), d.Ccy,
 			d.Holders, d.RecordDate, links), nil
 	case "ru":
 		return fmt.Sprintf("/KASE, %s/ – %s выплатил(а) номинальную стоимость и последний купон "+
@@ -163,7 +176,7 @@ func renderREDM(d Data, links string) (string, error) {
 			"дата фиксации реестра: %s (начало дня, Алматы). "+
 			"Расчёты проведены в Solana devnet, транзакции: %s. Облигации исключены из списка KASE.",
 			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
-			Amount(d.Principal), d.Ccy, Amount(d.FinalCoupon), d.Ccy, Amount(total), d.Ccy,
+			money(d.Principal, d.Decimals), d.Ccy, money(d.FinalCoupon, d.Decimals), d.Ccy, money(total, d.Decimals), d.Ccy,
 			d.Holders, d.RecordDate, links), nil
 	default:
 		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)
@@ -178,7 +191,7 @@ func renderMCAL(d Data, links string) (string, error) {
 			"to %d holders of record as of %s (start of day, Almaty). "+
 			"Payment was settled on Solana devnet, transaction(s): %s. The bonds have been delisted from KASE.",
 			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
-			Amount(d.Principal), d.Ccy, d.Days, Amount2(d.AccruedNetMinor), d.Ccy,
+			money(d.Principal, d.Decimals), d.Ccy, d.Days, Amount2(d.AccruedNetMinor), d.Ccy,
 			d.Holders, d.RecordDate, links), nil
 	case "ru":
 		return fmt.Sprintf("/KASE, %s/ – %s завершил(а) полное досрочное погашение своих облигаций %s (%s). "+
@@ -186,7 +199,7 @@ func renderMCAL(d Data, links string) (string, error) {
 			"держателей: %d, дата фиксации реестра: %s (начало дня, Алматы). "+
 			"Расчёты проведены в Solana devnet, транзакции: %s. Облигации исключены из списка KASE.",
 			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
-			Amount(d.Principal), d.Ccy, d.Days, Amount2(d.AccruedNetMinor), d.Ccy,
+			money(d.Principal, d.Decimals), d.Ccy, d.Days, Amount2(d.AccruedNetMinor), d.Ccy,
 			d.Holders, d.RecordDate, links), nil
 	default:
 		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)

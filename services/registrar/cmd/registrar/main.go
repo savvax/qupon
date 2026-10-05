@@ -98,7 +98,7 @@ func run() error {
 		Addr: ":" + cfg.Port,
 		Handler: api.New(logger, st, api.Deps{
 			Read:      readModel(chainClient),
-			Notice:    notice.NewReader(cfg.RPCURL, ""),
+			Notice:    noticeReader(chainClient),
 			Reconcile: chainReader,
 			Chain:     chainClient,
 		}),
@@ -138,4 +138,12 @@ func redactURL(u string) string {
 		return u[:i] + "?…"
 	}
 	return u
+}
+
+// noticeReader is nil (endpoint answers 503) when no PROGRAM_ID is configured.
+func noticeReader(c *chain.Client) *notice.Reader {
+	if c == nil {
+		return nil
+	}
+	return notice.NewReader(c, "")
 }

@@ -340,3 +340,14 @@ func (c *Client) SeriesPDA(mint solana.PublicKey) (solana.PublicKey, error) {
 	pda, _, err := solana.FindProgramAddress([][]byte{[]byte("series"), mint[:]}, c.program)
 	return pda, err
 }
+
+// USDCDevnet is Circle's devnet USDC mint; any other cash mint is the test tenge (tKZT).
+const USDCDevnet = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+
+// CashCurrency labels a cash mint for display.
+func CashCurrency(mint solana.PublicKey) string {
+	if mint.String() == USDCDevnet {
+		return "USDC"
+	}
+	return "tKZT"
+}
