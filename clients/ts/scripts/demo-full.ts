@@ -246,6 +246,14 @@ async function main(): Promise<void> {
   section("S0 — Issuance and holder registry (QPNb1, tKZT)", [`- Series **${qpn}**: face 1,000 KZT (100,000 tiyn), 10% semi-annual, 30E/360, ${demo.series.QPNb1.issueDate} → ${demo.series.QPNb1.maturityDate}`]);
   const q = await issue(qpn, [10n, 25n, 65n], demo.series.QPNb1.issueDate, demo.series.QPNb1.maturityDate, "tKZT", 2);
 
+  if (process.env.DEMO_UI === "1") {
+    // `make demo-ui`: stop after announcing INTR #1 — every later step is clicked in the console (/actions/<pda>).
+    const ann = step("action:announce INTR #1 (driven from the UI)", ["action:announce", "--series", qpn, "--kind", "INTR", "--record-at", "+180", "--payment-at", "+240", "--corp-id", `Q${short}-INTR-0001`, ...as(REGISTRAR)]);
+    log(`next: QUPON_CONFIG=${runCfg} make api   ·   NEXT_PUBLIC_API_URL=http://localhost:8080 make web   ·   open /actions/${String(ann.action)}`);
+    console.log(JSON.stringify({ ok: true, series: qpn, mint: (JSON.parse(readFileSync(runCfg, "utf8")) as { series: Record<string, { mint: string }> }).series[qpn]?.mint, action: ann.action, config: runCfg }));
+    return;
+  }
+
   section("S1 — Coupon payment INTR #1 at 10%", ["Record date = pause the mint, snapshot every holder on-chain; 10 bonds → 500.00, 25 → 1,250.00, 65 → 3,250.00."]);
   await cashAction(q, ["--kind", "INTR"], "INTR #1 (2026-07-03 → 2027-01-03, 180 days, 10%)", `Q${short}-INTR-0001`, 5_000n);
 

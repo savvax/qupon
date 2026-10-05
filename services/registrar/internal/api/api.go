@@ -92,6 +92,10 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 				writeError(w, http.StatusNotFound, err.Error())
 				return
 			}
+			if errors.Is(err, notice.ErrNotYetSettled) {
+				writeError(w, http.StatusConflict, err.Error())
+				return
+			}
 			writeError(w, http.StatusBadGateway, err.Error())
 			return
 		}

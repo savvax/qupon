@@ -110,13 +110,28 @@ export async function sendInstructions(
     } catch (e) {
       lastError = e;
       const retryable = String((e as Error).message).match(/blockhash|block height/i) !== null;
-      const detail = (e as { cause?: { message?: string; logs?: string[] } })?.cause;
-      if (detail?.logs?.length) console.error(`[${label}] simulation logs:\n  ${detail.logs.join("\n  ")}`);
+      const logs = logsOf(e);
+      const detail = (e as { cause?: { message?: string } })?.cause;
+      if (logs?.length) console.error(`[${label}] simulation logs:\n  ${logs.join("\n  ")}`);
       else if (detail?.message) console.error(`[${label}] cause: ${detail.message}`);
       console.error(`[${label}] full error:`, inspect(e, { depth: 5 }));
       if (!retryable || attempt === 2) break;
       console.error(`[${label}] blockhash expired, retrying…`);
     }
   }
-  throw new Error(`[${label}] transaction failed: ${(lastError as Error).message}`, { cause: lastError });
+  const anchor = anchorErrorFromLogs(logsOf(lastError));
+  const reason = anchor === undefined ? "" : `${anchor} — `;
+  throw new Error(`[${label}] transaction failed: ${reason}${(lastError as Error).message}`, { cause: lastError });
+}
+
+/** Program logs of a failed send: Kit's preflight error carries them in `context.logs` (older shapes in `cause`). */
+function logsOf(e: unknown): string[] | undefined {
+  const x = e as { context?: { logs?: string[] }; cause?: { logs?: string[]; context?: { logs?: string[] } } };
+  return x?.context?.logs ?? x?.cause?.logs ?? x?.cause?.context?.logs;
+}
+
+/** "TooEarly (6006): <message>" from Anchor's program log, so the API and console show the on-chain error name. */
+export function anchorErrorFromLogs(logs: readonly string[] | undefined): string | undefined {
+  const m = logs?.join("\n").match(/Error Code: (\w+)\. Error Number: (\d+)\. Error Message: ([^\n]*?)\.?$/m);
+  return m === null || m === undefined ? undefined : `${m[1]} (${m[2]}): ${m[3]}`;
 }

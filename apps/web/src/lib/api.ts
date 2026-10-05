@@ -94,6 +94,13 @@ export async function getNoticeText(
       cache: "no-store",
     },
   );
+  if (res.status === 409) {
+    // Not completed yet: show the API's reason instead of a notice that would state a payment not yet made.
+    return (
+      ((await res.json()) as { error?: string }).error ??
+      "notice available after completion"
+    );
+  }
   if (!res.ok) throw new Error(`notice ${lang}: HTTP ${res.status}`);
   return res.text();
 }

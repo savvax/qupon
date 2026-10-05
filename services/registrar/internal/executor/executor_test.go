@@ -227,3 +227,17 @@ func TestNextStep(t *testing.T) {
 		})
 	}
 }
+
+// Batch commands print per-batch signatures; the step reports the last one (shown with an explorer link in the UI).
+func TestRunBatchReportsLastSignature(t *testing.T) {
+	dir := t.TempDir()
+	stdout := writeFile(t, dir, "out.json", `{"ok":true,"batches":2,"results":[{"signature":"first","slot":"10","holders":8},{"signature":"last","slot":"11","holders":2}]}`)
+	t.Setenv("FAKE_CLI_STDOUT", stdout)
+	res, err := New(fakeCLI(t), "testdata/devnet.json", nil).Run(t.Context(), "action:pay", "--series", "QPNb1")
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if res.Signature != "last" || uint64(res.Slot) != 11 {
+		t.Fatalf("res = %+v, want the last batch (last, 11)", res)
+	}
+}

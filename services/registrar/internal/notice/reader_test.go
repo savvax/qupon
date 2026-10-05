@@ -34,7 +34,7 @@ func (f fakeChain) FetchMint(context.Context, solana.PublicKey) (*chain.Mint, er
 // Brief INTR on chain: 3 holders, 500,000 tiyn net (10/25/65 bonds), tKZT with 2 decimals.
 func briefINTR(cash solana.PublicKey) *chain.CorporateAction {
 	return &chain.CorporateAction{
-		Kind: 0, CashMint: cash, PaymentAt: 1_799_089_200, RecordAt: 1_798_916_400,
+		Kind: 0, Status: 5, CashMint: cash, PaymentAt: 1_799_089_200, RecordAt: 1_798_916_400, // Completed
 		HoldersSnapshotted: 3, TotalNet: 500_000, TotalGross: 500_000, AccrualDays: 180,
 	}
 }
@@ -136,6 +136,18 @@ func TestReaderTxLinksDedupAndCap(t *testing.T) {
 	for i, sig := range want {
 		if links[i] != explorerLink(sig) {
 			t.Errorf("links[%d] = %s, want %s", i, links[i], explorerLink(sig))
+		}
+	}
+}
+
+// A payment notice before the payment would state a fact that is not true yet.
+func TestReaderRefusesBeforeCompletion(t *testing.T) {
+	for _, status := range []uint8{0, 1, 2, 3, 4, 7} {
+		a := briefINTR(solana.PublicKey{3: 3})
+		a.Status = status
+		_, err := NewReader(fakeChain{action: a, decimals: 2}, "").Notice(context.Background(), solana.PublicKey{4: 4}, "en")
+		if !errors.Is(err, ErrNotYetSettled) {
+			t.Errorf("status %d: err = %v, want ErrNotYetSettled", status, err)
 		}
 	}
 }

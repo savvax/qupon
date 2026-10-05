@@ -72,6 +72,11 @@ type Result struct {
 	Slot      flexUint64 `json:"slot"`
 	Error     string     `json:"error"`
 	Skipped   bool       `json:"skipped"` // e.g. action:fund with a full escrow
+	// Batch commands (snapshot/pay/retire) print {ok, results:[{signature, slot}…]} instead of one signature.
+	Results []struct {
+		Signature string     `json:"signature"`
+		Slot      flexUint64 `json:"slot"`
+	} `json:"results"`
 }
 
 // Executor execs the qupon CLI. Safe for concurrent use (no shared state).
@@ -145,6 +150,10 @@ func (e *Executor) Run(ctx context.Context, args ...string) (Result, error) {
 	}
 	if !res.OK && res.Error == "" {
 		res.Error = "cli reported ok:false without an error message"
+	}
+	if res.Signature == "" && len(res.Results) > 0 { // batch: report the last batch's transaction
+		last := res.Results[len(res.Results)-1]
+		res.Signature, res.Slot = last.Signature, last.Slot
 	}
 	e.log.Info("cli step", "cmd", strings.Join(args, " "), "ok", res.OK, "sig", res.Signature, "slot", res.Slot)
 	return res, nil

@@ -60,10 +60,14 @@ demo-coupon: ## run the coupon scenario on devnet, write reports/demo-coupon.md
 demo: ## run the full lifecycle on devnet (S0–S4), write reports/demo-full.md
 	cd clients/ts && pnpm tsx scripts/demo-full.ts
 
+demo-ui: ## devnet: fresh series + announced coupon for clicking through the console (prints the API command)
+	cd clients/ts && DEMO_UI=1 pnpm tsx scripts/demo-full.ts
+
 api: ## run the Go registrar locally (loads .env, defaults PROGRAM_ID from config/devnet.json)
 	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
 	PROGRAM_ID=$${PROGRAM_ID:-$$(jq -r .programId config/devnet.json)}; \
-	cd services/registrar && PROGRAM_ID="$$PROGRAM_ID" go run ./cmd/registrar
+	QUPON_CLI=$${QUPON_CLI:-$$PWD/ops/qupon}; QUPON_CONFIG=$${QUPON_CONFIG:-$$PWD/config/devnet.json}; \
+	cd services/registrar && PROGRAM_ID="$$PROGRAM_ID" QUPON_CLI="$$QUPON_CLI" QUPON_CONFIG="$$QUPON_CONFIG" go run ./cmd/registrar
 
 openapi-lint: ## lint the registrar OpenAPI spec
 	npx --yes @redocly/cli lint services/registrar/openapi.yaml
@@ -74,4 +78,4 @@ web: ## run the web app locally
 status: ## task board
 	@bash ops/status.sh
 
-.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo api web status
+.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-ui api web status

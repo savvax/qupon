@@ -23,6 +23,10 @@ const IssuerNameDefault = "Qupon Issuer Demo"
 // ErrActionNotFound is returned when the action PDA has no on-chain account.
 var ErrActionNotFound = errors.New("notice: action account not found")
 
+// ErrNotYetSettled: the notice reports a completed payment or an approved terms change; before that there is no
+// fact to publish (statuses Completed 5, Retiring 6 and meeting Finalized 9 qualify).
+var ErrNotYetSettled = errors.New("the KASE notice is issued once the action is completed (payment made / meeting finalized)")
+
 // Chain is what the notice needs from the chain; *chain.Client implements it (discriminators verified and
 // stripped there; a missing account comes back as nil).
 type Chain interface {
@@ -90,6 +94,9 @@ func (r *Reader) FetchAction(ctx context.Context, pda solana.PublicKey, lang str
 		return Data{}, fmt.Errorf("cash mint %s not found", action.CashMint)
 	}
 
+	if s := action.Status; s != 5 && s != 6 && s != 9 {
+		return Data{}, ErrNotYetSettled
+	}
 	d := Data{
 		Kind:           Kind(action.Kind),
 		Lang:           lang,

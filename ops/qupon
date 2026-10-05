@@ -1,0 +1,4 @@
+#!/bin/sh
+# Local `qupon` CLI for the registrar executor (make api sets QUPON_CLI to this file): runs the TS CLI from source.
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+exec "$ROOT/clients/ts/node_modules/.bin/tsx" "$ROOT/clients/ts/src/cli.ts" "$@"

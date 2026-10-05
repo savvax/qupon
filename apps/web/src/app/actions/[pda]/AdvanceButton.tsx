@@ -14,18 +14,36 @@ import { useToast } from "@/components/ui/Toast";
 export function AdvanceButton({
   pda,
   label,
+  status,
   secondary = false,
 }: {
   pda: string;
   label: string;
+  /** Current on-chain status; polling stops once it changes. */
+  status: string;
   secondary?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<{ name: string; message: string } | null>(null);
-  const [result, setResult] = useState<{ step: string; signature?: string | null } | null>(null);
+  const [error, setError] = useState<{ name: string; message: string } | null>(
+    null,
+  );
+  const [result, setResult] = useState<{
+    step: string;
+    signature?: string | null;
+  } | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const polledFrom = useRef<string | null>(null);
+
+  // Devnet RPC reads can lag the confirmed transaction by ~20 s: keep refreshing until the status moves.
+  useEffect(() => {
+    if (polledFrom.current !== null && status !== polledFrom.current) {
+      for (const t of timers.current) clearTimeout(t);
+      timers.current = [];
+      polledFrom.current = null;
+    }
+  }, [status]);
 
   useEffect(
     () => () => {
@@ -42,9 +60,14 @@ export function AdvanceButton({
       // approval — the Go executor only honours it on the fund step.
       const res = await postAdvance(pda, { confirm: true, autofund: true });
       setResult({ step: res.step, signature: res.signature });
-      toast.push({ message: `${res.step} confirmed`, kind: "success", signature: res.signature ?? undefined });
+      toast.push({
+        message: `${res.step} confirmed`,
+        kind: "success",
+        signature: res.signature ?? undefined,
+      });
       // Optimistic polling: devnet confirmation lands within a few seconds.
-      for (let i = 1; i <= 6; i++) {
+      polledFrom.current = status;
+      for (let i = 1; i <= 24; i++) {
         timers.current.push(setTimeout(() => router.refresh(), i * 2500));
       }
     } catch (e) {
@@ -52,13 +75,13 @@ export function AdvanceButton({
       const name = findOnchainError(message);
       setError({
         name: name ?? "RequestFailed",
-        message: name ? ERROR_EXPLANATIONS[name] ?? message : message,
+        message: name ? (ERROR_EXPLANATIONS[name] ?? message) : message,
       });
       toast.push({ message: "step failed — see the panel", kind: "error" });
     } finally {
       setBusy(false);
     }
-  }, [pda, router, toast]);
+  }, [pda, router, toast, status]);
 
   return (
     <div className="flex flex-col gap-2">

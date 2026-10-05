@@ -22,6 +22,8 @@
 | Token ACL (sRFC-37) | program `TACLkU6CiCdkQN2MjoyDkVg2yAH9zkxiHDsiztQ52TP` (devnet) | NOT used in T0/T1 — our own Investor registry + thaw replaces it; mention as compatible roadmap |
 
 ## Gotchas
+- Kit's preflight failure keeps program logs in `error.context.logs` (not `cause.logs`); `clients/ts/src/lib/tx.ts` extracts the Anchor error name from there so the API/console can show it.
+- Devnet RPC reads (Helius, `confirmed`) can lag a confirmed transaction by ~20 s; UI refreshes must poll until the state moves, not for a fixed few seconds.
 - Go is 1.26, not 1.25: `modernc.org/sqlite` (and x/sys, libc) require go ≥ 1.26, so go.mod says 1.26.0. Local/CI builds hid this by auto-downloading the toolchain; Docker (`GOTOOLCHAIN=local`) does not. CI reads the version from go.mod.
 - Portal wallet signing: wallets sign via `signTransaction` on a web3.js `VersionedTransaction` (Kit wire bytes → deserialize → sign → Kit `getTransactionDecoder`); `signMessage` over transaction bytes is refused. Create ONE Kit signer per wallet and pass it to fee payer and instructions — Kit throws on two distinct signers with the same address.
 - **IDL publish (Program Metadata Program) needs a non-public RPC**: with the 20-instruction IDL, `anchor idl upgrade` fails on api.devnet.solana.com with an opaque "transaction plan failed"; through Helius (`--provider.cluster "$RPC_URL"`) it succeeds. `ops/deploy.sh` uses `$RPC_URL` for the IDL steps only (`anchor deploy` prints the cluster URL, which would leak the API key into logs). Upgrades auto-extend program data (≈3.7 SOL rent for 527 KB + a temporary buffer) — top up the registrar from funder1 first.

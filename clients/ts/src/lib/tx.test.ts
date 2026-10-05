@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeUnitLimit, isTransient } from "./tx.js";
+import { anchorErrorFromLogs, computeUnitLimit, isTransient } from "./tx.js";
 
 describe("computeUnitLimit", () => {
   it("encodes SetComputeUnitLimit (tag 2, u32 LE) for the ComputeBudget program", () => {
@@ -16,5 +16,20 @@ describe("isTransient", () => {
     expect(isTransient(Object.assign(new Error("HTTP error (429): Too Many Requests"), {}))).toBe(true);
     expect(isTransient(Object.assign(new Error("x"), { context: { statusCode: 503 } }))).toBe(true);
     expect(isTransient(new Error("custom program error: 0x1771"))).toBe(false);
+  });
+});
+
+describe("anchorErrorFromLogs", () => {
+  it("extracts the program error name, number and message", () => {
+    const logs = [
+      "Program QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd invoke [1]",
+      "Program log: AnchorError thrown in programs/qupon_bonds/src/instructions/snapshot.rs:40. Error Code: TooEarly. Error Number: 6006. Error Message: Too early for this step.",
+      "Program QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd failed: custom program error: 0x1776",
+    ];
+    expect(anchorErrorFromLogs(logs)).toBe("TooEarly (6006): Too early for this step");
+  });
+  it("is undefined without an Anchor error", () => {
+    expect(anchorErrorFromLogs(undefined)).toBeUndefined();
+    expect(anchorErrorFromLogs(["Program log: Error: insufficient funds"])).toBeUndefined();
   });
 });

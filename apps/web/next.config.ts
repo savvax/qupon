@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   // NodeNext-style imports use ".js" suffixes; teach webpack to resolve them
   // to the neighbouring .ts files.
   transpilePackages: ["@qupon/client"],
+  // Dev only: Next 15 replays cached fetch responses across refreshes, so the console's router.refresh() after a
+  // step kept showing the pre-step status. Production never caches these (force-dynamic + no-store).
+  experimental: { serverComponentsHmrCache: false },
   webpack: (config) => {
     config.resolve.extensionAlias = {
       ".js": [".ts", ".tsx", ".js"],
