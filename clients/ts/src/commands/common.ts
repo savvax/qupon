@@ -152,6 +152,16 @@ export function parseIntArg(s: string, label: string): number {
 }
 
 /** ASCII bytes zero-padded to the fixed on-chain field size. */
+/**
+ * Default CORP id `<series>-<KIND>-####`, at most 16 bytes (the on-chain field): long series names are shortened to
+ * their first alphanumerics so the suffix always fits — `QPNb1-INTR-0001` stays as is, `QPNb1-tmg46q` → `QPNb1t-INTR-0001`.
+ */
+export function defaultCorpId(series: string, kind: string, n: number): string {
+	const suffix = `-${kind}-${String(n).padStart(4, "0")}`;
+	const room = 16 - suffix.length;
+	return (series.length <= room ? series : series.replace(/[^A-Za-z0-9]/g, "").slice(0, room)) + suffix;
+}
+
 export function padAscii(s: string, n: number): Uint8Array {
 	const b = new TextEncoder().encode(s);
 	if (b.length > n) throw new Error(`'${s}' is longer than ${n} bytes`);

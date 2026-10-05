@@ -25,6 +25,7 @@ import { txLink } from "../lib/explorer.js";
 import { actionPda, entitlementPda } from "../lib/pda.js";
 import type { QuponRpc } from "../lib/tx.js";
 import {
+	defaultCorpId,
 	almatyDate,
 	almatyMidnight,
 	initCtx,
@@ -129,7 +130,7 @@ async function runAnnounce(opts: AnnounceOpts, cmd: Command): Promise<void> {
 	const paymentAt = parseAt(opts.paymentAt, "--payment-at");
 	const index = s.actionCount;
 	const corpId =
-		opts.corpId ?? `${info.name}-${plan.kind}-${String(index + 1).padStart(4, "0")}`; // e.g. QPNb1-INTR-0001
+		opts.corpId ?? defaultCorpId(info.name, plan.kind, index + 1); // e.g. QPNb1-INTR-0001
 	const action = await actionPda(info.pda, index);
 	log(`announcing ${plan.kind} #${index} (${corpId}): ${days} accrual days, period ${periodStart} → ${periodEnd}`);
 	const instruction = await getAnnounceActionInstructionAsync({

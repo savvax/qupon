@@ -17,6 +17,7 @@ import { txLink } from "../lib/explorer.js";
 import { actionPda } from "../lib/pda.js";
 import { loadAction } from "./action.js";
 import {
+	defaultCorpId,
 	almatyMidnight,
 	initCtx,
 	listEntitlements,
@@ -147,7 +148,7 @@ async function runMeetingAnnounce(opts: MeetingOpts, cmd: Command): Promise<void
 	const recordAt = parseAt(opts.recordAt, "--record-at");
 	const votingEndsAt = parseAt(opts.votingEndsAt, "--voting-ends-at");
 	const index = s.actionCount;
-	const corpId = opts.corpId ?? `${info.name}-BMET-${String(index + 1).padStart(4, "0")}`;
+	const corpId = opts.corpId ?? defaultCorpId(info.name, "BMET", index + 1);
 	const action = await actionPda(info.pda, index);
 	log(`announcing BMET #${index} (${corpId}): rate ${s.couponRateBps} → ${newRate || "unchanged"} bps; voting until ${votingEndsAt}`);
 	const instruction = await getAnnounceActionInstructionAsync({
