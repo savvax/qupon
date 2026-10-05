@@ -10,17 +10,29 @@ export async function POST(
   { params }: { params: Promise<{ pda: string }> },
 ) {
   const { pda } = await params;
+  // The pda goes into the upstream URL next to a bearer token: accept only a base58 address.
+  if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(pda)) {
+    return NextResponse.json({ error: "invalid action address" }, { status: 400 });
+  }
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
   if (process.env.ADVANCE_TOKEN) {
     headers.Authorization = `Bearer ${process.env.ADVANCE_TOKEN}`;
   }
-  const res = await fetch(`${API_BASE_URL}/actions/${pda}/advance`, {
-    method: "POST",
-    headers,
-    body: await request.text(),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}/actions/${pda}/advance`, {
+      method: "POST",
+      headers,
+      body: await request.text(),
+    });
+  } catch (e) {
+    return NextResponse.json(
+      { error: `registrar API unreachable: ${e instanceof Error ? e.message : String(e)}` },
+      { status: 502 },
+    );
+  }
   return new NextResponse(res.body, {
     status: res.status,
     headers: {

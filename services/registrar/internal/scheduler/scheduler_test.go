@@ -358,3 +358,13 @@ func TestTickDryRun(t *testing.T) {
 		t.Fatal("dry-run recorded activity")
 	}
 }
+
+// main.go builds the Scheduler without Now; Run must default the clock instead of panicking on the first tick.
+func TestRunWithoutClockDoesNotPanic(t *testing.T) {
+	fc := &fakeChain{series: series(now0.Add(90*time.Second).Unix(), now0.Add(24*time.Hour).Unix())}
+	s, _, _ := newScheduler(t, fc, Config{Tick: time.Second, DryRun: true})
+	s.Now = nil
+	ctx, cancel := context.WithTimeout(t.Context(), 1500*time.Millisecond)
+	defer cancel()
+	s.Run(ctx) // one tick at 1 s; a nil clock would panic here
+}

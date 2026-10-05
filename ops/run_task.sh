@@ -91,8 +91,12 @@ fi
 # next attempt — the orchestrator deletes this worktree and branch on failure.
 if ! grep -qs "DONE:$ID" "$LOGP".txt "$LOGP".json || [ -n "$(git status --porcelain 2>/dev/null)" ]; then
   git add -A 2>/dev/null
-  if ! git diff --cached --quiet main 2>/dev/null; then
-    git diff --cached --binary main > "$LOGP.wip.patch" && echo "[run_task] saved work for the next attempt: $LOGP.wip.patch" >&2
+  # Diff from the branch point, not current main: main moves while the agent works, and a diff against it would
+  # carry reversals of everything merged meanwhile (024's resume reverted 9126 that way). Queue files never travel.
+  BASE=$(git merge-base HEAD main 2>/dev/null || echo main)
+  if ! git diff --cached --quiet "$BASE" -- . ':(exclude)tasks' 2>/dev/null; then
+    git diff --cached --binary "$BASE" -- . ':(exclude)tasks' > "$LOGP.wip.patch" \
+      && echo "[run_task] saved work for the next attempt: $LOGP.wip.patch" >&2
   fi
   git reset -q 2>/dev/null
 fi
