@@ -16,9 +16,15 @@ import (
 const (
 	tokenAccountBaseLen = 165 // mint 32 + owner 32 + amount 8 + delegate COption 36 + state 1 + is_native 12 + delegated 8 + close COption 36
 	mintBaseLen         = 82  // mint_authority COption 36 + supply 8 + decimals 1 + initialized 1 + freeze_authority COption 36
-	stateFrozen         = 2   // Account.state: 0 Uninitialized, 1 Initialized, 2 Frozen, 3 Disabled
-	pausableExtType     = 26  // ExtensionType::Pausable (PausableConfig)
-	pausablePausedOff   = 36  // OptionalNonZeroPubkey authority, then paused PodBool
+	// Token-2022 mints with extensions: fixed part zero-padded to 165 bytes,
+	// byte 165 is AccountType (1 = Mint), TLV entries start at 166
+	// (2-byte type, 2-byte length, value).
+	accountTypeOff    = 165
+	accountTypeMint   = 1
+	stateFrozen       = 2  // Account.state: 0 Uninitialized, 1 Initialized, 2 Frozen, 3 Disabled
+	pausableExtType   = 26 // ExtensionType::Pausable (PausableConfig)
+	pausableValueLen  = 33 // OptionalNonZeroPubkey authority (32) + paused PodBool (1)
+	pausablePausedOff = 32 // paused byte inside the PausableConfig value
 )
 
 // TokenAccount is the minimal view of an SPL token account.
@@ -65,8 +71,10 @@ type Mint struct {
 }
 
 // DecodeMint parses the fixed part of a Token-2022 mint plus the Pausable
-// TLV extension. Unknown extensions are skipped; padding/truncated entries
-// end the walk instead of failing (older mints carry other extensions).
+// TLV extension. Mints without extensions are exactly mintBaseLen bytes; with
+// extensions the fixed part is padded to 165, byte 165 is AccountType and the
+// TLV area starts at 166. Unknown extensions are skipped; padding/truncated
+// entries end the walk instead of failing (older mints carry other extensions).
 func DecodeMint(data []byte) (*Mint, error) {
 	if len(data) < mintBaseLen {
 		return nil, fmt.Errorf("chain: mint %d bytes, want >= %d", len(data), mintBaseLen)
@@ -75,7 +83,10 @@ func DecodeMint(data []byte) (*Mint, error) {
 		Supply:   binary.LittleEndian.Uint64(data[36:44]),
 		Decimals: data[44],
 	}
-	off := mintBaseLen
+	if len(data) <= accountTypeOff || data[accountTypeOff] != accountTypeMint {
+		return m, nil // no extension area
+	}
+	off := accountTypeOff + 1
 	for off+4 <= len(data) {
 		typ := binary.LittleEndian.Uint16(data[off : off+2])
 		length := int(binary.LittleEndian.Uint16(data[off+2 : off+4]))
@@ -83,7 +94,7 @@ func DecodeMint(data []byte) (*Mint, error) {
 		if typ == 0 || val+length > len(data) {
 			break // Uninitialized padding or truncated tail
 		}
-		if typ == pausableExtType && length > pausablePausedOff {
+		if typ == pausableExtType && length == pausableValueLen {
 			m.Paused = data[val+pausablePausedOff] == 1
 		}
 		off = val + length

@@ -62,19 +62,22 @@ func entryFromChain(e *chain.Entitlement) Entry {
 	return Entry{Units: e.Units, Gross: e.Gross, Tax: e.Tax, Net: e.Net, Principal: e.Principal}
 }
 
-// diffFields lists the entry fields that differ (nil when equal).
+// diffFields lists every entry field that differs (nil when equal).
 func (a Entry) diffFields(b Entry) []string {
 	var out []string
-	switch {
-	case a.Units != b.Units:
+	if a.Units != b.Units {
 		out = append(out, "units")
-	case a.Gross != b.Gross:
+	}
+	if a.Gross != b.Gross {
 		out = append(out, "gross")
-	case a.Tax != b.Tax:
+	}
+	if a.Tax != b.Tax {
 		out = append(out, "tax")
-	case a.Net != b.Net:
+	}
+	if a.Net != b.Net {
 		out = append(out, "net")
-	case a.Principal != b.Principal:
+	}
+	if a.Principal != b.Principal {
 		out = append(out, "principal")
 	}
 	return out

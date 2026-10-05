@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
+	"slices"
 	"testing"
 
 	solana "github.com/solana-foundation/solana-go/v2"
@@ -72,6 +73,20 @@ func le(v uint64) []byte {
 	var b [8]byte
 	binary.LittleEndian.PutUint64(b[:], v)
 	return b[:]
+}
+
+func TestDiffFieldsReportsEveryDifferingField(t *testing.T) {
+	a := Entry{Units: 10, Gross: 500, Tax: 50, Net: 450, Principal: 0}
+	if got := a.diffFields(a); got != nil {
+		t.Errorf("equal entries: fields = %v, want nil", got)
+	}
+	b := a
+	b.Gross, b.Net, b.Principal = 499, 449, 9
+	got := a.diffFields(b)
+	want := []string{"gross", "net", "principal"}
+	if !slices.Equal(got, want) {
+		t.Errorf("fields = %v, want %v", got, want)
+	}
 }
 
 // newFixture builds the completed demo action: INTR coupon, 100 supply,
