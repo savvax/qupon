@@ -6,7 +6,9 @@
     "loading": "Loading…",
     "retry": "Retry",
     "viewOnExplorer": "View on explorer",
-    "copy": "Copy"
+    "copy": "Copy",
+    "close": "Close",
+    "dismiss": "Dismiss"
   },
   "nav": {
     "bonds": "Bonds",

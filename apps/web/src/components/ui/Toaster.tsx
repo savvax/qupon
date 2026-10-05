@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import { useTranslations } from "next-intl";
 import { cx } from "@/lib/ui/cx";
 import { toastStore, type Toast, type ToastKind } from "./toastStore";
 import { Address } from "./Address";
@@ -34,6 +35,7 @@ export function Toaster() {
 }
 
 function ToastCard({ toast: t }: { toast: Toast }) {
+  const tr = useTranslations("common");
   // success/info auto-dismiss; pending/error stay until updated or dismissed.
   useEffect(() => {
     if (t.kind !== "success" && t.kind !== "info") return;
@@ -62,7 +64,7 @@ function ToastCard({ toast: t }: { toast: Toast }) {
         </div>
         <button
           type="button"
-          aria-label="Dismiss"
+          aria-label={tr("dismiss")}
           onClick={() => toastStore.dismiss(t.id)}
           className="rounded-sm px-1 text-xs text-n400 hover:bg-n100 hover:text-n700"
         >

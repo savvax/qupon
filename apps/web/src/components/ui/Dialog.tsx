@@ -2,6 +2,7 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 
 export type DialogProps = {
   open: boolean;
@@ -24,6 +25,7 @@ function Body({
   footer,
   children,
 }: Pick<DialogProps, "title" | "description" | "footer" | "children">) {
+  const t = useTranslations("common");
   return (
     <>
       <DialogPrimitive.Title className="pr-8 text-xl font-bold">
@@ -36,7 +38,7 @@ function Body({
       )}
       {children && <div className="mt-4">{children}</div>}
       {footer && <div className="mt-6 flex justify-end gap-2">{footer}</div>}
-      <DialogPrimitive.Close aria-label="Close" className={CLOSE}>
+      <DialogPrimitive.Close aria-label={t("close")} className={CLOSE}>
         ✕
       </DialogPrimitive.Close>
     </>
@@ -56,7 +58,7 @@ export function Dialog({
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className={overlay} />
-        <DialogPrimitive.Content className="fixed top-1/2 left-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-card bg-n0 p-6 shadow-[0_24px_64px_-24px_rgba(18,26,22,.45)]">
+        <DialogPrimitive.Content className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto -translate-y-1/2 rounded-card bg-n0 p-6 shadow-[0_24px_64px_-24px_rgba(18,26,22,.45)]">
           <Body title={title} description={description} footer={footer}>
             {children}
           </Body>
