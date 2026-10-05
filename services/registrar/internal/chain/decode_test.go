@@ -113,6 +113,7 @@ func encodeCorporateAction(a *CorporateAction) []byte {
 		U8(a.Result).
 		I64(a.CompletedAt).
 		U16(a.FactorBps).
+		U64(a.TotalPrincipal).
 		FixedBytes(a.Reserved[:]).
 		Bytes()
 }
@@ -248,6 +249,7 @@ func TestDecodeCorporateActionRoundTrip(t *testing.T) {
 		Result:              0,
 		CompletedAt:         0,
 		FactorBps:           2500, // PCAL 25%
+		TotalPrincipal:      1_000_000,
 		Reserved:            [64]byte{},
 	}
 	out, err := DecodeCorporateAction(encodeCorporateAction(in))

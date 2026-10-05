@@ -264,6 +264,9 @@ func DecodeCorporateAction(data []byte) (*CorporateAction, error) {
 	if a.FactorBps, err = r.U16(); err != nil {
 		return nil, fmt.Errorf("action: factor_bps: %w", err)
 	}
+	if a.TotalPrincipal, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("action: total_principal: %w", err)
+	}
 	if a.Reserved, err = fixed64(r); err != nil {
 		return nil, fmt.Errorf("action: reserved: %w", err)
 	}

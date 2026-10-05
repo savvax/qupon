@@ -94,6 +94,7 @@ type CorporateAction struct {
 	Result              uint8 // 0 Pending, 1 Approved, 2 Rejected, 3 NoQuorum
 	CompletedAt         int64
 	FactorBps           uint16 // PCAL only: share of face redeemed, bps
+	TotalPrincipal      uint64 // Σ holder principal (REDM/MCAL/PCAL)
 	Reserved            [64]byte
 }
 
