@@ -46,6 +46,17 @@ pub mod qupon_bonds {
         instructions::subscribe::handle_issue_units(ctx, units)
     }
 
+    /// Admit a Solana DvP trade between two registered investors: thaw its bond escrow (registrar or paying agent).
+    pub fn admit_trade(ctx: Context<AdmitTrade>) -> Result<()> {
+        instructions::trade::handle_admit_trade(ctx)
+    }
+
+    /// Drop the admission of a settled or cancelled trade; `force` first returns escrowed units to the seller
+    /// (registrar or paying agent).
+    pub fn release_trade(ctx: Context<ReleaseTrade>, force: bool) -> Result<()> {
+        instructions::trade::handle_release_trade(ctx, force)
+    }
+
     /// Announce a corporate action (registrar for INTR/REDM/MCAL/PCAL, issuer for BMET); amounts verified on-chain.
     pub fn announce_action(ctx: Context<AnnounceAction>, args: AnnounceArgs) -> Result<()> {
         instructions::announce_action::handle_announce_action(ctx, args)

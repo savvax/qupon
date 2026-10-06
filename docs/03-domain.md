@@ -48,6 +48,15 @@ Dates on-chain are unix timestamps; the Y/M/D used by `THIRTY_360` are derived i
 3. `finalize_snapshot`: `units_snapshotted == mint.supply` (every holder captured; impossible to miss someone because transfers are paused), rounding check (§2). Off-chain, the Go reconciler recomputes the same hash by iterating investors sorted by owner pubkey ascending — the CLI MUST snapshot in that order so the hash matches.
 4. While paused: no transfers, mints or burns. `complete_action` resumes. For redemption, retirement happens after resume (Pausable blocks burns): any residual movement after the record date is economically void and the `retire_batch` burns whatever units each registered ATA holds, then `close_series` requires `supply == 0`.
 
+### 4a. Secondary trades in flight (Solana DvP)
+
+Secondary trades between registered investors settle through the Solana Foundation's DvP program (`dvp34bdbcEm4f4FCUjGV4mDAkDshaQR4LkK8fdcsyZq`, devnet and mainnet): each party funds an escrow with a plain transfer and the settlement authority moves both legs in one transaction. Qupon does not call that program; it controls which escrows may hold bonds.
+
+1. `CreateDvp` creates the bond escrow **frozen** (DefaultAccountState). `admit_trade` (registrar or paying agent) thaws it only for a trade of this series' bond against its cash asset, between two Active investors, delivered to the parties themselves, whose settlement authority is the registrar or the paying agent. Delivery needs the buyer's own thawed account, so an unregistered buyer cannot be settled to.
+2. A paused mint blocks the DvP program's settle, cancel and reclaim alike (devnet run 2026-10-06, `reports/dvp-spike-2026-10-06.md`), and escrowed units have no Investor record, so `finalize_snapshot` could never reach Σ = supply. Therefore `strike_record` fails with `TradesInFlight` while `Series.open_trades > 0`: before a record date the operator settles or cancels every admitted trade and calls `release_trade`. A cancelled trade returns the units to the seller, who is then the holder of record.
+3. `release_trade` needs the escrow closed or empty, and freezes an escrow that still exists, so no unit can enter it afterwards (anyone can recreate an ATA; a recreated one is frozen by default).
+4. The DvP program's cancel is atomic over both legs and reverts if any refund account is missing or frozen (a seller who closed their empty bond account, a cash issuer that froze the buyer). A record date must not depend on that, so `release_trade(force = true)` returns the escrowed units to the seller's registered bond account with the series PDA's permanent-delegate authority — the seller stays the holder of record, the buyer takes the cash back with the DvP program's `ReclaimDvp`. If the seller closed that account, anyone recreates the ATA first; the forced release thaws it.
+
 Alternative when Pausable CPI misbehaves on devnet (fallback, do not implement unless needed): freeze every registered ATA in `strike_record` batches and thaw in `complete_action`.
 
 ## 5. Corporate-action state machine

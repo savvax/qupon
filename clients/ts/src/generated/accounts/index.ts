@@ -10,3 +10,4 @@ export * from './corporateAction.js';
 export * from './entitlement.js';
 export * from './investor.js';
 export * from './series.js';
+export * from './tradeAdmission.js';

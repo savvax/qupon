@@ -21,6 +21,8 @@ export * from './seriesInitialized.js';
 export * from './snapshotFinalized.js';
 export * from './subscribed.js';
 export * from './termsChanged.js';
+export * from './tradeAdmitted.js';
+export * from './tradeReleased.js';
 export * from './unitsIssued.js';
 export * from './unitsRetired.js';
 export * from './voteCast.js';

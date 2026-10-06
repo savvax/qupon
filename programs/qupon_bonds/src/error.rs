@@ -67,6 +67,12 @@ pub enum QuponError {
     PaymentsIncomplete,
     #[msg("KYC attestation missing, expired or not matching the investor")]
     KycAttestationInvalid,
+    #[msg("Admitted secondary trades are open; settle or cancel and release them before the record date")]
+    TradesInFlight,
+    #[msg("The trade's bond escrow still holds units; settle or cancel it, or force the release")]
+    TradeStillOpen,
+    #[msg("Not a Solana DvP trade of this series between its registered investors under our settlement authority")]
+    InvalidTrade,
 }
 
 /// Map the pure math crate's errors onto program errors (orphan rule forbids `From`).

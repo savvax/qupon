@@ -18,8 +18,9 @@ help: ## list targets
 program-keypair: ## copy the deploy keypair into target/deploy so anchor build keeps the declared program id
 	@if [ -f "$(PROGRAM_KEYPAIR)" ] && [ ! -f target/deploy/qupon_bonds-keypair.json ]; then mkdir -p target/deploy && cp "$(PROGRAM_KEYPAIR)" target/deploy/qupon_bonds-keypair.json; fi
 
-fixtures: ## refresh programs/qupon_bonds/tests/fixtures/spl_token_2022.so from devnet (committed; LiteSVM loads it)
+fixtures: ## refresh the Token-2022 and Solana DvP binaries in programs/qupon_bonds/tests/fixtures from devnet (committed; LiteSVM loads them)
 	solana program dump TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb programs/qupon_bonds/tests/fixtures/spl_token_2022.so -u devnet
+	solana program dump dvp34bdbcEm4f4FCUjGV4mDAkDshaQR4LkK8fdcsyZq programs/qupon_bonds/tests/fixtures/dvp_swap.so -u devnet
 
 doctor: ## print toolchain versions and check pins
 	@bash ops/doctor.sh

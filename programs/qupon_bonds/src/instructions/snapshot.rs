@@ -50,6 +50,11 @@ pub fn handle_strike_record(ctx: Context<StrikeRecord>) -> Result<()> {
         clock.unix_timestamp >= action.record_at,
         QuponError::TooEarly
     );
+    // Units inside a DvP escrow cannot leave it while the mint is paused and have no holder to snapshot.
+    require!(
+        ctx.accounts.series.open_trades == 0,
+        QuponError::TradesInFlight
+    );
 
     // Freeze the register: no transfers, mints or burns until complete_action resumes the mint.
     let mint = ctx.accounts.mint.key();

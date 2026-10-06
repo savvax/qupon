@@ -164,7 +164,7 @@ pub fn handle_issue_units(ctx: Context<IssueUnits>, units: u64) -> Result<()> {
     Ok(())
 }
 
-fn require_active(investor: &Investor) -> Result<()> {
+pub(crate) fn require_active(investor: &Investor) -> Result<()> {
     require!(
         investor.status != InvestorStatus::Suspended as u8,
         QuponError::InvestorSuspended

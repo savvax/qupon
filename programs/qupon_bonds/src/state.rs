@@ -85,7 +85,10 @@ pub struct Series {
     pub tax_vault: Pubkey,
     /// The one non-final corporate action (statuses other than Completed/Cancelled), if any.
     pub open_action: Option<Pubkey>,
-    pub reserved: [u8; 64],
+    /// Admitted Solana DvP trades not yet released; `strike_record` requires 0. Carved from `reserved`
+    /// (64 zero bytes before), so the account size is unchanged and older series read 0.
+    pub open_trades: u32,
+    pub reserved: [u8; 60],
 }
 
 /// Seeds `["investor", series, owner]`.
@@ -186,4 +189,21 @@ pub struct Entitlement {
     /// [`VoteChoice`].
     pub vote: u8,
     pub voted_at: i64,
+}
+
+/// Seeds `["trade", series, swap_dvp]` — one admitted Solana DvP trade; closed by `release_trade`.
+#[account]
+#[derive(InitSpace)]
+pub struct TradeAdmission {
+    pub bump: u8,
+    pub series: Pubkey,
+    /// The Solana DvP `SwapDvp` record.
+    pub swap_dvp: Pubkey,
+    /// Its bond-leg escrow (ATA of `swap_dvp`), thawed by `admit_trade`.
+    pub escrow: Pubkey,
+    pub seller: Pubkey,
+    pub buyer: Pubkey,
+    pub units: u64,
+    pub cash_amount: u64,
+    pub admitted_at: i64,
 }

@@ -68,6 +68,10 @@ var layouts = map[string][]field{
 		u64("votes_abstain"), u64("units_snapshotted"), u8("result"), u64("slot"), i64("timestamp")},
 	"TermsChanged": {pk("series"), pk("action"), u32("index"), u32("old_rate_bps"), u32("new_rate_bps"),
 		i64("old_maturity"), i64("new_maturity"), boolean("regulator_registration_simulated"), u64("slot"), i64("timestamp")},
+	"TradeAdmitted": {pk("series"), pk("swap_dvp"), pk("escrow"), pk("seller"), pk("buyer"), u64("units"),
+		u64("cash_amount"), u32("open_trades"), u64("slot"), i64("timestamp")},
+	"TradeReleased": {pk("series"), pk("swap_dvp"), pk("escrow"), u64("returned_units"), u32("open_trades"),
+		u64("slot"), i64("timestamp")},
 }
 
 // EventNames lists every known event, sorted (for tests and docs).

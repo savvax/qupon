@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './admission.js';
 export * from './entitlement.js';
 export * from './investor.js';
 export * from './series.js';

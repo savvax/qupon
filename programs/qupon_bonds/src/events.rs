@@ -258,3 +258,29 @@ pub struct TermsChanged {
     pub slot: u64,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct TradeAdmitted {
+    pub series: Pubkey,
+    pub swap_dvp: Pubkey,
+    pub escrow: Pubkey,
+    pub seller: Pubkey,
+    pub buyer: Pubkey,
+    pub units: u64,
+    pub cash_amount: u64,
+    pub open_trades: u32,
+    pub slot: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TradeReleased {
+    pub series: Pubkey,
+    pub swap_dvp: Pubkey,
+    pub escrow: Pubkey,
+    /// Units a forced release moved back to the seller (0 for a settled or cancelled trade).
+    pub returned_units: u64,
+    pub open_trades: u32,
+    pub slot: u64,
+    pub timestamp: i64,
+}

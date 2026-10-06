@@ -6,6 +6,7 @@ pub mod retire;
 pub mod settle;
 pub mod snapshot;
 pub mod subscribe;
+pub mod trade;
 
 pub use announce_action::*;
 pub use init_series::*;
@@ -15,3 +16,4 @@ pub use retire::*;
 pub use settle::*;
 pub use snapshot::*;
 pub use subscribe::*;
+pub use trade::*;
