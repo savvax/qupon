@@ -24,9 +24,10 @@ fi
 
 echo "== source → $TARGET:/opt/qupon/src"
 "${SSH[@]}" 'mkdir -p /opt/qupon/src'
+# /reports (screenshots, 18 MB+) never reaches an image; anchored — internal/reports and the reports pages must ship
 rsync -az --delete \
   --exclude .git --exclude node_modules --exclude target --exclude .next --exclude logs \
-  --exclude .env --exclude .worktrees --exclude .playwright-mcp \
+  --exclude .env --exclude .worktrees --exclude .playwright-mcp --exclude /reports \
   ./ "$TARGET:/opt/qupon/src/"
 
 echo "== secrets (server-side only)"
