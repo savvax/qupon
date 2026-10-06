@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { signInAs } from "./session";
 
 // Screenshots must be byte-stable: emulated reduced motion turns every ambient animation
 // (hero grid drift / card float, badge pops) and JS entrances into their final state (§5.6).
@@ -11,10 +12,21 @@ const INTR = "ActnINTR0001Dem0PDA111111111111111111111111111";
 const BMET = "ActnBMET0002Dem0PDA1111111111111111111111111111";
 
 const GROUPS: {
-  role?: "issuer" | "registrar" | "investor";
+  role?: "issuer" | "registrar" | "investor" | "admin";
   routes: string[];
 }[] = [
-  { routes: ["/", "/bonds", `/bonds/${MINT}`, "/login", "/does-not-exist"] },
+  {
+    routes: [
+      "/",
+      "/bonds",
+      `/bonds/${MINT}`,
+      "/login",
+      "/signup",
+      "/invite/demo-invite-token",
+      "/reset/demo-reset-token",
+      "/does-not-exist",
+    ],
+  },
   {
     role: "issuer",
     routes: [
@@ -22,6 +34,9 @@ const GROUPS: {
       "/issuer/series",
       "/issuer/series/new",
       `/issuer/series/${MINT}`,
+      "/issuer/documents",
+      "/issuer/organization",
+      "/issuer/team",
     ],
   },
   {
@@ -34,6 +49,11 @@ const GROUPS: {
       "/registrar/investors",
       "/registrar/activity",
       "/registrar/autopilot",
+      "/registrar/kyc",
+      "/registrar/kyc/4",
+      "/registrar/reports",
+      `/print/holders?mint=${MINT}`,
+      `/print/payouts?pda=${INTR}`,
     ],
   },
   {
@@ -43,6 +63,21 @@ const GROUPS: {
       "/investor/placement",
       "/investor/meetings",
       "/investor/statements",
+      "/investor/reports",
+      "/investor/kyc",
+    ],
+  },
+  {
+    role: "admin",
+    routes: [
+      "/admin",
+      "/admin/series",
+      "/admin/users",
+      "/admin/organizations",
+      "/admin/assets",
+      "/admin/audit",
+      "/admin/network",
+      "/admin/system",
     ],
   },
 ];
@@ -51,7 +86,8 @@ const slug = (route: string) =>
   route
     .replace(/^\//, "")
     .replace(/[^a-z0-9]+/gi, "-")
-    .slice(0, 40) || "home";
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "home";
 
 async function check(page: Page, route: string, locale: string, width: number) {
   const errors: string[] = [];
@@ -88,13 +124,18 @@ for (const group of GROUPS) {
     context,
     baseURL,
   }) => {
-    test.setTimeout(240_000);
+    test.setTimeout(300_000);
     if (group.role) {
-      await page.goto("/login");
-      await page
-        .getByRole("button", { name: new RegExp(`^${group.role}`, "i") })
-        .click();
-      await page.waitForURL(new RegExp(`/${group.role}`));
+      if (group.role === "admin") {
+        // No admin button on the login page: mock-only account via cookie (e2e/session.ts).
+        await signInAs(page, "admin", baseURL);
+      } else {
+        await page.goto("/login");
+        await page
+          .getByRole("button", { name: new RegExp(`^${group.role}`, "i") })
+          .click();
+        await page.waitForURL(new RegExp(`/${group.role}`));
+      }
     }
     for (const locale of ["en", "ru"]) {
       await context.addCookies([

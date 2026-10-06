@@ -169,131 +169,133 @@ export default async function PrintReportPage({
             </div>
           ))}
         </dl>
-
-        <table className="mt-6 w-full border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-n300 text-left">
+        {/* Wide report tables scroll inside their own box on phones (§5.8: no page-level sideways scroll). */}
+        <div className="mt-6 overflow-x-auto print:overflow-visible">
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="border-b border-n300 text-left">
+                {isHolders
+                  ? [
+                      t("cols.owner"),
+                      t("cols.units"),
+                      t("cols.investorType"),
+                      t("cols.residency"),
+                      t("cols.taxBps"),
+                      t("cols.status"),
+                      t("cols.kycRef"),
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-1 py-1.5 font-semibold whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ))
+                  : [
+                      t("cols.paymentDate"),
+                      t("cols.series"),
+                      t("cols.kind"),
+                      t("cols.units"),
+                      t("cols.gross"),
+                      t("cols.tax"),
+                      t("cols.net"),
+                      ...(payouts.some((p: PayoutRow) => p.principal > 0)
+                        ? [t("cols.principal")]
+                        : []),
+                      t("cols.status"),
+                      t("cols.action"),
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-1 py-1.5 font-semibold whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ))}
+              </tr>
+            </thead>
+            <tbody>
               {isHolders
-                ? [
-                    t("cols.owner"),
-                    t("cols.units"),
-                    t("cols.investorType"),
-                    t("cols.residency"),
-                    t("cols.taxBps"),
-                    t("cols.status"),
-                    t("cols.kycRef"),
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-1 py-1.5 font-semibold whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))
-                : [
-                    t("cols.paymentDate"),
-                    t("cols.series"),
-                    t("cols.kind"),
-                    t("cols.units"),
-                    t("cols.gross"),
-                    t("cols.tax"),
-                    t("cols.net"),
-                    ...(payouts.some((p: PayoutRow) => p.principal > 0)
-                      ? [t("cols.principal")]
-                      : []),
-                    t("cols.status"),
-                    t("cols.action"),
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-1 py-1.5 font-semibold whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
-            </tr>
-          </thead>
-          <tbody>
-            {isHolders
-              ? holders.map((h) => (
-                  <tr key={h.owner} className="border-b border-n100">
-                    <td className="num px-1 py-1.5">{short(h.owner)}</td>
-                    <td className="num px-1 py-1.5 text-right">{h.units}</td>
-                    <td className="px-1 py-1.5">{h.investorType}</td>
-                    <td className="px-1 py-1.5">{h.residency}</td>
-                    <td className="num px-1 py-1.5 text-right">
-                      {h.taxBps / 100}%
-                    </td>
-                    <td className="px-1 py-1.5">{h.status}</td>
-                    <td className="num px-1 py-1.5">{short(h.kycRef)}</td>
-                  </tr>
-                ))
-              : payouts.map((p) => (
-                  <tr
-                    key={`${p.action}-${p.owner}`}
-                    className="border-b border-n100"
-                  >
-                    <td className="num px-1 py-1.5 whitespace-nowrap">
-                      {formatDate(p.paymentDate, locale)}
-                    </td>
-                    <td className="px-1 py-1.5 whitespace-nowrap">
-                      {p.series}
-                      <span className="num ml-1.5 text-n400">{p.isin}</span>
-                    </td>
-                    <td className="px-1 py-1.5">{p.kind}</td>
-                    <td className="num px-1 py-1.5 text-right">{p.units}</td>
-                    <td className="num px-1 py-1.5 text-right">
-                      {majorMinor(p.gross, p.decimals)}
-                    </td>
-                    <td className="num px-1 py-1.5 text-right">
-                      {majorMinor(p.tax, p.decimals)}
-                    </td>
-                    <td className="num px-1 py-1.5 text-right">
-                      {majorMinor(p.net, p.decimals)}
-                    </td>
-                    {p.principal > 0 && (
+                ? holders.map((h) => (
+                    <tr key={h.owner} className="border-b border-n100">
+                      <td className="num px-1 py-1.5">{short(h.owner)}</td>
+                      <td className="num px-1 py-1.5 text-right">{h.units}</td>
+                      <td className="px-1 py-1.5">{h.investorType}</td>
+                      <td className="px-1 py-1.5">{h.residency}</td>
                       <td className="num px-1 py-1.5 text-right">
-                        {majorMinor(p.principal, p.decimals)}
+                        {h.taxBps / 100}%
+                      </td>
+                      <td className="px-1 py-1.5">{h.status}</td>
+                      <td className="num px-1 py-1.5">{short(h.kycRef)}</td>
+                    </tr>
+                  ))
+                : payouts.map((p) => (
+                    <tr
+                      key={`${p.action}-${p.owner}`}
+                      className="border-b border-n100"
+                    >
+                      <td className="num px-1 py-1.5 whitespace-nowrap">
+                        {formatDate(p.paymentDate, locale)}
+                      </td>
+                      <td className="px-1 py-1.5 whitespace-nowrap">
+                        {p.series}
+                        <span className="num ml-1.5 text-n400">{p.isin}</span>
+                      </td>
+                      <td className="px-1 py-1.5">{p.kind}</td>
+                      <td className="num px-1 py-1.5 text-right">{p.units}</td>
+                      <td className="num px-1 py-1.5 text-right">
+                        {majorMinor(p.gross, p.decimals)}
+                      </td>
+                      <td className="num px-1 py-1.5 text-right">
+                        {majorMinor(p.tax, p.decimals)}
+                      </td>
+                      <td className="num px-1 py-1.5 text-right">
+                        {majorMinor(p.net, p.decimals)}
+                      </td>
+                      {p.principal > 0 && (
+                        <td className="num px-1 py-1.5 text-right">
+                          {majorMinor(p.principal, p.decimals)}
+                        </td>
+                      )}
+                      <td className="px-1 py-1.5">{p.status}</td>
+                      <td className="num px-1 py-1.5">{short(p.action)}</td>
+                    </tr>
+                  ))}
+            </tbody>
+            {!isHolders && totals.length > 0 && (
+              <tfoot>
+                {totals.map((x) => (
+                  <tr
+                    key={x.currency}
+                    className="border-t-2 border-n400 font-semibold"
+                  >
+                    <td colSpan={4} className="px-1 py-1.5">
+                      {t("totals.title")} ·{" "}
+                      {t("totals.payouts", { n: x.payouts })}
+                    </td>
+                    <td className="num px-1 py-1.5 text-right">
+                      {x.gross} {x.currency}
+                    </td>
+                    <td className="num px-1 py-1.5 text-right">
+                      {x.tax} {x.currency}
+                    </td>
+                    <td className="num px-1 py-1.5 text-right">
+                      {x.net} {x.currency}
+                    </td>
+                    {payouts.some((p: PayoutRow) => p.principal > 0) && (
+                      <td className="num px-1 py-1.5 text-right">
+                        {Number(x.principal) > 0
+                          ? `${x.principal} ${x.currency}`
+                          : "—"}
                       </td>
                     )}
-                    <td className="px-1 py-1.5">{p.status}</td>
-                    <td className="num px-1 py-1.5">{short(p.action)}</td>
+                    <td colSpan={2} />
                   </tr>
                 ))}
-          </tbody>
-          {!isHolders && totals.length > 0 && (
-            <tfoot>
-              {totals.map((x) => (
-                <tr
-                  key={x.currency}
-                  className="border-t-2 border-n400 font-semibold"
-                >
-                  <td colSpan={4} className="px-1 py-1.5">
-                    {t("totals.title")} ·{" "}
-                    {t("totals.payouts", { n: x.payouts })}
-                  </td>
-                  <td className="num px-1 py-1.5 text-right">
-                    {x.gross} {x.currency}
-                  </td>
-                  <td className="num px-1 py-1.5 text-right">
-                    {x.tax} {x.currency}
-                  </td>
-                  <td className="num px-1 py-1.5 text-right">
-                    {x.net} {x.currency}
-                  </td>
-                  {payouts.some((p: PayoutRow) => p.principal > 0) && (
-                    <td className="num px-1 py-1.5 text-right">
-                      {Number(x.principal) > 0
-                        ? `${x.principal} ${x.currency}`
-                        : "—"}
-                    </td>
-                  )}
-                  <td colSpan={2} />
-                </tr>
-              ))}
-            </tfoot>
-          )}
-        </table>
+              </tfoot>
+            )}
+          </table>
+        </div>
 
         <footer className="mt-6 border-t border-n200 pt-3 text-[10px] text-n400">
           {t("print.footer")}
