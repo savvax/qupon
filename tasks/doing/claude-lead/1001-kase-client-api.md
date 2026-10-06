@@ -1,5 +1,4 @@
 ---
-blocked_reason: rebase conflict with main
 id: 1001
 title: kase.kz client, cache and API
 agent: glm
