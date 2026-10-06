@@ -67,6 +67,9 @@ demo-seed: ## devnet: fresh series with 3 KYC'd holders (10/25/65), nothing anno
 demo-ui: ## devnet: fresh series + announced coupon for clicking through the console (prints the API command)
 	cd clients/ts && DEMO_UI=1 pnpm tsx scripts/demo-full.ts
 
+demo-trade: ## devnet: fresh series, a secondary trade settled by Solana DvP, the record-date guard, a coupon — writes reports/demo-trade.md
+	cd clients/ts && DEMO_TRADE=1 pnpm tsx scripts/demo-full.ts
+
 api: ## run the Go registrar locally (loads .env, defaults PROGRAM_ID from config/devnet.json)
 	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
 	PROGRAM_ID=$${PROGRAM_ID:-$$(jq -r .programId config/devnet.json)}; \
@@ -83,4 +86,4 @@ web: ## run the web app locally
 status: ## task board
 	@bash ops/status.sh
 
-.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-ui api web status
+.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-ui demo-trade api web status

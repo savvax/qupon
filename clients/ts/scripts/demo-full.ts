@@ -23,7 +23,9 @@ const here = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(here, "../../..");
 const CLI = join(here, "../src/cli.ts");
 const BOND_MINT_SCRIPT = join(here, "create-bond-mint.ts");
-const REPORT = join(ROOT, "reports/demo-full.md");
+/** `make demo-trade`: issuance, then secondary trades through the Solana DvP program and one coupon (docs/03-domain.md §4a). */
+const TRADE = process.env.DEMO_TRADE === "1";
+const REPORT = join(ROOT, TRADE ? "reports/demo-trade.md" : "reports/demo-full.md");
 
 type Json = Record<string, unknown>;
 interface Row {
@@ -72,11 +74,11 @@ function signaturesIn(v: unknown): string[] {
 
 let env: NodeJS.ProcessEnv = process.env;
 
-function exec(script: string, args: string[]): Json {
+function exec(script: string, args: string[], stderr: "inherit" | "pipe" = "inherit"): Json {
   const stdout = execFileSync(process.execPath, ["--import", "tsx", script, ...args], {
     env,
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "inherit"],
+    stdio: ["ignore", "pipe", stderr],
     maxBuffer: 64 * 1024 * 1024,
   });
   const lines = stdout.trim().split("\n").filter(l => l.startsWith("{"));
@@ -96,11 +98,14 @@ function step(name: string, args: string[], script = CLI): Json {
   }
 }
 
-function expectFailure(name: string, args: string[]): void {
+/** The CLI must refuse `args`; with `reason`, its error output must also name that on-chain error. */
+function expectFailure(name: string, args: string[], reason?: RegExp): void {
   log(`→ ${name} (expected to fail)`);
   try {
-    exec(CLI, args);
-  } catch {
+    exec(CLI, args, reason === undefined ? "inherit" : "pipe");
+  } catch (e) {
+    const stderr = String((e as { stderr?: unknown }).stderr ?? "");
+    if (reason !== undefined && !reason.test(stderr)) throw new Error(`${name}: refused, but not with ${reason}: ${stderr.slice(-600)}`, { cause: e });
     current().rows.push({ step: name, signatures: [], status: "rejected as expected ✓" });
     return;
   }
@@ -149,10 +154,11 @@ interface Ctx {
 const fmt = (c: Ctx, v: bigint): string => formatMinor(v, c.decimals, c.ccy);
 
 /** announce → record date → snapshot → finalize → fund → pay → complete; returns the action address. */
-async function cashAction(c: Ctx, kindArgs: string[], label: string, corpId: string, expectGrossPerUnit?: bigint): Promise<Address> {
+async function cashAction(c: Ctx, kindArgs: string[], label: string, corpId: string, expectGrossPerUnit?: bigint, beforeStrike?: () => Promise<void>): Promise<Address> {
   const before = await Promise.all(c.investors.map(i => cashBalance(c.cashMint, i.address)));
   const ann = step(`action:announce ${label}`, ["action:announce", "--series", c.series, ...kindArgs, "--record-at", "+45", "--payment-at", "+60", "--corp-id", corpId, ...as(REGISTRAR)]);
   const action = address(String(ann.action));
+  await beforeStrike?.();
   await strikeWhenDue(c.series);
   step("action:snapshot — one Entitlement per holder, sha256 chain", ["action:snapshot", "--series", c.series, ...as(REGISTRAR)]);
   step("action:finalize-snapshot — Σ units == supply, rounding bound", ["action:finalize-snapshot", "--series", c.series, ...as(REGISTRAR)]);
@@ -198,6 +204,73 @@ async function issue(name: string, units: bigint[], issueDate: string, maturityD
   return { series: name, cashMint: address(ccy === "USDC" ? cfg.usdcMint : cfg.tkztMint), decimals, ccy, investors };
 }
 
+const DVP_PROGRAM = "dvp34bdbcEm4f4FCUjGV4mDAkDshaQR4LkK8fdcsyZq";
+
+/** After the record date: the strike must be refused because a trade is admitted (retry while the cluster clock catches up). */
+async function expectStrikeRefused(series: string): Promise<void> {
+  await sleep(50_000);
+  for (let attempt = 1; ; attempt++) {
+    try {
+      expectFailure("action:strike with a trade admitted — refused with TradesInFlight", ["action:strike", "--series", series, ...as(REGISTRAR)], /TradesInFlight/);
+      return;
+    } catch (e) {
+      if (attempt >= 8 || !/TooEarly/.test(String((e as Error).message))) throw e;
+      await sleep(8_000);
+    }
+  }
+}
+
+/** S5: investor3 sells 5 bonds at par to investor1 through Solana DvP; a second trade meets a record date; coupon on 15 / 25 / 60. */
+async function tradeScenario(c: Ctx, bondMint: Address, short: string): Promise<void> {
+  const [buyer, , seller] = c.investors;
+  if (buyer === undefined || seller === undefined) throw new Error("demo-trade needs three investors");
+  const units = 5n;
+  const cash = units * 100_000n; // at par: 1,000.00 tKZT per bond
+  const create = (label: string): Address =>
+    address(String(step(label, ["trade:create", "--series", c.series, "--seller", seller.address, "--buyer", buyer.address, "--units", String(units), ...as(REGISTRAR)]).swapDvp));
+  const fund = (trade: Address, side: "seller" | "buyer", label: string): Json =>
+    step(label, ["trade:fund", "--series", c.series, "--trade", trade, "--side", side, ...as(side === "seller" ? (INVESTORS[2] ?? "") : (INVESTORS[0] ?? ""))]);
+  const holdings = (): Promise<bigint[]> => Promise.all([buyer, seller].flatMap(i => [cashBalance(bondMint, i.address), cashBalance(c.cashMint, i.address)]));
+
+  section("S5 — Secondary trade settled by the Solana DvP program", [
+    `investor3 sells 5 bonds at par (${fmt(c, cash)}) to investor1 on the Solana Foundation's DvP program [${DVP_PROGRAM.slice(0, 8)}…](${addressLink(DVP_PROGRAM)}). The registrar is the settlement authority; Qupon only decides which escrow may hold the bond.`,
+  ]);
+  const before = await holdings();
+  const t1 = create("trade:create — CreateDvp + admit_trade (bond escrow thawed), one transaction");
+  fund(t1, "seller", "trade:fund seller — investor3 moves 5 bonds into the escrow (plain transfer)");
+  fund(t1, "buyer", `trade:fund buyer — investor1 moves ${fmt(c, cash)} into the escrow (plain transfer)`);
+  step("trade:settle — SettleDvp moves both legs atomically + release_trade", ["trade:settle", "--series", c.series, "--trade", t1, ...as(REGISTRAR)]);
+  const after = await holdings();
+  const delta = after.map((v, i) => v - (before[i] ?? 0n));
+  if (String(delta) !== String([units, -cash, -units, cash])) throw new Error(`trade 1: unexpected balance changes ${delta}`);
+  current().tables.push(
+    `**Trade** [${t1.slice(0, 8)}…](${addressLink(t1)}) — delivery versus payment`,
+    "",
+    "| Holder | Bonds before | Bonds after | Cash change |",
+    "|---|---|---|---|",
+    `| investor1 (buyer) | ${before[0]} | ${after[0]} ✓ | −${fmt(c, cash)} ✓ |`,
+    `| investor3 (seller) | ${before[2]} | ${after[2]} ✓ | +${fmt(c, cash)} ✓ |`,
+    "",
+  );
+
+  section("S5 (cont.) — A trade in flight cannot cross a record date", [
+    "A second trade is admitted and funded by the seller only. A paused mint would trap those bonds in the escrow with no holder to snapshot, so `strike_record` refuses until the registrar unwinds the trade; the seller is then the holder of record and the coupon is paid on 15 / 25 / 60 bonds.",
+  ]);
+  const t2 = create("trade:create — second trade, 5 more bonds");
+  fund(t2, "seller", "trade:fund seller — 5 bonds in the escrow, buyer has not paid");
+  const action = await cashAction(c, ["--kind", "INTR"], "INTR #1 on the post-trade register (2026-07-03 → 2027-01-03, 180 days, 10%)", `Q${short}-INTR-0001`, 5_000n, async () => {
+    await expectStrikeRefused(c.series);
+    step("trade:cancel — CancelDvp returns the bonds to the seller + release_trade", ["trade:cancel", "--series", c.series, "--trade", t2, ...as(REGISTRAR)]);
+  });
+  const snapshot = new Map((await listEntitlements(rpc, action)).map(e => [e.owner as string, e.units]));
+  const record = c.investors.map(i => snapshot.get(i.address));
+  if (String(record) !== String([15n, 25n, 60n])) throw new Error(`record date: snapshot ${record}, expected 15,25,60`);
+
+  writeReport("secondary trade settled through Solana DvP ✓ · record date refused while a trade was admitted ✓ · coupon paid on the post-trade register (15 / 25 / 60) ✓");
+  log(`report written to ${REPORT}`);
+  console.log(JSON.stringify({ ok: true, series: [c.series], report: REPORT, transactions: sections.flatMap(s => s.rows).reduce((n, r) => n + r.signatures.length, 0) }));
+}
+
 function writeReport(result: string): void {
   const body = sections.flatMap(s => [
     `## ${s.title}`,
@@ -213,13 +286,15 @@ function writeReport(result: string): void {
   const product = readFileSync(join(ROOT, "docs/01-product.md"), "utf8");
   const ivs = product.slice(product.indexOf("| Element | Status |"), product.indexOf("## Non-goals")).trim();
   const md = [
-    "# Qupon — full lifecycle on Solana devnet (`make demo`)",
+    TRADE ? "# Qupon — secondary trade settled by Solana DvP on devnet (`make demo-trade`)" : "# Qupon — full lifecycle on Solana devnet (`make demo`)",
     "",
     `Program [QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd](${addressLink("QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd")}) · cluster devnet · run ${new Date().toISOString()}`,
     "",
     `**Result:** ${result}`,
     "",
-    "_Time compression: each record date is struck ≈45 s after its announcement; coupons use the real civil periods (30E/360). The brief's literal 500.00 / 10,500.00 figures are also proven by `programs/qupon_bonds/tests/brief.rs`; here the meeting raises the rate to 12% before redemption, so the final coupon is 600.00 per 10 bonds. BTRK-demo is scaled to devnet faucet limits (face 1 USDC)._",
+    TRADE
+      ? "_Time compression: the record date is struck ≈45 s after its announcement; the coupon uses the real civil period (30E/360)._"
+      : "_Time compression: each record date is struck ≈45 s after its announcement; coupons use the real civil periods (30E/360). The brief's literal 500.00 / 10,500.00 figures are also proven by `programs/qupon_bonds/tests/brief.rs`; here the meeting raises the rate to 12% before redemption, so the final coupon is 600.00 per 10 bonds. BTRK-demo is scaled to devnet faucet limits (face 1 USDC)._",
     "",
     ...body,
     "## Implemented vs simulated",
@@ -248,6 +323,11 @@ async function main(): Promise<void> {
   // ---- QPNb1 in tKZT ----
   section("S0 — Issuance and holder registry (QPNb1, tKZT)", [`- Series **${qpn}**: face 1,000 KZT (100,000 tiyn), 10% semi-annual, 30E/360, ${demo.series.QPNb1.issueDate} → ${demo.series.QPNb1.maturityDate}`]);
   const q = await issue(qpn, [10n, 25n, 65n], demo.series.QPNb1.issueDate, demo.series.QPNb1.maturityDate, "tKZT", 2);
+
+  if (TRADE) {
+    await tradeScenario(q, address(String((JSON.parse(readFileSync(runCfg, "utf8")) as { series: Record<string, { mint: string }> }).series[qpn]?.mint)), short);
+    return;
+  }
 
   if (process.env.DEMO_SEED === "1") {
     // `make demo-seed`: a fresh series with three KYC'd holders (10/25/65) and no open action — the next visitor

@@ -306,9 +306,9 @@ export interface ListedEntitlement {
 
 /**
  * All program accounts of one discriminator whose second PDA field (byte 9, after
- * discriminator+bump) equals `key` — i.e. Investor(series) / Entitlement(action).
+ * discriminator+bump) equals `key` — i.e. Investor(series) / Entitlement(action) / TradeAdmission(series).
  */
-async function listByKey<T>(
+export async function listByKey<T>(
 	rpc: QuponRpc,
 	discriminator: ReadonlyUint8Array,
 	dataSize: number,

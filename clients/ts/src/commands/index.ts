@@ -11,6 +11,7 @@ import { registerLifecycleCommands } from "./lifecycle.js";
 import { registerSeriesCommands } from "./series.js";
 import { registerSeriesCreateCommand } from "./seriesCreate.js";
 import { registerStateCommands } from "./state.js";
+import { registerTradeCommands } from "./trade.js";
 
 export function registerCommands(program: Command): void {
 	registerAssetCommands(program);
@@ -20,5 +21,6 @@ export function registerCommands(program: Command): void {
 	registerKycCommands(program);
 	registerActionCommands(program);
 	registerLifecycleCommands(program);
+	registerTradeCommands(program);
 	registerStateCommands(program);
 }

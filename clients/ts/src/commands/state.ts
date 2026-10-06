@@ -14,6 +14,7 @@ import {
 	withGlobals,
 	type GlobalOptions,
 } from "./common.js";
+import { listTrades } from "./trade.js";
 
 interface DumpOpts extends GlobalOptions {
 	series: string;
@@ -64,6 +65,7 @@ async function runStateDump(opts: DumpOpts, cmd: Command): Promise<void> {
 		investors: investors.map(i => ({ address: i.address, data: i, ...b64(i.address) })),
 		actions: actions.map(a => ({ address: a.address, data: a.data, ...b64(a.address) })),
 		entitlements: entitlements.map(e => ({ address: e.address, data: e, ...b64(e.address) })),
+		trades: await listTrades(rpc, info),
 	});
 }
 
