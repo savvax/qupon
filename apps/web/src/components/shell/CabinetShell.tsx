@@ -12,6 +12,7 @@ import { Drawer } from "@/components/ui/Dialog";
 import { Icon } from "./icons";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 import { SignOutButton } from "./SignOutButton";
 
 export type CabinetRole =
@@ -104,6 +105,7 @@ export function CabinetShell({
           <LocaleSwitch />
           {user && (
             <>
+              <NotificationBell />
               <Link
                 href="/account"
                 className="hidden rounded-lg px-2 py-1 text-right leading-tight transition hover:bg-n50 lg:block"

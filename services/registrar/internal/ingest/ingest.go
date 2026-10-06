@@ -13,6 +13,7 @@ import (
 	"github.com/solana-foundation/solana-go/v2/rpc"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
+	"github.com/qupon-kz/qupon/services/registrar/internal/notify"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -200,6 +201,10 @@ func (p *Poller) ingestTx(ctx context.Context, s *rpc.TransactionSignature) erro
 		}
 		if inserted {
 			p.log.Info("ingested event", "kind", ev.Name, "sig", sig, "slot", tx.Slot)
+		}
+		// fan-out is additive: a failed notification never blocks ingest (the event row is already stored)
+		if err := notify.FromEvent(ctx, p.st, a); err != nil {
+			p.log.Warn("notify", "kind", ev.Name, "sig", sig, "err", err)
 		}
 	}
 	return nil

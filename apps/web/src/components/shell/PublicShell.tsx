@@ -53,7 +53,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2">
-            <NetworkBadge className="hidden md:inline-flex" />
+            <span className="hidden md:contents">
+              <NetworkBadge />
+            </span>
             <LocaleSwitch />
             <WalletButton compact labelAt="xl" />
             <SignInButton label={c("signIn")} />

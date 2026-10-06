@@ -1,1 +1,42 @@
-{}
+{
+  "title": "Notifications",
+  "lead": "Corporate actions on your bonds, payouts, meetings and verification decisions.",
+  "bellLabel": "Notifications, {count} unread",
+  "markAll": "Mark all as read",
+  "seeAll": "See all notifications",
+  "empty": "You're all caught up",
+  "emptyBody": "New corporate actions, payouts and decisions will appear here.",
+  "unavailable": "Notifications are unavailable — the registrar API did not answer.",
+  "unreadOnly": "Unread only ({count})",
+  "new": "New",
+  "kinds": {
+    "action_announced": {
+      "title": "{ticker}: new corporate action",
+      "body": "{actionKind} announced on a bond you hold — check its record and payment dates."
+    },
+    "meeting_opened": {
+      "title": "{ticker}: bondholder meeting opened",
+      "body": "Your vote counts in proportion to your units at the record date."
+    },
+    "meeting_finalized": {
+      "title": "{ticker}: meeting result",
+      "body": "The votes are counted — see the outcome."
+    },
+    "entitlement_paid": {
+      "title": "{ticker}: payment received",
+      "body": "Your payout was sent to your wallet; the statement is ready."
+    },
+    "kyc_approved": {
+      "title": "Verification approved",
+      "body": "Your wallet is attested and registered in the issues you chose."
+    },
+    "kyc_rejected": {
+      "title": "Verification rejected",
+      "body": "Reason: {reason}. Fix it and apply again."
+    },
+    "other": {
+      "title": "Update",
+      "body": "Something changed in your account."
+    }
+  }
+}

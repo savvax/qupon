@@ -1,9 +1,10 @@
-import { StableText } from "@/components/i18n/StableLabel";
+import { StableLabel, StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { PasswordForm, ProfileForm } from "@/components/account/ProfileForms";
 import { type LinkedWallet, WalletLink } from "@/components/account/WalletLink";
 import { SignOutButton } from "@/components/shell/SignOutButton";
+import { Icon } from "@/components/shell/icons";
 import { Card } from "@/components/ui/Card";
 import { boFetch } from "@/lib/bo";
 import { getSession } from "@/lib/session";
@@ -19,6 +20,7 @@ export default async function AccountPage() {
   // The form shows the language the interface is in now (switching it there also updates the profile).
   const uiLocale = (await getLocale()) === "ru" ? "ru" : "en";
   const c = await getTranslations("cabinet");
+  const n = await getTranslations("notify");
   const user = await getSession();
   if (!user) return null; // the layout already redirected
   const wallets = user.isDemo
@@ -38,6 +40,13 @@ export default async function AccountPage() {
         <p className="mt-1 text-sm text-n600">
           {user.name} · {user.email} · {c(`roles.${user.role}`)}
         </p>
+        <Link
+          href="/account/notifications"
+          className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-g700 hover:underline"
+        >
+          <Icon name="bell" className="size-4" />
+          <StableLabel>{n("title")}</StableLabel>
+        </Link>
       </header>
 
       <Card>
