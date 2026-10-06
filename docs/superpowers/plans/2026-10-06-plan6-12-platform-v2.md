@@ -149,6 +149,7 @@ Routes: `GET/PATCH /org`, `GET /org/members`, `POST /org/invites {email, role: i
 - [ ] Tests with the brief's numbers: payouts 500/1,250/3,250 gross; tax certificate totals; another user's wallet never appears.
 
 ### Task 902 (glm): report pages
+**As built by 901:** every report answers JSON by default and a CSV attachment with `?format=csv` (BOM, header, `# key,value` metadata). JSON: statement/tax `{payouts:[{paymentDate, series, isin, kind, corpId, owner, units, gross, tax, net, principal (minor units), status, paidAt, currency, decimals, action}], totals:[{currency, payouts, gross, tax, net, principal (major strings)}], network, generatedAt, sources}`; tax adds `year`; holders `{holders:[{series, isin, owner, units, investorType, residency, taxBps, status, kycRef}]}`. Routes: `/me/reports/statement?from=&to=`, `/me/reports/tax?year=`, `/registrar/reports/holders/{mint}`, `/issuer/reports/payouts/{actionPda}`. Downloads go through `/api/bo-get/<path>?format=csv`.
 `src/app/(cabinet)/investor/reports/page.tsx`, `src/app/(cabinet)/registrar/reports/page.tsx`, issuer action page "Payout report" button; printable view `src/app/(print)/print/[report]/page.tsx` with `@media print` styles and a "Save as PDF" button (`window.print()`); `messages/*/reports.json`; downloads through `/api/bo-get/...`; `e2e/reports.spec.ts`.
 
 ## Plan 10 — KASE (§5.5)

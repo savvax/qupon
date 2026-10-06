@@ -264,7 +264,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	// mount: org
 
-	// mount: reports
+	mountReports(r, deps, st)
 
 	mountKase(r, deps, st)
 
