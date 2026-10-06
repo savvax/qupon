@@ -24,18 +24,18 @@ Qupon is the corporate-actions engine for tokenized bonds on Solana: identify ho
 
 Tokenization solved issuance, not servicing. Every coupon, redemption and bondholder meeting is still a manual reconciliation between issuer, depository and brokers; the industry spends an estimated $58B a year on corporate-action processing and 46% of event data is still handled manually (Chainlink industry initiative; DTCC).
 
-In Qupon the corporate action is an on-chain object. A bond is a Token-2022 mint that only KYC-registered wallets can hold (frozen by default), with pause, permanent-delegate and close authorities held by the program. For each action (coupon, redemption, early call, bondholder meeting with a terms change) the program pauses the mint at the record date, snapshots every holder into an Entitlement account, and computes gross, tax and net per holder with Kazakhstan market conventions: record date at the start of the last day of the period, 30E/360, rounding once per holder. It recomputes every figure itself, requires the issuer to pre-fund an escrow, pays holders in batches, burns redeemed units, and emits an event for every transition. Votes are weighted by the snapshot; an approved proposal changes the coupon on the series and in the token metadata.
+In Qupon the corporate action is an on-chain object. A bond is a Token-2022 mint that only KYC-attested wallets can hold (frozen by default). For each action (coupon, redemption, early call, bondholder meeting with a terms change) the program pauses the mint at the record date, snapshots every holder and computes gross, tax and net per holder with Kazakhstan conventions (30E/360, rounding once per holder). The issuer pre-funds an escrow, holders are paid in batches, redeemed units are burned, and every transition emits an event. Votes are weighted by the snapshot; an approved proposal changes the coupon on the series and in the token metadata.
 
-A Go registrar service reconciles the chain against its own calculation and exports ISO 20022 seev.031/seev.036 messages and KASE-style disclosure notices, so depositories and brokers can consume the result with tools they already use.
+Around the engine is a platform: investors sign up, link their own wallet by signature and pass a KYC review that ends in a Solana Attestation Service attestation; holders are notified of every action and payout; bond data comes from kase.kz; settlement runs in any registered token (USDC, or tenge stand-ins for Evo's KZTE); an admin console watches operators and the audit trail. The same build is mainnet-ready behind a typed confirmation.
 
-One command runs coupon payments, a redemption, a bondholder meeting and an early redemption on devnet: 71 transactions, each linked in the repository, with every payout checked against the on-chain entitlement.
+A Go registrar reconciles the chain and exports ISO 20022 seev.031/seev.036 and KASE-style notices. One command runs every scenario on devnet: 71 linked transactions.
 
 Built for the KASE × Superteam Kazakhstan track: KASE is Kazakhstan's first registered digital-asset platform operator and builds on Solana. Qupon is the servicing layer such a platform needs.
 ```
 
 **Blockchains / tools**
 ```
-Solana (devnet), Token-2022 (Pausable, PermanentDelegate, DefaultAccountState, MetadataPointer/TokenMetadata, MintCloseAuthority), Anchor 1.2, LiteSVM, @solana/kit + Codama, Helius RPC, Circle devnet USDC, Go (solana-go), Next.js, solana-verify
+Solana (devnet), Token-2022 (Pausable, PermanentDelegate, DefaultAccountState, MetadataPointer/TokenMetadata, MintCloseAuthority), Anchor 1.2, LiteSVM, Solana Attestation Service, Wallet Standard, @solana/kit + Codama, Helius RPC, Circle devnet USDC, kase.kz public data, Go (solana-go), Next.js, solana-verify
 ```
 
 **Location / track:** Kazakhstan · Solana ecosystem
@@ -84,16 +84,19 @@ Technical overview (architecture, record-date logic, entitlement calculations, s
 Full devnet run with an explorer link for every transaction (coupon, redemption, bondholder meeting → terms change, early redemption): https://github.com/savvax/qupon/blob/main/reports/demo-full.md
 Program: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd (devnet, verifiable build).
 Product tour with screenshots of every role on devnet: https://github.com/savvax/qupon#product-tour--every-role-in-the-browser
+Platform v2 (accounts, KYC with on-chain attestation, kase.kz data, tenge cash assets, notifications, admin, mainnet-ready): https://github.com/savvax/qupon#platform-v2--accounts-kyc-kase-data-cash-assets-admin
+Live deployment check with screenshots: https://github.com/savvax/qupon/blob/main/reports/live-v2.md
 Implemented vs simulated (same wording as the site's table):
 
 | Element | Status |
 |---|---|
 | Bond token, holder registry, record date, entitlements, coupon payment, redemption, burn and close, voting, terms change, on-chain events | **Implemented** — Running on Solana devnet. |
-| Cash leg | **Partly simulated** — Real token transfers in devnet USDC (Circle) and test tKZT (Token-2022). Fiat tenge and the digital tenge are stood in for by our mint. |
-| KYC | **Provider simulated** — Attested on-chain: a demo KYC-provider key issues a Solana Attestation Service attestation per wallet, and registration refuses wallets without a live, matching one. The provider is not a licensed KYC firm. |
+| Cash leg | **Test tokens** — Real token transfers from an admin-managed registry: devnet USDC (Circle), tKZT and two tenge stand-ins (KZTE-dev, dKZT) with an investor faucet. Evo's KZTE is pre-registered for mainnet, off until its official mint is added. |
+| KYC | **Review simulated** — Investors upload documents and a registrar decides by hand — no licensed KYC vendor. Approval is real: a Solana Attestation Service attestation and the on-chain registration. |
 | ISO 20022 seev.031 / seev.036 | **Delivery simulated** — Generated from on-chain state; Swift delivery is replaced by downloadable files. |
 | ARDFM registration of a terms change | **Simulated** — Represented by a registrar signature step. |
-| KASE disclosure notice | **Not published** — Generated automatically; publication on kase.kz is not integrated. |
+| KASE | **Read only** — Bond data is read from kase.kz and cached; the disclosure notice and package are generated automatically — submission to KASE is simulated. |
+| Mainnet | **Ready, not deployed** — Network profile, write confirmations and a dry-run deploy script are in place; everything runs on devnet. |
 | Multisig issuer approval (Squads) | **Roadmap** — Planned. |
 
 Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are series configuration, not a statement of Kazakh law.
