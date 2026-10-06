@@ -1,0 +1,33 @@
+{
+  "title": "Getting started on devnet",
+  "lead": "Five steps from sign-up to your first coupon. This is Solana devnet: the cash is test cash and the faucet refills it.",
+  "steps": {
+    "account": {
+      "label": "Account created",
+      "hint": "You signed up and signed in."
+    },
+    "walletLinked": {
+      "label": "Wallet linked",
+      "hint": "Coupons and redemptions are paid to your Solana wallet."
+    },
+    "kycApproved": {
+      "label": "KYC approved",
+      "hint": "Identity review by the registrar (SIMULATED — decided by hand)."
+    },
+    "testCashReceived": {
+      "label": "Test cash received",
+      "hint": "Get test assets from the devnet faucet — 100,000 units per asset."
+    },
+    "subscribed": {
+      "label": "First subscription",
+      "hint": "Subscribe to a bond in the primary placement."
+    }
+  },
+  "faucet": {
+    "button": "Get {symbol}",
+    "pending": "Minting {symbol}…",
+    "success": "Test {symbol} is on its way to your wallet",
+    "note": "Devnet faucet: one request per asset per hour."
+  },
+  "allDone": "All steps complete — you are ready to invest."
+}

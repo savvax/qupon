@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { getSession } from "@/lib/session";
 import { InvestorIdentity } from "./_components/InvestorIdentity";
 import { OnboardingBanner } from "./_components/OnboardingBanner";
+import { OnboardingChecklist } from "./_components/OnboardingChecklist";
 import { PortfolioView } from "./_components/PortfolioHeader";
 import { DEMO_INVESTOR } from "./_lib/demo";
 import { metaTitle } from "@/lib/meta";
@@ -21,6 +22,8 @@ export default async function InvestorPortfolioPage() {
     <>
       {/* above the identity: a signed-up investor without a wallet still sees the next step */}
       <OnboardingBanner />
+      {/* devnet only: five-step onboarding with the test-cash faucet buttons */}
+      <OnboardingChecklist />
       <InvestorIdentity
         title={(await getTranslations("cabinet.menu"))("portfolio")}
         demoOwner={demoOwner}

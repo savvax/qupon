@@ -7,6 +7,7 @@ import { handlers as kaseMarket } from "./kaseMarket";
 import { handlers as kyc } from "./kyc";
 import { handlers as network } from "./network";
 import { handlers as notify } from "./notify";
+import { handlers as onboarding } from "./onboarding";
 import { handlers as org } from "./org";
 import { handlers as reports } from "./reports";
 import type { MockHandler } from "./types";
@@ -17,6 +18,7 @@ const ALL: MockHandler[] = [
   ...adminSeries,
   ...admin,
   ...account,
+  ...onboarding,
   ...kyc,
   ...notify,
   ...org,
