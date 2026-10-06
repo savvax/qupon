@@ -284,7 +284,8 @@ func TestTradeWriteErrors(t *testing.T) {
 		{"fund: no body", fund(fSwapReady), ``, demo, 400, "invalid_body"},
 		{"fund: trade not admitted", fund(fSwapUnknown), `{"side":"seller"}`, demo, 404, "trade_not_found"},
 		{"fund: party is not a demo investor", fund(fSwapReady), `{"side":"buyer"}`, demo, 403, "not_demo_investor"},
-		{"fund: registrar session", fund(fSwapReady), `{"side":"seller"}`, reg, 403, "forbidden"},
+		{"fund: registrar session passes the role gate", fund(fSwapReady), `{"side":"seller"}`, reg, 403, "not_demo_investor"},
+		{"fund: no session", fund(fSwapReady), `{"side":"seller"}`, "", 401, "unauthenticated"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

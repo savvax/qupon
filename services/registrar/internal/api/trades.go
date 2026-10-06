@@ -32,9 +32,10 @@ func mountTrades(r chi.Router, deps Deps, st *store.Store) {
 	r.With(registrar, write).Post("/registrar/series/{mint}/trades/{swapDvp}/settle", tradeClose(deps, st, "settle"))
 	r.With(registrar, write).Post("/registrar/series/{mint}/trades/{swapDvp}/cancel", tradeClose(deps, st, "cancel"))
 
-	// Same guards as the other demo custodial routes (api.go): the server signs for a demo investor.
-	investorDemo := requireRole(deps.Auth, "investor_demo")
-	r.With(investorDemo, write).Post("/demo/investor/series/{mint}/trades/{swapDvp}/fund", tradeFundDemo(deps, st))
+	// The server signs for a demo investor, as the other demo custodial routes do (api.go). The demo registrar may
+	// trigger it too, so one person can walk a whole trade on devnet; mainnetGuard refuses every /demo/ write.
+	demoFund := requireRole(deps.Auth, "investor_demo", "registrar")
+	r.With(demoFund, write).Post("/demo/investor/series/{mint}/trades/{swapDvp}/fund", tradeFundDemo(deps, st))
 }
 
 // TradeDTO is one admitted trade with the funding of both legs (same field names as the CLI's trade:list).
