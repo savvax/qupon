@@ -136,3 +136,20 @@ func (s *Store) DeleteSession(ctx context.Context, tokenHash string) error {
 	}
 	return nil
 }
+
+// UpdateProfile writes the self-service fields of a user (name, locale).
+func (s *Store) UpdateProfile(ctx context.Context, userID int64, name, locale string) error {
+	if _, err := s.db.ExecContext(ctx, `UPDATE users SET name = ?, locale = ? WHERE id = ?`, name, locale, userID); err != nil {
+		return fmt.Errorf("update profile: %w", err)
+	}
+	return nil
+}
+
+// DeleteOtherSessions signs a user out everywhere except the session keepHash (password change).
+func (s *Store) DeleteOtherSessions(ctx context.Context, userID int64, keepHash string) error {
+	if _, err := s.db.ExecContext(ctx,
+		`DELETE FROM sessions WHERE user_id = ? AND token_hash != ?`, userID, keepHash); err != nil {
+		return fmt.Errorf("delete other sessions: %w", err)
+	}
+	return nil
+}

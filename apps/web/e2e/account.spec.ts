@@ -32,9 +32,41 @@ test("RU strings render", async ({ page, baseURL }) => {
   await page
     .context()
     .addCookies([
-      { name: "NEXT_LOCALE", value: "ru", url: baseURL ?? "http://localhost:3000" },
+      {
+        name: "NEXT_LOCALE",
+        value: "ru",
+        url: baseURL ?? "http://localhost:3000",
+      },
     ]);
   await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Аккаунт" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Кошельки" })).toBeVisible();
+});
+
+test("profile and password forms; demo accounts see them read-only", async ({
+  page,
+  baseURL,
+}) => {
+  await signInAs(page, "member", baseURL);
+  await page.goto("/account");
+  await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
+  await expect(page.getByLabel("Name")).toHaveValue("Mira Member");
+  await page.getByLabel("Name").fill("Mira K");
+  await page.getByRole("button", { name: "Save profile" }).click();
+  await expect(page.getByText("Profile saved")).toBeVisible();
+
+  const change = page.getByRole("button", { name: "Change password" });
+  await page.getByLabel("Current password").fill("old-password-1");
+  await page.getByLabel("New password").fill("short");
+  await expect(change).toBeDisabled();
+  await page.getByLabel("New password").fill("a-new-long-password");
+  await change.click();
+  await expect(page.getByText("Password changed")).toBeVisible();
+});
+
+test("demo profile is read-only", async ({ page, baseURL }) => {
+  await signInAs(page, "issuer", baseURL);
+  await page.goto("/account");
+  await expect(page.getByText(/profile cannot be changed/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Password" })).toHaveCount(0);
 });

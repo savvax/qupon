@@ -38,4 +38,14 @@ export const handlers: MockHandler[] = [
       return { ok: true };
     },
   },
+  {
+    method: "PATCH",
+    path: /^\/me\/profile$/,
+    reply: (_m, body) => ({ user: { ...(body as object) } }),
+  },
+  {
+    method: "POST",
+    path: /^\/me\/password$/,
+    reply: () => ({ ok: true }),
+  },
 ];

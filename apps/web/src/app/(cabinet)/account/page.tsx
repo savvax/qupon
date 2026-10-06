@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { PasswordForm, ProfileForm } from "@/components/account/ProfileForms";
 import { type LinkedWallet, WalletLink } from "@/components/account/WalletLink";
 import { Card } from "@/components/ui/Card";
 import { boFetch } from "@/lib/bo";
@@ -10,7 +11,7 @@ export async function generateMetadata() {
   return { title: `${t("title")} · Qupon` };
 }
 
-/** The signed-in user's account: identity and linked wallets (task 806 adds profile and password). */
+/** The signed-in user's account: profile, password and linked wallets (platform v2 §5.3). */
 export default async function AccountPage() {
   const t = await getTranslations("account");
   const c = await getTranslations("cabinet");
@@ -32,6 +33,25 @@ export default async function AccountPage() {
           {user.name} · {user.email} · {c(`roles.${user.role}`)}
         </p>
       </header>
+
+      <Card>
+        <h2 className="mb-4 text-lg font-bold">{t("profile.title")}</h2>
+        {user.isDemo ? (
+          <p className="text-sm text-n600">{t("profile.demo")}</p>
+        ) : (
+          <ProfileForm
+            name={user.name}
+            locale={user.locale === "ru" ? "ru" : "en"}
+          />
+        )}
+      </Card>
+
+      {!user.isDemo && (
+        <Card>
+          <h2 className="mb-4 text-lg font-bold">{t("password.title")}</h2>
+          <PasswordForm />
+        </Card>
+      )}
 
       <Card>
         <h2 className="text-lg font-bold">{t("wallets.title")}</h2>

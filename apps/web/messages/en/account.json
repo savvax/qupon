@@ -1,5 +1,26 @@
 {
   "title": "Account",
+  "profile": {
+    "title": "Profile",
+    "name": "Name",
+    "email": "Email",
+    "language": "Interface language",
+    "save": "Save profile",
+    "saving": "Saving your profile…",
+    "saved": "Profile saved",
+    "demo": "Demo accounts are shared by every visitor, so their profile cannot be changed."
+  },
+  "password": {
+    "title": "Password",
+    "current": "Current password",
+    "new": "New password",
+    "hint": "At least 10 characters. Other browsers signed in to this account will be signed out.",
+    "save": "Change password",
+    "saving": "Changing the password…",
+    "saved": "Password changed",
+    "wrongCurrent": "The current password is wrong.",
+    "weak": "Use at least 10 characters, different from the current password."
+  },
   "wallets": {
     "title": "Wallets",
     "lead": "Coupons and redemptions are paid to the wallet you register with the registrar. Link it here by signing a one-time message — no transaction, no fee.",
