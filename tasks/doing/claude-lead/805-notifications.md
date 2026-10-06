@@ -1,7 +1,7 @@
 ---
 id: 805
 title: In-app notifications (ingest fan-out, bell, list)
-agent: glm
+agent: claude
 tier: T1
 depends_on: [803]
 verify: make verify
