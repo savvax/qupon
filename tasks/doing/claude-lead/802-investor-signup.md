@@ -1,7 +1,7 @@
 ---
 id: 802
 title: Investor self sign-up
-agent: glm
+agent: claude
 tier: T1
 depends_on: [600]
 verify: make verify
