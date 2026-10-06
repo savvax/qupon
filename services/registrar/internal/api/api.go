@@ -271,7 +271,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	mountKase(r, deps, st)
 
-	// mount: disclosure
+	mountDisclosure(r, deps, st)
 
 	if deps.TestRoutes {
 		r.With(registrar).Get("/_test/registrar", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, http.StatusOK, map[string]string{}) })
