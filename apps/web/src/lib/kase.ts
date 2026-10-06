@@ -97,7 +97,7 @@ export function compareKaseSchedule(
     const p = preview[i];
     const inside =
       !!k && !!p && k.start >= p.periodStart && k.start <= p.periodEnd;
-    const mismatch = !inside || ( !!k && k.rate !== rateBps );
+    const mismatch = !inside || (!!k && k.rate !== rateBps);
     rows.push({ n: i + 1, kase: k, preview: p, mismatch });
   }
   return rows;

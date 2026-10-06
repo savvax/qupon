@@ -320,35 +320,37 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
               suffix={asset ? cashSuffix(asset) : undefined}
               error={err("face")}
             />
-            <TextField
-              label={t("rate")}
-              inputMode="decimal"
-              value={f.rate}
-              onChange={(e) => set("rate")(e.target.value)}
-              suffix="%"
-              error={err("rate")}
-            />
-            <Select
-              label={t("frequency")}
-              value={f.frequency}
-              onValueChange={set("frequency")}
-              options={[
-                { value: "1", label: t("freq.1") },
-                { value: "2", label: t("freq.2") },
-                { value: "4", label: t("freq.4") },
-                { value: "12", label: t("freq.12") },
-              ]}
-            />
-            <Select
-              label={t("dayCount")}
-              value={f.dayCount}
-              onValueChange={set("dayCount")}
-              options={[
-                { value: "THIRTY_360", label: "30E/360" },
-                { value: "ACT_365", label: "ACT/365" },
-              ]}
-            />
-            <div className="hidden sm:block" />
+            {/* rate, frequency and day count read as one decision: one row of three */}
+            <div className="grid gap-5 sm:col-span-2 sm:grid-cols-3">
+              <TextField
+                label={t("rate")}
+                inputMode="decimal"
+                value={f.rate}
+                onChange={(e) => set("rate")(e.target.value)}
+                suffix="%"
+                error={err("rate")}
+              />
+              <Select
+                label={t("frequency")}
+                value={f.frequency}
+                onValueChange={set("frequency")}
+                options={[
+                  { value: "1", label: t("freq.1") },
+                  { value: "2", label: t("freq.2") },
+                  { value: "4", label: t("freq.4") },
+                  { value: "12", label: t("freq.12") },
+                ]}
+              />
+              <Select
+                label={t("dayCount")}
+                value={f.dayCount}
+                onValueChange={set("dayCount")}
+                options={[
+                  { value: "THIRTY_360", label: "30E/360" },
+                  { value: "ACT_365", label: "ACT/365" },
+                ]}
+              />
+            </div>
             <TextField
               label={t("issueDate")}
               type="date"

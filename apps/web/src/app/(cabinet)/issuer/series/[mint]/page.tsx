@@ -80,13 +80,17 @@ export default async function IssuerSeriesPage({
     {
       key: "record",
       header: tb("cols.record"),
-      render: (r) => <span className="num">{formatDate(r.recordDate)}</span>,
+      render: (r) => (
+        <span className="num">{formatDate(r.recordDate, locale)}</span>
+      ),
     },
     {
       key: "payment",
       header: tb("cols.payment"),
       hideBelow: "md",
-      render: (r) => <span className="num">{formatDate(r.paymentDate)}</span>,
+      render: (r) => (
+        <span className="num">{formatDate(r.paymentDate, locale)}</span>
+      ),
     },
     {
       key: "perUnit",
@@ -111,13 +115,17 @@ export default async function IssuerSeriesPage({
     {
       key: "action",
       header: tb("cols.action"),
+      // a link like every other action list: the bond page's actions tab (registrar pages are registrar-only)
       render: (a) => (
-        <span>
-          <span className="font-semibold text-n900">
+        <Link
+          href={`/bonds/${a.seriesMint}?tab=actions`}
+          className="group block"
+        >
+          <span className="font-semibold text-g700 underline decoration-g300 underline-offset-2 group-hover:decoration-g600">
             {tk.has(a.kind) ? tk(a.kind) : a.kind}
           </span>
           <span className="num mt-0.5 block text-xs text-n500">{a.corpId}</span>
-        </span>
+        </Link>
       ),
     },
     {
@@ -131,7 +139,9 @@ export default async function IssuerSeriesPage({
     {
       key: "payment",
       header: tb("cols.payment"),
-      render: (a) => <span className="num">{formatDate(a.paymentAt)}</span>,
+      render: (a) => (
+        <span className="num">{formatDate(a.paymentAt, locale)}</span>
+      ),
     },
     {
       key: "status",
@@ -218,7 +228,9 @@ export default async function IssuerSeriesPage({
         <Kpi
           label={tb("kpi.next")}
           value={
-            <span className="num">{formatDate(series.nextCouponDate)}</span>
+            <span className="num">
+              {formatDate(series.nextCouponDate, locale)}
+            </span>
           }
         />
         <Kpi

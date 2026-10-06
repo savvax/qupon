@@ -158,9 +158,12 @@ function Chooser() {
 }
 
 export function InvestorIdentity({
+  title,
   demoOwner,
   children,
 }: {
+  /** The section name (Portfolio, Placement…) — the page's h1; the wallet goes on the line below. */
+  title: string;
   /** Demo custodial wallet address when the session role is investor_demo; null otherwise. */
   demoOwner: string | null;
   children: ReactNode;
@@ -180,8 +183,9 @@ export function InvestorIdentity({
 
   return (
     <Ctx.Provider value={id}>
-      <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h1 className="text-2xl font-extrabold tracking-tight">
+      <header className="mb-6">
+        <h1 className="text-2xl font-extrabold tracking-tight">{title}</h1>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-n600">
           <StableText>
             {t(
               id.mode === "wallet"
@@ -191,13 +195,11 @@ export function InvestorIdentity({
                   : "demoWallet",
             )}
           </StableText>
-        </h1>
-        {id.mode === "demo" && <Badge tone="warn">{t("demoBadge")}</Badge>}
-        {id.mode === "watch" && <Badge tone="warn">{t("watchBadge")}</Badge>}
-        <span className="text-sm text-n600">
           <Address value={id.owner} />
-        </span>
-      </div>
+          {id.mode === "demo" && <Badge tone="warn">{t("demoBadge")}</Badge>}
+          {id.mode === "watch" && <Badge tone="warn">{t("watchBadge")}</Badge>}
+        </div>
+      </header>
       {children}
     </Ctx.Provider>
   );

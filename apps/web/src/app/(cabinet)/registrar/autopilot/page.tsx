@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import type { Schemas } from "@/lib/api";
+import { listSeries, type Schemas } from "@/lib/api";
 import { boFetch } from "@/lib/bo";
 import { Approvals } from "../_components/Approvals";
 import { metaTitle } from "@/lib/meta";
@@ -18,15 +18,17 @@ const fetchApprovals = async (status: "pending" | "executed") =>
 export default async function RegistrarAutopilotPage() {
   const t = await getTranslations("registrar.autopilot");
   // Public read; degrade to empty lists when the scheduler surface is absent.
-  const [pending, executed] = await Promise.all([
+  const [pending, executed, series] = await Promise.all([
     fetchApprovals("pending").catch(() => [] as Approval[]),
     fetchApprovals("executed").catch(() => [] as Approval[]),
+    listSeries().catch(() => []),
   ]);
+  const tickers = Object.fromEntries(series.map((s) => [s.mint, s.ticker]));
   return (
     <div className="mx-auto max-w-[1200px]">
       <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
       <p className="mt-1 mb-6 text-sm text-n600">{t("lead")}</p>
-      <Approvals pending={pending} executed={executed} />
+      <Approvals pending={pending} executed={executed} tickers={tickers} />
     </div>
   );
 }

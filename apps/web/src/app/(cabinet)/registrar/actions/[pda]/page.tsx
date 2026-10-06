@@ -187,13 +187,13 @@ export default async function RegistrarActionPage({
     [
       t("facts.record"),
       <span key="r" className="num">
-        {formatDateTime(action.recordAt)}
+        {formatDateTime(action.recordAt, locale)}
       </span>,
     ],
     [
       t("facts.payment"),
       <span key="p" className="num">
-        {formatDateTime(action.paymentAt)}
+        {formatDateTime(action.paymentAt, locale)}
       </span>,
     ],
   ];
@@ -201,8 +201,8 @@ export default async function RegistrarActionPage({
     facts.push([
       t("facts.period"),
       <span key="pe" className="num">
-        {formatDate(`${action.periodStart}T00:00:00+05:00`)} –{" "}
-        {formatDate(`${action.periodEnd}T00:00:00+05:00`)} ·{" "}
+        {formatDate(`${action.periodStart}T00:00:00+05:00`, locale)} –{" "}
+        {formatDate(`${action.periodEnd}T00:00:00+05:00`, locale)} ·{" "}
         {t("facts.days", { n: action.accrualDays ?? 0 })}
         {action.rateBps != null && ` · ${bpsToPercent(action.rateBps, locale)}`}
       </span>,
@@ -248,7 +248,7 @@ export default async function RegistrarActionPage({
       hideBelow: "md",
       render: (e) =>
         e.votedAt ? (
-          <span className="num">{formatDateTime(e.votedAt)}</span>
+          <span className="num">{formatDateTime(e.votedAt, locale)}</span>
         ) : (
           "—"
         ),
@@ -325,6 +325,22 @@ export default async function RegistrarActionPage({
     },
   ];
 
+  const factsAndReconcile = (
+    <div className="grid gap-6 xl:grid-cols-2">
+      <Panel title={t("facts.title")}>
+        <dl className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-1">
+          {facts.map(([k, v]) => (
+            <div key={k} className="min-w-0">
+              <dt className="text-xs font-semibold text-n500">{k}</dt>
+              <dd className="text-sm break-words text-n900">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </Panel>
+      <ReconcilePanel pda={pda} />
+    </div>
+  );
+
   return (
     <div className="mx-auto max-w-[1200px]">
       <nav className="text-sm text-n500">
@@ -368,7 +384,8 @@ export default async function RegistrarActionPage({
               label={label(next.step)}
               status={action.status}
             />
-          ) : (
+          ) : action.status === "Completed" ? null : (
+            // a completed action needs no box: the status pill already says it
             <p className="rounded-btn bg-n100 px-3 py-2 text-sm font-semibold text-n700">
               {waitText}
               {action.status === "VotingOpen" && action.votingEndsAt && (
@@ -470,13 +487,15 @@ export default async function RegistrarActionPage({
         />
         <Kpi
           label={t("kpi.record")}
-          value={<span className="num">{formatDate(action.recordAt)}</span>}
+          value={
+            <span className="num">{formatDate(action.recordAt, locale)}</span>
+          }
         />
       </div>
 
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-bold">
-          {t("ent.title")}{" "}
+          {action.kind === "BMET" ? t("ent.holders") : t("ent.title")}{" "}
           <span className="text-n500">({entitlements.length})</span>
         </h2>
         <DataTable
@@ -530,7 +549,9 @@ export default async function RegistrarActionPage({
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-n500">
                       {s.at && (
-                        <span className="num">{formatDateTime(s.at)}</span>
+                        <span className="num">
+                          {formatDateTime(s.at, locale)}
+                        </span>
                       )}
                       {s.detail && (
                         <span>
@@ -544,6 +565,7 @@ export default async function RegistrarActionPage({
               ))}
             </ol>
           </section>
+          {factsAndReconcile}
         </div>
 
         <aside className="min-w-0 space-y-4">
@@ -642,7 +664,7 @@ export default async function RegistrarActionPage({
               {action.votingEndsAt && (
                 <p className="mt-1 text-xs text-n500">
                   {t("meeting.ends", {
-                    at: formatDateTime(action.votingEndsAt),
+                    at: formatDateTime(action.votingEndsAt, locale),
                   })}{" "}
                   · <Countdown endsAt={action.votingEndsAt} />
                 </p>
@@ -653,20 +675,8 @@ export default async function RegistrarActionPage({
             </Panel>
           )}
 
-          <Panel title={t("facts.title")}>
-            <dl className="space-y-2.5">
-              {facts.map(([k, v]) => (
-                <div key={k}>
-                  <dt className="text-xs font-semibold text-n500">{k}</dt>
-                  <dd className="text-sm text-n900">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </Panel>
-
-          <ReconcilePanel pda={pda} />
-
-          <KaseCheckPanel check={kaseCheck} />
+          {/* coupon/redemption-only cards: a meeting has no KASE schedule check, payout confirmations or notice */}
+          {isCash && <KaseCheckPanel check={kaseCheck} />}
 
           <DisclosurePanel pda={pda} />
 
@@ -681,22 +691,24 @@ export default async function RegistrarActionPage({
                 </a>{" "}
                 <span className="text-n600">— {t("downloads.seev031")}</span>
               </li>
-              <li>
-                <a
-                  href={seev036ZipUrl(pda)}
-                  className="font-semibold text-g700 hover:underline"
-                >
-                  seev.036 (ZIP)
-                </a>{" "}
-                <span className="text-n600">— {t("downloads.seev036")}</span>
-              </li>
+              {isCash && (
+                <li>
+                  <a
+                    href={seev036ZipUrl(pda)}
+                    className="font-semibold text-g700 hover:underline"
+                  >
+                    seev.036 (ZIP)
+                  </a>{" "}
+                  <span className="text-n600">— {t("downloads.seev036")}</span>
+                </li>
+              )}
             </ul>
             <div className="mt-3">
               <Badge tone="neutral">{t("downloads.simulated")}</Badge>
             </div>
           </Panel>
 
-          <NoticePanel en={noticeEn} ru={noticeRu} />
+          {isCash && <NoticePanel en={noticeEn} ru={noticeRu} />}
         </aside>
       </div>
     </div>

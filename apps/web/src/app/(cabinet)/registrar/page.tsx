@@ -32,7 +32,7 @@ export async function generateMetadata() {
 export default async function RegistrarDashboard() {
   const t = await getTranslations("registrar.dash");
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
-  const month = formatDate(new Date().toISOString()).slice(0, 7);
+  const month = formatDate(new Date().toISOString(), locale).slice(0, 7);
   // Reads are public read models; the page renders its shell even when the API is down.
   const series = await listSeries().catch(() => null);
   let actions: ActionDTO[] = [];
@@ -49,7 +49,7 @@ export default async function RegistrarDashboard() {
     for (const a of actions) {
       if (
         a.completedAt &&
-        formatDate(a.completedAt).slice(0, 7) === month &&
+        formatDate(a.completedAt, locale).slice(0, 7) === month &&
         a.totalPaid
       ) {
         const cur = a.totalPaid.currency;

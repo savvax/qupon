@@ -47,7 +47,7 @@ function Holding({ row, lastTx }: { row: SeriesRow; lastTx?: string }) {
         </div>
         <div className={dl}>
           <dt className={k}>{t("maturity")}</dt>
-          <dd className="num">{formatDate(row.series.maturityDate)}</dd>
+          <dd className="num">{formatDate(row.series.maturityDate, locale)}</dd>
         </div>
         <div className={dl}>
           <dt className={k}>{t("nextEstimate")}</dt>
@@ -63,7 +63,7 @@ function Holding({ row, lastTx }: { row: SeriesRow; lastTx?: string }) {
             )}
             {next && (
               <div className="num text-xs text-n500">
-                {formatDate(next.paymentDate)}
+                {formatDate(next.paymentDate, locale)}
               </div>
             )}
           </dd>
@@ -79,7 +79,7 @@ function Holding({ row, lastTx }: { row: SeriesRow; lastTx?: string }) {
                   locale={locale}
                 />
                 <div className="text-xs text-n500">
-                  {formatDate(paid.paidAt ?? "")}
+                  {formatDate(paid.paidAt ?? "", locale)}
                   {lastTx && (
                     <>
                       {" · "}

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDateTime } from "@/lib/format";
 import { AnimatePresence, m } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -441,7 +442,10 @@ function Status({
             {t("submittedAt")}
           </dt>
           <dd className="mt-0.5">
-            {new Date(app.createdAt * 1000).toLocaleString(locale)}
+            {formatDateTime(
+              new Date(app.createdAt * 1000).toISOString(),
+              locale,
+            )}
           </dd>
         </div>
         <div>

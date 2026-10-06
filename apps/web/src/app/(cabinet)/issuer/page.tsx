@@ -72,7 +72,9 @@ export default async function IssuerDashboard() {
     {
       key: "payment",
       header: t("dashboard.payment"),
-      render: ({ a }) => <span className="num">{formatDate(a.paymentAt)}</span>,
+      render: ({ a }) => (
+        <span className="num">{formatDate(a.paymentAt, locale)}</span>
+      ),
     },
     {
       key: "status",
@@ -111,7 +113,9 @@ export default async function IssuerDashboard() {
           label={t("dashboard.kpiNext")}
           value={
             next ? (
-              <span className="num">{formatDate(next.nextCouponDate)}</span>
+              <span className="num">
+                {formatDate(next.nextCouponDate, locale)}
+              </span>
             ) : (
               "—"
             )
@@ -161,7 +165,9 @@ export default async function IssuerDashboard() {
                     })}
                   </div>
                   <div className="mt-0.5 text-sm text-n600">
-                    {t("dashboard.fundBody", { date: formatDate(a.paymentAt) })}{" "}
+                    {t("dashboard.fundBody", {
+                      date: formatDate(a.paymentAt, locale),
+                    })}{" "}
                     {escrowShortfall(a) > 0n && (
                       <Amount
                         minor={escrowShortfall(a)}

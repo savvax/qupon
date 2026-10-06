@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getSession } from "@/lib/session";
 import { InvestorIdentity } from "../_components/InvestorIdentity";
 import { VotePanel } from "../_components/VotePanel";
@@ -16,7 +17,10 @@ export default async function InvestorMeetingsPage() {
       ? DEMO_INVESTOR
       : null;
   return (
-    <InvestorIdentity demoOwner={demoOwner}>
+    <InvestorIdentity
+      title={(await getTranslations("cabinet.menu"))("meetings")}
+      demoOwner={demoOwner}
+    >
       <VotePanel />
     </InvestorIdentity>
   );

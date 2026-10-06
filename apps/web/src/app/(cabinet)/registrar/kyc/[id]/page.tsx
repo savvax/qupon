@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatDateTime } from "@/lib/format";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Address } from "@/components/ui/Address";
@@ -77,7 +78,10 @@ export default async function KycApplicationPage({
               </Field>
               <Field label={t("tax")}>{pct(a.taxBps, locale)}</Field>
               <Field label={t("col.submitted")}>
-                {new Date(a.createdAt * 1000).toLocaleString(locale)}
+                {formatDateTime(
+                  new Date(a.createdAt * 1000).toISOString(),
+                  locale,
+                )}
               </Field>
             </dl>
           </Card>

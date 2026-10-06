@@ -23,6 +23,17 @@ describe("shortKey", () => {
 });
 
 describe("formatDate / formatDateTime", () => {
+  it("formats for people per locale, in Almaty time (task 9106)", () => {
+    expect(formatDate("2027-03-01", "ru")).toBe("01.03.2027");
+    expect(formatDate("2027-03-01", "en")).toBe("Mar 1, 2027");
+    expect(formatDate("2026-11-30T20:00:00Z", "en")).toBe("Dec 1, 2026");
+    expect(formatDateTime("2027-02-28T18:30:00+05:00", "ru")).toBe(
+      "28.02.2027, 18:30",
+    );
+    expect(formatDateTime("2027-02-28T18:30:00+05:00", "en")).toBe(
+      "Feb 28, 2027, 18:30",
+    );
+  });
   it("formats an Almaty-offset timestamp as a date", () => {
     expect(formatDate("2026-12-01T00:00:00+05:00")).toBe("2026-12-01");
   });

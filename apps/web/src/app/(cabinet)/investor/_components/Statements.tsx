@@ -10,7 +10,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Address } from "@/components/ui/Address";
 import { Amount } from "@/components/ui/Amount";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { type Column, DataTable } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { paidTxByOwner } from "@/lib/actionFlow";
@@ -18,10 +18,6 @@ import { listActivity, seev036Url } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { useInvestor } from "./InvestorIdentity";
 import { usePortalRows } from "../_lib/usePortalRows";
-
-const TH =
-  "px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-n500";
-const TD = "px-3 py-2 align-top";
 
 /** The /investor/statements page body inside <InvestorIdentity>. */
 export function Statements() {
@@ -84,73 +80,82 @@ export function Statements() {
     return <EmptyState title={t("empty")} body={t("emptyBody")} />;
   }
 
+  type Payout = (typeof payouts)[number];
+  const columns: Column<Payout>[] = [
+    {
+      key: "action",
+      header: t("col.action"),
+      render: ({ e, row, action }) => (
+        <span className="text-left">
+          <span className="font-semibold">
+            {action?.corpId ?? e.actionPda.slice(0, 8)}
+          </span>
+          <span className="block text-xs text-n500">{row.series.ticker}</span>
+        </span>
+      ),
+    },
+    {
+      key: "kind",
+      header: t("col.kind"),
+      hideBelow: "md",
+      render: ({ action }) => (
+        <span className="font-mono text-xs">{action?.kind ?? "—"}</span>
+      ),
+    },
+    {
+      key: "paidOn",
+      header: t("col.paidOn"),
+      render: ({ e }) => (
+        <span className="num text-xs">
+          {e.paidAt ? formatDate(e.paidAt, locale) : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "net",
+      header: t("col.net"),
+      align: "right",
+      essential: true,
+      render: ({ e }) =>
+        e.net ? (
+          <Amount
+            minor={e.net.minor}
+            currency={e.net.currency}
+            locale={locale}
+          />
+        ) : (
+          "—"
+        ),
+    },
+    {
+      key: "statement",
+      header: t("col.statement"),
+      essential: true,
+      render: ({ e }) => (
+        <Button asChild variant="secondary" size="sm">
+          <a href={seev036Url(e.actionPda)} target="_blank" rel="noreferrer">
+            {t("download")}
+          </a>
+        </Button>
+      ),
+    },
+    {
+      key: "tx",
+      header: t("col.tx"),
+      essential: true,
+      render: ({ e }) =>
+        paidTxs.get(e.actionPda) ? (
+          <Address value={paidTxs.get(e.actionPda) as string} kind="tx" />
+        ) : (
+          <span className="text-n400">—</span>
+        ),
+    },
+  ];
+
   return (
-    <Card padding="md" className="max-w-4xl overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-n200">
-            <th className={TH}>{t("col.action")}</th>
-            <th className={TH}>{t("col.kind")}</th>
-            <th className={TH}>{t("col.paidOn")}</th>
-            <th className={`${TH} text-right`}>{t("col.net")}</th>
-            <th className={TH}>{t("col.statement")}</th>
-            <th className={TH}>{t("col.tx")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {payouts.map(({ e, row, action }) => (
-            <tr key={e.pda} className="border-b border-n100 last:border-0">
-              <td className={TD}>
-                <span className="font-semibold">
-                  {action?.corpId ?? e.actionPda.slice(0, 8)}
-                </span>
-                <span className="block text-xs text-n500">
-                  {row.series.ticker}
-                </span>
-              </td>
-              <td className={`${TD} font-mono text-xs`}>
-                {action?.kind ?? "—"}
-              </td>
-              <td className={`${TD} num text-xs`}>
-                {e.paidAt ? formatDate(e.paidAt) : "—"}
-              </td>
-              <td className={`${TD} text-right`}>
-                {e.net ? (
-                  <Amount
-                    minor={e.net.minor}
-                    currency={e.net.currency}
-                    locale={locale}
-                  />
-                ) : (
-                  "—"
-                )}
-              </td>
-              <td className={TD}>
-                <Button asChild variant="secondary" size="sm">
-                  <a
-                    href={seev036Url(e.actionPda)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {t("seev036")}
-                  </a>
-                </Button>
-              </td>
-              <td className={TD}>
-                {paidTxs.get(e.actionPda) ? (
-                  <Address
-                    value={paidTxs.get(e.actionPda) as string}
-                    kind="tx"
-                  />
-                ) : (
-                  <span className="text-n400">—</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="mt-3 text-xs text-n500">{t("note")}</p>
-    </Card>
+    <div className="max-w-4xl space-y-3">
+      <DataTable rows={payouts} rowKey={(p) => p.e.pda} columns={columns} />
+      <p className="text-xs text-n500">{t("note")}</p>
+    </div>
   );
 }

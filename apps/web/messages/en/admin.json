@@ -70,6 +70,14 @@
       "title": "Demo usage",
       "writes": "Writes this hour",
       "series": "Series today"
+    },
+    "state": {
+      "busy": "Busy",
+      "idle": "Idle",
+      "live": "Live",
+      "waiting": "Waiting",
+      "ok": "OK",
+      "error": "Error"
     }
   },
   "series": {

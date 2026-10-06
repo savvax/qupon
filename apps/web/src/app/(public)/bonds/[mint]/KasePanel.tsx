@@ -7,7 +7,8 @@ function DealChip({ deal }: { deal: Record<string, unknown> }) {
   const num = (v: unknown) => (typeof v === "number" ? v : undefined);
   const price = num(deal.price);
   const qty = num(deal.qty) ?? num(deal.quantity);
-  const date = typeof deal.date0 === "string" ? deal.date0.slice(0, 10) : undefined;
+  const date =
+    typeof deal.date0 === "string" ? deal.date0.slice(0, 10) : undefined;
   const text = [
     price !== undefined ? `${price}%` : undefined,
     qty !== undefined ? `× ${qty}` : undefined,
@@ -25,7 +26,10 @@ function DealChip({ deal }: { deal: Record<string, unknown> }) {
 
 function deals(value: unknown): Record<string, unknown>[] {
   return Array.isArray(value)
-    ? value.filter((d): d is Record<string, unknown> => typeof d === "object" && d !== null)
+    ? value.filter(
+        (d): d is Record<string, unknown> =>
+          typeof d === "object" && d !== null,
+      )
     : [];
 }
 
@@ -81,7 +85,9 @@ export async function KasePanel({
               </dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold text-n500">{t("bidOffer")}</dt>
+              <dt className="text-xs font-semibold text-n500">
+                {t("bidOffer")}
+              </dt>
               <dd className="num mt-0.5">
                 {bond.market.bid != null || bond.market.offer != null
                   ? `${bond.market.bid?.toFixed(2) ?? "—"} / ${bond.market.offer?.toFixed(2) ?? "—"}`
@@ -110,7 +116,9 @@ export async function KasePanel({
             <div className="mt-1.5 flex flex-wrap gap-2">
               {deals(bond.market.lastDeals)
                 .slice(0, 5)
-                .map((d, i) => <DealChip key={i} deal={d} />)}
+                .map((d, i) => (
+                  <DealChip key={i} deal={d} />
+                ))}
               {deals(bond.market.lastDeals).length === 0 && (
                 <span className="text-xs text-n500">{t("tradesEmpty")}</span>
               )}
@@ -133,7 +141,9 @@ export async function KasePanel({
             </div>
           )}
 
-          <p className="mt-4 text-xs text-n500">{t("source", { time: fetched })}</p>
+          <p className="mt-4 text-xs text-n500">
+            {t("source", { time: fetched })}
+          </p>
         </>
       )}
     </section>

@@ -1,4 +1,5 @@
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
 import type { KaseCheck } from "@/lib/api";
 
@@ -8,6 +9,7 @@ import type { KaseCheck } from "@/lib/api";
  * `check === null` means kase.kz (or the API) was unreachable.
  */
 export function KaseCheckPanel({ check }: { check: KaseCheck | null }) {
+  const locale = useLocale();
   const t = useTranslations("kase.scheduleCheck");
   return (
     <section className="rounded-card border border-n200 bg-n0 p-5">
@@ -31,16 +33,24 @@ export function KaseCheckPanel({ check }: { check: KaseCheck | null }) {
             <div className="flex justify-between gap-3">
               <dt className="text-n500">{t("period")}</dt>
               <dd className="num">
-                {check.period?.start} – {check.period?.end}
+                {check.period
+                  ? `${formatDate(check.period.start, locale)} – ${formatDate(check.period.end, locale)}`
+                  : "—"}
               </dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-n500">{t("recordDate")}</dt>
-              <dd className="num">{check.recordDate}</dd>
+              <dd className="num">
+                {check.recordDate ? formatDate(check.recordDate, locale) : "—"}
+              </dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-n500">{t("fixation")}</dt>
-              <dd className="num font-semibold">{check.kaseFixation}</dd>
+              <dd className="num font-semibold">
+                {check.kaseFixation
+                  ? formatDate(check.kaseFixation, locale)
+                  : "—"}
+              </dd>
             </div>
           </dl>
         </div>

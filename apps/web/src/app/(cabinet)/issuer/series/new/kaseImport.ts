@@ -11,6 +11,9 @@ export async function importFromKase(
   try {
     return { ok: true, bond: await getKaseBond(ticker) };
   } catch (e) {
-    return { ok: false, code: (e as { code?: string })?.code ?? "kase_unavailable" };
+    return {
+      ok: false,
+      code: (e as { code?: string })?.code ?? "kase_unavailable",
+    };
   }
 }

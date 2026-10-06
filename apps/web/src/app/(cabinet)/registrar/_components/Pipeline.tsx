@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -51,10 +51,12 @@ function ActionCard({
   action,
   ticker,
   kindLabel,
+  locale,
 }: {
   action: ActionDTO;
   ticker: string;
   kindLabel: string;
+  locale: string;
 }) {
   return (
     <Link
@@ -62,18 +64,23 @@ function ActionCard({
       className="qp-lift block rounded-btn border border-n200 bg-n0 px-3 py-2.5 text-sm hover:border-g300 hover:bg-g50"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="num truncate font-bold">{ticker}</span>
-        <Badge tone="info">{kindLabel}</Badge>
+        <span className="num min-w-0 truncate font-bold">{ticker}</span>
+        <span className="shrink-0">
+          <Badge tone="info">{kindLabel}</Badge>
+        </span>
       </div>
       <div className="mt-1 flex items-center justify-between gap-2 text-xs text-n500">
-        <span className="num">{formatDate(action.recordAt)}</span>
-        <span className="num truncate">{action.corpId}</span>
+        <span className="num shrink-0 whitespace-nowrap">
+          {formatDate(action.recordAt, locale)}
+        </span>
+        <span className="num min-w-0 truncate">{action.corpId}</span>
       </div>
     </Link>
   );
 }
 
-/** Horizontal pipeline of action cards; scrolls on mobile. */
+/** Pipeline of action cards: stage columns (≥ 200 px, scrolling) from 640 px up; on phones a vertical list of the
+ * non-empty stages. */
 export async function Pipeline({
   actions,
   series,
@@ -83,22 +90,38 @@ export async function Pipeline({
 }) {
   const t = await getTranslations("status");
   const kinds = await getTranslations("landing.kinds");
+  const locale = await getLocale();
   const dash = await getTranslations("registrar.dash");
   const tickerOf = new Map(series.map((s) => [s.mint, s.ticker] as const));
   return (
     <Card>
       <h2 className="text-base font-bold">{dash("pipeline")}</h2>
-      <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-        {COLUMNS.map((col) => (
-          <section key={col.key} className="w-44 shrink-0">
-            <h3 className="mb-2 text-xs font-bold tracking-wide text-n500 uppercase">
-              {t(col.key)}
-            </h3>
-            <div className="flex flex-col gap-2">
-              {actions
-                .filter((a) => col.statuses.includes(a.status))
-                .map((a) => (
+      <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:gap-3 sm:overflow-x-auto sm:pb-1">
+        {COLUMNS.map((col) => {
+          const inStage = actions.filter((a) =>
+            col.statuses.includes(a.status),
+          );
+          return (
+            <section
+              key={col.key}
+              className={cx(
+                "sm:w-[200px] sm:shrink-0",
+                inStage.length === 0 && "max-sm:hidden",
+              )}
+            >
+              <h3 className="mb-2 text-xs font-bold tracking-wide text-n500 uppercase">
+                {t(col.key)}
+                <span className="ml-1.5 text-n400 sm:hidden">
+                  {inStage.length}
+                </span>
+              </h3>
+              <div className="flex flex-col gap-2">
+                {inStage.length === 0 && (
+                  <span className="px-3 text-sm text-n400">—</span>
+                )}
+                {inStage.map((a) => (
                   <ActionCard
+                    locale={locale}
                     key={a.pda}
                     action={a}
                     ticker={
@@ -108,9 +131,10 @@ export async function Pipeline({
                     kindLabel={kinds(a.kind)}
                   />
                 ))}
-            </div>
-          </section>
-        ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
       {actions.length === 0 && (
         <p className="mt-3 text-sm text-n500">{dash("empty")}</p>
@@ -133,7 +157,7 @@ export async function Alerts({ alerts }: { alerts: ActionAlert[] }) {
           <Link
             href={`/registrar/actions/${action.pda}`}
             className={cx(
-              "flex items-center gap-2 rounded-btn border px-3 py-2 text-sm transition-colors",
+              "flex items-start gap-2 rounded-btn border px-3 py-2 text-sm transition-colors",
               kind === "cancelled"
                 ? "border-n200 bg-n50 text-n700 hover:bg-n100"
                 : "border-warn-bd bg-warn-bg text-warn-fg hover:brightness-[0.98]",
@@ -142,9 +166,7 @@ export async function Alerts({ alerts }: { alerts: ActionAlert[] }) {
             <Badge tone={kind === "cancelled" ? "neutral" : "warn"} dot={false}>
               {kinds(action.kind)}
             </Badge>
-            <span className="min-w-0 flex-1 truncate">
-              {text({ kind, action })}
-            </span>
+            <span className="min-w-0 flex-1">{text({ kind, action })}</span>
             <span className="num hidden text-xs opacity-80 sm:inline">
               {action.corpId}
             </span>

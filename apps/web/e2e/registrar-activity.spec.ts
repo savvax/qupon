@@ -75,7 +75,7 @@ test("autopilot: pending approval queue, approve runs the step, EN + RU, 1440 + 
     "Autopilot approvals",
   );
   const pending = page.getByRole("table").first();
-  await expect(pending).toContainText("step:strike_record");
+  await expect(pending).toContainText("Strike record date");
   await expect(pending).toContainText("action:advance");
   await page.screenshot({
     path: "../../reports/ui/autopilot-en-1440.png",
@@ -90,7 +90,7 @@ test("autopilot: pending approval queue, approve runs the step, EN + RU, 1440 + 
   // Executed tab lists what already ran, with its transaction.
   await page.getByRole("tab", { name: /Executed/ }).click();
   await expect(page.getByRole("table").first()).toContainText(
-    "step:snapshot_batch",
+    "Snapshot holders",
   );
 
   await page.getByRole("button", { name: "ru", exact: true }).click();

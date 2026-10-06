@@ -86,7 +86,7 @@ export default async function BondsPage() {
       header: t("colNextCoupon"),
       hideBelow: "md",
       render: (s) => (
-        <span className="num">{formatDate(s.nextCouponDate)}</span>
+        <span className="num">{formatDate(s.nextCouponDate, locale)}</span>
       ),
     },
     {

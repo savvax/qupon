@@ -26,7 +26,8 @@ test("actions list opens a completed coupon with every step done and all holders
   }).toPass();
   await page.locator(`a[href="/registrar/actions/${INTR}"]`).first().click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Coupon");
-  await expect(page.getByText("Action completed")).toBeVisible();
+  // completed: the status pill says it; no grey "Action completed" box (task 9106)
+  await expect(page.getByText("Action completed")).toHaveCount(0);
   const paid = page.locator("table").getByText("Paid", { exact: true });
   await expect(paid).toHaveCount(3);
   await expect(page.getByText("Fully funded").first()).toBeVisible();

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/Button";
+import { SignInButton } from "./SignInButton";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { StableLabel } from "@/components/i18n/StableLabel";
 import { WalletButton } from "@/components/wallet/WalletButton";
@@ -40,7 +40,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
           </Link>
           <nav
             aria-label={t("main")}
-            className="ml-2 hidden items-center gap-1 lg:flex"
+            className="hidden items-center gap-1 lg:flex"
           >
             {links.map((l) => (
               <Link
@@ -56,11 +56,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <NetworkBadge className="hidden md:inline-flex" />
             <LocaleSwitch />
             <WalletButton compact labelAt="xl" />
-            <span className="hidden sm:block">
-              <Button asChild size="sm" className="h-9">
-                <Link href="/login">{c("signIn")}</Link>
-              </Button>
-            </span>
+            <SignInButton label={c("signIn")} />
             <MobileNav
               links={links}
               menuLabel={t("menu")}

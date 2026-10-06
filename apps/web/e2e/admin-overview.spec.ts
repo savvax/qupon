@@ -11,7 +11,7 @@ test("overview KPIs link to their pages", async ({ page, baseURL }) => {
   const users = page.locator("main a", { hasText: "Users" });
   await expect(users).toHaveAttribute("href", "/admin/users");
   await expect(users.getByText("7", { exact: true })).toBeVisible();
-  await expect(users.getByText(/Administrator 1/)).toBeVisible();
+  await expect(users.getByText(/Administrator\s1/)).toBeVisible();
 
   const kyc = page.locator("main a", { hasText: "Pending KYC" });
   await expect(kyc).toHaveAttribute("href", "/registrar/kyc");

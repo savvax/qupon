@@ -454,7 +454,8 @@
       "approving": "Executing the approved step…",
       "approved": "Step executed",
       "emptyPending": "Nothing waits for approval — the autopilot is idle.",
-      "emptyExecuted": "No steps executed through approvals yet."
+      "emptyExecuted": "No steps executed through approvals yet.",
+      "showCommand": "Show command"
     },
     "dash": {
       "title": "Registrar back office",
@@ -596,7 +597,8 @@
       "empty": "Entitlements appear after the snapshot step.",
       "vote": "Vote",
       "notVoted": "Not voted",
-      "votedAt": "Voted at"
+      "votedAt": "Voted at",
+      "holders": "Holders"
     },
     "timeline": "Timeline",
     "reconcile": {
@@ -899,7 +901,7 @@
       "proposalRate": "coupon {from} → {to}",
       "proposalMaturity": "new maturity {date}",
       "proposalOther": "terms change",
-      "votingEnds": "voting ends {date}",
+      "votingEnds": "voting ends {date} (Almaty time)",
       "yourWeight": "Your weight:",
       "units": "{units} units",
       "notSnapshotted": "not in the snapshot",
@@ -936,7 +938,8 @@
         "net": "Net paid",
         "statement": "Statement",
         "tx": "Transaction"
-      }
+      },
+      "download": "Download"
     },
     "toasts": {
       "failed": "Something went wrong"

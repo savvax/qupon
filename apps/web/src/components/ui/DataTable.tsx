@@ -8,8 +8,10 @@ export type Column<T> = {
   header: ReactNode;
   align?: "left" | "right";
   render: (row: T) => ReactNode;
-  /** Hidden below the breakpoint (table cells); also dropped from the mobile cards. */
+  /** Hidden below the breakpoint (table cells); also dropped from the mobile cards unless `essential`. */
   hideBelow?: Bp;
+  /** Always shown in the phone card (amounts, status, tx/download) even when the table hides it at mid widths. */
+  essential?: boolean;
 };
 
 /**
@@ -21,11 +23,14 @@ export function DataTable<T>({
   rows,
   rowKey,
   empty,
+  phoneRow,
 }: {
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string;
   empty?: ReactNode;
+  /** Compact phone card (e.g. two lines for a log) instead of one header → value line per column. */
+  phoneRow?: (row: T) => ReactNode;
 }) {
   if (rows.length === 0) {
     return (
@@ -86,26 +91,32 @@ export function DataTable<T>({
           <StaggerItem
             as="li"
             key={rowKey(row)}
-            className="space-y-1.5 px-4 py-4"
+            className={phoneRow ? "px-4 py-3" : "space-y-1.5 px-4 py-4"}
           >
-            {visibleColumns(columns, "sm").map((col) => (
-              <div
-                key={col.key}
-                className="flex items-baseline justify-between gap-4"
-              >
-                <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.06em] text-n500">
-                  {col.header}
-                </span>
-                <span
-                  className={cx(
-                    "min-w-0 text-right text-sm",
-                    col.align === "right" && "num",
-                  )}
-                >
-                  {col.render(row)}
-                </span>
-              </div>
-            ))}
+            {phoneRow
+              ? phoneRow(row)
+              : columns
+                  .filter(
+                    (c) => c.essential || visibleColumns([c], "sm").length,
+                  )
+                  .map((col) => (
+                    <div
+                      key={col.key}
+                      className="flex items-baseline justify-between gap-4"
+                    >
+                      <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.06em] text-n500">
+                        {col.header}
+                      </span>
+                      <span
+                        className={cx(
+                          "min-w-0 text-right text-sm",
+                          col.align === "right" && "num",
+                        )}
+                      >
+                        {col.render(row)}
+                      </span>
+                    </div>
+                  ))}
           </StaggerItem>
         ))}
       </Stagger>

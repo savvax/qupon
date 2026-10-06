@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -35,6 +35,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 export function SystemPanel() {
   const t = useTranslations("admin.system");
+  const locale = useLocale();
   const [data, setData] = useState<SystemHealth | null>(null);
   const [failed, setFailed] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
@@ -97,7 +98,9 @@ export function SystemPanel() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-n500" aria-live="polite">
           {updatedAt
-            ? t("updated", { time: formatDateTime(updatedAt.toISOString()) })
+            ? t("updated", {
+                time: formatDateTime(updatedAt.toISOString(), locale),
+              })
             : t("loading")}
         </p>
         <Button size="sm" loading={busy} onClick={() => void load()}>
@@ -127,15 +130,17 @@ export function SystemPanel() {
           <h2 className="text-base font-bold">{t("ops.title")}</h2>
           <ul className="mt-3 flex flex-col gap-2">
             {data.operators.map((o) => (
-              <li
-                key={o.address}
-                className="flex flex-wrap items-center gap-2 text-sm"
-              >
-                <span className="font-semibold">{opName(o.name)}</span>
+              <li key={o.address} className="flex items-center gap-2 text-sm">
+                <span className="min-w-0 truncate font-semibold">
+                  {opName(o.name)}
+                </span>
                 <Address value={o.address} />
-                {o.low && <Badge tone="danger">{t("ops.low")}</Badge>}
-                <span className="num ml-auto text-n500">
-                  {t("ops.sol", { n: o.sol.toFixed(3) })}
+                {/* the Low pill sits with the balance, so it never pushes it to a new line */}
+                <span className="ml-auto flex shrink-0 items-center gap-2">
+                  {o.low && <Badge tone="danger">{t("ops.low")}</Badge>}
+                  <span className="num text-n500 whitespace-nowrap">
+                    {t("ops.sol", { n: o.sol.toFixed(3) })}
+                  </span>
                 </span>
               </li>
             ))}
@@ -146,9 +151,7 @@ export function SystemPanel() {
           <h2 className="text-base font-bold">{t("executor.title")}</h2>
           <div className="mt-2">
             <Badge tone={data.executor.queued > 0 ? "warn" : "success"}>
-              {data.executor.queued > 0
-                ? t("executor.queued")
-                : t("executor.running")}
+              {data.executor.queued > 0 ? t("state.busy") : t("state.idle")}
             </Badge>
           </div>
           <dl className="mt-3 flex flex-col gap-1.5">
@@ -175,7 +178,7 @@ export function SystemPanel() {
               label={t("scheduler.lastTick")}
               value={
                 data.scheduler.lastTick
-                  ? formatDateTime(data.scheduler.lastTick)
+                  ? formatDateTime(data.scheduler.lastTick, locale)
                   : t("scheduler.never")
               }
             />
@@ -186,9 +189,7 @@ export function SystemPanel() {
           <h2 className="text-base font-bold">{t("ingest.title")}</h2>
           <div className="mt-2">
             <Badge tone={data.ingest.lastSlot > 0 ? "success" : "neutral"}>
-              {data.ingest.lastSlot > 0
-                ? t("ingest.lastSlot")
-                : t("scheduler.never")}
+              {data.ingest.lastSlot > 0 ? t("state.live") : t("state.waiting")}
             </Badge>
           </div>
           <dl className="mt-3 flex flex-col gap-1.5">
@@ -207,7 +208,7 @@ export function SystemPanel() {
           <h2 className="text-base font-bold">{t("kase.title")}</h2>
           <div className="mt-2">
             <Badge tone={data.kase.lastError ? "warn" : "success"}>
-              {data.kase.lastError ? t("kase.lastError") : t("kase.entries")}
+              {data.kase.lastError ? t("state.error") : t("state.ok")}
             </Badge>
           </div>
           <dl className="mt-3 flex flex-col gap-1.5">
@@ -219,7 +220,7 @@ export function SystemPanel() {
               label={t("kase.lastFetch")}
               value={
                 data.kase.lastFetch
-                  ? formatDateTime(data.kase.lastFetch)
+                  ? formatDateTime(data.kase.lastFetch, locale)
                   : t("kase.never")
               }
             />

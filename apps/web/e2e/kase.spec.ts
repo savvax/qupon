@@ -23,7 +23,7 @@ test("the schedule check card confirms a matching fixation date", async ({
     page.getByRole("heading", { name: "KASE schedule check" }),
   ).toBeVisible();
   await expect(page.getByText("Match", { exact: true })).toBeVisible();
-  await expect(page.getByText("2027-02-28").first()).toBeVisible();
+  await expect(page.getByText("Feb 28, 2027").first()).toBeVisible();
 });
 
 test("the schedule check card flags a fixation mismatch", async ({ page }) => {
@@ -34,16 +34,23 @@ test("the schedule check card flags a fixation mismatch", async ({ page }) => {
   const card = page.locator("section", {
     has: page.getByRole("heading", { name: "KASE schedule check" }),
   });
-  await expect(card.getByText("2026-09-28")).toBeVisible();
-  await expect(card.getByText("2026-09-27")).toBeVisible();
+  await expect(card.getByText("Sep 28, 2026")).toBeVisible();
+  await expect(card.getByText("Sep 27, 2026")).toBeVisible();
 });
 
-test("a meeting has no coupon period to check", async ({ page }) => {
+test("a meeting page shows no coupon-only cards (task 9106)", async ({
+  page,
+}) => {
   await signIn(page);
   await page.goto(`/registrar/actions/${BMET}`);
+  await expect(page.getByRole("heading", { name: /^Holders/ })).toBeVisible();
   await expect(
     page.getByText("This action has no coupon period to compare."),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "seev.036 (ZIP)" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole("link", { name: "seev.031" })).toBeVisible();
 });
 
 test("the disclosure package downloads and submits to KASE — SIMULATED", async ({

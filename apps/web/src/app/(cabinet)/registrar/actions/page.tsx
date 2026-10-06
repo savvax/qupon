@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Tabs } from "@/components/ui/Tabs";
@@ -29,6 +29,7 @@ export default async function RegistrarActions() {
     getTranslations("status"),
     getTranslations("landing.kinds"),
   ]);
+  const locale = await getLocale();
   const series = await listSeries().catch(() => [] as SeriesDTO[]);
   const rows: Row[] = (
     await Promise.all(
@@ -66,13 +67,17 @@ export default async function RegistrarActions() {
     {
       key: "record",
       header: t("facts.record"),
-      render: ({ a }) => <span className="num">{formatDate(a.recordAt)}</span>,
+      render: ({ a }) => (
+        <span className="num">{formatDate(a.recordAt, locale)}</span>
+      ),
     },
     {
       key: "payment",
       header: t("facts.payment"),
       hideBelow: "md",
-      render: ({ a }) => <span className="num">{formatDate(a.paymentAt)}</span>,
+      render: ({ a }) => (
+        <span className="num">{formatDate(a.paymentAt, locale)}</span>
+      ),
     },
     {
       key: "status",

@@ -11,7 +11,7 @@ import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
 import { KIND_TONE } from "@/lib/ui/badge";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { type Column, DataTable } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { paidTxByOwner } from "@/lib/actionFlow";
@@ -26,10 +26,6 @@ import {
   type CurrencyTotal,
 } from "../_lib/investorStats";
 import { usePortalRows } from "../_lib/usePortalRows";
-
-const TH =
-  "px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-n500";
-const TD = "px-3 py-2 align-top";
 
 function Money({
   totals,
@@ -110,7 +106,7 @@ function PortfolioHeader({ rows }: { rows: Parameters<typeof faceTotals>[0] }) {
           </div>
           {next && (
             <div className="num mt-1 text-sm text-p100">
-              {formatDate(next.date)}
+              {formatDate(next.date, locale)}
             </div>
           )}
         </div>
@@ -203,6 +199,106 @@ export function PortfolioView() {
     history.push(h);
   }
 
+  type HistoryRow = (typeof history)[number];
+  const historyColumns: Column<HistoryRow>[] = [
+    {
+      key: "action",
+      header: t("col.action"),
+      render: ({ e, row, action }) => (
+        <span className="text-left">
+          <span className="font-semibold">
+            {action?.corpId ?? e.actionPda.slice(0, 8)}
+          </span>
+          <span className="block text-xs text-n500">{row.series.ticker}</span>
+        </span>
+      ),
+    },
+    {
+      key: "kind",
+      header: t("col.kind"),
+      hideBelow: "lg",
+      render: ({ action }) =>
+        action ? (
+          <Badge tone={KIND_TONE[action.kind] ?? "neutral"}>
+            {action.kind}
+          </Badge>
+        ) : (
+          "—"
+        ),
+    },
+    {
+      key: "units",
+      header: t("col.units"),
+      align: "right",
+      render: ({ e }) => <span className="num">{e.units}</span>,
+    },
+    {
+      key: "gross",
+      header: t("col.gross"),
+      align: "right",
+      hideBelow: "lg",
+      render: ({ e }) =>
+        e.gross ? (
+          <Amount
+            minor={e.gross.minor}
+            currency={e.gross.currency}
+            locale={locale}
+          />
+        ) : (
+          "—"
+        ),
+    },
+    {
+      key: "net",
+      header: t("col.net"),
+      align: "right",
+      essential: true,
+      render: ({ e }) =>
+        e.net ? (
+          <Amount
+            minor={e.net.minor}
+            currency={e.net.currency}
+            locale={locale}
+          />
+        ) : (
+          "—"
+        ),
+    },
+    {
+      key: "status",
+      header: t("col.status"),
+      essential: true,
+      render: ({ e }) => <Badge status={e.status} />,
+    },
+    {
+      key: "vote",
+      header: t("col.vote"),
+      hideBelow: "lg",
+      render: ({ e }) =>
+        e.vote && e.vote !== "None" ? (
+          <Badge status={e.vote} />
+        ) : (
+          <span className="text-n400">—</span>
+        ),
+    },
+    {
+      key: "record",
+      header: t("col.record"),
+      hideBelow: "md",
+      essential: true,
+      render: ({ e, action }) => (
+        <span className="num text-xs">
+          {action ? formatDateTime(action.recordAt, locale) : "—"}
+          {e.paidAt && (
+            <span className="block text-n500">
+              {t("paidOn", { date: formatDate(e.paidAt, locale) })}
+            </span>
+          )}
+        </span>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-8">
       <PortfolioHeader rows={rows} />
@@ -221,85 +317,11 @@ export function PortfolioView() {
         {history.length === 0 ? (
           <EmptyState title={t("historyEmpty")} body={t("historyEmptyBody")} />
         ) : (
-          <Card padding="md" className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-n200">
-                  <th className={TH}>{t("col.action")}</th>
-                  <th className={TH}>{t("col.kind")}</th>
-                  <th className={`${TH} text-right`}>{t("col.units")}</th>
-                  <th className={`${TH} text-right`}>{t("col.gross")}</th>
-                  <th className={`${TH} text-right`}>{t("col.net")}</th>
-                  <th className={TH}>{t("col.status")}</th>
-                  <th className={TH}>{t("col.vote")}</th>
-                  <th className={TH}>{t("col.record")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map(({ e, row, action }) => (
-                  <tr
-                    key={e.pda}
-                    className="border-b border-n100 last:border-0"
-                  >
-                    <td className={TD}>
-                      <span className="font-semibold">
-                        {action?.corpId ?? e.actionPda.slice(0, 8)}
-                      </span>
-                      <span className="block text-xs text-n500">
-                        {row.series.ticker}
-                      </span>
-                    </td>
-                    <td className={TD}>
-                      {action ? (
-                        <Badge tone={KIND_TONE[action.kind] ?? "neutral"}>
-                          {action.kind}
-                        </Badge>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className={`${TD} num text-right`}>{e.units}</td>
-                    <td className={`${TD} text-right`}>
-                      {e.gross && (
-                        <Amount
-                          minor={e.gross.minor}
-                          currency={e.gross.currency}
-                          locale={locale}
-                        />
-                      )}
-                    </td>
-                    <td className={`${TD} text-right`}>
-                      {e.net && (
-                        <Amount
-                          minor={e.net.minor}
-                          currency={e.net.currency}
-                          locale={locale}
-                        />
-                      )}
-                    </td>
-                    <td className={TD}>
-                      <Badge status={e.status} />
-                    </td>
-                    <td className={`${TD} text-xs`}>
-                      {e.vote && e.vote !== "None" ? (
-                        <Badge status={e.vote} />
-                      ) : (
-                        <span className="text-n400">—</span>
-                      )}
-                    </td>
-                    <td className={`${TD} num text-xs`}>
-                      {action ? formatDateTime(action.recordAt) : "—"}
-                      {e.paidAt && (
-                        <span className="block text-n500">
-                          {t("paidOn", { date: formatDate(e.paidAt) })}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+          <DataTable
+            rows={history}
+            rowKey={(h) => h.e.pda}
+            columns={historyColumns}
+          />
         )}
       </section>
     </div>

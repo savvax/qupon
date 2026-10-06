@@ -74,6 +74,6 @@ test("demo investor subscribes at par and sees the payout statement", async ({
 
   await page.goto("/investor/statements");
   await expect(
-    page.getByRole("link", { name: "seev.036" }).first(),
+    page.getByRole("link", { name: "Download" }).first(),
   ).toBeVisible();
 });

@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { getSession } from "@/lib/session";
 import { InvestorIdentity } from "../_components/InvestorIdentity";
 import { PlacementForm } from "../_components/PlacementForm";
@@ -16,7 +17,10 @@ export default async function InvestorPlacementPage() {
       ? DEMO_INVESTOR
       : null;
   return (
-    <InvestorIdentity demoOwner={demoOwner}>
+    <InvestorIdentity
+      title={(await getTranslations("cabinet.menu"))("placement")}
+      demoOwner={demoOwner}
+    >
       <PlacementForm />
     </InvestorIdentity>
   );

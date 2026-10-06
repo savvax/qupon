@@ -136,7 +136,7 @@ export function Audiences() {
             ))}
           </ul>
           <div className="mt-7">
-            <Button asChild variant={a === "issuers" ? "primary" : "secondary"}>
+            <Button asChild>
               <Link href="/login">{t(`${a}.cta`)}</Link>
             </Button>
           </div>

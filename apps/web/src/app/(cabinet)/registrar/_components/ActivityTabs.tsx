@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable, type Column } from "@/components/ui/DataTable";
@@ -21,9 +21,9 @@ export type AuditItem = {
   signatures?: string[] | null;
 };
 
-const almaty = (unixSeconds: number) => (
+const almaty = (unixSeconds: number, locale: string) => (
   <span className="num text-xs whitespace-nowrap">
-    {formatDateTime(new Date(unixSeconds * 1000).toISOString())}
+    {formatDateTime(new Date(unixSeconds * 1000).toISOString(), locale)}
   </span>
 );
 
@@ -41,10 +41,11 @@ export function ActivityTabs({
   tickers?: Record<string, string>;
 }) {
   const t = useTranslations("registrar.activity");
+  const locale = useLocale();
   const roles = useTranslations("cabinet.roles");
 
   const eventCols: Column<ActivityLike>[] = [
-    { key: "ts", header: t("time"), render: (r) => almaty(r.ts) },
+    { key: "ts", header: t("time"), render: (r) => almaty(r.ts, locale) },
     {
       key: "kind",
       header: t("kind"),
@@ -72,8 +73,23 @@ export function ActivityTabs({
     },
   ];
 
+  const seriesOf = eventCols[2]!.render;
+  // phones: event + time, then series + tx
+  const eventPhoneRow = (r: ActivityLike) => (
+    <div className="space-y-1.5 text-sm">
+      <div className="flex items-center justify-between gap-3">
+        <Badge status={r.kind} />
+        {almaty(r.ts, locale)}
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <span className="min-w-0 truncate">{seriesOf(r)}</span>
+        {r.sig ? <Address value={r.sig} kind="tx" /> : dash}
+      </div>
+    </div>
+  );
+
   const auditCols: Column<AuditItem>[] = [
-    { key: "ts", header: t("time"), render: (r) => almaty(r.ts) },
+    { key: "ts", header: t("time"), render: (r) => almaty(r.ts, locale) },
     {
       key: "user",
       header: t("user"),
@@ -129,6 +145,7 @@ export function ActivityTabs({
               rows={events}
               rowKey={(r) => String(r.id)}
               empty={t("emptyEvents")}
+              phoneRow={eventPhoneRow}
             />
           ),
         },

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatDateTime } from "@/lib/format";
 import { getLocale, getTranslations } from "next-intl/server";
 import { StableLabel } from "@/components/i18n/StableLabel";
 import { Address } from "@/components/ui/Address";
@@ -70,12 +71,7 @@ export default async function RegistrarKycPage({
       key: "submitted",
       header: t("col.submitted"),
       render: (a) =>
-        new Date(a.createdAt * 1000).toLocaleDateString(locale, {
-          day: "numeric",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+        formatDateTime(new Date(a.createdAt * 1000).toISOString(), locale),
       hideBelow: "sm",
     },
     {

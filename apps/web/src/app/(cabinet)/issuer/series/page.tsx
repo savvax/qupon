@@ -71,7 +71,7 @@ export default async function IssuerSeriesList() {
       header: tb("colNextCoupon"),
       hideBelow: "md",
       render: (s) => (
-        <span className="num">{formatDate(s.nextCouponDate)}</span>
+        <span className="num">{formatDate(s.nextCouponDate, locale)}</span>
       ),
     },
     {

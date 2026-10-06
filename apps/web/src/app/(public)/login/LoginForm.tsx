@@ -55,7 +55,7 @@ export function SignInCard({ next }: { next?: string }) {
   return (
     <form
       onSubmit={submit}
-      className="rounded-hero border border-n200 bg-n0 p-6 sm:p-8"
+      className="h-full rounded-hero border border-n200 bg-n0 p-6 sm:p-8"
       noValidate
     >
       <h1 className="text-2xl font-extrabold tracking-tight">
@@ -131,7 +131,7 @@ export function DemoPanel({ next }: { next?: string }) {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-hero bg-p900 p-6 text-white sm:p-8">
+    <div className="relative h-full overflow-hidden rounded-hero bg-p900 p-6 text-white sm:p-8">
       <div
         aria-hidden
         className="absolute inset-0 bg-[radial-gradient(90%_80%_at_100%_0%,var(--color-p500)_0%,transparent_60%)] opacity-60"

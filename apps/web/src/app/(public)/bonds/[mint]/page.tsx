@@ -48,10 +48,14 @@ const DAY_COUNT: Record<string, string> = {
 
 export default async function BondPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ mint: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { mint } = await params;
+  // ?tab=actions|terms opens that tab (links from the issuer cabinet)
+  const { tab } = await searchParams;
   const series = await getSeries(mint).catch((e: unknown) => {
     // Unknown or malformed mint → 404 (ApiError in production, Api404 in mock mode: both carry .status).
     const status = (e as { status?: number } | null)?.status;
@@ -92,7 +96,8 @@ export default async function BondPage({
       render: (r) =>
         r.periodStart && r.periodEnd ? (
           <span className="num">
-            {formatDate(r.periodStart)} – {formatDate(r.periodEnd)}
+            {formatDate(r.periodStart, locale)} –{" "}
+            {formatDate(r.periodEnd, locale)}
           </span>
         ) : (
           "—"
@@ -101,12 +106,16 @@ export default async function BondPage({
     {
       key: "record",
       header: t("cols.record"),
-      render: (r) => <span className="num">{formatDate(r.recordDate)}</span>,
+      render: (r) => (
+        <span className="num">{formatDate(r.recordDate, locale)}</span>
+      ),
     },
     {
       key: "payment",
       header: t("cols.payment"),
-      render: (r) => <span className="num">{formatDate(r.paymentDate)}</span>,
+      render: (r) => (
+        <span className="num">{formatDate(r.paymentDate, locale)}</span>
+      ),
     },
     {
       key: "perUnit",
@@ -138,12 +147,16 @@ export default async function BondPage({
       key: "record",
       header: t("cols.record"),
       hideBelow: "md",
-      render: (a) => <span className="num">{formatDate(a.recordAt)}</span>,
+      render: (a) => (
+        <span className="num">{formatDate(a.recordAt, locale)}</span>
+      ),
     },
     {
       key: "payment",
       header: t("cols.payment"),
-      render: (a) => <span className="num">{formatDate(a.paymentAt)}</span>,
+      render: (a) => (
+        <span className="num">{formatDate(a.paymentAt, locale)}</span>
+      ),
     },
     {
       key: "perUnit",
@@ -192,13 +205,13 @@ export default async function BondPage({
     [
       t("terms.issue"),
       <span key="issue" className="num">
-        {formatDate(series.issueDate)}
+        {formatDate(series.issueDate, locale)}
       </span>,
     ],
     [
       t("terms.maturity"),
       <span key="mat" className="num">
-        {formatDate(series.maturityDate)}
+        {formatDate(series.maturityDate, locale)}
       </span>,
     ],
     [
@@ -269,7 +282,9 @@ export default async function BondPage({
           <Kpi
             label={t("kpi.next")}
             value={
-              <span className="num">{formatDate(series.nextCouponDate)}</span>
+              <span className="num">
+                {formatDate(series.nextCouponDate, locale)}
+              </span>
             }
           />
         </StaggerItem>
@@ -294,7 +309,7 @@ export default async function BondPage({
 
       <div className="mt-8">
         <Tabs
-          defaultValue="schedule"
+          defaultValue={tab === "actions" || tab === "terms" ? tab : "schedule"}
           items={[
             {
               value: "schedule",

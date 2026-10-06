@@ -57,7 +57,10 @@ export default async function AdminOverviewPage() {
     usersRes === null
       ? null
       : [...byRole.entries()]
-          .map(([role, n]) => `${roleT.has(role) ? roleT(role) : role} ${n}`)
+          // NBSP inside each pair: "Issuer 2" never breaks across lines
+          .map(
+            ([role, n]) => `${roleT.has(role) ? roleT(role) : role}\u00a0${n}`,
+          )
           .join(" · ");
 
   const lowOps = systemRes?.operators.filter((o) => o.low) ?? [];

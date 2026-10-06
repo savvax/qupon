@@ -26,7 +26,7 @@ export default async function AdminAssetsPage() {
       render: (a) =>
         a.symbol ? (
           <span className="flex items-center gap-2 font-bold">
-            {a.symbol}
+            <span className="whitespace-nowrap">{a.symbol}</span>
             <Address value={a.mint} />
           </span>
         ) : (

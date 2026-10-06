@@ -87,7 +87,9 @@ function MeetingCard({
           </p>
         </div>
         <span className="num text-xs text-n500">
-          {t("votingEnds", { date: formatDateTime(action.votingEndsAt ?? "") })}
+          {t("votingEnds", {
+            date: formatDateTime(action.votingEndsAt ?? "", locale),
+          })}
         </span>
       </div>
 

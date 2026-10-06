@@ -31,9 +31,7 @@ test("no wallet installed: install links, mobile deep links and a read-only view
   await dialog.getByLabel("Solana address").fill(ADDRESSES[0]);
   await dialog.getByRole("button", { name: "View" }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(
-    page.getByRole("heading", { name: "Wallet (view only)" }),
-  ).toBeVisible();
+  await expect(page.getByText("Wallet (view only)")).toBeVisible();
   await expect(page.getByText("Read-only").first()).toBeVisible();
 
   // the top-bar chip offers to stop viewing
@@ -81,9 +79,10 @@ test("several wallets: the dialog lists the detected ones and connects the chose
   await expect(dialog.getByRole("link", { name: /Backpack/ })).toBeVisible(); // not installed → install link
   await dialog.getByRole("button", { name: /Solflare/ }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(
-    page.getByRole("heading", { name: "Investor wallet" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    /Portfolio|Placement|Meetings|Statements/,
+  );
+  await expect(page.getByText("Investor wallet")).toBeVisible();
   await expect(page.getByText("7XVB…tLau").first()).toBeVisible();
 });
 

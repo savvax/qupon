@@ -1,5 +1,6 @@
 "use client";
 
+import { formatDate } from "@/lib/format";
 import { StableText } from "@/components/i18n/StableLabel";
 import { getBase58Decoder } from "@solana/kit";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -83,7 +84,8 @@ export function WalletLink({ wallets }: { wallets: LinkedWallet[] }) {
               )}
               <span className="ml-auto text-xs text-n500">
                 {t("verifiedAt", {
-                  date: new Date(w.verifiedAt * 1000).toLocaleDateString(
+                  date: formatDate(
+                    new Date(w.verifiedAt * 1000).toISOString(),
                     locale,
                   ),
                 })}

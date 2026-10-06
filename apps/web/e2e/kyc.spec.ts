@@ -80,15 +80,13 @@ test("visitors without an account are invited to sign up; RU renders", async ({
   await expect(
     page.getByRole("heading", { name: "Create an account to get verified" }),
   ).toBeVisible();
-  await page
-    .context()
-    .addCookies([
-      {
-        name: "NEXT_LOCALE",
-        value: "ru",
-        url: baseURL ?? "http://localhost:3000",
-      },
-    ]);
+  await page.context().addCookies([
+    {
+      name: "NEXT_LOCALE",
+      value: "ru",
+      url: baseURL ?? "http://localhost:3000",
+    },
+  ]);
   await page.goto("/investor/kyc");
   await expect(
     page.getByRole("heading", { name: "Верификация" }),
