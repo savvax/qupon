@@ -3,7 +3,7 @@
 services:
   registrar:
     build: { context: ../.., dockerfile: services/registrar/Dockerfile }
-    env_file: /opt/qupon/registrar.env # RPC_URL, DEMO_LOGIN, QUPON_USERS, QUPON_*_KEYPAIR_JSON: registrar, issuer, paying agent, KYC provider, demo investor (devnet)
+    env_file: /opt/qupon/registrar.env # RPC_URL, DEMO_LOGIN, QUPON_USERS, QUPON_*_KEYPAIR_JSON: registrar, issuer, paying agent, KYC provider, demo investor, investors 1–3 investor (devnet)
     environment:
       PROGRAM_ID: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd
       QUPON_CONFIG: /app/config/devnet.json

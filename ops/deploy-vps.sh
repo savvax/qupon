@@ -42,8 +42,14 @@ kp() { tr -d ' \n' < "$1"; }
   echo "QUPON_ISSUER_KEYPAIR_JSON=$(kp "$QUPON_ISSUER_KEYPAIR")"
   echo "QUPON_PAYING_AGENT_KEYPAIR_JSON=$(kp "$QUPON_PAYING_AGENT_KEYPAIR")"
   # KYC provider signs SAS attestations; investor3 is the demo investor's custodial wallet (POST /demo/investor/*).
+  # Investors 1–3 are the devnet demo holders (10 / 25 / 65): the demo trade-funding route signs for whichever of
+  # them is a party, so a judge can walk a secondary trade from the registrar cabinet alone.
   echo "QUPON_KYC_PROVIDER_KEYPAIR_JSON=$(kp "${QUPON_KYC_PROVIDER_KEYPAIR:-$HOME/.config/qupon/kyc-provider.json}")"
   echo "QUPON_INVESTOR_KEYPAIR_JSON=$(kp "${QUPON_INVESTOR_KEYPAIR:-$HOME/.config/qupon/investor3.json}")"
+  for n in 1 2 3; do
+    eval "p=\${QUPON_INVESTOR${n}_KEYPAIR:-$HOME/.config/qupon/investor${n}.json}"
+    echo "QUPON_INVESTOR${n}_KEYPAIR_JSON=$(kp "$p")"
+  done
 } | "${SSH[@]}" 'umask 077; cat > /opt/qupon/registrar.env'
 "${SSH[@]}" 'umask 077; : > /opt/qupon/web.env' # nothing secret for the web yet; kept for compose's env_file
 
