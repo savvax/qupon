@@ -1,3 +1,4 @@
+import { organizations as orgs } from "./adminSeries";
 import type { MockHandler } from "./types";
 
 /**
@@ -100,38 +101,20 @@ const users: User[] = [
   },
 ];
 
-/** Same shape as internal/store/organizations.go Organization. */
-type Org = {
-  id: number;
-  name: string;
-  kind: string;
-  bin: string;
-  website: string;
-  createdAt: number;
-};
+// The org rows live in adminSeries.ts (task 704 seeds them for the series page
+// org select); this file owns the CRUD mutations of task 703.
+type Org = (typeof orgs)[number];
+let nextOrgId = Math.max(...orgs.map((o) => o.id)) + 1;
 
-let nextOrgId = 100;
-const orgs: Org[] = [
-  {
-    id: 1,
-    name: "Demo Issuer Ltd",
-    kind: "issuer",
-    bin: "123456789012",
-    website: "https://demo-issuer.kz",
-    createdAt: nowSec() - 30 * 86_400,
-  },
-  {
-    id: 2,
-    name: "Qupon Registrar",
-    kind: "registrar",
-    bin: "",
-    website: "https://qupon.85-192-29-7.sslip.io",
-    createdAt: nowSec() - 60 * 86_400,
-  },
-];
-
-/** One-time reset tokens: base64url random, 24 h, consumed on use (task 701). */
-const resetTokens = new Map<string, { userId: number; expiresAt: number }>();
+// Shared via globalThis: Next dev compiles each route handler as its own bundle,
+// so a plain module-level Map would not be visible to /api/session/reset.
+/** One-time reset tokens: random, 24 h, consumed on use (task 701). */
+const resetTokens = ((
+  globalThis as Record<string, unknown>
+).__quponResetTokens ??= new Map<
+  string,
+  { userId: number; expiresAt: number }
+>()) as Map<string, { userId: number; expiresAt: number }>;
 const RESET_TTL_MS = 24 * 3_600_000;
 
 const randomToken = () =>
@@ -216,7 +199,11 @@ export const handlers: MockHandler[] = [
     method: "GET",
     path: /^\/admin\/users$/,
     reply: (_m, _b, query) => ({
-      users: filterUsers(query.get("q") ?? "", query.get("role") ?? "", query.get("status") ?? ""),
+      users: filterUsers(
+        query.get("q") ?? "",
+        query.get("role") ?? "",
+        query.get("status") ?? "",
+      ),
     }),
   },
   // POST /admin/users — same validation as internal/api/admin.go adminCreateUser.
@@ -292,7 +279,10 @@ export const handlers: MockHandler[] = [
       const u = users.find((x) => x.id === Number(m[1]));
       if (!u) return { code: "not_found", message: "" };
       const token = randomToken();
-      resetTokens.set(token, { userId: u.id, expiresAt: Date.now() + RESET_TTL_MS });
+      resetTokens.set(token, {
+        userId: u.id,
+        expiresAt: Date.now() + RESET_TTL_MS,
+      });
       // Relative URL: the modal absolutises against the current origin (the Go
       // API builds an absolute one from PUBLIC_URL).
       return {
@@ -300,11 +290,6 @@ export const handlers: MockHandler[] = [
         expiresAt: new Date(Date.now() + RESET_TTL_MS).toISOString(),
       };
     },
-  },
-  {
-    method: "GET",
-    path: /^\/admin\/organizations$/,
-    reply: () => ({ organizations: orgs }),
   },
   // POST /admin/organizations {name, kind, bin?, website?}.
   {

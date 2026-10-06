@@ -5,7 +5,8 @@ import type { MockHandler } from "./types";
 const MINT_QPNB1 = "QpNb1Dem0BondMint1111111111111111111111111111";
 const MINT_BTRK = "BTRKDeM0BondMint1111111111111111111111111111";
 
-const organizations = [
+// Shared with admin.ts (task 703 org CRUD mutates the same rows).
+export const organizations = [
   {
     id: 1,
     name: "Demo Issuer JSC",

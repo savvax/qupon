@@ -7,28 +7,30 @@ test("users: create, disable, reset-link modal, reset page sets a password", asy
 }) => {
   await signInAs(page, "admin", baseURL);
   await page.goto("/admin/users");
-  await expect(
-    page.getByRole("heading", { name: "Users" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
 
   // Seeded rows: role/status badges, a disabled user, demo users read-only.
   const mira = page.getByRole("row").filter({ hasText: "mira@qupon.test" });
   await expect(mira).toBeVisible();
-  await expect(page.getByText("Disabled").first()).toBeVisible();
-  const demoRow = page
+  const blocked = page
     .getByRole("row")
-    .filter({ hasText: "investor@demo.kz" });
-  await expect(demoRow.getByText("Demo")).toBeVisible();
+    .filter({ hasText: "blocked@qupon.test" });
+  await expect(blocked.getByText("Disabled")).toBeVisible();
+  const demoRow = page.getByRole("row").filter({ hasText: "investor@demo.kz" });
+  await expect(demoRow.getByText("Demo", { exact: true })).toBeVisible();
   await expect(demoRow.getByRole("button")).toHaveCount(0);
 
   // Filters: role=investor leaves only investors.
   await page.getByLabel("Role", { exact: true }).selectOption("investor");
+  await page.getByRole("button", { name: "Apply" }).click();
   await expect(
     page.getByRole("row").filter({ hasText: "registrar@qupon.test" }),
   ).toHaveCount(0);
   await expect(mira).toBeVisible();
 
-  // Create user (Investor role, no org).
+  // Create user (Investor role, no org) — wait for hydration after the GET-form
+  // navigation so the dialog button's handler is attached.
+  await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Create user" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Email").fill("timur@newbank.kz");
@@ -47,7 +49,9 @@ test("users: create, disable, reset-link modal, reset page sets a password", asy
   const edit = page.getByRole("dialog");
   await edit.getByRole("combobox", { name: "Status" }).click();
   await page.getByRole("option", { name: "Disabled" }).click();
-  await expect(edit.getByText("Disabling signs the user out everywhere")).toBeVisible();
+  await expect(
+    edit.getByText("Disabling signs the user out everywhere"),
+  ).toBeVisible();
   await edit.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByText("User updated")).toBeVisible({
     timeout: 15_000,
@@ -70,13 +74,15 @@ test("users: create, disable, reset-link modal, reset page sets a password", asy
   await expect(
     page.getByRole("heading", { name: "Set a new password" }),
   ).toBeVisible();
-  await page.getByLabel("New password", { exact: true }).fill("second-password-456");
+  await page
+    .getByLabel("New password", { exact: true })
+    .fill("second-password-456");
   await page.getByLabel("Repeat the password").fill("second-password-456");
   await page.getByRole("button", { name: "Set password" }).click();
   await expect(
     page.getByText("Password set. Sign in with the new password."),
   ).toBeVisible({ timeout: 15_000 });
-  await page.getByRole("link", { name: "Sign in" }).click();
+  await page.getByRole("main").getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/login/);
 });
 
@@ -84,10 +90,10 @@ test("organisations: list and create", async ({ page, baseURL }) => {
   await signInAs(page, "admin", baseURL);
   await page.goto("/admin/organizations");
   await expect(
-    page.getByRole("heading", { name: "Organizations" }),
+    page.getByRole("heading", { name: "Organisations" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("row").filter({ hasText: "Demo Issuer Ltd" }),
+    page.getByRole("row").filter({ hasText: "Demo Issuer JSC" }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Create organisation" }).click();
@@ -122,7 +128,12 @@ test("RU strings render on users, organizations and the reset page", async ({
     page.getByRole("heading", { name: "Пользователи" }),
   ).toBeVisible();
   await expect(page.getByText("Организация").first()).toBeVisible();
-  await expect(page.getByText("Отключён").first()).toBeVisible();
+  await expect(
+    page
+      .getByRole("row")
+      .filter({ hasText: "blocked@qupon.test" })
+      .getByText("Отключён"),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Создать пользователя" }).click();
   await expect(
     page.getByRole("dialog").getByLabel("Начальный пароль"),
