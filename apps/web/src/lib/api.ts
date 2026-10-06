@@ -1,4 +1,5 @@
 import type { components } from "./api-schema";
+/// <reference types="node" /> // process.env reads below need node's ambient types in single-file checks
 import { mockGet, mockGetText } from "../mocks/api";
 import { BoError, boPost } from "./boClient";
 
@@ -140,6 +141,8 @@ export const listActions = (mint: string) =>
 export const listEntitlements = (actionPda: string) =>
   get<EntitlementDTO[]>(`/actions/${actionPda}/entitlements`);
 export const getAction = (pda: string) => get<ActionDTO>(`/actions/${pda}`);
+/** The mock-aware public GET used across this module; feature libs reuse it (lib/kase.ts). */
+export const apiGet = get;
 
 /** KASE schedule check (platform v2 §5.5): kase.kz fixation vs on-chain record date. */
 export type KaseCheck = {

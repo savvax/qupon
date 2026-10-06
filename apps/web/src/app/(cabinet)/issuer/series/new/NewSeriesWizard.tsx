@@ -5,12 +5,14 @@ import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { Address } from "@/components/ui/Address";
 import { Amount } from "@/components/ui/Amount";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { Stepper } from "@/components/ui/Stepper";
 import { TextField } from "@/components/ui/TextField";
 import { boPost } from "@/lib/boClient";
 import { type CashOption, cashField, cashSuffix } from "@/lib/cashAssets";
+import { compareKaseSchedule, type KaseBond } from "@/lib/kase";
 import {
   addMonthsYmd,
   parseMajor,
@@ -19,6 +21,7 @@ import {
   type DayCountId,
 } from "@/lib/schedulePreview";
 import { useRunWrite } from "@/lib/useRunWrite";
+import { importFromKase } from "./kaseImport";
 
 type Created = { series?: string; mint?: string; signatures: string[] };
 
@@ -51,6 +54,44 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
   });
   const set = (k: keyof typeof f) => (v: string) =>
     setF((p) => ({ ...p, [k]: v }));
+
+  const tk = useTranslations("kase.import");
+  const tc = useTranslations("kase.compare");
+  const [kase, setKase] = useState<KaseBond>();
+  const [kaseTicker, setKaseTicker] = useState("");
+  const [kaseError, setKaseError] = useState("");
+  const [importing, setImporting] = useState(false);
+
+  /** Import from KASE (task 1002): prefill every term from kase.kz's normalised bond. */
+  const doImport = async () => {
+    if (importing) return;
+    if (!/^[A-Za-z0-9]{2,12}$/.test(kaseTicker)) {
+      setKaseError("invalid_ticker");
+      return;
+    }
+    setImporting(true);
+    setKaseError("");
+    const res = await importFromKase(kaseTicker);
+    setImporting(false);
+    if (res.ok) {
+      setKase(res.bond);
+      setKaseError("");
+      setF((p) => ({
+        ...p,
+        name: res.bond.ticker,
+        isin: res.bond.isin || p.isin,
+        face: res.bond.face > 0 ? String(res.bond.face / 100) : p.face,
+        rate: (res.bond.couponRate / 100).toFixed(2),
+        frequency: res.bond.frequency ? String(res.bond.frequency) : p.frequency,
+        dayCount: res.bond.dayCount || p.dayCount,
+        issueDate: res.bond.issueDate || p.issueDate,
+        maturityDate: res.bond.maturityDate || p.maturityDate,
+      }));
+    } else {
+      setKase(undefined);
+      setKaseError(res.code);
+    }
+  };
 
   const asset = assets.find((a) => a.key === f.cash) ?? assets[0];
   const decimals = asset?.decimals ?? 2;
@@ -203,6 +244,43 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
             if (valid) setStep(1);
           }}
         >
+          <fieldset className="mb-6 rounded-card border border-n200 bg-n50/60 p-4">
+            <legend className="px-1 text-sm font-semibold">{tk("title")}</legend>
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="min-w-44 flex-1">
+                <TextField
+                  label={tk("ticker")}
+                  hint={tk("tickerHint")}
+                  value={kaseTicker}
+                  // KASE tickers are case-sensitive (TEBNb10): trim, never upper-case
+                  onChange={(e) => setKaseTicker(e.target.value.trim())}
+                  error={
+                    kaseError
+                      ? tk.has(`errors.${kaseError}`)
+                        ? tk(`errors.${kaseError}`)
+                        : tk("errors.default")
+                      : undefined
+                  }
+                  maxLength={12}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                loading={importing}
+                onClick={doImport}
+              >
+                {tk("button")}
+              </Button>
+            </div>
+            {kase && (
+              <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-g700">
+                <Badge tone="success">{kase.ticker}</Badge>
+                {tk("done", { ticker: kase.ticker, issuer: kase.issuer })}
+              </p>
+            )}
+            <p className="mt-2 text-xs text-n500">{tk("note")}</p>
+          </fieldset>
           <div className="grid gap-5 sm:grid-cols-2">
             <TextField
               label={t("name")}
@@ -341,6 +419,48 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
               </tfoot>
             </table>
           </div>
+          {kase && rateBps !== undefined && (
+            <div className="mt-6 rounded-card border border-warn-bd p-4">
+              <h3 className="text-sm font-bold">{tc("title", { ticker: kase.ticker })}</h3>
+              <p className="mt-1 text-xs text-n600">{tc("lead")}</p>
+              <div className="mt-3 max-h-72 overflow-auto rounded-btn border border-n200">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-n50 text-left font-bold tracking-wide text-n500 uppercase">
+                    <tr>
+                      <th className="px-3 py-2">#</th>
+                      <th className="px-3 py-2">{tc("kasePeriod")}</th>
+                      <th className="px-3 py-2">{tc("previewPeriod")}</th>
+                      <th className="px-3 py-2 text-right">{tc("status")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {compareKaseSchedule(kase.schedule, rows, rateBps).map((r) => (
+                      <tr
+                        key={r.n}
+                        className={`border-t border-n200 ${r.mismatch ? "bg-warn-bg font-semibold text-warn-fg" : ""}`}
+                      >
+                        <td className="num px-3 py-2">{r.n}</td>
+                        <td className="num px-3 py-2">
+                          {r.kase
+                            ? `${r.kase.start} – ${r.kase.end} · ${(r.kase.rate / 100).toFixed(2)}%`
+                            : "—"}
+                        </td>
+                        <td className="num px-3 py-2">
+                          {r.preview
+                            ? `${r.preview.periodStart} – ${r.preview.periodEnd}`
+                            : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {r.mismatch ? tc("mismatch") : tc("match")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-2 text-xs text-n500">{tc("legend")}</p>
+            </div>
+          )}
           <div className="mt-6 flex justify-between gap-3">
             <Button variant="ghost" onClick={() => setStep(0)}>
               {t("back")}

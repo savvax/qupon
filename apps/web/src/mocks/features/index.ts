@@ -3,6 +3,7 @@ import { handlers as admin } from "./admin";
 import { handlers as adminSeries } from "./adminSeries";
 import { handlers as assets } from "./assets";
 import { handlers as kase } from "./kase";
+import { handlers as kaseMarket } from "./kaseMarket";
 import { handlers as kyc } from "./kyc";
 import { handlers as network } from "./network";
 import { handlers as notify } from "./notify";
@@ -21,6 +22,7 @@ const ALL: MockHandler[] = [
   ...org,
   ...reports,
   ...kase,
+  ...kaseMarket,
   ...assets,
 ];
 

@@ -16,6 +16,8 @@ import {
   type ScheduleItem,
 } from "@/lib/api";
 import { bpsToPercent, formatDate } from "@/lib/format";
+import { getKaseSeriesTicker } from "@/lib/kase";
+import { KasePanel } from "./KasePanel";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +63,8 @@ export default async function BondPage({
     listActions(mint).catch(() => [] as ActionDTO[]),
   ]);
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  // Series linked in series_settings to a KASE ticker get the market panel; failures never block the page.
+  const kaseTicker = await getKaseSeriesTicker(mint);
   const [t, ts, tk] = await Promise.all([
     getTranslations("bond"),
     getTranslations("status"),
@@ -280,6 +284,11 @@ export default async function BondPage({
           />
         </StaggerItem>
       </Stagger>
+      {kaseTicker && (
+        <div className="mt-6">
+          <KasePanel ticker={kaseTicker} locale={locale} />
+        </div>
+      )}
 
       <div className="mt-8">
         <Tabs
