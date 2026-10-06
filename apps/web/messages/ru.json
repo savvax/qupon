@@ -358,7 +358,9 @@
     "registrarInvestors": "Инвесторы",
     "adminAssets": "Денежные активы",
     "admin": "Обзор платформы",
-    "adminSystem": "Состояние системы"
+    "adminSystem": "Состояние системы",
+    "adminSeries": "Серии",
+    "adminAudit": "Журнал действий"
   },
   "errors": {
     "failed": "Что-то пошло не так",

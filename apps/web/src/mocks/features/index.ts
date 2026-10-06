@@ -1,5 +1,6 @@
 import { handlers as account } from "./account";
 import { handlers as admin } from "./admin";
+import { handlers as adminSeries } from "./adminSeries";
 import { handlers as assets } from "./assets";
 import { handlers as kase } from "./kase";
 import { handlers as kyc } from "./kyc";
@@ -11,6 +12,8 @@ import type { MockHandler } from "./types";
 
 const ALL: MockHandler[] = [
   ...network,
+  // series settings + audit (task 704) before the overview fixtures (705): its /admin/series also handles PATCH
+  ...adminSeries,
   ...admin,
   ...account,
   ...kyc,

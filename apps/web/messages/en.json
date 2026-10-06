@@ -358,7 +358,9 @@
     "registrarInvestors": "Investors",
     "adminAssets": "Cash assets",
     "admin": "Admin overview",
-    "adminSystem": "System health"
+    "adminSystem": "System health",
+    "adminSeries": "Series",
+    "adminAudit": "Audit log"
   },
   "errors": {
     "failed": "Something went wrong",
