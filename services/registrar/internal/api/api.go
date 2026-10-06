@@ -20,6 +20,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
+	"github.com/qupon-kz/qupon/services/registrar/internal/kase"
 	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
@@ -52,6 +53,8 @@ type Deps struct {
 	DataDir string
 	// TestRoutes registers GET /_test/registrar (role-gated no-op) for RBAC tests; never set in production.
 	TestRoutes bool
+	// Kase serves cached kase.kz market data (task 1001); nil → /kase/* answers 503.
+	Kase *kase.Service
 }
 
 // New builds the HTTP handler tree.
@@ -259,7 +262,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	// mount: reports
 
-	// mount: kase
+	mountKase(r, deps, st)
 
 	// mount: disclosure
 

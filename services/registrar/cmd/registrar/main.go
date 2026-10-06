@@ -24,6 +24,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/execconfig"
 	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/ingest"
+	"github.com/qupon-kz/qupon/services/registrar/internal/kase"
 	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
@@ -160,6 +161,8 @@ func run() error {
 			DemoSeriesLimit: auth.NewLimiter(10, 24*time.Hour),
 			Auth: &auth.Service{Store: st, Now: time.Now, TTL: 12 * time.Hour, DemoLogin: cfg.DemoLogin,
 				Limit: auth.NewLimiter(5, time.Minute)},
+			// kase.kz market data (task 1001): public, cached, stale-if-error
+			Kase: kase.NewService(st),
 		}),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
