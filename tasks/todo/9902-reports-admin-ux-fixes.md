@@ -27,5 +27,5 @@ Lead review of 902/703 (2026-10-06, RU at 1440/390): amounts and labels on the n
 
 ## Acceptance criteria
 - RU at 1440 and 390 px: no EN number formats, no raw enum values, no truncated KPI; EN unchanged in meaning.
-- `e2e/reports.spec.ts` (or the 902 spec) gains one RU assertion: `10 000,00` and `Выплачено` visible on /investor/reports; `e2e/locale-stability.spec.ts` and the full mock e2e stay green.
+- `e2e/reports.spec.ts` (or the 902 spec) gains one RU assertion: `/10\s000,00/` (RU groups with a narrow no-break space U+202F, so match with \s) and `Выплачено` visible on /investor/reports; `e2e/locale-stability.spec.ts` and the full mock e2e stay green.
 - `make verify` green; `reports/worklog/9902.md`.
