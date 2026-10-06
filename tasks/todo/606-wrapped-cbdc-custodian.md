@@ -2,7 +2,7 @@
 id: 606
 title: Wrapped digital tenge custodian page (SIMULATED)
 agent: glm
-tier: T2
+tier: T1
 depends_on: [603, 604]
 verify: make verify
 timeout_min: 60
