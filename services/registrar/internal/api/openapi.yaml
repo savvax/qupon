@@ -95,6 +95,34 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/InvestorDTO'
+  /series/{mint}/trades:
+    get:
+      summary: Admitted secondary trades of a series (settled by the Solana DvP program), oldest first, with the funding of both legs
+      operationId: listTrades
+      parameters:
+        - $ref: '#/components/parameters/Mint'
+      responses:
+        "200":
+          description: the count of admitted trades and the trades themselves
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - openTrades
+                  - items
+                properties:
+                  openTrades:
+                    type: integer
+                    description: admitted trades not yet released; strike_record is refused while this is above 0
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TradeDTO'
+        "404":
+          description: unknown_series
+        "503":
+          description: chain reader not configured
   /series/{mint}/schedule:
     get:
       summary: Coupon schedule (computed from issue_date, frequency, day_count)
@@ -870,6 +898,121 @@ paths:
           description: unknown_series
         "409":
           description: the chain refused the step (onchainError)
+  /registrar/series/{mint}/trades:
+    post:
+      summary: Create a secondary trade on the Solana DvP program and admit its bond escrow (trade:create, one transaction)
+      operationId: registrarTradeCreate
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Mint'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TradeCreateRequest'
+      responses:
+        "200":
+          description: created and admitted; the trade's SwapDvp address and the transaction signature
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - signatures
+                  - swapDvp
+                properties:
+                  signatures:
+                    type: array
+                    items:
+                      type: string
+                  swapDvp:
+                    type: string
+        "400":
+          description: invalid_body — seller or buyer not base58, seller equals buyer, or units below 1
+        "401":
+          description: no valid back-office session
+        "403":
+          description: role is not registrar or admin
+        "404":
+          description: unknown_series
+        "409":
+          description: the chain refused the trade (onchainError), e.g. InvalidTrade or a suspended party
+  /registrar/series/{mint}/trades/{swapDvp}/settle:
+    post:
+      summary: Settle an admitted trade — SettleDvp (both legs atomically) + release_trade, one transaction
+      operationId: registrarTradeSettle
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Mint'
+        - $ref: '#/components/parameters/SwapDvp'
+      responses:
+        "200":
+          description: settled; body carries the transaction signatures
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - signatures
+                properties:
+                  signatures:
+                    type: array
+                    items:
+                      type: string
+        "401":
+          description: no valid back-office session
+        "403":
+          description: role is not registrar or admin
+        "404":
+          description: unknown_series or trade_not_found
+        "409":
+          description: the chain refused the settlement (onchainError), e.g. a leg not funded or the trade expired
+  /registrar/series/{mint}/trades/{swapDvp}/cancel:
+    post:
+      summary: Cancel an admitted trade — CancelDvp + release_trade in one transaction; with force, return the escrowed bonds to the seller without the DvP program
+      operationId: registrarTradeCancel
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Mint'
+        - $ref: '#/components/parameters/SwapDvp'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TradeCancelRequest'
+      responses:
+        "200":
+          description: cancelled; signatures and the units a forced release moved back to the seller (0 otherwise)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - signatures
+                  - returnedUnits
+                properties:
+                  signatures:
+                    type: array
+                    items:
+                      type: string
+                  returnedUnits:
+                    type: string
+                    description: decimal string
+        "400":
+          description: invalid_body
+        "401":
+          description: no valid back-office session
+        "403":
+          description: role is not registrar or admin
+        "404":
+          description: unknown_series or trade_not_found
+        "409":
+          description: the chain refused the cancel (onchainError), e.g. a refund account is closed — retry with force
   /registrar/audit:
     get:
       summary: The back-office audit feed (who ran which write, and what it did)
@@ -935,6 +1078,38 @@ paths:
           description: unknown_series
         "409":
           description: the chain refused the subscribe (onchainError)
+  /demo/investor/series/{mint}/trades/{swapDvp}/fund:
+    post:
+      summary: Fund one leg of an admitted trade with a server-held demo investor keypair (trade:fund); the demo investor and the registrar may call it
+      operationId: demoTradeFund
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Mint'
+        - $ref: '#/components/parameters/SwapDvp'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TradeFundRequest'
+      responses:
+        "200":
+          description: leg funded; tx signature and explorer URL in the body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoResponse'
+        "400":
+          description: invalid_body — side is not seller or buyer
+        "401":
+          description: no valid session
+        "403":
+          description: role is not investor_demo, registrar or admin; or not_demo_investor when the server holds no keypair for that party
+        "404":
+          description: unknown_series or trade_not_found
+        "409":
+          description: the chain refused the transfer (onchainError)
   /demo/investor/vote:
     post:
       summary: Cast a snapshot-weighted vote with the demo investor's keypair
@@ -3056,6 +3231,13 @@ components:
       description: Bond mint pubkey (base58)
       schema:
         type: string
+    SwapDvp:
+      name: swapDvp
+      in: path
+      required: true
+      description: The trade's SwapDvp record on the Solana DvP program (base58)
+      schema:
+        type: string
     Pda:
       name: pda
       in: path
@@ -3312,9 +3494,94 @@ components:
           type:
             - string
             - "null"
+        openTrades:
+          type: integer
+          description: admitted secondary trades (Solana DvP) not yet released; the record date is refused while above 0
         explorerUrl:
           type: string
           description: devnet explorer link for the mint
+    TradeDTO:
+      description: One admitted secondary trade with the funding of both legs (same field names as the CLI's trade:list).
+      type: object
+      required:
+        - swapDvp
+        - escrow
+        - seller
+        - buyer
+        - units
+        - cashAmount
+        - admittedAt
+        - fundedUnits
+        - fundedCash
+        - status
+      properties:
+        swapDvp:
+          type: string
+          description: the Solana DvP program's trade record (base58)
+        escrow:
+          type: string
+          description: bond-leg escrow, the SwapDvp's associated token account for the bond mint
+        seller:
+          type: string
+        buyer:
+          type: string
+        units:
+          type: string
+          description: bonds traded, decimal string
+        cashAmount:
+          $ref: '#/components/schemas/Amount'
+        admittedAt:
+          type: string
+          description: RFC 3339 in Asia/Almaty, like the other date-time fields
+        fundedUnits:
+          type:
+            - string
+            - "null"
+          description: bonds in the escrow, decimal string; null once the DvP program closed the escrow
+        fundedCash:
+          oneOf:
+            - $ref: '#/components/schemas/Amount'
+            - type: "null"
+          description: cash in the escrow; null once the DvP program closed the escrow
+        status:
+          type: string
+          enum:
+            - awaiting_funding
+            - ready
+            - closed
+    TradeCreateRequest:
+      type: object
+      required:
+        - seller
+        - buyer
+        - units
+      properties:
+        seller:
+          type: string
+          description: registered investor delivering the bonds (wallet, base58)
+        buyer:
+          type: string
+          description: registered investor paying the cash (wallet, base58)
+        units:
+          type: integer
+          minimum: 1
+          description: bonds to trade, priced at par (face value)
+    TradeCancelRequest:
+      type: object
+      properties:
+        force:
+          type: boolean
+          description: skip the DvP program and return the escrowed bonds to the seller as permanent delegate
+    TradeFundRequest:
+      type: object
+      required:
+        - side
+      properties:
+        side:
+          type: string
+          enum:
+            - seller
+            - buyer
     InvestorDTO:
       type: object
       required:
