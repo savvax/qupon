@@ -441,3 +441,13 @@
     background-position: -60% 0;
   }
 }
+
+/* Printable reports (task 902): a clean A4 sheet — the browser's "Save as PDF" is the PDF engine. */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  body {
+    background: white;
+  }
+}

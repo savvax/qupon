@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Address } from "@/components/ui/Address";
 import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Kpi } from "@/components/ui/Kpi";
 import { Tabs } from "@/components/ui/Tabs";
@@ -17,6 +18,7 @@ import {
   type ScheduleItem,
 } from "@/lib/api";
 import { bpsToPercent, formatDate } from "@/lib/format";
+import { printHref } from "@/lib/reports";
 import { KIND_TONE } from "@/lib/ui/badge";
 import {
   AnnounceButton,
@@ -58,11 +60,12 @@ export default async function IssuerSeriesPage({
     listInvestors(mint).catch(() => [] as InvestorDTO[]),
   ]);
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
-  const [t, tb, ts, tk] = await Promise.all([
+  const [t, tb, ts, tk, tr] = await Promise.all([
     getTranslations("issuer"),
     getTranslations("bond"),
     getTranslations("status"),
     getTranslations("landing.kinds"),
+    getTranslations("reports.issuer"),
   ]);
   const status = (s: string) => (
     <Badge status={s}>{ts.has(s) ? ts(s) : s}</Badge>
@@ -152,8 +155,16 @@ export default async function IssuerSeriesPage({
       key: "do",
       header: "",
       align: "right",
-      render: (a) =>
-        a.status === "SnapshotComplete" ? <FundButton pda={a.pda} /> : null,
+      render: (a) => (
+        <div className="flex justify-end gap-2">
+          {a.status === "SnapshotComplete" && <FundButton pda={a.pda} />}
+          <Button asChild variant="secondary" size="sm">
+            <Link href={printHref("payouts", { pda: a.pda })}>
+              {tr("payoutReport")}
+            </Link>
+          </Button>
+        </div>
+      ),
     },
   ];
   const holderCols: Column<InvestorDTO>[] = [
