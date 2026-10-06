@@ -2,7 +2,14 @@
 import { useTranslations } from "next-intl";
 import { useCallback } from "react";
 import { toast } from "@/components/ui/toastStore";
-import { BoError, explainBoError, type ErrorText } from "./boClient";
+import { confirmMainnet } from "@/components/network/MainnetConfirm";
+import { useNetwork } from "@/components/network/NetworkContext";
+import {
+  BoError,
+  explainBoError,
+  withNetworkConfirm,
+  type ErrorText,
+} from "./boClient";
 
 export type WriteOpts<T> = {
   pending: string;
@@ -20,11 +27,16 @@ export type WriteOpts<T> = {
  */
 export function useRunWrite() {
   const t = useTranslations("errors");
+  const network = useNetwork();
   return useCallback(
     async <T>(o: WriteOpts<T>): Promise<T | null> => {
+      // Mainnet: the user types the network name first; the writes then carry the confirmation header.
+      if (network.mainnet && !(await confirmMainnet())) return null;
       const id = toast({ kind: "pending", title: o.pending });
       try {
-        const r = await o.call();
+        const r = network.mainnet
+          ? await withNetworkConfirm(network.network, o.call)
+          : await o.call();
         toast.update(id, {
           kind: "success",
           title: o.success(r),
@@ -56,6 +68,6 @@ export function useRunWrite() {
         return null;
       }
     },
-    [t],
+    [t, network],
   );
 }

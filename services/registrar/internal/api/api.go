@@ -67,6 +67,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r.Use(middleware.RequestID, middleware.Recoverer)
 	r.Use(loggerMiddleware(logger), corsReadOnly)
 	r.Use(newReadCache(deps.ReadCacheTTL, time.Now))
+	r.Use(mainnetGuard(deps.Network))
 
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
@@ -239,6 +240,8 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 			"demoLogin": deps.Auth != nil && deps.Auth.DemoLogin && !p.Mainnet,
 		})
 	})
+
+	mountNetworkAdmin(r, deps, st)
 
 	// Platform v2 feature routes (docs/superpowers/plans/2026-10-06-plan6-12-platform-v2.md): each task replaces
 	// exactly its own anchor below with mount<Feature>(r, deps, st). Keep one blank line between anchors.

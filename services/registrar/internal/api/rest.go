@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"net/http"
 	"strconv"
 	"strings"
@@ -76,7 +77,7 @@ func cashMoney(ctx context.Context, rm ReadModel, st *store.Store, cashMint sola
 }
 
 func explorer(addr solana.PublicKey) string {
-	return "https://explorer.solana.com/address/" + addr.String() + "?cluster=devnet"
+	return network.ExplorerURL("address", addr.String())
 }
 
 func dateTime(ts int64) string { return time.Unix(ts, 0).In(almaty).Format(time.RFC3339) }

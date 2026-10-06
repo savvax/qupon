@@ -4,5 +4,44 @@
     "mainnet-beta": "Mainnet",
     "devnetHint": "Test network: tokens have no value",
     "mainnetHint": "Live network: transactions move real assets"
+  },
+  "confirm": {
+    "title": "Confirm a mainnet transaction",
+    "body": "This deployment runs on Solana mainnet: the write moves real assets and cannot be undone.",
+    "label": "Type “{word}” to confirm",
+    "confirm": "Sign on mainnet",
+    "cancel": "Cancel"
+  },
+  "admin": {
+    "title": "Network",
+    "lead": "Which Solana cluster this deployment serves, whether it is ready, and what a mainnet launch needs.",
+    "network": "Network",
+    "program": "Program",
+    "demo": "Demo sign-in",
+    "on": "On",
+    "off": "Off",
+    "readiness": "Readiness of this instance",
+    "unavailable": "Readiness check unavailable — the registrar API did not answer.",
+    "checks": {
+      "rpc_reachable": "RPC reachable",
+      "program_deployed": "Program deployed",
+      "program_executable": "Program executable",
+      "upgrade_authority": "Upgrade authority",
+      "cash_assets_enabled": "Cash assets enabled",
+      "demo_login": "Demo sign-in off on mainnet"
+    },
+    "mainnetTitle": "Mainnet launch checklist",
+    "mainnetLead": "The same build runs on mainnet-beta with config/mainnet-beta.json. Nothing is deployed to mainnet until these are done and the deploy is confirmed by a person.",
+    "steps": {
+      "license": "Licensing: issue under an AIFC/AFSA licence or the National Bank's digital-asset sandbox; registrar and paying agent agreements.",
+      "build": "Reproducible build (anchor build --verifiable) and solana-verify against the repository.",
+      "authority": "Upgrade authority on a Squads multisig, not a single key.",
+      "keys": "Operator keys (registrar, issuer, paying agent) in an HSM or KMS, never in files on the server.",
+      "funding": "About 7.5 SOL for program rent plus operator SOL for fees; paying-agent float in the cash asset.",
+      "kzte": "Add the official Evo (KZTE) mint from the issuer in Admin → Cash assets and verify it on-chain — never by ticker.",
+      "rpc": "A mainnet RPC provider with an SLA; keyed URLs stay server-side.",
+      "kyc": "A real KYC provider in place of the SIMULATED review.",
+      "monitoring": "Alerts on failed actions, low operator balances and RPC errors; backups of the registrar database."
+    }
   }
 }

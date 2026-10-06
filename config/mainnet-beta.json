@@ -1,0 +1,37 @@
+{
+  "cluster": "mainnet-beta",
+  "programId": "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd",
+  "token2022ProgramId": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+  "usdcMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "tkztMint": "",
+  "series": {},
+  "wallets": {
+    "registrar": "",
+    "issuer": "",
+    "payingAgent": "",
+    "investors": [],
+    "outsider": ""
+  },
+  "cashAssets": [
+    {
+      "symbol": "USDC",
+      "name": "USD Coin",
+      "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "kind": "stablecoin",
+      "issuerNote": "Circle USDC on Solana mainnet.",
+      "enabled": true
+    },
+    {
+      "symbol": "KZTE",
+      "name": "Evo tenge stablecoin",
+      "mint": "",
+      "decimals": 0,
+      "tokenProgram": "",
+      "kind": "stablecoin",
+      "issuerNote": "Issued by Intebix with Eurasian Bank in the National Bank of Kazakhstan's digital-asset sandbox. Take the mint address from the issuer, add it in Admin → Cash assets, and verify it on-chain; never resolve KZTE by ticker (impostor tokens use it).",
+      "enabled": false
+    }
+  ]
+}

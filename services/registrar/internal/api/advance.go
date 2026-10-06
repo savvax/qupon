@@ -9,6 +9,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"log/slog"
 	"net/http"
 	"time"
@@ -42,7 +43,7 @@ func txExplorer(sig string) *string {
 	if sig == "" {
 		return nil
 	}
-	u := "https://explorer.solana.com/tx/" + sig + "?cluster=devnet"
+	u := network.ExplorerURL("tx", sig)
 	return &u
 }
 

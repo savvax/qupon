@@ -45,6 +45,9 @@ async function forward(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        ...(req.headers.get("x-confirm-network")
+          ? { "X-Confirm-Network": req.headers.get("x-confirm-network") ?? "" }
+          : {}),
       },
       body,
     });

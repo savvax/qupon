@@ -140,6 +140,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	network.SetExplorer(profile)
 	if err := seedPlatform(ctx, st, cfg, profile); err != nil {
 		return fmt.Errorf("seed platform: %w", err)
 	}

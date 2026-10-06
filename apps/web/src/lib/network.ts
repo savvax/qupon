@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { cache } from "react";
 import { MOCK_ENABLED } from "@/lib/api";
 import { apiBase } from "@/lib/session";
@@ -21,7 +22,19 @@ const DEVNET: NetworkInfo = {
 
 /** Server-side, once per request; falls back to devnet when the API is unreachable (never claims mainnet). */
 export const getNetwork = cache(async (): Promise<NetworkInfo> => {
-  if (MOCK_ENABLED) return DEVNET;
+  if (MOCK_ENABLED) {
+    // e2e can preview the mainnet UI in mock mode: cookie qupon_mock_network=mainnet-beta
+    const c = (await cookies()).get("qupon_mock_network")?.value;
+    return c === "mainnet-beta"
+      ? {
+          ...DEVNET,
+          network: "mainnet-beta",
+          explorerCluster: "",
+          mainnet: true,
+          demoLogin: false,
+        }
+      : DEVNET;
+  }
   const res = await fetch(`${apiBase()}/network`, {
     next: { revalidate: 60 },
   }).catch(() => null);

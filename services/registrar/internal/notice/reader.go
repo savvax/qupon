@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"log/slog"
 	"time"
 
@@ -161,7 +162,7 @@ func (r *Reader) txLinks(ctx context.Context, pda solana.PublicKey) []string {
 	}
 	if len(links) == 0 {
 		links = append(links, "see explorer for action "+pda.String()+
-			": https://explorer.solana.com/address/"+pda.String()+"?cluster=devnet")
+			": "+network.ExplorerURL("address", pda.String()))
 	}
 	return links
 }

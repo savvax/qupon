@@ -5,6 +5,7 @@ package notice
 import (
 	"errors"
 	"fmt"
+	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"strings"
 )
 
@@ -96,13 +97,11 @@ func money(v uint64, dec uint8) string {
 // Amount2 renders a minor-unit amount with a 2-decimal fraction (e.g. 1,874.20).
 func Amount2(v uint64) string { return fmt.Sprintf("%s.%02d", Amount(v/100), v%100) }
 
-// explorerLink is the devnet explorer link for a tx signature.
-func explorerLink(sig string) string {
-	return "https://explorer.solana.com/tx/" + sig + "?cluster=devnet"
-}
+// explorerLink is the explorer link for a tx signature on this instance's network.
+func explorerLink(sig string) string { return network.ExplorerURL("tx", sig) }
 
 // PlaceholderTxLink is used when no settled transaction signature is known yet.
-const PlaceholderTxLink = "https://explorer.solana.com/tx/<TX_SIGNATURE>?cluster=devnet"
+func PlaceholderTxLink() string { return network.ExplorerURL("tx", "<TX_SIGNATURE>") }
 
 func txLinks(links []string) string {
 	out := make([]string, 0, len(links))
@@ -113,7 +112,7 @@ func txLinks(links []string) string {
 		out = append(out, l)
 	}
 	if len(out) == 0 {
-		out = append(out, PlaceholderTxLink)
+		out = append(out, PlaceholderTxLink())
 	}
 	return strings.Join(out, " ")
 }

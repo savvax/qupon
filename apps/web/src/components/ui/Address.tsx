@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { explorerHref, useNetwork } from "@/components/network/NetworkContext";
 
 /** Short base58 with a devnet explorer link and a copy button. */
 export function Address({
@@ -13,12 +14,13 @@ export function Address({
   label?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const network = useNetwork();
   const short =
     value.length > 12 ? `${value.slice(0, 4)}…${value.slice(-4)}` : value;
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1">
       <a
-        href={`https://explorer.solana.com/${kind}/${value}?cluster=devnet`}
+        href={explorerHref(kind, value, network.explorerCluster)}
         target="_blank"
         rel="noreferrer"
         title={value}

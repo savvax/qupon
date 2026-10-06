@@ -60,6 +60,22 @@ export function explainBoError(e: BoErrorLike, t: ErrorText = english): string {
   return e.message;
 }
 
+/** Set while a user-confirmed mainnet write runs: every write of that call carries X-Confirm-Network. */
+let confirmedNetwork: string | undefined;
+
+/** Run `call` with the typed mainnet confirmation attached to its writes (see useRunWrite). */
+export async function withNetworkConfirm<T>(
+  network: string,
+  call: () => Promise<T>,
+): Promise<T> {
+  confirmedNetwork = network;
+  try {
+    return await call();
+  } finally {
+    confirmedNetwork = undefined;
+  }
+}
+
 /** POST a back-office write through the session proxy (/api/bo/<path>); throws BoError. */
 export function boPost<T>(path: string, body: unknown = {}): Promise<T> {
   return boSend<T>("POST", path, body);
@@ -75,7 +91,10 @@ export async function boSend<T>(
   try {
     res = await fetch(`/api/bo/${path}`, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(confirmedNetwork ? { "X-Confirm-Network": confirmedNetwork } : {}),
+      },
       body: JSON.stringify(body),
     });
   } catch (e) {

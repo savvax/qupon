@@ -43,5 +43,28 @@ export const handlers: MockHandler[] = [
         tokenProgram: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
       },
     ],
+    method: "GET",
+    path: /^\/admin\/network\/readiness$/,
+    reply: () => ({
+      network: "devnet",
+      programId: "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd",
+      mainnet: false,
+      checks: [
+        { key: "rpc_reachable", ok: true },
+        {
+          key: "program_deployed",
+          ok: true,
+          detail: "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd",
+        },
+        { key: "program_executable", ok: true },
+        {
+          key: "upgrade_authority",
+          ok: true,
+          detail: "Bnq22GvV6AQcXWeTp6x3uTYkC7HKKrysiFve2uCDqE97",
+        },
+        { key: "cash_assets_enabled", ok: true, detail: "USDC, tKZT" },
+        { key: "demo_login", ok: true, detail: "on" },
+      ],
+    }),
   },
 ];

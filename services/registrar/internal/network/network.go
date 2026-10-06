@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync/atomic"
 )
 
 // Profile is the network this instance runs on.
@@ -42,4 +43,26 @@ func New(cluster, programID string) (Profile, error) {
 	default:
 		return Profile{}, fmt.Errorf("unsupported cluster %q (devnet | mainnet-beta)", cluster)
 	}
+}
+
+// explorerCluster is the ?cluster= value of every explorer link this process prints. One process serves one
+// network, so it is set once at startup (SetExplorer) and read everywhere links are built.
+// ponytail: process-wide value instead of threading the profile through notice/DTO builders; pass it explicitly
+// if an instance ever serves two networks.
+var explorerCluster atomic.Value
+
+// SetExplorer fixes the explorer cluster for the process (call once from main with the profile).
+func SetExplorer(p Profile) { explorerCluster.Store(p.ExplorerCluster) }
+
+// ExplorerURL links an explorer page: kind is "tx" or "address". Devnet unless SetExplorer chose mainnet.
+func ExplorerURL(kind, id string) string {
+	c, ok := explorerCluster.Load().(string)
+	if !ok {
+		c = "devnet"
+	}
+	u := "https://explorer.solana.com/" + kind + "/" + id
+	if c != "" {
+		u += "?cluster=" + c
+	}
+	return u
 }

@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import { getNetwork } from "@/lib/network";
 
 const manrope = Manrope({
   subsets: ["latin", "cyrillic"],
@@ -42,11 +43,12 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const locale = await getLocale();
+  const network = await getNetwork();
   return (
     <html lang={locale} className={manrope.variable}>
       <body className="min-h-screen font-sans">
         <NextIntlClientProvider>
-          <Providers>{children}</Providers>
+          <Providers network={network}>{children}</Providers>
         </NextIntlClientProvider>
       </body>
     </html>

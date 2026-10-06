@@ -7,6 +7,9 @@ import {
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import type { ReactNode } from "react";
 import { MotionProvider } from "@/components/motion/MotionProvider";
+import { MainnetConfirmHost } from "@/components/network/MainnetConfirm";
+import { NetworkProvider } from "@/components/network/NetworkContext";
+import type { NetworkInfo } from "@/lib/network";
 import { Toaster } from "@/components/ui/Toaster";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
@@ -17,17 +20,26 @@ const ENDPOINT =
 
 // No explicit adapters needed: Phantom, Backpack and Solflare all implement
 // the Wallet Standard and are auto-detected by WalletProvider.
-export default function Providers({ children }: { children: ReactNode }) {
+export default function Providers({
+  children,
+  network,
+}: {
+  children: ReactNode;
+  network: NetworkInfo;
+}) {
   return (
-    <ConnectionProvider endpoint={ENDPOINT}>
-      <WalletProvider wallets={[]} autoConnect>
-        <WalletModalProvider>
-          <MotionProvider>
-            {children}
-            <Toaster />
-          </MotionProvider>
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+    <NetworkProvider value={network}>
+      <ConnectionProvider endpoint={ENDPOINT}>
+        <WalletProvider wallets={[]} autoConnect>
+          <WalletModalProvider>
+            <MotionProvider>
+              {children}
+              <Toaster />
+              <MainnetConfirmHost />
+            </MotionProvider>
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    </NetworkProvider>
   );
 }
