@@ -89,6 +89,29 @@ export async function boSend<T>(
   return (await res.json()) as T;
 }
 
+/** Upload a document (multipart) through /api/bo-upload/<path>, e.g. "me/documents"; throws BoError. */
+export async function boUpload<T>(
+  path: string,
+  file: File,
+  kind: string,
+): Promise<T> {
+  const form = new FormData();
+  form.set("kind", kind);
+  form.set("file", file);
+  let res: Response;
+  try {
+    res = await fetch(`/api/bo-upload/${path}`, { method: "POST", body: form });
+  } catch (e) {
+    throw new BoError(
+      0,
+      "upstream",
+      e instanceof Error ? e.message : String(e),
+    );
+  }
+  if (!res.ok) throw await boErrorFrom(res);
+  return (await res.json()) as T;
+}
+
 /**
  * Only same-site paths survive as ?next=: one leading slash, then no slash/backslash, and no control characters
  * anywhere (browsers strip tab/newline, so "/\t/evil.com" would become "//evil.com").

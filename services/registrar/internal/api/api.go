@@ -254,9 +254,9 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	// mount: signup
 
-	// mount: documents
+	mountDocuments(r, deps, st)
 
-	// mount: kyc
+	mountKyc(r, deps, st)
 
 	// mount: notifications
 

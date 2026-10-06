@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAllowedRead, isAllowedWrite } from "./allowlist";
+import { isAllowedRead, isAllowedUpload, isAllowedWrite } from "./allowlist";
 
 describe("isAllowedWrite", () => {
   it.each([
@@ -42,4 +42,22 @@ describe("isAllowedRead", () => {
       expect(isAllowedRead(p)).toBe(false);
     },
   );
+});
+
+describe("isAllowedUpload", () => {
+  it.each([
+    "me/documents",
+    "issuer/series/DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo/documents",
+  ])("allows %s", (p) => {
+    expect(isAllowedUpload(p)).toBe(true);
+  });
+  it.each([
+    "me/kyc",
+    "me/documents/1",
+    "issuer/series/../documents",
+    "issuer/series/x/documents",
+    "admin/documents",
+  ])("rejects %s", (p) => {
+    expect(isAllowedUpload(p)).toBe(false);
+  });
 });

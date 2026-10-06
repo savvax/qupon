@@ -8,6 +8,7 @@ package api
 // surface as 409 with the CLI message.
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 
@@ -104,40 +105,63 @@ func registrarOnboard(deps Deps, st *store.Store) http.HandlerFunc {
 			return
 		}
 
-		att, err := deps.Executor.Run(r.Context(),
-			"kyc:attest", "--owner", req.Owner, "--type", req.InvestorType,
-			"--residency", req.Residency, "--tax-bps", strconv.Itoa(req.TaxBps),
-			"--expiry-days", strconv.Itoa(expiryDays))
+		res, err := onboardInvestor(r.Context(), deps, name, req, expiryDays)
 		if err != nil {
 			writeError(w, http.StatusGatewayTimeout, err.Error())
 			return
 		}
-		if !att.OK {
-			audit(st, r, req, false, att.Error, nil)
-			writeOnchainError(w, att.Error)
+		if res.Error != "" {
+			audit(st, r, req, false, res.Error, res.Signatures)
+			writeOnchainError(w, res.Error)
 			return
 		}
-
-		reg, err := deps.Executor.Run(r.Context(),
-			"investor:register", "--series", name, "--owner", req.Owner,
-			"--type", req.InvestorType, "--residency", req.Residency,
-			"--tax-bps", strconv.Itoa(req.TaxBps))
-		if err != nil {
-			writeError(w, http.StatusGatewayTimeout, err.Error())
-			return
-		}
-		if !reg.OK {
-			audit(st, r, req, false, reg.Error, sigsOf(att.Signature))
-			writeOnchainError(w, reg.Error)
-			return
-		}
-
-		sigs := sigsOf(att.Signature, reg.Signature)
-		audit(st, r, req, true, "onboarded", sigs)
+		audit(st, r, req, true, "onboarded", res.Signatures)
 		writeJSON(w, http.StatusCreated, map[string]any{
-			"investor": reg.Investor, "attestation": att.Attestation, "signatures": sigs,
+			"investor": res.Investor, "attestation": res.Attestation, "signatures": res.Signatures,
 		})
 	}
+}
+
+// onboardResult is one kyc:attest + investor:register run. Error holds an on-chain refusal (the chain said no);
+// executor failures (timeouts, no slot) come back as the function's error instead.
+type onboardResult struct {
+	Series      string   `json:"series"`
+	Investor    string   `json:"investor,omitempty"`
+	Attestation string   `json:"attestation,omitempty"`
+	Signatures  []string `json:"signatures"`
+	Error       string   `json:"error,omitempty"`
+}
+
+// onboardInvestor attests the owner (idempotent: skipped when the attestation exists) and registers them in the
+// series called name. Shared by POST /registrar/investors and KYC approval (platform v2 §5.3).
+func onboardInvestor(ctx context.Context, deps Deps, name string, req OnboardRequest, expiryDays int) (onboardResult, error) {
+	out := onboardResult{Series: req.Series, Signatures: []string{}}
+	att, err := deps.Executor.Run(ctx,
+		"kyc:attest", "--owner", req.Owner, "--type", req.InvestorType,
+		"--residency", req.Residency, "--tax-bps", strconv.Itoa(req.TaxBps),
+		"--expiry-days", strconv.Itoa(expiryDays))
+	if err != nil {
+		return out, err
+	}
+	if !att.OK {
+		out.Error = att.Error
+		return out, nil
+	}
+	out.Attestation = att.Attestation
+	reg, err := deps.Executor.Run(ctx,
+		"investor:register", "--series", name, "--owner", req.Owner,
+		"--type", req.InvestorType, "--residency", req.Residency,
+		"--tax-bps", strconv.Itoa(req.TaxBps))
+	if err != nil {
+		return out, err
+	}
+	out.Signatures = sigsOf(att.Signature, reg.Signature)
+	if !reg.OK {
+		out.Error = reg.Error
+		return out, nil
+	}
+	out.Investor = reg.Investor
+	return out, nil
 }
 
 // registrarSuspend handles suspend and reinstate (verb selects the CLI command).

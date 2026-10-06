@@ -157,3 +157,17 @@ func TestSeriesSettings(t *testing.T) {
 		t.Fatalf("settings = %+v %v", m, err)
 	}
 }
+
+func TestNotifyIsIdempotent(t *testing.T) {
+	st := openT(t)
+	id, _ := st.UpsertUser(t.Context(), User{Email: "m@q.kz", Name: "M", Role: "investor"}, "h")
+	for range 2 {
+		if err := st.Notify(t.Context(), id, "kyc_decision", map[string]string{"status": "approved"}, "kyc:1"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var n int
+	if err := st.db.QueryRow(`SELECT COUNT(*) FROM notifications WHERE user_id = ?`, id).Scan(&n); err != nil || n != 1 {
+		t.Fatalf("notifications = %d %v", n, err)
+	}
+}

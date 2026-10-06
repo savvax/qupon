@@ -17,3 +17,12 @@ export function isAllowedRead(path: string): boolean {
     ) && SAFE(path)
   );
 }
+
+/** Paths the browser may upload a document to through /api/bo-upload (multipart). */
+export function isAllowedUpload(path: string): boolean {
+  return (
+    /^(me\/documents|issuer\/series\/[1-9A-HJ-NP-Za-km-z]{32,44}\/documents)$/.test(
+      path,
+    ) && SAFE(path)
+  );
+}
