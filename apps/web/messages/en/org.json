@@ -1,1 +1,100 @@
-{}
+{
+  "title": "Organisation",
+  "lead": "Your company's profile on the platform: it scopes the series your team can act on.",
+  "profile": {
+    "title": "Company profile",
+    "kind": "Kind",
+    "name": "Legal name",
+    "bin": "BIN",
+    "binHint": "Kazakh business identification number, optional.",
+    "website": "Website",
+    "save": "Save profile",
+    "saving": "Saving your profile…",
+    "saved": "Profile saved",
+    "demo": "Demo accounts are shared by every visitor, so the organisation profile is read-only."
+  },
+  "team": {
+    "title": "Team",
+    "lead": "Members of your organisation act on its series. Invite a colleague with a one-time link.",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "you": "You",
+    "remove": "Remove",
+    "removing": "Removing the member…",
+    "removed": "Member removed",
+    "invite": "Invite a member",
+    "inviteTitle": "Invite an issuer",
+    "inviteLead": "The link works once and expires in 7 days. Email delivery is not integrated — copy it and send it yourself.",
+    "inviteEmail": "Colleague's email",
+    "create": "Create invite link",
+    "creating": "Creating the invite…",
+    "linkTitle": "Invite link (shown once)",
+    "copy": "Copy link",
+    "copied": "Copied",
+    "expires": "Expires {date}",
+    "roleIssuer": "Issuer",
+    "demo": "Demo accounts are shared by every visitor, so the team cannot be changed.",
+    "empty": "You are the only member of this organisation."
+  },
+  "documents": {
+    "title": "Documents",
+    "lead": "Upload prospectuses and decisions, then attach them to your series — attached documents are public on the bond page.",
+    "upload": "Upload a document",
+    "file": "File",
+    "fileHint": "PDF, PNG or JPEG, at most 10 MB.",
+    "kind": "Kind",
+    "kinds": {
+      "prospectus": "Prospectus",
+      "decision": "Decision",
+      "other": "Other"
+    },
+    "submit": "Upload",
+    "uploading": "Uploading…",
+    "uploaded": "Document uploaded",
+    "colFilename": "File",
+    "colKind": "Kind",
+    "colSize": "Size",
+    "colDate": "Uploaded",
+    "colSeries": "Series",
+    "empty": "No documents yet — upload a prospectus to attach it to a series.",
+    "attached": "attached"
+  },
+  "series": {
+    "title": "Documents",
+    "lead": "Documents attached to this series are published on its public bond page.",
+    "attach": "Attach a document",
+    "pick": "Document",
+    "pickNone": "No unattached document — upload one under Documents first",
+    "kind": "Kind",
+    "attachBtn": "Attach",
+    "attaching": "Attaching…",
+    "attached": "Document attached",
+    "empty": "No documents attached to this series yet.",
+    "download": "Download"
+  },
+  "publicDocs": {
+    "title": "Issue documents",
+    "download": "Download",
+    "empty": "No documents published for this series."
+  },
+  "invitePage": {
+    "title": "Accept your invitation",
+    "lead": "You were invited to join an issuing organisation as an issuer.",
+    "name": "Full name",
+    "password": "Password",
+    "passwordHint": "At least 10 characters.",
+    "submit": "Create account and join",
+    "submitting": "Creating your account…",
+    "signIn": "Sign in",
+    "haveAccount": "Already have an account?",
+    "errors": {
+      "invalid_token": "This invite is unknown, already used or expired — ask for a new one.",
+      "email_taken": "An account with this email already exists — sign in instead.",
+      "weak_password": "Use at least 10 characters that are not a common password.",
+      "invalid_params": "Check the name and the password.",
+      "rate_limited": "Too many attempts — wait a minute and try again.",
+      "generic": "Could not accept the invite — try again in a moment."
+    }
+  }
+}

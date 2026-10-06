@@ -19,6 +19,7 @@ import (
 
 	solana "github.com/solana-foundation/solana-go/v2"
 
+	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/execconfig"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
@@ -223,6 +224,13 @@ func createSeries(deps Deps, st *store.Store) http.HandlerFunc {
 		if err := writeExecConfig(deps, st, r); err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
+		}
+		// The creating organisation owns the series (task 807): issuerOwnsSeries scopes later writes to it.
+		if u, ok := auth.UserFrom(r.Context()); ok && u.OrgID != nil {
+			if err := st.SetSeriesOrg(r.Context(), res.Mint, u.OrgID); err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
 		}
 		audit(st, r, req, true, "series "+req.Name+" created (mint "+res.Mint+")", sigs)
 		writeJSON(w, http.StatusCreated, map[string]any{"series": req.Name, "mint": res.Mint, "signatures": sigs})

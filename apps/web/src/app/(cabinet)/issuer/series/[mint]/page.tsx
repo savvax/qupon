@@ -13,10 +13,16 @@ import {
   getSeries,
   listActions,
   listInvestors,
+  listSeriesDocuments,
+  seriesDocumentUrl,
   type ActionDTO,
   type InvestorDTO,
   type ScheduleItem,
 } from "@/lib/api";
+import { boFetch } from "@/lib/bo";
+import { getSession } from "@/lib/session";
+import { AttachForm } from "./AttachForm";
+import type { DocumentRow } from "../../documents/DocumentsPanel";
 import { bpsToPercent, formatDate } from "@/lib/format";
 import { printHref } from "@/lib/reports";
 import { KIND_TONE } from "@/lib/ui/badge";
@@ -59,13 +65,27 @@ export default async function IssuerSeriesPage({
     listActions(mint).catch(() => [] as ActionDTO[]),
     listInvestors(mint).catch(() => [] as InvestorDTO[]),
   ]);
+  // Documents attached to the series (public) and the issuer's own unattached uploads (task 807).
+  const user = await getSession();
+  const [seriesDocs, mine] = await Promise.all([
+    listSeriesDocuments(mint),
+    user
+      ? boFetch<{ documents: DocumentRow[] }>("/me/documents")
+          .then((b) => b.documents ?? [])
+          .catch(() => [] as DocumentRow[])
+      : ([] as DocumentRow[]),
+  ]);
+  const unattached = mine.filter(
+    (d) => !d.seriesMint && ["prospectus", "decision", "other"].includes(d.kind),
+  );
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
-  const [t, tb, ts, tk, tr] = await Promise.all([
+  const [t, tb, ts, tk, tr, tDoc] = await Promise.all([
     getTranslations("issuer"),
     getTranslations("bond"),
     getTranslations("status"),
     getTranslations("landing.kinds"),
     getTranslations("reports.issuer"),
+    getTranslations("org.series"),
   ]);
   const status = (s: string) => (
     <Badge status={s}>{ts.has(s) ? ts(s) : s}</Badge>
@@ -289,6 +309,51 @@ export default async function IssuerSeriesPage({
                   rowKey={(i) => i.owner}
                   empty={t("detail.noHolders")}
                 />
+              ),
+            },
+            {
+              value: "documents",
+              label: tDoc("title"),
+              content: (
+                <div className="space-y-5">
+                  <p className="text-sm text-n600">{tDoc("lead")}</p>
+                  {seriesDocs.length === 0 ? (
+                    <p className="rounded-card border border-dashed border-n300 bg-n0 px-6 py-8 text-center text-sm text-n600">
+                      {tDoc("empty")}
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-n100 rounded-card border border-n200">
+                      {seriesDocs.map((d) => (
+                        <li
+                          key={d.id}
+                          className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+                        >
+                          <span className="min-w-0">
+                            <span className="font-medium text-n900">
+                              {d.filename}
+                            </span>
+                            <span className="ml-2 text-xs text-n500">
+                              {tDoc.has(`kinds.${d.kind}`)
+                                ? tDoc(`kinds.${d.kind}`)
+                                : d.kind}{" "}
+                              · {(d.size / 1024).toFixed(0)} KB
+                            </span>
+                          </span>
+                          <a
+                            href={seriesDocumentUrl(d.id)}
+                            className="font-semibold text-g700 underline"
+                            download
+                          >
+                            {tDoc("download")}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {!user?.isDemo && (
+                    <AttachForm mint={mint} documents={unattached} />
+                  )}
+                </div>
               ),
             },
           ]}

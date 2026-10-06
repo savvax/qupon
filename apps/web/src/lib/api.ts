@@ -169,6 +169,19 @@ export const getKaseCheck = (pda: string) =>
 export const disclosureZipUrl = (pda: string) =>
   `${API_BASE_URL}/actions/${pda}/disclosure.zip`;
 
+/** A document attached to a series is public: the registrar serves it without a session (task 807). */
+export const seriesDocumentUrl = (id: number) =>
+  `${API_BASE_URL}/documents/${id}`;
+
+/** Documents attached to a series (public metadata, task 807); failures never block the page. */
+export async function listSeriesDocuments(
+  mint: string,
+): Promise<{ id: number; kind: string; filename: string; size: number; createdAt: number }[]> {
+  return get<{ documents: { id: number; kind: string; filename: string; size: number; createdAt: number }[]}>(
+    `/series/${mint}/documents`,
+  ).then((b) => b.documents ?? []).catch(() => []);
+}
+
 /** "Submit to KASE" is SIMULATED: records an audit row only, nothing is sent. */
 export async function postDisclosureSubmit(pda: string): Promise<{
   ok: boolean;

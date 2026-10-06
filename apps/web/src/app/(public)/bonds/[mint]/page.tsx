@@ -12,6 +12,8 @@ import {
   getSchedule,
   getSeries,
   listActions,
+  listSeriesDocuments,
+  seriesDocumentUrl,
   type ActionDTO,
   type ScheduleItem,
 } from "@/lib/api";
@@ -62,17 +64,19 @@ export default async function BondPage({
     if (status === 404 || status === 400) notFound();
     throw e;
   });
-  const [schedule, actions] = await Promise.all([
+  const [schedule, actions, documents] = await Promise.all([
     getSchedule(mint).catch(() => [] as ScheduleItem[]),
     listActions(mint).catch(() => [] as ActionDTO[]),
+    listSeriesDocuments(mint),
   ]);
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
   // Series linked in series_settings to a KASE ticker get the market panel; failures never block the page.
   const kaseTicker = await getKaseSeriesTicker(mint);
-  const [t, ts, tk] = await Promise.all([
+  const [t, ts, tk, tDoc] = await Promise.all([
     getTranslations("bond"),
     getTranslations("status"),
     getTranslations("landing.kinds"),
+    getTranslations("org.publicDocs"),
   ]);
   const freq = FREQ_KEY[series.frequency]
     ? t(FREQ_KEY[series.frequency]!)
@@ -305,6 +309,34 @@ export default async function BondPage({
         <div className="mt-6">
           <KasePanel ticker={kaseTicker} locale={locale} />
         </div>
+      )}
+
+      {documents.length > 0 && (
+        <section className="mt-6">
+          <h2 className="text-lg font-bold">{tDoc("title")}</h2>
+          <ul className="mt-3 divide-y divide-n100 rounded-card border border-n200 bg-n0">
+            {documents.map((d) => (
+              <li
+                key={d.id}
+                className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+              >
+                <span className="min-w-0">
+                  <span className="font-medium text-n900">{d.filename}</span>
+                  <span className="ml-2 text-xs text-n500">
+                    {d.kind} · {(d.size / 1024).toFixed(0)} KB
+                  </span>
+                </span>
+                <a
+                  href={seriesDocumentUrl(d.id)}
+                  className="font-semibold text-g700 underline"
+                  download
+                >
+                  {tDoc("download")}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <div className="mt-8">

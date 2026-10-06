@@ -368,7 +368,10 @@
       "network": "Network",
       "audit": "Audit log",
       "kyc": "KYC queue",
-      "verification": "Verification"
+      "verification": "Verification",
+      "organization": "Organisation",
+      "team": "Team",
+      "documents": "Documents"
     },
     "placeholder": {
       "hello": "Hello, {name}",

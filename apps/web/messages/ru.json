@@ -368,7 +368,10 @@
       "network": "Сеть",
       "audit": "Журнал аудита",
       "kyc": "Очередь KYC",
-      "verification": "Верификация"
+      "verification": "Верификация",
+      "organization": "Организация",
+      "team": "Команда",
+      "documents": "Документы"
     },
     "placeholder": {
       "hello": "Здравствуйте, {name}",

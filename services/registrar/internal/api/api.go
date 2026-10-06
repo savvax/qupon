@@ -207,12 +207,14 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r.With(registrar, write).Post("/registrar/actions/{pda}/advance", advanceAction(deps, st, logger))
 	r.With(registrar, write).Post("/actions/{pda}/advance", advanceAction(deps, st, logger))
 
-	// Issuer writes (product spec §6): series creation runs the qupon CLI executor.
+	// Issuer writes (product spec §6): series creation runs the qupon CLI executor. Series-scoped
+	// writes also pass issuerOwnsSeries (task 807): an organisation's issuers act on its series only.
 	issuer := requireRole(deps.Auth, "issuer")
+	ownSeries := issuerOwnsSeries(deps, st)
 	r.With(issuer, write, seriesCap).Post("/issuer/series", createSeries(deps, st))
-	r.With(issuer, write).Post("/issuer/series/{mint}/actions", issuerAnnounce(deps, st))
-	r.With(issuer, write).Post("/issuer/series/{mint}/meetings", issuerMeeting(deps, st))
-	r.With(issuer, write).Post("/issuer/actions/{pda}/fund", issuerFund(deps, st))
+	r.With(issuer, write, ownSeries).Post("/issuer/series/{mint}/actions", issuerAnnounce(deps, st))
+	r.With(issuer, write, ownSeries).Post("/issuer/series/{mint}/meetings", issuerMeeting(deps, st))
+	r.With(issuer, write, ownSeries).Post("/issuer/actions/{pda}/fund", issuerFund(deps, st))
 
 	// Scheduler surface (task 024): planned actions + approval gate (approve executes the CLI → registrar only).
 	r.Get("/approvals", listApprovals(st))
@@ -267,7 +269,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	mountAccount(r, deps, st)
 
-	// mount: org
+	mountOrg(r, deps, st)
 
 	mountReports(r, deps, st)
 

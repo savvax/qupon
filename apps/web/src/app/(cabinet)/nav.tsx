@@ -11,6 +11,17 @@ export const issuerNav = (t: T): CabinetNavItem[] => [
     label: t("newSeries"),
     icon: <Icon name="plus" />,
   },
+  {
+    href: "/issuer/organization",
+    label: t("organization"),
+    icon: <Icon name="building" />,
+  },
+  { href: "/issuer/team", label: t("team"), icon: <Icon name="users" /> },
+  {
+    href: "/issuer/documents",
+    label: t("documents"),
+    icon: <Icon name="activity" />,
+  },
 ];
 
 export const registrarNav = (t: T): CabinetNavItem[] => [
