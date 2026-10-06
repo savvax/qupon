@@ -18,4 +18,4 @@ In the demo, one hundred bonds across three investors: coupons of 500, 1,250 and
 Validation: this track is sponsored by the exchange itself. KASE launches tokenized debt in December 2026, and the CSD may now keep the register of tokenized holders — one pilot issue is the wedge. [source: docs/01-product.md]
 
 ## 1:50–2:00 Vision + ask
-Qupon is the servicing layer every tokenized bond market needs. We are asking for a pilot with KASE and the CSD.
+Solana just shipped DvP settlement for securities; Qupon is the servicing layer on top. We are asking for a pilot with KASE and the CSD.

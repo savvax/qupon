@@ -2,7 +2,7 @@
 
 Order: Colosseum first (it gives the project link) → Superteam Earn, KASE side track → Superteam Earn, Superteam Kazakhstan general track. Deadline for all three: **2026-10-13 06:59 UTC (11:59 Almaty)**; target Colosseum by Oct 12 20:00, Earn by 21:00. Fields marked `<<FILL: …>>` need the team's own input; everything else is final.
 
-Facts used below (verify before pasting): program `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (devnet, verifiable build — `reports/verified-build.md`), full devnet run with 71 linked transactions — `reports/demo-full.md`, 52 program tests, repo https://github.com/savvax/qupon (must be **public** or shared with hackathon@colosseum.com before submitting).
+Facts used below (verify before pasting): program `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (devnet, verifiable build — `reports/verified-build.md`), full devnet run with 71 linked transactions — `reports/demo-full.md`, secondary trade through the Solana DvP program with the record-date guard, 21 linked transactions — `reports/demo-trade.md`, 60 program tests, repo https://github.com/savvax/qupon (must be **public** or shared with hackathon@colosseum.com before submitting).
 
 ---
 
@@ -30,12 +30,14 @@ Around the engine is a platform: investors sign up, link their own wallet by sig
 
 A Go registrar reconciles the chain and exports ISO 20022 seev.031/seev.036 and KASE-style notices. One command runs every scenario on devnet: 71 linked transactions.
 
-Built for the KASE × Superteam Kazakhstan track: KASE is Kazakhstan's first registered digital-asset platform operator and builds on Solana. Qupon is the servicing layer such a platform needs.
+Secondary trades settle on the Solana Foundation's DvP program; Qupon is the servicing layer above.
+
+Built for the KASE × Superteam Kazakhstan track: KASE, Kazakhstan's first registered digital-asset platform operator, builds on Solana.
 ```
 
 **Blockchains / tools**
 ```
-Solana (devnet), Token-2022 (Pausable, PermanentDelegate, DefaultAccountState, MetadataPointer/TokenMetadata, MintCloseAuthority), Anchor 1.2, LiteSVM, Solana Attestation Service, Wallet Standard, @solana/kit + Codama, Helius RPC, Circle devnet USDC, kase.kz public data, Go (solana-go), Next.js, solana-verify
+Solana (devnet), Token-2022 (Pausable, PermanentDelegate, DefaultAccountState, MetadataPointer/TokenMetadata, MintCloseAuthority), Anchor 1.2, LiteSVM, Solana Attestation Service, Solana DvP program (secondary settlement), Wallet Standard, @solana/kit + Codama, Helius RPC, Circle devnet USDC, kase.kz public data, Go (solana-go), Next.js, solana-verify
 ```
 
 **Location / track:** Kazakhstan · Solana ecosystem
@@ -60,7 +62,7 @@ Validation: the track is sponsored by the exchange itself. Conversations so far:
 
 **Pre-existing code / third-party disclosure**
 ```
-All code in the repository was written during the hackathon, between 2026-10-05 and 2026-10-12 (commit history). Third-party open-source dependencies: Anchor, SPL Token-2022, @solana/kit and @solana-program clients (Codama-generated code is checked in under clients/ts/src/generated), LiteSVM, solana-go, chi, modernc sqlite, Next.js, Solana wallet-adapter. AI coding agents (Claude Code; GLM models via pi) were used under the team's direction; product design, specifications, review and decisions are the team's.
+All code in the repository was written during the hackathon, between 2026-10-05 and 2026-10-12 (commit history). Third-party open-source dependencies: Anchor, SPL Token-2022, @solana/kit and @solana-program clients (Codama-generated code is checked in under clients/ts/src/generated), LiteSVM, solana-go, chi, modernc sqlite, Next.js, Solana wallet-adapter; the Solana Foundation's DvP program (its IDL is vendored for client generation and its devnet binary is a test fixture; the program itself is not ours). AI coding agents (Claude Code; GLM models via pi) were used under the team's direction; product design, specifications, review and decisions are the team's.
 ```
 
 ---
@@ -82,6 +84,7 @@ All code in the repository was written during the hackathon, between 2026-10-05 
 ```
 Technical overview (architecture, record-date logic, entitlement calculations, settlement flow, Solana components): https://github.com/savvax/qupon/blob/main/docs/TECHNICAL_OVERVIEW.md
 Full devnet run with an explorer link for every transaction (coupon, redemption, bondholder meeting → terms change, early redemption): https://github.com/savvax/qupon/blob/main/reports/demo-full.md
+Secondary trade settled through the Solana Foundation's DvP program, record date protected (explorer link per transaction): https://github.com/savvax/qupon/blob/main/reports/demo-trade.md
 Program: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd (devnet, verifiable build).
 Product tour with screenshots of every role on devnet: https://github.com/savvax/qupon#product-tour--every-role-in-the-browser
 Platform v2 (accounts, KYC with on-chain attestation, kase.kz data, tenge cash assets, notifications, admin, mainnet-ready): https://github.com/savvax/qupon#platform-v2--accounts-kyc-kase-data-cash-assets-admin
@@ -97,6 +100,7 @@ Implemented vs simulated (same wording as the site's table):
 | ARDFM registration of a terms change | **Simulated** — Represented by a registrar signature step. |
 | KASE | **Read only** — Bond data is read from kase.kz and cached; the disclosure notice and package are generated automatically — submission to KASE is simulated. |
 | Mainnet | **Ready, not deployed** — Network profile, write confirmations and a dry-run deploy script are in place; everything runs on devnet. |
+| Secondary settlement | **Implemented** — Trades between registered investors settle on devnet through the Solana Foundation's DvP program; Qupon admits the escrow, refuses a record date while a trade is open and can return the bonds to the seller. Order matching and a trading venue are not included. |
 | Multisig issuer approval (Squads) | **Roadmap** — Planned. |
 
 Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are series configuration, not a statement of Kazakh law.

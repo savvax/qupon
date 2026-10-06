@@ -70,7 +70,9 @@ The literal brief figures (500 and 10,000 + 500) are also asserted by the tests 
 4. Redemptions: `retire_batch` burns every unit through the permanent delegate (suspended holders are thawed first), then `close_series` requires supply 0, writes `status=REDEEMED` to the token metadata and closes the mint.
 5. Bondholder meeting: `cast_vote` weighted by snapshot units → `finalize_meeting` (quorum and approval are series configuration, not asserted as law) → `apply_terms_change` updates the rate on the series and in the token metadata; the registrar's signature stands in for the ARDFM registration (SIMULATED).
 
-Records: 18 event types (one per transition), ISO 20022 `seev.031`/`seev.036` and a KASE-style EN/RU notice generated from chain state.
+6. Secondary trades: two registered investors trade bonds against the series' cash asset through the Solana Foundation's DvP program (`dvp34bdb…`), which moves both legs in one transaction with the registrar as settlement authority. Qupon does not call that program. Bond accounts are frozen by default, so its escrow can hold bonds only after `admit_trade`; a paused mint blocks DvP settle, cancel and reclaim alike, so `strike_record` fails with `TradesInFlight` until every admitted trade is settled or cancelled and released; if the DvP program cannot refund (a party closed an account, a cash issuer froze one), `release_trade(force)` returns the bonds to the seller as permanent delegate. Devnet run: [`reports/demo-trade.md`](../reports/demo-trade.md).
+
+Records: 20 event types (one per transition), ISO 20022 `seev.031`/`seev.036` and a KASE-style EN/RU notice generated from chain state.
 
 ## 5. Solana components
 
@@ -80,14 +82,15 @@ Records: 18 event types (one per transition), ISO 20022 `seev.031`/`seev.036` an
 |---|---|---|
 | `init_series` | registrar | validate the mint, create Series + tax vault |
 | `register_investor` / `suspend_investor` / `reinstate_investor` | registrar | verify the KYC provider's SAS attestation, thaw / freeze the bond account |
-| `subscribe` / `issue_units` | investor / issuer | atomic DvP at par / free allocation |
+| `subscribe` / `issue_units` | investor / issuer | placement at par (payment and mint in one instruction) / free allocation |
 | `announce_action` / `cancel_action` | registrar (issuer for BMET) / registrar | create the action, verify the math on-chain |
-| `strike_record` / `snapshot_batch` / `finalize_snapshot` | registrar or paying agent | record date (pause), snapshot, supply check |
+| `strike_record` / `snapshot_batch` / `finalize_snapshot` | registrar or paying agent | record date (pause; refused while a secondary trade is admitted), snapshot, supply check |
 | `fund_action` / `pay_batch` / `complete_action` | issuer or paying agent / operator / operator | escrow, payouts, reconcile + resume |
 | `retire_batch` / `close_series` | operator / registrar | burn via permanent delegate, close the mint |
 | `cast_vote` / `finalize_meeting` / `apply_terms_change` | investor / registrar / registrar | meeting and terms change |
+| `admit_trade` / `release_trade` | registrar or paying agent | thaw the bond escrow of a Solana DvP trade between two registered investors / drop the admission (forced: return escrowed bonds to the seller) |
 
-Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). Tests: 52 program tests (LiteSVM integration + unit) including the brief suite; Go and TS mirrors of the math; `make verify` gates every merge.
+Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). Compute: the heaviest batch the CLI sends (retiring 12 frozen holders) uses about 134k compute units, 22% of the 600k limit set on each transaction, and an extra holder costs about 10k in the worst case — [`reports/cu-benchmarks.md`](../reports/cu-benchmarks.md). Tests: 60 program tests (LiteSVM integration + unit) including the brief suite and the secondary-trade suite, which runs the devnet binary of the Solana DvP program; Go and TS mirrors of the math; `make verify` gates every merge.
 
 ## Implemented vs simulated
 
@@ -99,8 +102,9 @@ Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). T
 | ISO 20022 seev.031 / seev.036 | Generated from on-chain state; Swift network delivery **simulated** (downloadable files) |
 | ARDFM registration of terms change | **Simulated** by registrar signature step |
 | KASE disclosure notice | Generated automatically; publication on kase.kz **not** integrated |
+| Secondary settlement | **Implemented on Solana devnet** through the Solana Foundation's DvP program: Qupon admits the trade's bond escrow, refuses a record date while a trade is open and can return escrowed bonds to the seller. Order matching and a trading venue are not included |
 | Multisig issuer approval (Squads) | Roadmap |
 
 ## Limitations and next steps
 
-Devnet only; time is compressed in the demo (record date ≈ 45 s after announcement, real civil dates in the math); XSD validation of the ISO files is out of scope; tax-vault remittance and escrow refunds are not implemented; single-key registrar. Next: Token ACL (sRFC-37) for the registry, Squads multisig for issuer/registrar, Solana Attestation Service for KYC, confidential coupon amounts, a regulated cash leg (digital tenge or bank deposit token) for mainnet.
+Devnet only; time is compressed in the demo (record date ≈ 45 s after announcement, real civil dates in the math); XSD validation of the ISO files is out of scope; tax-vault remittance and escrow refunds are not implemented; single-key registrar. The Solana DvP program is v0.1.0 and upgradeable by the Foundation: Qupon reads its trade record by fixed offsets and refuses to admit a trade if the record's size changes; order matching is out of scope. Next: Token ACL (sRFC-37) for the registry, Squads multisig for issuer/registrar, Solana Attestation Service for KYC, confidential coupon amounts, a regulated cash leg (digital tenge or bank deposit token) for mainnet.

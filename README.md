@@ -6,7 +6,8 @@
 
 - Program: [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet) (Anchor 1.2, Token-2022) — verifiable build, IDL published on-chain
 - One command runs every scenario on devnet and writes a report with a link for every transaction: [`reports/demo-full.md`](reports/demo-full.md) (71 transactions)
-- 52 program tests (LiteSVM integration + unit), the brief's worked example as named tests, shared test vectors checked in Rust, Go and TypeScript
+- Secondary trades settle through the Solana Foundation's DvP program with the record date protected — a second devnet run, every transaction linked: [`reports/demo-trade.md`](reports/demo-trade.md) (21 transactions)
+- 60 program tests (LiteSVM integration + unit), the brief's worked example as named tests, shared test vectors checked in Rust, Go and TypeScript
 
 ## Product tour — every role in the browser
 
@@ -16,7 +17,7 @@ The whole engine is driven from the web app at **https://qupon.85-192-29-7.sslip
 | --- | --- | --- |
 | Issuer | [`/issuer`](https://qupon.85-192-29-7.sslip.io/issuer) | create a bond series in a 3-step wizard (terms → schedule preview → issue on-chain), announce a coupon / redemption / early call, call a bondholder meeting, fund the escrow |
 | Registrar | [`/registrar`](https://qupon.85-192-29-7.sslip.io/registrar) | onboard an investor (SAS KYC attestation, SIMULATED provider, + on-chain registration), run record date → snapshot → pay → complete step by step, reconcile, download ISO 20022 and the KASE notice, browse the audit trail |
-| Investor | [`/investor`](https://qupon.85-192-29-7.sslip.io/investor) | portfolio with a tx link per payment, subscribe at par (DvP), vote in meetings, seev.036 statements |
+| Investor | [`/investor`](https://qupon.85-192-29-7.sslip.io/investor) | portfolio with a tx link per payment, subscribe at par, vote in meetings, seev.036 statements |
 
 Every action step confirms with a toast carrying its explorer link. The screenshots below are real devnet runs driven through this UI (local registrar + the deployed program; log: [`reports/live-check-local.md`](reports/live-check-local.md)):
 
@@ -24,7 +25,7 @@ Every action step confirms with a toast carrying its explorer link. The screensh
 | --- | --- |
 | Coupon INTR run to **Completed** — 500.00 / 1,250.00 / 3,250.00 ₸ to the 10 / 25 / 65-bond holders | [`reports/ui/live-local/coupon-completed.png`](reports/ui/live-local/coupon-completed.png) |
 | Registrar onboards a fresh wallet: SAS attestation + registration, two txs | [`reports/ui/live-local/registrar-onboarded.png`](reports/ui/live-local/registrar-onboarded.png) |
-| Demo investor subscribes 1 bond DvP (65 → 66) | [`reports/ui/live-local/investor-subscribed.png`](reports/ui/live-local/investor-subscribed.png) |
+| Demo investor subscribes 1 bond at par (65 → 66) | [`reports/ui/live-local/investor-subscribed.png`](reports/ui/live-local/investor-subscribed.png) |
 | Investor votes For in the meeting (66 of 101 units) | [`reports/ui/live-local/investor-voted.png`](reports/ui/live-local/investor-voted.png) |
 | Meeting approved and applied — coupon rate 10% → 12% on-chain | [`reports/ui/live-local/meeting-applied.png`](reports/ui/live-local/meeting-applied.png) |
 
@@ -63,15 +64,20 @@ KASE became Kazakhstan's first licensed digital-financial-asset platform operato
 | **Settle**                 | Issuer pre-funds an escrow owned by the action PDA; batches pay net to each holder and tax to a tax vault; reconciliation before the register is resumed.                                                                                                                                 | `fund_action`, `pay_batch`, `complete_action`             |
 | **Record**                 | Every transition emits an event; state lives in PDAs; ISO 20022 seev.031/seev.036 and a KASE-style notice are generated from chain state.                                                                                                                                                 | 18 event types, `services/registrar`                      |
 
-## Scenarios (all on devnet — see [`reports/demo-full.md`](reports/demo-full.md))
+## Settlement layer below, servicing layer above
+
+On 6 October 2026, during the hackathon, the Solana Foundation announced [Solana DvP](https://explorer.solana.com/address/dvp34bdbcEm4f4FCUjGV4mDAkDshaQR4LkK8fdcsyZq?cluster=devnet) — an audited, open-source program for atomic delivery-versus-payment settlement of tokenized securities, built with input from J.P. Morgan. It settles a trade; it has no notion of a record date. Qupon is the servicing layer on top of it: it decides which DvP escrow may hold a regulated bond, makes sure a trade in flight can never cost a holder their coupon, and lets the registrar unwind a trade the parties cannot. Secondary trades of Qupon bonds settle through that program on devnet: [`reports/demo-trade.md`](reports/demo-trade.md).
+
+## Scenarios (all on devnet — see [`reports/demo-full.md`](reports/demo-full.md) and [`reports/demo-trade.md`](reports/demo-trade.md))
 
 | Scenario                                          | What happens                                                                                                                                                             | Proof                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S0 Issuance & registry                            | Token-2022 bond mint with validated extensions, 3 investors registered, an unregistered wallet is refused, DvP subscription 10/25/65                                     | [subscribe 65 bonds (DvP)](https://explorer.solana.com/tx/CD3gN7Mb15mUfD6NqnzAzY7ppXDKGxLh44j62bEsFuEKtNsCzJxJR5jSrWNpSir2L9kkfhsZ8HALaSL3mSPgDrb?cluster=devnet) · registry refusal in the report                                                                                                                                                                                                                  |
+| S0 Issuance & registry                            | Token-2022 bond mint with validated extensions, 3 investors registered, an unregistered wallet is refused, placement at par 10/25/65                                     | [subscribe 65 bonds](https://explorer.solana.com/tx/CD3gN7Mb15mUfD6NqnzAzY7ppXDKGxLh44j62bEsFuEKtNsCzJxJR5jSrWNpSir2L9kkfhsZ8HALaSL3mSPgDrb?cluster=devnet) · registry refusal in the report                                                                                                                                                                                                                  |
 | S1 Coupon payment (required 1)                    | INTR #1: 10 bonds → **500.00**, 25 → 1,250.00, 65 → 3,250.00 (the brief's example)                                                                                       | [INTR #1 action](https://explorer.solana.com/address/DkSQMx7w2UNjLzPxjAfTxRwNr3oYWhhYCod35HXuYP16?cluster=devnet) · [pay](https://explorer.solana.com/tx/4timJdNAASBt2MTVgWR9ryUxk5SAeaDdKxw3dFEwdv1KDEnWKmYNtzy4ivY3hpVrX8nqeDG3fA4ooaHumQUFJzye?cluster=devnet)                                                                                                                                                   |
 | S2 Redemption (required 2)                        | Principal + final coupon, units burned via permanent delegate, mint closed, metadata `status=REDEEMED`                                                                   | [REDM action](https://explorer.solana.com/address/GmK726FMUFruUwhrWVMGi9uiFqdbLuZYqiKT2ZRrhUZo?cluster=devnet) · [retire](https://explorer.solana.com/tx/5EyyhishaQbpTAG4xP6FeY7HGBsk8Wv4tibn5RqqToyvvzixYVUFKvUSk1XCFcuiJ17sMHJoZmWf7SZyuEFAC8pd?cluster=devnet) · [close](https://explorer.solana.com/tx/3a7g7HtY68C1t4kEhLYJCnKak9fWVPcbEH4YaQoSbPcPBczhyfLrp9Nv2Lr5dTQ9d7EgAXk5HWmby3XhVkvsM2N6?cluster=devnet) |
 | S3 Bondholder meeting → terms change (required 3) | Snapshot-weighted vote 65 For / 25 Against / 10 Abstain → Approved → coupon 10% → 12% on the series and in the token metadata; next coupons 600.00 / 1,500.00 / 3,900.00 | [apply 12%](https://explorer.solana.com/tx/5dLcjcTjiMafLRq4cGKNJYshVnkq5EUgS1JnwVWLitezEKNiSRbRoUQCLeZeAgXHr14TVuVTtezj2m7rNPEg6VSP?cluster=devnet) · [INTR #2 at 12%](https://explorer.solana.com/address/FDxcyBd3hCtPWgXgEypszcvoL6e2k3Aa6m8hoYGCyLdt?cluster=devnet)                                                                                                                                             |
 | S4 Early redemption (bonus)                       | USDC series (BTRKb33 terms, 15.95%): MCAL after 47 accrued days, burn, close                                                                                             | [MCAL action](https://explorer.solana.com/address/AfQStcMFk4PT2KxoiVLtMV1AaKhftCdaQcHeHjiDPkPo?cluster=devnet) · [close](https://explorer.solana.com/tx/4gWyNCgL6RnCk5e5kiKdziYpVzgXoSCHCuv8HaMfGLHD6QRQ15ibmrd21hGs9cP8UsoraXo8rNC5n4NTxg2GtY9S?cluster=devnet)                                                                                                                                                    |
+| S5 Secondary trade (Solana DvP)                  | investor3 sells 5 bonds at par to investor1 through the Solana Foundation's DvP program — both legs move in one transaction. A second trade still open at the record date makes `strike_record` fail with `TradesInFlight`; after the registrar cancels it the coupon is paid on 15 / 25 / 60 bonds | [settle](https://explorer.solana.com/tx/2BhUpZ2GwZuxJ7wyMi4yqFR299KJo2P7nFv9SB7MdRLY3gjJNRq2YPPR2qQxErB2bnF5LQkAa6WeqMjGaTrfnUrT?cluster=devnet) · [create + admit](https://explorer.solana.com/tx/7Dp3KP2843vkxTFwyDPmBkPrqxnWCvEEQz5wnpceAHhh36Mse7Y5ak7LPFjQ1d62xdK6YAobYo72cQ2uTY67cXp?cluster=devnet) · [cancel](https://explorer.solana.com/tx/4c819YTNENmMchjeyhxxtTZnNFdeVm9bCH7eTdDLZK5weLhbvFRMAjjkCdhPfg2TmfDpPPWpjGRF9pqtaq4U6Ye?cluster=devnet) |
 
 ## Architecture
 
@@ -89,7 +95,7 @@ flowchart LR
 
 | Component         | Path                        | Role                                                                |
 | ----------------- | --------------------------- | ------------------------------------------------------------------- |
-| On-chain program  | `programs/qupon_bonds`      | 19 instructions, 4 account types, 32 error codes, 18 events         |
+| On-chain program  | `programs/qupon_bonds`      | 21 instructions, 5 account types, 35 error codes, 20 events         |
 | Entitlement math  | `crates/entitlement`        | `no_std` Rust crate shared by the program and tests                 |
 | TS client + CLI   | `clients/ts`                | Codama-generated client, `qupon` CLI (JSON on stdout), demo scripts |
 | Registrar service | `services/registrar`        | Go: chain reader, reconciler, ISO 20022, notices, REST read models  |
@@ -124,8 +130,8 @@ The brief's example — face 1,000, 10% annual, semi-annual, 10 bonds → **500*
 ## Solana components
 
 - **Token-2022 bond mint** (decimals 0, 1 token = 1 bond): `MetadataPointer` + `TokenMetadata` (registrar is update authority), `DefaultAccountState = Frozen`, `PermanentDelegate`, `Pausable`, `MintCloseAuthority`, mint and freeze authority = series PDA. `init_series` rejects any other extension or authority (`docs/SECURITY_NOTES.md`).
-- **PDAs**: `Series ["series", mint]`, `Investor ["investor", series, owner]`, `CorporateAction ["action", series, index]`, `Entitlement ["entitlement", action, owner]`.
-- **Instructions** (19): `init_series`, `register_investor`, `suspend_investor`, `reinstate_investor`, `subscribe` (atomic DvP at par), `issue_units`, `announce_action`, `cancel_action`, `strike_record`, `snapshot_batch`, `finalize_snapshot`, `fund_action`, `pay_batch`, `complete_action`, `retire_batch`, `close_series`, `cast_vote`, `finalize_meeting`, `apply_terms_change`. Full table: [`docs/02-architecture.md`](docs/02-architecture.md).
+- **PDAs**: `Series ["series", mint]`, `Investor ["investor", series, owner]`, `CorporateAction ["action", series, index]`, `Entitlement ["entitlement", action, owner]`, `TradeAdmission ["trade", series, swap_dvp]`.
+- **Instructions** (21): `init_series`, `register_investor`, `suspend_investor`, `reinstate_investor`, `subscribe` (placement at par: payment and mint in one instruction), `issue_units`, `announce_action`, `cancel_action`, `strike_record`, `snapshot_batch`, `finalize_snapshot`, `fund_action`, `pay_batch`, `complete_action`, `retire_batch`, `close_series`, `cast_vote`, `finalize_meeting`, `apply_terms_change`, `admit_trade`, `release_trade` (secondary trades settled by the Solana DvP program). Full table: [`docs/02-architecture.md`](docs/02-architecture.md).
 - **Events** on every state transition; the Go service ingests them into an activity feed.
 
 ## ISO 20022 and the KASE notice
@@ -142,6 +148,7 @@ From chain state the registrar serves `seev.031` (corporate action notification)
 | ISO 20022 seev.031 / seev.036                                                                                                             | Generated from on-chain state; Swift network delivery **simulated** (downloadable files)                                                                                                                                                                                                     |
 | ARDFM registration of terms change                                                                                                        | **Simulated** by registrar signature step                                                                                                                                                                                                                                                    |
 | KASE disclosure notice                                                                                                                    | Generated automatically; publication on kase.kz **not** integrated                                                                                                                                                                                                                           |
+| Secondary settlement | **Implemented on Solana devnet** through the Solana Foundation's DvP program: Qupon admits the trade's bond escrow, refuses a record date while a trade is open and can return escrowed bonds to the seller. Order matching and a trading venue are not included |
 | Multisig issuer approval (Squads)                                                                                                         | Roadmap                                                                                                                                                                                                                                                                                      |
 | KYC document review                                                                                                                       | **Simulated vendor**: documents are uploaded and stored (content-addressed, owner/registrar access only); a registrar decides by hand. Approval produces real SAS attestations and registrations on devnet |
 | kase.kz                                                                                                                                   | **Read integration** with public kase.kz data (bond terms, schedule, market data — cached); disclosure-package **submission simulated** |
@@ -193,7 +200,7 @@ investor's custodial wallet (`~/.config/qupon/investor3.json`, powers `POST /dem
 The deployed program is a deterministic `solana-verify` docker build (solana-verify 0.5.2, image `solanafoundation/solana-verifiable-build:4.3.0`):
 
 - Program id: [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet)
-- Build hash (SHA-256, on-chain match confirmed): `3d419567507446c814766547e41b3ea4a539ffc86c21cd57a7c9e2b6dd510ccb`
+- Build hash (SHA-256, on-chain match confirmed): `bbe6b2bffcef1f7badda656152e4611fd1c801323bab68f298bb38c3bd4d4183`
 
 ```bash
 # reproduce the build and compare with the deployed program
@@ -220,7 +227,7 @@ The IDL is also readable in the [explorer's IDL tab](https://explorer.solana.com
 
 ## Roadmap
 
-Token ACL (sRFC-37) instead of the custom registry thaw · Squads multisig for issuer/registrar · a licensed KYC provider issuing the SAS attestations · confidential coupon amounts · tax-vault remittance and escrow refunds · KASE disclosure publication through an IRIS account · mainnet launch with Evo KZTE (or a bank deposit token) as the cash leg once the official mint and operator wallets are in place.
+Token ACL (sRFC-37) instead of the custom registry thaw · order matching for secondary trades (their settlement already runs on Solana DvP) · Squads multisig for issuer/registrar · a licensed KYC provider issuing the SAS attestations · confidential coupon amounts · tax-vault remittance and escrow refunds · KASE disclosure publication through an IRIS account · mainnet launch with Evo KZTE (or a bank deposit token) as the cash leg once the official mint and operator wallets are in place.
 
 ## License
 
