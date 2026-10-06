@@ -167,6 +167,7 @@ func TestNextStep(t *testing.T) {
 		name       string
 		action     chain.CorporateAction
 		supply     uint64
+		openTrades uint32
 		now        time.Time
 		autofund   bool
 		wantStep   string
@@ -174,6 +175,11 @@ func TestNextStep(t *testing.T) {
 	}{
 		{name: "announced strikes", action: chain.CorporateAction{Status: 0},
 			wantStep: StepStrike},
+		{name: "announced with open trades waits", action: chain.CorporateAction{Status: 0},
+			openTrades: 2, wantWaitIn: "open secondary trades: settle or cancel them first (2)"},
+		// only the strike is gated: once the record is struck the count cannot be non-zero, and must not stall the rest
+		{name: "open trades do not gate later steps", action: chain.CorporateAction{Status: 3},
+			openTrades: 1, wantStep: StepPay},
 		{name: "record struck snapshots holders", action: chain.CorporateAction{Status: 1, HoldersSnapshotted: 1, UnitsSnapshotted: 10},
 			supply: 100, wantStep: StepSnapshot},
 		{name: "record struck with every unit snapshotted finalizes", action: chain.CorporateAction{Status: 1, HoldersSnapshotted: 3, UnitsSnapshotted: 100},
@@ -216,7 +222,7 @@ func TestNextStep(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			step, wait := NextStep(&tt.action, tt.supply, tt.now, tt.autofund)
+			step, wait := NextStep(&tt.action, tt.supply, tt.openTrades, tt.now, tt.autofund)
 			if tt.wantWaitIn != "" {
 				if step != "" || !strings.Contains(wait, tt.wantWaitIn) {
 					t.Fatalf("NextStep = (%q, %q), want wait containing %q", step, wait, tt.wantWaitIn)

@@ -80,6 +80,9 @@ type Result struct {
 	Attestation string `json:"attestation"` // kyc:attest — the SAS attestation PDA
 	Action      string `json:"action"`      // action:announce / meeting:announce — the CorporateAction PDA
 	Ata         string `json:"ata"`         // asset:faucet — the funded associated token account
+	// trade:create — the Solana DvP SwapDvp record; trade:cancel — bond units handed back to the seller.
+	SwapDvp       string     `json:"swapDvp"`
+	ReturnedUnits flexUint64 `json:"returnedUnits"`
 	// Batch commands (snapshot/pay/retire) print {ok, results:[{signature, slot}…]} instead of one signature.
 	Results []struct {
 		Signature string     `json:"signature"`
@@ -245,9 +248,15 @@ func (e *Executor) SeriesName(mint string) (string, error) {
 //
 // supply is the bond mint supply: finalize_snapshot requires units_snapshotted == supply, and the program skips
 // zero-balance accounts, so counting registered investors would snapshot forever once one holds no bonds.
-func NextStep(a *chain.CorporateAction, supply uint64, now time.Time, autofund bool) (step, wait string) {
+//
+// openTrades is Series.open_trades: strike_record fails with TradesInFlight while a secondary trade is admitted
+// (docs/03-domain.md §4a). The operator settles or cancels them; nothing here does it for them.
+func NextStep(a *chain.CorporateAction, supply uint64, openTrades uint32, now time.Time, autofund bool) (step, wait string) {
 	switch a.Status {
 	case 0: // Announced
+		if openTrades > 0 {
+			return "", fmt.Sprintf("open secondary trades: settle or cancel them first (%d)", openTrades)
+		}
 		return StepStrike, ""
 	case 1: // RecordStruck: snapshot until every outstanding unit is in the snapshot
 		if supply == 0 {

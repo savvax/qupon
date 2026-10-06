@@ -99,7 +99,7 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 			return
 		}
 
-		step, wait := executor.NextStep(action, mint.Supply, time.Now(), req.AutoFund)
+		step, wait := executor.NextStep(action, mint.Supply, series.OpenTrades, time.Now(), req.AutoFund)
 		if step == "" {
 			writeError(w, http.StatusBadRequest, wait)
 			return
@@ -138,7 +138,7 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 			Step: step, OK: true, Status: chain.ActionStatusName(fresh.Status),
 			Signature: sigPtr(res), Slot: slotPtr(res), ExplorerURL: txExplorer(res.Signature),
 		}
-		if next, wait := executor.NextStep(fresh, mint.Supply, time.Now(), req.AutoFund); next != "" {
+		if next, wait := executor.NextStep(fresh, mint.Supply, series.OpenTrades, time.Now(), req.AutoFund); next != "" {
 			resp.NextStep = &next
 		} else if wait != "" {
 			resp.NextStep = nil

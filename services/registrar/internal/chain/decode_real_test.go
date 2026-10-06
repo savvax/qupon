@@ -7,6 +7,7 @@ package chain
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"os"
@@ -54,7 +55,7 @@ func loadRealFixture(t *testing.T, name string) ([]byte, realFixture) {
 func checkRealDiscriminator(t *testing.T, kind string, raw []byte) {
 	t.Helper()
 	names := map[string]string{
-		"series": "Series", "investor": "Investor",
+		"series": "Series", "investor": "Investor", "trade": "TradeAdmission",
 		"action": "CorporateAction", "entitlement": "Entitlement",
 	}
 	want, err := borsh.AnchorDiscriminator("account", names[kind])
@@ -156,7 +157,8 @@ func TestRealSeriesFixture(t *testing.T) {
 	default:
 		eqPk(t, "open_action", *got.OpenAction, *want.OpenAction)
 	}
-	eqHex(t, "reserved", got.Reserved[:], want.Reserved)
+	// The fixture predates open_trades: its 64 reserved bytes are open_trades u32 LE + the 60 that remain.
+	eqHex(t, "open_trades+reserved", append(binary.LittleEndian.AppendUint32(nil, got.OpenTrades), got.Reserved[:]...), want.Reserved)
 	// Cross-check: the open action PDA is the action fixture itself.
 	if want.OpenAction != nil {
 		eqPk(t, "open_action→action fixture", *got.OpenAction, fixturePubkey(t, "action"))

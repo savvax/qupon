@@ -34,7 +34,28 @@ type Series struct {
 	ApprovalBps    uint16
 	TaxVault       solana.PublicKey
 	OpenAction     *solana.PublicKey // nil = Borsh None; the one non-final action, if any
-	Reserved       [64]byte
+	OpenTrades     uint32            // admitted Solana DvP trades not yet released (carved from reserved: older series read 0)
+	Reserved       [60]byte
+}
+
+// TradeAdmission mirrors the on-chain `TradeAdmission` account (seeds ["trade", series, swap_dvp]):
+// one admitted Solana DvP trade, closed by `release_trade` (docs/03-domain.md §4a).
+type TradeAdmission struct {
+	Bump       uint8
+	Series     solana.PublicKey
+	SwapDvp    solana.PublicKey // the Solana DvP program's SwapDvp record
+	Escrow     solana.PublicKey // bond-leg escrow (ATA of SwapDvp for the bond mint)
+	Seller     solana.PublicKey // wallet delivering the bonds
+	Buyer      solana.PublicKey // wallet paying the cash
+	Units      uint64
+	CashAmount uint64
+	AdmittedAt int64
+}
+
+// TradeRecord pairs a TradeAdmission account with its PDA.
+type TradeRecord struct {
+	PDA   solana.PublicKey
+	Trade *TradeAdmission
 }
 
 // Investor mirrors the on-chain `Investor` account (seeds ["investor", series, owner]).

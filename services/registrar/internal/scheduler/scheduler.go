@@ -80,7 +80,7 @@ func Decide(s *chain.Series, open *chain.CorporateAction, supply uint64, now tim
 		if open.Status == 3 && now.Unix() < open.PaymentAt { // Funded → pay at the payment date
 			return waitf("payment date not reached until %s", time.Unix(open.PaymentAt, 0).UTC().Format(time.RFC3339))
 		}
-		step, wait := executor.NextStep(open, supply, now, cfg.AutoFund)
+		step, wait := executor.NextStep(open, supply, s.OpenTrades, now, cfg.AutoFund)
 		if step == "" {
 			return waitf("%s", wait)
 		}

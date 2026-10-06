@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"os"
@@ -52,6 +53,7 @@ func encodeSeries(s *Series) []byte {
 		U16(s.ApprovalBps).
 		Pubkey(s.TaxVault).
 		OptionPubkey((*[32]byte)(s.OpenAction)).
+		U32(s.OpenTrades).
 		FixedBytes(s.Reserved[:]).
 		Bytes()
 }
@@ -159,7 +161,8 @@ func TestDecodeSeriesRoundTrip(t *testing.T) {
 		QuorumBps:      6667,
 		ApprovalBps:    5000,
 		TaxVault:       pk(t, "AVMoJ7VrsMQ8tPjxWZYeDb9nXZuVhxzXb2S2QZKtcHq"),
-		Reserved:       [64]byte{},
+		OpenTrades:     2,
+		Reserved:       [60]byte{},
 	}
 	// open_action: Borsh Option<Pubkey> after tax_vault — None and Some shapes.
 	some := pk(t, "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNNjuMzaDmG4onrZDA")
@@ -205,6 +208,61 @@ func TestDecodeInvestorRoundTrip(t *testing.T) {
 	}
 	if *out != *in {
 		t.Fatalf("round trip mismatch:\n got %+v\nwant %+v", *out, *in)
+	}
+}
+
+// TradeAdmission bytes built by hand in the Rust field order (state.rs): the reference trade of plan 13,
+// 5 bonds at par = 500,000 tiyn. On-chain the account is 8 (discriminator) + 185 = 193 bytes.
+func TestDecodeTradeAdmission(t *testing.T) {
+	want := TradeAdmission{
+		Bump:       254,
+		Series:     pk(t, "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"),
+		SwapDvp:    pk(t, "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"),
+		Escrow:     pk(t, "Gh9ZwEmdLJ8DscKNTkTqPbNwLNNNjuMzaDmG4onrZDA"),
+		Seller:     pk(t, "AVMoJ7VrsMQ8tPjxWZYeDb9nXZuVhxzXb2S2QZKtcHq"),
+		Buyer:      pk(t, "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"),
+		Units:      5,
+		CashAmount: 500_000,
+		AdmittedAt: 1_790_000_000,
+	}
+	valid := borsh.NewWriter().
+		U8(want.Bump).Pubkey(want.Series).Pubkey(want.SwapDvp).Pubkey(want.Escrow).
+		Pubkey(want.Seller).Pubkey(want.Buyer).
+		U64(want.Units).U64(want.CashAmount).I64(want.AdmittedAt).
+		Bytes()
+	if len(valid) != 185 || !bytes.Equal(valid[1:33], want.Series[:]) {
+		t.Fatalf("fixture: %d bytes, want 185 with the series at body offset 1 (memcmp offset 9)", len(valid))
+	}
+	if !bytes.Equal(valid[161:169], []byte{5, 0, 0, 0, 0, 0, 0, 0}) || !bytes.Equal(valid[169:177], []byte{0x20, 0xa1, 0x07, 0, 0, 0, 0, 0}) {
+		t.Fatalf("fixture: units / cash_amount are not u64 LE at offsets 161 / 169: %x", valid[161:177])
+	}
+	tests := []struct {
+		name    string
+		data    []byte
+		wantErr string
+	}{
+		{name: "valid", data: valid},
+		{name: "empty", data: nil, wantErr: "bump"},
+		{name: "cut inside buyer", data: valid[:150], wantErr: "buyer"},
+		{name: "cut before admitted_at", data: valid[:177], wantErr: "admitted_at"},
+		{name: "trailing byte", data: append(bytes.Clone(valid), 0), wantErr: "trailing"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DecodeTradeAdmission(tt.data)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("err = %v, want one naming %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("DecodeTradeAdmission: %v", err)
+			}
+			if *got != want {
+				t.Fatalf("got %+v\nwant %+v", *got, want)
+			}
+		})
 	}
 }
 

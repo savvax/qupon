@@ -33,6 +33,10 @@ type ReadModel interface {
 	FetchEntitlementsByAction(ctx context.Context, action solana.PublicKey) ([]chain.EntitlementRecord, error)
 	FetchTokenAccount(ctx context.Context, addr solana.PublicKey) (*chain.TokenAccount, error)
 	FetchMint(ctx context.Context, mint solana.PublicKey) (*chain.Mint, error)
+	// Secondary trades (trades.go): the admissions of a series, and an account with its owning program
+	// (the cash mint's token program decides where the cash escrow lives).
+	FetchTradeAdmissionsBySeries(ctx context.Context, series solana.PublicKey) ([]chain.TradeRecord, error)
+	GetAccountWithOwner(ctx context.Context, key solana.PublicKey) (*chain.AccountData, error)
 }
 
 var almaty = time.FixedZone("Asia/Almaty", 5*3600)
@@ -150,6 +154,7 @@ type SeriesDTO struct {
 	QuorumBps      uint16  `json:"quorumBps"`
 	ApprovalBps    uint16  `json:"approvalBps"`
 	OpenAction     *string `json:"openAction"`
+	OpenTrades     uint32  `json:"openTrades"` // admitted secondary trades not yet released; > 0 blocks the record date
 	ExplorerURL    string  `json:"explorerUrl"`
 }
 
@@ -167,7 +172,7 @@ func seriesDTO(pda solana.PublicKey, s *chain.Series, m money) SeriesDTO {
 		CouponRateBps: s.CouponRateBps, Frequency: s.Frequency, DayCount: pick(dayCountNames, s.DayCount),
 		IssueDate: civil(s.IssueDate), MaturityDate: civil(s.MaturityDate), NextCouponDate: dateTime(s.NextCouponDate),
 		Status: pick(seriesStatusNames, s.Status), TotalIssued: strconv.FormatUint(s.TotalIssued, 10),
-		QuorumBps: s.QuorumBps, ApprovalBps: s.ApprovalBps, OpenAction: open, ExplorerURL: explorer(s.Mint),
+		QuorumBps: s.QuorumBps, ApprovalBps: s.ApprovalBps, OpenAction: open, OpenTrades: s.OpenTrades, ExplorerURL: explorer(s.Mint),
 	}
 }
 
@@ -375,6 +380,34 @@ func pathKey(w http.ResponseWriter, r *http.Request, name string) (solana.Public
 	return k, true
 }
 
+// seriesOf resolves {mint} → Series + money; writes the error response itself (404 for an unknown mint).
+func seriesOf(w http.ResponseWriter, r *http.Request, rm ReadModel, st *store.Store) (solana.PublicKey, *chain.Series, money, bool) {
+	mint, ok := pathKey(w, r, "mint")
+	if !ok {
+		return mint, nil, money{}, false
+	}
+	pda, err := rm.SeriesPDA(mint)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return pda, nil, money{}, false
+	}
+	s, err := rm.FetchSeries(r.Context(), pda)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return pda, nil, money{}, false
+	}
+	if s == nil {
+		writeError(w, http.StatusNotFound, "no series for mint "+mint.String())
+		return pda, nil, money{}, false
+	}
+	m, err := cashMoney(r.Context(), rm, st, s.CashMint)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return pda, nil, money{}, false
+	}
+	return pda, s, m, true
+}
+
 // mountReadModels registers the read endpoints; with a nil ReadModel they answer 503.
 func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 	need := func(h func(http.ResponseWriter, *http.Request)) http.HandlerFunc {
@@ -388,32 +421,8 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 	}
 	fail := func(w http.ResponseWriter, err error) { writeError(w, http.StatusBadGateway, err.Error()) }
 
-	// loadSeries resolves {mint} → Series + money; writes the error response itself.
 	loadSeries := func(w http.ResponseWriter, r *http.Request) (solana.PublicKey, *chain.Series, money, bool) {
-		mint, ok := pathKey(w, r, "mint")
-		if !ok {
-			return mint, nil, money{}, false
-		}
-		pda, err := rm.SeriesPDA(mint)
-		if err != nil {
-			fail(w, err)
-			return pda, nil, money{}, false
-		}
-		s, err := rm.FetchSeries(r.Context(), pda)
-		if err != nil {
-			fail(w, err)
-			return pda, nil, money{}, false
-		}
-		if s == nil {
-			writeError(w, http.StatusNotFound, "no series for mint "+mint.String())
-			return pda, nil, money{}, false
-		}
-		m, err := cashMoney(r.Context(), rm, st, s.CashMint)
-		if err != nil {
-			fail(w, err)
-			return pda, nil, money{}, false
-		}
-		return pda, s, m, true
+		return seriesOf(w, r, rm, st)
 	}
 
 	r.Get("/series", func(w http.ResponseWriter, r *http.Request) {

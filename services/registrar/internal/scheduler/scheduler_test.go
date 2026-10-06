@@ -105,6 +105,15 @@ func TestDecide(t *testing.T) {
 			want:   Decision{Kind: KindStep, Action: executor.StepStrike},
 		},
 		{
+			// the autopilot never settles or cancels a trade: it waits for the operator (docs/03-domain.md §4a)
+			name:   "announced at the record date with open trades → wait, no step",
+			series: func() *chain.Series { s := series(now0.Unix(), maturity); s.OpenTrades = 1; return s }(),
+			open:   action(0),
+			supply: 2,
+			now:    now0.Add(time.Minute),
+			want:   Decision{Kind: KindWait, Reason: "open secondary trades: settle or cancel them first (1)"},
+		},
+		{
 			name:   "record struck, holders missing → snapshot",
 			series: series(now0.Unix(), maturity),
 			open:   action(1),

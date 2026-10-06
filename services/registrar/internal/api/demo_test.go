@@ -25,7 +25,7 @@ import (
 
 // demoServer builds the API with the fake chain + fake CLI and returns tokens
 // for an investor_demo and a registrar user.
-func demoServer(t *testing.T, fc *fakeChain) (url string, st *store.Store, log, demoTok, regTok string) {
+func demoServer(t *testing.T, fc ReadModel) (url string, st *store.Store, log, demoTok, regTok string) {
 	t.Helper()
 	dir := t.TempDir()
 	data, err := os.ReadFile("../executor/testdata/fake-cli.sh")

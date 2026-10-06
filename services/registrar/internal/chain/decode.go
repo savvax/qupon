@@ -89,9 +89,14 @@ func DecodeSeries(data []byte) (*Series, error) {
 		p := solana.PublicKey(*opt)
 		s.OpenAction = &p
 	}
-	if s.Reserved, err = fixed64(r); err != nil {
+	if s.OpenTrades, err = r.U32(); err != nil {
+		return nil, fmt.Errorf("series: open_trades: %w", err)
+	}
+	reserved, err := r.Bytes(len(s.Reserved))
+	if err != nil {
 		return nil, fmt.Errorf("series: reserved: %w", err)
 	}
+	copy(s.Reserved[:], reserved)
 	// The account is allocated at max size (open_action Some = 33 bytes); a None leaves 32 zero bytes at the end.
 	if !r.Done() && (s.OpenAction != nil || r.Remaining() != 32 || !r.RestIsZero()) {
 		return nil, fmt.Errorf("series: %d trailing bytes", r.Remaining())
@@ -141,6 +146,37 @@ func DecodeInvestor(data []byte) (*Investor, error) {
 		return nil, fmt.Errorf("investor: %d trailing bytes", r.Remaining())
 	}
 	return &i, nil
+}
+
+// DecodeTradeAdmission decodes a TradeAdmission account (after the discriminator).
+func DecodeTradeAdmission(data []byte) (*TradeAdmission, error) {
+	r := borsh.NewReader(data)
+	var t TradeAdmission
+	var err error
+	if t.Bump, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("trade admission: bump: %w", err)
+	}
+	for _, f := range []struct {
+		name string
+		dst  *solana.PublicKey
+	}{{"series", &t.Series}, {"swap_dvp", &t.SwapDvp}, {"escrow", &t.Escrow}, {"seller", &t.Seller}, {"buyer", &t.Buyer}} {
+		if *f.dst, err = r.Pubkey(); err != nil {
+			return nil, fmt.Errorf("trade admission: %s: %w", f.name, err)
+		}
+	}
+	if t.Units, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("trade admission: units: %w", err)
+	}
+	if t.CashAmount, err = r.U64(); err != nil {
+		return nil, fmt.Errorf("trade admission: cash_amount: %w", err)
+	}
+	if t.AdmittedAt, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("trade admission: admitted_at: %w", err)
+	}
+	if !r.Done() {
+		return nil, fmt.Errorf("trade admission: %d trailing bytes", r.Remaining())
+	}
+	return &t, nil
 }
 
 // DecodeCorporateAction decodes a CorporateAction account (after the discriminator).

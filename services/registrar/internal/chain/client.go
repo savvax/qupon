@@ -5,11 +5,13 @@ package chain
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/borsh"
@@ -41,7 +43,7 @@ func NewClient(rpcURL string, program solana.PublicKey, log *slog.Logger) *Clien
 }
 
 // AccountDiscriminator returns sha256("account:<Name>")[:8] (Anchor scheme)
-// for Series, Investor, CorporateAction, Entitlement.
+// for Series, Investor, CorporateAction, Entitlement, TradeAdmission.
 func AccountDiscriminator(name string) ([8]byte, error) {
 	return borsh.AnchorDiscriminator("account", name)
 }
@@ -202,6 +204,32 @@ func (c *Client) FetchInvestorsBySeries(ctx context.Context, series solana.Publi
 		out = append(out, InvestorRecord{PDA: rec.Pubkey, Investor: inv})
 	}
 	sortByInvestorOwner(out)
+	return out, nil
+}
+
+// FetchTradeAdmissionsBySeries lists a series' TradeAdmission accounts (admitted Solana DvP trades not yet
+// released), oldest first. memcmp offset 9 = discriminator + bump, then the series pubkey.
+func (c *Client) FetchTradeAdmissionsBySeries(ctx context.Context, series solana.PublicKey) ([]TradeRecord, error) {
+	recs, err := c.GetProgramAccounts(ctx, mustDiscriminator("TradeAdmission"),
+		[]rpc.RPCFilterMemcmp{{Offset: 9, Bytes: solana.Base58(series[:])}})
+	if err != nil {
+		return nil, fmt.Errorf("scan trades of %s: %w", series, err)
+	}
+	out := make([]TradeRecord, 0, len(recs))
+	for _, rec := range recs {
+		body, err := stripDiscriminator(rec.Data, "TradeAdmission")
+		if err != nil {
+			return nil, fmt.Errorf("scan trades %s: %w", rec.Pubkey, err)
+		}
+		t, err := DecodeTradeAdmission(body)
+		if err != nil {
+			return nil, fmt.Errorf("scan trades %s: %w", rec.Pubkey, err)
+		}
+		out = append(out, TradeRecord{PDA: rec.Pubkey, Trade: t})
+	}
+	slices.SortFunc(out, func(a, b TradeRecord) int {
+		return cmp.Or(cmp.Compare(a.Trade.AdmittedAt, b.Trade.AdmittedAt), strings.Compare(a.Trade.SwapDvp.String(), b.Trade.SwapDvp.String()))
+	})
 	return out, nil
 }
 
