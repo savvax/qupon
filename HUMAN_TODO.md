@@ -28,3 +28,4 @@ The human answers inline under the item. The planner pass folds answers into tas
     
     **Decision needed (default = keep as-is):** keep the documented wildcard, or restrict public reads to a configured origin allowlist (needs a new config knob and the list of portal origins). Follow-up task filed as `tasks/todo/9601-cors-origin-policy.md`.
 - [ ] 2026-10-06 06:46 (1001) rebase conflict on task/1001-kase-client-api (branch kept) — resolve by hand or let the lead/planner split; then delete blocked_reason.
+- [ ] 2026-10-06 06:46 (702) rebase conflict on task/702-system-health-api (branch kept) — resolve by hand or let the lead/planner split; then delete blocked_reason.
