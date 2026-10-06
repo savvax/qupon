@@ -41,5 +41,60 @@
     "noSignMessage": "This wallet cannot sign messages. Use Phantom, Solflare or Backpack.",
     "demo": "Demo accounts are shared by every visitor, so they cannot link wallets.",
     "signup": "Create your own account"
+  },
+  "signup": {
+    "title": "Create an investor account",
+    "lead": "Self-registered investors link their own wallet and get verified to join bond issues.",
+    "name": "Full name",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "At least 10 characters; avoid common passwords.",
+    "submit": "Create account",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "errors": {
+      "email_taken": "An account with this email already exists — sign in instead.",
+      "weak_password": "Use at least 10 characters that are not a common password.",
+      "invalid_params": "Check the name and the email address.",
+      "rate_limited": "Too many attempts — wait a minute and try again.",
+      "generic": "Could not create the account — try again in a moment."
+    },
+    "steps": {
+      "title": "From sign-up to your first coupon",
+      "account": {
+        "title": "Create an account",
+        "text": "Email and password; your account works on devnet and, later, mainnet."
+      },
+      "wallet": {
+        "title": "Link your Solana wallet",
+        "text": "Sign a message to prove it is yours — no transaction, no fee."
+      },
+      "kyc": {
+        "title": "Get verified",
+        "text": "Upload a document; the registrar attests your wallet on-chain (review is SIMULATED)."
+      },
+      "invest": {
+        "title": "Subscribe and receive coupons",
+        "text": "Buy at placement, vote in meetings, get coupons straight to your wallet."
+      },
+      "note": "Devnet only: no real money moves."
+    }
+  },
+  "onboarding": {
+    "none": {
+      "title": "Welcome! Two steps to your first bond",
+      "text": "Link a wallet → apply for KYC. Verification registers your wallet in the issues you choose.",
+      "cta": "Start verification"
+    },
+    "submitted": {
+      "title": "Verification under review",
+      "text": "The registrar is checking your documents. You will be notified when there is a decision.",
+      "cta": "View application"
+    },
+    "rejected": {
+      "title": "Verification rejected",
+      "text": "See the reason, fix it and apply again.",
+      "cta": "See the reason"
+    }
   }
 }

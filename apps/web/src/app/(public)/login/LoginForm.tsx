@@ -1,5 +1,6 @@
 "use client";
 import { StableText } from "@/components/i18n/StableLabel";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
@@ -95,6 +96,15 @@ export function SignInCard({ next }: { next?: string }) {
       </Button>
       <p className="mt-4 text-xs text-n500">
         <StableText>{t("accountsNote")}</StableText>
+      </p>
+      <p className="mt-4 border-t border-n100 pt-4 text-sm text-n600">
+        {t("newInvestor")}{" "}
+        <Link
+          href="/signup"
+          className="font-semibold text-g700 hover:underline"
+        >
+          {t("createAccount")}
+        </Link>
       </p>
     </form>
   );

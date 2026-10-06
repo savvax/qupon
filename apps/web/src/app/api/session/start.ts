@@ -10,7 +10,7 @@ import {
 /** Exchange credentials (or a demo role) for a session: the token goes into the httpOnly cookie, never the body. */
 export async function startSession(
   req: Request,
-  upstream: "/auth/login" | "/auth/demo",
+  upstream: "/auth/login" | "/auth/demo" | "/auth/signup",
 ) {
   if (!(await sameOrigin(req.headers.get("origin"))))
     return NextResponse.json(
@@ -18,6 +18,18 @@ export async function startSession(
       { status: 403 },
     );
   const body = await req.text();
+  if (MOCK_SESSIONS && upstream === "/auth/signup") {
+    // mock mode mirrors the API's checks the e2e relies on, then signs in as the self-registered investor
+    const b = JSON.parse(body || "{}") as { email?: string; password?: string };
+    const fail = (status: number, code: string) =>
+      NextResponse.json({ code, message: code }, { status });
+    if ((b.password ?? "").length < 10) return fail(400, "weak_password");
+    if (b.email?.trim().toLowerCase() === "member@qupon.test")
+      return fail(409, "email_taken");
+    const res = NextResponse.json({ user: mockUser("mock:member") });
+    res.cookies.set(sessionCookie("mock:member"));
+    return res;
+  }
   if (MOCK_SESSIONS) {
     const role =
       upstream === "/auth/demo"

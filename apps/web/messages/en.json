@@ -293,7 +293,9 @@
       "disabled": "Demo sign-in is turned off on this deployment.",
       "failed": "Could not start the demo — try again.",
       "note": "Demo data is shared by every visitor and may be reset."
-    }
+    },
+    "newInvestor": "New investor?",
+    "createAccount": "Create an account"
   },
   "footer": {
     "devnet": "Runs on Solana devnet with test tokens — no real money moves.",

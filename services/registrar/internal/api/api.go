@@ -255,7 +255,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	mountWallets(r, deps, st)
 
-	// mount: signup
+	mountSignup(r, deps, st)
 
 	mountDocuments(r, deps, st)
 
