@@ -3,6 +3,7 @@
  * line here — nothing else in the CLI changes.
  */
 import type { Command } from "commander";
+import { registerAssetCommands } from "./asset.js";
 import { registerKycCommands } from "./kyc.js";
 import { registerActionCommands } from "./action.js";
 import { registerInvestorCommands } from "./investor.js";
@@ -12,6 +13,7 @@ import { registerSeriesCreateCommand } from "./seriesCreate.js";
 import { registerStateCommands } from "./state.js";
 
 export function registerCommands(program: Command): void {
+	registerAssetCommands(program);
 	registerSeriesCommands(program);
 	registerSeriesCreateCommand(program);
 	registerInvestorCommands(program);

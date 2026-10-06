@@ -13,6 +13,28 @@ export interface QuponSeriesConfig {
   termYears: number;
 }
 
+/** Devnet faucet asset (task 603): mints `asset:faucet` and POST /me/faucet may hand out. */
+export interface TestAsset {
+  symbol: string;
+  mint: string;
+  decimals: number;
+  kind: "test" | "stablecoin" | "wrapped_cbdc" | "spl";
+}
+
+/** cashAssets preset of config/devnet.json — seeded into the registrar store on start (task 600). */
+export interface CashAssetPreset {
+  symbol: string;
+  name: string;
+  mint: string;
+  decimals: number;
+  tokenProgram: string;
+  kind: TestAsset["kind"];
+  issuerNote: string;
+  mintAuthority?: string;
+  freezeAuthority?: string;
+  enabled: boolean;
+}
+
 export interface QuponConfig {
   cluster: string;
   programId: string;
@@ -20,6 +42,9 @@ export interface QuponConfig {
   usdcMint: string;
   /** Placeholder "REPLACE_…" means "not created yet". */
   tkztMint: string;
+  /** Devnet-only: mints the test faucet may hand out (scripts/create-test-asset.ts writes this). */
+  testAssets?: TestAsset[];
+  cashAssets?: CashAssetPreset[];
   series: Record<string, QuponSeriesConfig>;
   wallets: {
     registrar: string;

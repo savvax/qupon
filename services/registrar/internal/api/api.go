@@ -247,7 +247,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	// exactly its own anchor below with mount<Feature>(r, deps, st). Keep one blank line between anchors.
 	mountAssets(r, deps, st)
 
-	// mount: faucet
+	mountFaucet(r, deps, st)
 
 	mountAdmin(r, deps, st)
 

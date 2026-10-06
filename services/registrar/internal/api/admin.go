@@ -254,13 +254,12 @@ func authReset(st *store.Store) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		// The requester is anonymous; the row records whose password was reset.
-		if err := st.InsertAudit(r.Context(), store.AuditEntry{
+		// The requester is anonymous; the row records whose password was reset. The reset itself succeeded — only
+		// the audit trail is degraded if this write fails.
+		_ = st.InsertAudit(r.Context(), store.AuditEntry{
 			Ts: time.Now().Unix(), UserID: userID, Role: "reset", Route: "POST /auth/reset",
 			Params: []byte("{}"), OK: true, Detail: "password reset via token",
-		}); err != nil {
-			// The reset itself succeeded; only the trail is degraded.
-		}
+		})
 		w.WriteHeader(http.StatusNoContent)
 	}
 }
