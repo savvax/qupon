@@ -77,7 +77,8 @@
   --ease-qp-spring: cubic-bezier(0.2, 0.9, 0.25, 1.15);
   --animate-qp-fade-in: qp-fade-in 200ms var(--ease-qp-out);
   --animate-qp-fade-out: qp-fade-out 120ms ease-in forwards;
-  --animate-qp-dialog-in: qp-dialog-in 200ms var(--ease-qp-out);
+  --animate-qp-dialog-in: qp-dialog-in 340ms cubic-bezier(0.2, 0.9, 0.25, 1.12);
+  --animate-qp-rise: qp-rise 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-qp-sheet-up: qp-sheet-up 300ms var(--ease-qp-out);
   --animate-qp-sheet-left: qp-sheet-left 300ms var(--ease-qp-out);
   --animate-qp-toast-in: qp-toast-in 320ms var(--ease-qp-spring);
@@ -92,6 +93,11 @@
   --animate-qp-sweep: qp-sweep 9s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   --animate-qp-segment: qp-segment 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-qp-iris-a: qp-spin 38s linear infinite;
+  /* Motion v3 (task 1108): shimmer, check draw, pop, toast timer. */
+  --animate-qp-shimmer: qp-shimmer 1.6s ease-in-out infinite;
+  --animate-qp-pop: qp-pop 320ms cubic-bezier(0.2, 0.9, 0.25, 1.3);
+  --animate-qp-draw: qp-draw 420ms 120ms cubic-bezier(0.65, 0, 0.35, 1) both;
+  --animate-qp-timer: qp-timer linear forwards;
   --animate-qp-iris-b: qp-spin-reverse 26s linear infinite;
 
   @keyframes qp-fade-in {
@@ -107,7 +113,14 @@
   @keyframes qp-dialog-in {
     from {
       opacity: 0;
-      scale: 0.98;
+      scale: 0.94;
+      translate: 0 10px;
+    }
+  }
+  @keyframes qp-rise {
+    from {
+      opacity: 0;
+      translate: 0 8px;
     }
   }
   @keyframes qp-sheet-up {
@@ -177,6 +190,43 @@
     100% {
       translate: 450% 0;
       opacity: 0;
+    }
+  }
+  @keyframes qp-shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+  @keyframes qp-pop {
+    0% {
+      scale: 0.6;
+      opacity: 0;
+    }
+    60% {
+      scale: 1.12;
+      opacity: 1;
+    }
+    100% {
+      scale: 1;
+    }
+  }
+  @keyframes qp-draw {
+    from {
+      stroke-dashoffset: var(--qp-len, 24);
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes qp-timer {
+    from {
+      scale: 1 1;
+    }
+    to {
+      scale: 0 1;
     }
   }
   @keyframes qp-spin {
@@ -278,5 +328,116 @@
 @keyframes qp-rim {
   to {
     --qp-angle: 360deg;
+  }
+}
+
+/* Hover lift for clickable cards (task 1108): 2 px rise and a soft shadow, 180 ms. */
+.qp-lift {
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 180ms;
+}
+.qp-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px -16px rgba(18, 26, 22, 0.28);
+}
+.qp-lift:active {
+  transform: translateY(0) scale(0.995);
+}
+
+/* Scroll reveal (task 1108): content rises in as it enters the viewport — CSS scroll-driven animation, so it
+   never hides anything when unsupported (no JS, older browsers) and reduced motion turns it off. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .qp-reveal {
+      animation: qp-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 28%;
+    }
+    @keyframes qp-reveal {
+      from {
+        opacity: 0;
+        translate: 0 24px;
+        scale: 0.985;
+      }
+    }
+  }
+}
+
+/* Progress fills grow in on first paint and glide on every change (task 1108); scale only. */
+.qp-bar {
+  transform-origin: left;
+  transition: scale 900ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@starting-style {
+  .qp-bar {
+    scale: 0 1;
+  }
+}
+
+/* Pearl: the hero card's own iridescent surface (task 1108) — a slow drift through pale mint, aqua and lilac,
+   a light that follows the pointer, and a holographic band crossing every few seconds. */
+.qp-pearl {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      55% 70% at var(--qp-px, 85%) var(--qp-py, 0%),
+      rgba(255, 255, 255, 0.95),
+      transparent 70%
+    ),
+    linear-gradient(
+      120deg,
+      #effcf5 0%,
+      #e3f6f8 20%,
+      #eceffd 40%,
+      #e7fbef 60%,
+      #e0f4f4 80%,
+      #effcf5 100%
+    );
+  background-size:
+    100% 100%,
+    320% 320%;
+  animation: qp-pearl 16s ease-in-out infinite alternate;
+}
+.qp-pearl::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.75) 46%,
+    rgba(186, 240, 222, 0.5) 50%,
+    rgba(255, 255, 255, 0.75) 54%,
+    transparent 65%
+  );
+  background-size: 250% 100%;
+  background-position: 160% 0; /* parked off-card when motion is reduced */
+  animation: qp-holo 7s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  pointer-events: none;
+}
+@keyframes qp-pearl {
+  from {
+    background-position:
+      0 0,
+      0% 30%;
+  }
+  to {
+    background-position:
+      0 0,
+      100% 70%;
+  }
+}
+@keyframes qp-holo {
+  0% {
+    background-position: 160% 0;
+  }
+  45%,
+  100% {
+    background-position: -60% 0;
   }
 }

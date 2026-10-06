@@ -84,7 +84,20 @@ export function HeroLifecycle({
     // two animations, two elements.
     <div ref={ref} className="sm:animate-qp-hero-float">
       <div className="qp-iris-rim rounded-[calc(var(--radius-card)+1.5px)] p-[1.5px] shadow-[0_24px_64px_-24px_rgba(0,0,0,.55)]">
-        <div className="rounded-card bg-n0 p-5 text-n900 sm:p-6">
+        <div
+          className="qp-pearl rounded-card p-5 text-n900 sm:p-6"
+          onPointerMove={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            e.currentTarget.style.setProperty(
+              "--qp-px",
+              `${((e.clientX - r.left) / r.width) * 100}%`,
+            );
+            e.currentTarget.style.setProperty(
+              "--qp-py",
+              `${((e.clientY - r.top) / r.height) * 100}%`,
+            );
+          }}
+        >
           <div className="truncate text-sm font-semibold text-n600">
             {t("last.title")}
           </div>

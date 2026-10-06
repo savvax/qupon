@@ -1,4 +1,6 @@
 "use client";
+import { SPRING } from "@/lib/motion";
+import { m } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -62,14 +64,24 @@ export function CabinetShell({
               href={n.href}
               aria-current={n.href === active ? "page" : undefined}
               className={cx(
-                "flex h-10 items-center gap-3 rounded-btn px-3 text-sm font-semibold",
+                "relative flex h-10 items-center gap-3 rounded-btn px-3 text-sm font-semibold transition-colors",
                 n.href === active
-                  ? "bg-g50 text-g700"
+                  ? "text-g700"
                   : "text-n700 hover:bg-n100 hover:text-n900",
               )}
             >
-              {n.icon}
-              {n.label}
+              {/* The active highlight glides to the selected item (motion layoutId, spring). */}
+              {n.href === active && (
+                <m.span
+                  layoutId="cabinet-nav-active"
+                  transition={SPRING}
+                  className="absolute inset-0 rounded-btn bg-g50"
+                />
+              )}
+              <span className="relative flex items-center gap-3">
+                {n.icon}
+                {n.label}
+              </span>
             </Link>
           ))}
         </nav>

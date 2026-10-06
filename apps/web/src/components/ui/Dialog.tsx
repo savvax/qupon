@@ -37,8 +37,16 @@ function Body({
           {description}
         </DialogPrimitive.Description>
       )}
-      {children && <div className="mt-4">{children}</div>}
-      {footer && <div className="mt-6 flex justify-end gap-2">{footer}</div>}
+      {children && (
+        <div className="animate-qp-rise mt-4 [animation-delay:70ms]">
+          {children}
+        </div>
+      )}
+      {footer && (
+        <div className="animate-qp-rise mt-6 flex justify-end gap-2 [animation-delay:130ms]">
+          {footer}
+        </div>
+      )}
       <DialogPrimitive.Close aria-label={t("close")} className={CLOSE}>
         ✕
       </DialogPrimitive.Close>

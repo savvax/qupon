@@ -41,7 +41,7 @@ export function Address({
         }}
         className="-m-1 grid size-8 shrink-0 place-items-center rounded-btn text-xs text-n500 transition-colors hover:bg-n100 hover:text-n900"
       >
-        {copied ? "✓" : "⧉"}
+        {copied ? <span className="animate-qp-pop text-g600">✓</span> : "⧉"}
       </button>
     </span>
   );

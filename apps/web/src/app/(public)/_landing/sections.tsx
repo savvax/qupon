@@ -23,10 +23,10 @@ function Section({
       <div className="text-sm font-bold tracking-wider text-g700 uppercase">
         <StableText>{eyebrow}</StableText>
       </div>
-      <h2 className="mt-2 max-w-3xl text-2xl font-extrabold tracking-tight text-balance sm:text-[2rem] sm:leading-tight">
+      <h2 className="qp-reveal mt-2 max-w-3xl text-2xl font-extrabold tracking-tight text-balance sm:text-[2rem] sm:leading-tight">
         <StableText>{title}</StableText>
       </h2>
-      <div className="mt-8 sm:mt-10">{children}</div>
+      <div className="qp-reveal mt-8 sm:mt-10">{children}</div>
     </section>
   );
 }
@@ -39,7 +39,10 @@ export function HowItWorks() {
     <Section id="how" eyebrow={t("eyebrow")} title={t("title")}>
       <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {STEPS.map((s, i) => (
-          <li key={s} className="rounded-card border border-n200 bg-n0 p-5">
+          <li
+            key={s}
+            className="qp-reveal qp-lift rounded-card border border-n200 bg-n0 p-5 hover:border-g200"
+          >
             <span className="flex size-8 items-center justify-center rounded-full bg-g600 text-sm font-bold text-white">
               {i + 1}
             </span>
@@ -119,7 +122,7 @@ export function Audiences() {
         <div
           key={a}
           id={a}
-          className="flex scroll-mt-20 flex-col rounded-hero border border-n200 bg-n0 p-6 sm:p-8"
+          className="qp-reveal qp-lift flex scroll-mt-20 flex-col rounded-hero border border-n200 bg-n0 p-6 hover:border-g200 sm:p-8"
         >
           <h2 className="text-2xl font-extrabold tracking-tight">
             <StableText>{t(`${a}.title`)}</StableText>

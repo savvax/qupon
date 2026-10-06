@@ -22,14 +22,31 @@ export function Stepper({ steps }: { steps: Step[] }) {
           <span
             aria-hidden
             className={cx(
-              "grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors duration-300",
+              "relative grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold transition-[background-color,color,scale] duration-300",
               s.state === "done" && "bg-g600 text-white",
               s.state === "current" &&
                 "animate-qp-ring bg-n0 text-g700 ring-2 ring-g600 ring-inset",
               s.state === "todo" && "bg-n100 text-n500",
             )}
           >
-            {s.state === "done" ? "✓" : i + 1}
+            {/* The check is always in the DOM so becoming "done" draws it (stroke transition). */}
+            <svg viewBox="0 0 16 16" className="absolute size-3.5" fill="none">
+              <path
+                d="M3.5 8.5 6.5 11.5 12.5 4.5"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="14"
+                className={cx(
+                  "transition-[stroke-dashoffset] delay-150 duration-500 ease-[cubic-bezier(.65,0,.35,1)]",
+                  s.state === "done"
+                    ? "[stroke-dashoffset:0]"
+                    : "[stroke-dashoffset:14]",
+                )}
+              />
+            </svg>
+            {s.state !== "done" && i + 1}
           </span>
           <span aria-current={s.state === "current" ? "step" : undefined}>
             {s.label}
@@ -37,11 +54,15 @@ export function Stepper({ steps }: { steps: Step[] }) {
           {i < steps.length - 1 && (
             <span
               aria-hidden
-              className={cx(
-                "ml-1 hidden h-0.5 w-8 rounded transition-colors duration-300 lg:block xl:w-14",
-                s.state === "done" ? "bg-g300" : "bg-n200",
-              )}
-            />
+              className="relative ml-1 hidden h-0.5 w-8 overflow-hidden rounded bg-n200 lg:block xl:w-14"
+            >
+              <span
+                className={cx(
+                  "absolute inset-0 origin-left bg-g400 transition-[scale] duration-500 ease-[cubic-bezier(.2,.8,.2,1)]",
+                  s.state === "done" ? "scale-x-100" : "scale-x-0",
+                )}
+              />
+            </span>
           )}
         </li>
       ))}

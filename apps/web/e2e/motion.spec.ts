@@ -60,6 +60,38 @@ test("KPI numbers count up after a client-side navigation", async ({
   await expect(page.locator(".num").first()).not.toHaveText("0");
 });
 
+test("tabs and the cabinet nav move one shared highlight (tasks 1105/1108)", async ({
+  page,
+  baseURL,
+}) => {
+  await signInAs(page, "registrar", baseURL);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/registrar/actions");
+  const nav = page.getByRole("navigation", { name: /./ }).first();
+  await expect(nav.locator("[aria-current=page] span.absolute")).toHaveCount(1);
+  const tabs = page.getByRole("tab");
+  await tabs.nth(1).click();
+  await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.nth(1).locator("span.absolute")).toHaveCount(1);
+  await expect(tabs.nth(0).locator("span.absolute")).toHaveCount(0);
+});
+
+test("hero card: pearl surface drifts and follows the pointer", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const card = page.locator(".qp-pearl");
+  await expect(card).toBeVisible();
+  expect(await card.evaluate((el) => getComputedStyle(el).animationName)).toBe(
+    "qp-pearl",
+  );
+  const box = (await card.boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.5);
+  await expect
+    .poll(() => card.evaluate((el) => el.style.getPropertyValue("--qp-px")))
+    .toMatch(/^2\d(\.\d+)?%$/);
+});
+
 test.describe("reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
@@ -76,5 +108,19 @@ test.describe("reduced motion", () => {
       .first()
       .evaluate((el) => getComputedStyle(el).opacity);
     expect(opacity).toBe("1");
+  });
+
+  test("ambient loops are frozen (hero pearl, iris, sweep)", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const durations = await page.evaluate(() =>
+      [".qp-pearl", ".animate-qp-iris-a", ".animate-qp-sweep"].map((sel) => {
+        const el = document.querySelector(sel);
+        return el ? parseFloat(getComputedStyle(el).animationDuration) : -1;
+      }),
+    );
+    for (const d of durations) expect(d).toBeGreaterThanOrEqual(0);
+    for (const d of durations) expect(d).toBeLessThan(0.01);
   });
 });

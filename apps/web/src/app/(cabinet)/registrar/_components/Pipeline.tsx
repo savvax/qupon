@@ -59,7 +59,7 @@ function ActionCard({
   return (
     <Link
       href={`/registrar/actions/${action.pda}`}
-      className="block rounded-btn border border-n200 bg-n0 px-3 py-2.5 text-sm transition-colors hover:border-g300 hover:bg-g50"
+      className="qp-lift block rounded-btn border border-n200 bg-n0 px-3 py-2.5 text-sm hover:border-g300 hover:bg-g50"
     >
       <div className="flex items-center justify-between gap-2">
         <span className="num truncate font-bold">{ticker}</span>

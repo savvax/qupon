@@ -69,8 +69,8 @@ function Bar({ pct, tone }: { pct: number; tone: string }) {
   return (
     <div className="h-2 overflow-hidden rounded-full bg-n100">
       <div
-        className={cx("h-full rounded-full", tone)}
-        style={{ width: `${Math.max(0, Math.min(pct, 100))}%` }}
+        className={cx("qp-bar h-full rounded-full", tone)}
+        style={{ scale: `${Math.max(0, Math.min(pct, 100)) / 100} 1` }}
       />
     </div>
   );
