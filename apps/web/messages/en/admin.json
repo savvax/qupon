@@ -1,4 +1,111 @@
 {
+  "users": {
+    "title": "Users",
+    "lead": "Accounts of the register: roles, organisations, status and one-time password resets.",
+    "colUser": "User",
+    "colRole": "Role",
+    "colOrg": "Organisation",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "demoBadge": "Demo",
+    "search": "Search",
+    "searchPlaceholder": "name or email",
+    "allRoles": "All roles",
+    "allStatuses": "All statuses",
+    "apply": "Apply",
+    "statuses": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "pending": "Pending"
+    },
+    "roles": {
+      "issuer": "Issuer",
+      "registrar": "Registrar",
+      "investor": "Investor",
+      "admin": "Administrator"
+    },
+    "noOrg": "No organisation",
+    "empty": "No users match these filters.",
+    "unreachable": "The user directory is unavailable",
+    "unreachableBody": "The registrar API is not answering right now — try again in a moment.",
+    "create": {
+      "title": "Create user",
+      "lead": "An account with a role and, for staff, an organisation.",
+      "email": "Email",
+      "name": "Full name",
+      "password": "Initial password",
+      "passwordHint": "At least 10 characters; the user changes it after the first sign-in.",
+      "invalid": "Enter an email, a name and a password of 10+ characters.",
+      "pending": "Creating the user…",
+      "success": "User created",
+      "submit": "Create user"
+    },
+    "edit": {
+      "title": "Edit user",
+      "pending": "Saving changes…",
+      "success": "User updated",
+      "submit": "Save changes",
+      "disableNote": "Disabling signs the user out everywhere"
+    },
+    "resetLink": {
+      "title": "Reset link",
+      "lead": "One-time password reset link for {name}",
+      "body": "The link is shown only once and works for 24 hours. Email delivery is not connected — copy it and send it to the user yourself.",
+      "issue": "Generate link",
+      "pending": "Generating the link…",
+      "success": "Reset link generated",
+      "once": "Copy it now — it will not be shown again",
+      "copy": "Copy",
+      "copied": "Copied ✓",
+      "urlLabel": "Reset link URL",
+      "expires": "Expires {time} (Almaty)"
+    }
+  },
+  "orgs": {
+    "title": "Organisations",
+    "lead": "Issuer and registrar companies whose staff share access to their series.",
+    "colName": "Name",
+    "colKind": "Kind",
+    "colBin": "BIN",
+    "colWebsite": "Website",
+    "colCreated": "Created",
+    "colActions": "Actions",
+    "kinds": {
+      "issuer": "Issuer",
+      "registrar": "Registrar"
+    },
+    "binHint": "Kazakh business identification number, optional",
+    "empty": "No organisations yet",
+    "unreachable": "Organisations are unavailable",
+    "unreachableBody": "The registrar API is not answering right now — try again in a moment.",
+    "create": {
+      "title": "Create organisation",
+      "lead": "A company whose issuers or registrars act within it.",
+      "pending": "Creating the organisation…",
+      "success": "Organisation created",
+      "submit": "Create organisation"
+    },
+    "edit": {
+      "title": "Edit",
+      "pending": "Saving changes…",
+      "success": "Organisation updated",
+      "submit": "Save changes"
+    }
+  },
+  "reset": {
+    "title": "Set a new password",
+    "lead": "This one-time link was issued by an administrator. Setting a new password signs out every active session.",
+    "password": "New password",
+    "confirm": "Repeat the password",
+    "hint": "At least 10 characters",
+    "tooShort": "The password must be at least 10 characters.",
+    "mismatch": "The passwords do not match.",
+    "invalidToken": "This link is unknown, already used or expired — ask an administrator for a new one.",
+    "generic": "The registrar service is unreachable — try again in a moment.",
+    "submit": "Set password",
+    "done": "Password set. Sign in with the new password.",
+    "signIn": "Sign in"
+  },
   "overview": {
     "title": "Overview",
     "lead": "The register at a glance: users, verification queue, series and operator health.",

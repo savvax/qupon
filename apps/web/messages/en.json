@@ -401,7 +401,10 @@
     "admin": "Admin overview",
     "adminSystem": "System health",
     "adminSeries": "Series",
-    "adminAudit": "Audit log"
+    "adminAudit": "Audit log",
+    "adminUsers": "Users",
+    "adminOrganizations": "Organizations",
+    "resetPassword": "Set a new password"
   },
   "errors": {
     "failed": "Something went wrong",

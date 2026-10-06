@@ -401,7 +401,10 @@
     "admin": "Обзор платформы",
     "adminSystem": "Состояние системы",
     "adminSeries": "Серии",
-    "adminAudit": "Журнал действий"
+    "adminAudit": "Журнал действий",
+    "adminUsers": "Пользователи",
+    "adminOrganizations": "Организации",
+    "resetPassword": "Новый пароль"
   },
   "errors": {
     "failed": "Что-то пошло не так",
