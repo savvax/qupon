@@ -1,7 +1,7 @@
 ---
 id: 803
 title: Documents and KYC applications API + upload proxy
-agent: glm
+agent: claude
 tier: T1
 depends_on: [801]
 verify: make verify
