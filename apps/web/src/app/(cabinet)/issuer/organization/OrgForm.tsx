@@ -43,7 +43,7 @@ export function OrgForm({ org }: { org: Org }) {
         />
         <TextField
           label={t("kind")}
-          value={org.kind}
+          value={t.has(`kinds.${org.kind}`) ? t(`kinds.${org.kind}`) : org.kind}
           disabled
           readOnly
         />

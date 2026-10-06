@@ -2,7 +2,6 @@ import { metaTitle } from "@/lib/meta";
 import { getTranslations } from "next-intl/server";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { boFetch } from "@/lib/bo";
@@ -92,19 +91,14 @@ export default async function AdminAssetsPage() {
         <AddAssetDialog />
       </header>
       {assets === null ? (
-        <EmptyState
-          title={t("unreachable")}
-          body={t("unreachableBody")}
-        />
+        <EmptyState title={t("unreachable")} body={t("unreachableBody")} />
       ) : (
-        <Card>
-          <DataTable
-            columns={columns}
-            rows={assets}
-            rowKey={(a) => a.mint}
-            empty={t("empty")}
-          />
-        </Card>
+        <DataTable
+          columns={columns}
+          rows={assets}
+          rowKey={(a) => a.mint}
+          empty={t("empty")}
+        />
       )}
     </div>
   );

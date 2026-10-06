@@ -67,7 +67,7 @@ test("admin series: hide a series, KASE ticker and organisation controls", async
   await expect(page.getByText("Series settings saved")).toBeVisible();
 
   // RU renders with real translations.
-  await switchLocale(page, "ru", "Серии");
+  await switchLocale(page, "ru", "Выпуски");
   await expect(table).toContainText("Тикер KASE");
   await expect(
     page.getByRole("switch", { name: "Скрыть из списков" }).first(),

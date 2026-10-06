@@ -31,6 +31,9 @@ const GROUPS: { who?: string; routes: string[] }[] = [
       "/issuer/series",
       "/issuer/series/new",
       `/issuer/series/${MINT}`,
+      "/issuer/organization",
+      "/issuer/team",
+      "/issuer/documents",
       "/account",
     ],
   },
@@ -45,6 +48,8 @@ const GROUPS: { who?: string; routes: string[] }[] = [
       "/registrar/activity",
       "/registrar/autopilot",
       "/registrar/kyc",
+      "/registrar/kyc/4",
+      "/registrar/reports",
     ],
   },
   {
@@ -56,7 +61,16 @@ const GROUPS: { who?: string; routes: string[] }[] = [
       "/investor/statements",
     ],
   },
-  { who: "member", routes: ["/investor", "/account", "/investor/kyc"] },
+  {
+    who: "member",
+    routes: [
+      "/investor",
+      "/account",
+      "/account/notifications",
+      "/investor/kyc",
+      "/investor/reports",
+    ],
+  },
   {
     who: "admin",
     routes: [

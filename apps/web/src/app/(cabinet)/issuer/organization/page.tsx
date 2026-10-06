@@ -14,13 +14,13 @@ export async function generateMetadata() {
 export default async function OrganizationPage() {
   const t = await getTranslations("org");
   const user = await getSession();
-  const org =
-    user && !user.isDemo
-      ? await boFetch<{ organization: Org } | null>("/org").catch(() => null)
-      : null;
+  // demo issuers read their (shared) organisation too — only editing is off for them
+  const org = user
+    ? await boFetch<{ organization: Org } | null>("/org").catch(() => null)
+    : null;
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <header>
         <h1 className="text-2xl font-extrabold tracking-tight">
           <StableText>{t("title")}</StableText>
@@ -33,10 +33,38 @@ export default async function OrganizationPage() {
         <h2 className="mb-4 text-lg font-bold">
           <StableText>{t("profile.title")}</StableText>
         </h2>
-        {user?.isDemo || !org ? (
+        {!org ? (
           <p className="text-sm text-n600">
-            <StableText>{t(user?.isDemo ? "profile.demo" : "team.empty")}</StableText>
+            <StableText>{t("team.empty")}</StableText>
           </p>
+        ) : user?.isDemo ? (
+          <>
+            <dl className="grid gap-4 text-sm sm:grid-cols-2">
+              {(
+                [
+                  ["name", org.organization.name],
+                  [
+                    "kind",
+                    t.has(`profile.kinds.${org.organization.kind}`)
+                      ? t(`profile.kinds.${org.organization.kind}`)
+                      : org.organization.kind,
+                  ],
+                  ["bin", org.organization.bin || "—"],
+                  ["website", org.organization.website || "—"],
+                ] as const
+              ).map(([k, v]) => (
+                <div key={k} className="min-w-0">
+                  <dt className="text-xs font-semibold text-n500">
+                    {t(`profile.${k}`)}
+                  </dt>
+                  <dd className="mt-0.5 break-words text-n900">{v}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-5 rounded-btn bg-n50 px-3 py-2 text-xs text-n600">
+              <StableText>{t("profile.demo")}</StableText>
+            </p>
+          </>
         ) : (
           <OrgForm org={org.organization} />
         )}

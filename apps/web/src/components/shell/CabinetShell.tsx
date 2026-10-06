@@ -157,7 +157,10 @@ export function CabinetShell({
             )}
           >
             {n.icon}
-            <span className="line-clamp-2 max-w-full">{n.label}</span>
+            {/* 10 px: the longest single words ("Пользователи", "Верификация") fit a fifth of 360 px */}
+            <span className="line-clamp-2 max-w-full text-[10px] tracking-tight hyphens-auto">
+              {n.label}
+            </span>
           </Link>
         ))}
         {nav.length > 5 && (

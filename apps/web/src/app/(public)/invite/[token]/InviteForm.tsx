@@ -30,7 +30,9 @@ export function InviteForm({ token }: { token: string }) {
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { code?: string };
         const key = body.code ?? "generic";
-        setError(t.has(`errors.${key}`) ? t(`errors.${key}`) : t("errors.generic"));
+        setError(
+          t.has(`errors.${key}`) ? t(`errors.${key}`) : t("errors.generic"),
+        );
         setBusy(false);
         return;
       }
@@ -61,7 +63,10 @@ export function InviteForm({ token }: { token: string }) {
         autoComplete="new-password"
         required
       />
-      <Button type="submit" disabled={busy || name === "" || password.length < 10}>
+      <Button
+        type="submit"
+        disabled={busy || name === "" || password.length < 10}
+      >
         {busy ? t("submitting") : t("submit")}
       </Button>
     </form>

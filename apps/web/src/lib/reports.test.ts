@@ -11,16 +11,18 @@ describe("report helpers", () => {
   });
 
   it("keeps every filter in the CSV download URL", () => {
-    expect(csvHref("me/reports/statement", { from: "2026-01-01", to: undefined })).toBe(
-      "/api/bo-get/me/reports/statement?from=2026-01-01&format=csv",
-    );
+    expect(
+      csvHref("me/reports/statement", { from: "2026-01-01", to: undefined }),
+    ).toBe("/api/bo-get/me/reports/statement?from=2026-01-01&format=csv");
     expect(csvHref("me/reports/tax", { year: 2028 })).toBe(
       "/api/bo-get/me/reports/tax?year=2028&format=csv",
     );
   });
 
   it("builds printable-view URLs", () => {
-    expect(printHref("holders", { mint: "Mint123" })).toBe("/print/holders?mint=Mint123");
+    expect(printHref("holders", { mint: "Mint123" })).toBe(
+      "/print/holders?mint=Mint123",
+    );
     expect(printHref("statement", {})).toBe("/print/statement");
   });
 });

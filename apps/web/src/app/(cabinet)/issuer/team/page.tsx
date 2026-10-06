@@ -16,15 +16,13 @@ export default async function TeamPage() {
   const user = await getSession();
   const members =
     user && !user.isDemo
-      ? (
-          await boFetch<{ members: Member[] }>("/org/members").catch(
-            () => null,
-          )
-        )?.members ?? []
+      ? ((
+          await boFetch<{ members: Member[] }>("/org/members").catch(() => null)
+        )?.members ?? [])
       : [];
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <header>
         <h1 className="text-2xl font-extrabold tracking-tight">
           <StableText>{t("title")}</StableText>
@@ -34,7 +32,11 @@ export default async function TeamPage() {
         </p>
       </header>
       <Card className="mt-6">
-        <TeamPanel members={members} demo={user?.isDemo ?? true} meId={user?.id ?? 0} />
+        <TeamPanel
+          members={members}
+          demo={user?.isDemo ?? true}
+          meId={user?.id ?? 0}
+        />
       </Card>
     </div>
   );

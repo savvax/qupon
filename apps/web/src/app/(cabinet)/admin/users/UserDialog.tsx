@@ -63,11 +63,7 @@ export function UserDialog({ orgs }: { orgs: OrgOption[] }) {
   };
 
   const create = async () => {
-    if (
-      !email.trim().includes("@") ||
-      !name.trim() ||
-      password.length < 10
-    ) {
+    if (!email.trim().includes("@") || !name.trim() || password.length < 10) {
       setError(t("create.invalid"));
       return;
     }

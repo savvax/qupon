@@ -140,11 +140,15 @@ export function SystemPanel() {
           <h2 className="text-base font-bold">{t("ops.title")}</h2>
           <ul className="mt-3 flex flex-col gap-2">
             {data.operators.map((o) => (
-              <li key={o.address} className="flex items-center gap-2 text-sm">
-                <span className="min-w-0 truncate font-semibold">
-                  {opName(o.name)}
+              <li
+                key={o.address}
+                className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm"
+              >
+                {/* name + address on the first line, wrapping as a unit; balance (and Low) at the end */}
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="font-semibold">{opName(o.name)}</span>
+                  <Address value={o.address} />
                 </span>
-                <Address value={o.address} />
                 {/* the Low pill sits with the balance, so it never pushes it to a new line */}
                 <span className="ml-auto flex shrink-0 items-center gap-2">
                   {o.low && <Badge tone="danger">{t("ops.low")}</Badge>}

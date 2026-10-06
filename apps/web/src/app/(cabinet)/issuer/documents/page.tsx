@@ -1,4 +1,7 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { DataTable } from "@/components/ui/DataTable";
+import { formatDate } from "@/lib/format";
+import { formatBytes } from "@/lib/kyc";
 import { StableText } from "@/components/i18n/StableLabel";
 import { Card } from "@/components/ui/Card";
 import { boFetch } from "@/lib/bo";
@@ -16,15 +19,15 @@ export default async function IssuerDocumentsPage() {
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
   const user = await getSession();
   const docs = user
-    ? (
+    ? ((
         await boFetch<{ documents: DocumentRow[] }>("/me/documents").catch(
           () => null,
         )
-      )?.documents ?? []
+      )?.documents ?? [])
     : [];
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="max-w-3xl">
       <header>
         <h1 className="text-2xl font-extrabold tracking-tight">
           <StableText>{t("title")}</StableText>
@@ -42,51 +45,54 @@ export default async function IssuerDocumentsPage() {
             <DocumentsPanel />
           </Card>
         )}
-        <Card>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-n200 text-left text-xs text-n500">
-                <th className="py-2 pr-4 font-semibold">{t("colFilename")}</th>
-                <th className="py-2 pr-4 font-semibold">{t("colKind")}</th>
-                <th className="py-2 pr-4 font-semibold">{t("colSize")}</th>
-                <th className="py-2 font-semibold">{t("colDate")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {docs.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-n500">
-                    {t("empty")}
-                  </td>
-                </tr>
-              ) : (
-                docs.map((d) => (
-                  <tr key={d.id} className="border-b border-n100 last:border-0">
-                    <td className="py-2.5 pr-4 font-medium text-n900">
-                      {d.filename}
-                    </td>
-                    <td className="py-2.5 pr-4">
-                      {t.has(`kinds.${d.kind}`) ? t(`kinds.${d.kind}`) : d.kind}
-                      {d.seriesMint ? (
-                        <span className="ml-1 text-xs text-g600">
-                          · {t("attached")}
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="py-2.5 pr-4 num">
-                      {(d.size / 1024).toFixed(0)} KB
-                    </td>
-                    <td className="py-2.5 num">
-                      {new Date(d.createdAt * 1000).toLocaleDateString(
-                        locale === "ru" ? "ru-RU" : "en-US",
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </Card>
+        <DataTable
+          rows={docs}
+          rowKey={(d) => String(d.id)}
+          empty={t("empty")}
+          columns={[
+            {
+              key: "file",
+              header: t("colFilename"),
+              render: (d) => (
+                <span className="font-medium break-all text-n900">
+                  {d.filename}
+                </span>
+              ),
+            },
+            {
+              key: "kind",
+              header: t("colKind"),
+              render: (d) => (
+                <span>
+                  {t.has(`kinds.${d.kind}`) ? t(`kinds.${d.kind}`) : d.kind}
+                  {d.seriesMint ? (
+                    <span className="ml-1 text-xs text-g600">
+                      · {t("attached")}
+                    </span>
+                  ) : null}
+                </span>
+              ),
+            },
+            {
+              key: "size",
+              header: t("colSize"),
+              align: "right",
+              render: (d) => <span className="num">{formatBytes(d.size)}</span>,
+            },
+            {
+              key: "date",
+              header: t("colDate"),
+              render: (d) => (
+                <span className="num">
+                  {formatDate(
+                    new Date(d.createdAt * 1000).toISOString(),
+                    locale,
+                  )}
+                </span>
+              ),
+            },
+          ]}
+        />
       </div>
     </div>
   );

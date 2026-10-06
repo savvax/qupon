@@ -86,9 +86,26 @@ const redemption: Payout = {
 };
 
 const sum = (ps: Payout[]) => {
-  const by = new Map<string, { n: number; gross: number; tax: number; net: number; principal: number; decimals: number }>();
+  const by = new Map<
+    string,
+    {
+      n: number;
+      gross: number;
+      tax: number;
+      net: number;
+      principal: number;
+      decimals: number;
+    }
+  >();
   for (const p of ps) {
-    const a = by.get(p.currency) ?? { n: 0, gross: 0, tax: 0, net: 0, principal: 0, decimals: p.decimals };
+    const a = by.get(p.currency) ?? {
+      n: 0,
+      gross: 0,
+      tax: 0,
+      net: 0,
+      principal: 0,
+      decimals: p.decimals,
+    };
     a.n++;
     a.gross += p.gross;
     a.tax += p.tax;
@@ -125,10 +142,15 @@ const holders = (units: number[]) =>
 
 const major = (v: number, d: number) => (v / 10 ** d).toFixed(d);
 
-const cell = (v: string | number) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+const cell = (v: string | number) =>
+  /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
 
 /** Same shape as the Go CSV (reports.WriteCSV): BOM, header, rows, "# key,value" metadata. */
-const csv = (header: string[], rows: (string | number)[][], meta: [string, string][]) =>
+const csv = (
+  header: string[],
+  rows: (string | number)[][],
+  meta: [string, string][],
+) =>
   "\ufeff" +
   [header, ...rows, ...meta.map(([k, v]) => ["# " + k, v])]
     .map((r) => r.map(cell).join(","))
@@ -194,7 +216,11 @@ export const handlers: MockHandler[] = [
         (p) => (!from || p.paymentDate >= from) && (!to || p.paymentDate <= to),
       );
       if (isCsv(query))
-        return csv(PAYOUT_HEADER, payoutRows(ps), meta("statement", [OWNERS[0]!]));
+        return csv(
+          PAYOUT_HEADER,
+          payoutRows(ps),
+          meta("statement", [OWNERS[0]!]),
+        );
       return {
         payouts: ps,
         totals: sum(ps),
@@ -209,9 +235,15 @@ export const handlers: MockHandler[] = [
     path: /^\/me\/reports\/tax$/,
     reply: (_m, _body, query) => {
       const year = Number(query.get("year") ?? new Date().getFullYear());
-      const ps = memberPayouts.filter((p) => p.status === "Paid" && p.paidAt.startsWith(String(year)));
+      const ps = memberPayouts.filter(
+        (p) => p.status === "Paid" && p.paidAt.startsWith(String(year)),
+      );
       if (isCsv(query))
-        return csv(PAYOUT_HEADER, payoutRows(ps), meta(`tax-${year}`, [OWNERS[0]!]));
+        return csv(
+          PAYOUT_HEADER,
+          payoutRows(ps),
+          meta(`tax-${year}`, [OWNERS[0]!]),
+        );
       return {
         year,
         payouts: ps,
@@ -254,7 +286,12 @@ export const handlers: MockHandler[] = [
           meta(`holders-QPNb1`, [m[1]!, QPNB1]),
         );
       }
-      return { holders: hs, network: NETWORK, generatedAt: GENERATED, sources: [m[1]!] };
+      return {
+        holders: hs,
+        network: NETWORK,
+        generatedAt: GENERATED,
+        sources: [m[1]!],
+      };
     },
   },
   {
@@ -262,8 +299,15 @@ export const handlers: MockHandler[] = [
     path: /^\/issuer\/reports\/payouts\/([^/]+)$/,
     reply: (m, _body, query) => {
       const ps: Payout[] =
-        m[1] === ACTION_PDA_REDM ? [redemption] : [coupon(0), coupon(1), coupon(2)];
-      if (isCsv(query)) return csv(PAYOUT_HEADER, payoutRows(ps), meta("payouts-QPNb1-INTR-0001", [m[1]!]));
+        m[1] === ACTION_PDA_REDM
+          ? [redemption]
+          : [coupon(0), coupon(1), coupon(2)];
+      if (isCsv(query))
+        return csv(
+          PAYOUT_HEADER,
+          payoutRows(ps),
+          meta("payouts-QPNb1-INTR-0001", [m[1]!]),
+        );
       return {
         payouts: ps,
         totals: sum(ps),

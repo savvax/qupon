@@ -31,7 +31,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
           <Link
             href="/"
             title={t("tagline")}
-            className="flex shrink-0 items-center gap-2.5 rounded-btn"
+            className="flex h-10 shrink-0 items-center gap-2.5 rounded-btn"
           >
             <Logo />
             <span className="text-lg font-extrabold tracking-tight text-n900">

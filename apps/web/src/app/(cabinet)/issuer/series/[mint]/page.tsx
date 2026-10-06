@@ -76,7 +76,8 @@ export default async function IssuerSeriesPage({
       : ([] as DocumentRow[]),
   ]);
   const unattached = mine.filter(
-    (d) => !d.seriesMint && ["prospectus", "decision", "other"].includes(d.kind),
+    (d) =>
+      !d.seriesMint && ["prospectus", "decision", "other"].includes(d.kind),
   );
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
   const [t, tb, ts, tk, tr, tDoc] = await Promise.all([

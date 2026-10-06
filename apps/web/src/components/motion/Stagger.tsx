@@ -39,8 +39,7 @@ export function Stagger({
   // Indexed children carry their own delay — the parent must not stack a
   // second staggerChildren delay on top of it.
   const indexed = items.some(
-    (c) =>
-      isValidElement<{ index?: number }>(c) && c.props.index !== undefined,
+    (c) => isValidElement<{ index?: number }>(c) && c.props.index !== undefined,
   );
   const C = m[as];
   return (

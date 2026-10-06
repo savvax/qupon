@@ -31,6 +31,7 @@ const TONE_DOT = {
  */
 export function NotificationBell() {
   const t = useTranslations("notify");
+  const tk = useTranslations("landing.kinds");
   const locale = useLocale();
   const [count, setCount] = useState(0);
   const [pop, setPop] = useState(0);
@@ -166,6 +167,12 @@ export function NotificationBell() {
             <ul className="max-h-[60vh] divide-y divide-n100 overflow-y-auto">
               {items.map((n) => {
                 const v = notice(n, idx);
+                const vals = {
+                  ...v.values,
+                  actionKind: tk.has(v.values.actionKind)
+                    ? tk(v.values.actionKind)
+                    : v.values.actionKind,
+                };
                 return (
                   <li key={n.id}>
                     <Link
@@ -188,10 +195,10 @@ export function NotificationBell() {
                       />
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-semibold text-n900">
-                          {t(`kinds.${v.kind}.title`, v.values)}
+                          {t(`kinds.${v.kind}.title`, vals)}
                         </span>
                         <span className="mt-0.5 block text-xs text-n600">
-                          {t(`kinds.${v.kind}.body`, v.values)}
+                          {t(`kinds.${v.kind}.body`, vals)}
                         </span>
                       </span>
                       <span className="shrink-0 text-[11px] whitespace-nowrap text-n500">

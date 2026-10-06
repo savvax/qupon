@@ -27,7 +27,7 @@ export function NoticePanel({ en, ru }: { en: string; ru: string }) {
               aria-pressed={lang === l}
               onClick={() => setLang(l)}
               className={cx(
-                "h-7 rounded-sm px-2.5 text-xs font-bold uppercase",
+                "h-8 min-w-10 rounded-sm px-2.5 text-xs font-bold uppercase",
                 lang === l
                   ? "bg-n0 text-n900 shadow-sm"
                   : "text-n600 hover:text-n900",

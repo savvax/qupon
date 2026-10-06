@@ -133,6 +133,8 @@ test("RU: the wallet dialog speaks Russian", async ({ page, baseURL }) => {
 // Extensions are invisible to the server: the first client render must match the server HTML.
 for (const n of [0, 1, 2])
   test(`no hydration errors with ${n} wallets`, async ({ page }) => {
+    // two cold dev-server routes with networkidle: give a loaded machine room (the assertion is unchanged)
+    test.setTimeout(120_000);
     const errs: string[] = [];
     page.on("pageerror", (e) => errs.push(e.message.slice(0, 120)));
     page.on("console", (m) => {

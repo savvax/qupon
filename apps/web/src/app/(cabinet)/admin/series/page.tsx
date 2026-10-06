@@ -1,6 +1,5 @@
 import { getTranslations } from "next-intl/server";
 import { Address } from "@/components/ui/Address";
-import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { boFetch } from "@/lib/bo";
@@ -84,14 +83,28 @@ export default async function AdminSeriesPage() {
       ) : series.length === 0 ? (
         <EmptyState title={t("empty")} body={t("emptyBody")} />
       ) : (
-        <Card>
-          <DataTable
-            columns={columns}
-            rows={series}
-            rowKey={(r) => r.mint}
-            empty={t("empty")}
-          />
-        </Card>
+        <DataTable
+          columns={columns}
+          rows={series}
+          rowKey={(r) => r.mint}
+          empty={t("empty")}
+          phoneRow={(r) => (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-bold">{r.ticker || "—"}</span>
+                <Address value={r.mint} />
+              </div>
+              <SeriesRowControls
+                mint={r.mint}
+                hidden={r.hidden}
+                featured={r.featured}
+                kaseTicker={r.kaseTicker}
+                orgId={r.orgId}
+                orgs={orgs}
+              />
+            </div>
+          )}
+        />
       )}
     </div>
   );

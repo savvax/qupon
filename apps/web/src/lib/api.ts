@@ -176,9 +176,7 @@ export const seriesDocumentUrl = (id: number) =>
   `${API_BASE_URL}/documents/${id}`;
 
 /** Documents attached to a series (public metadata, task 807); failures never block the page. */
-export async function listSeriesDocuments(
-  mint: string,
-): Promise<
+export async function listSeriesDocuments(mint: string): Promise<
   {
     id: number;
     kind: string;

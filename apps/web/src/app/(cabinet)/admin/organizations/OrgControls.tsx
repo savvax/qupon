@@ -56,7 +56,12 @@ export function OrgControls({ org }: { org?: OrgDTO }) {
           ? boSend<{ organization: OrgDTO }>(
               "PATCH",
               `admin/organizations/${org.id}`,
-              { name: name.trim(), kind, bin: bin.trim(), website: website.trim() },
+              {
+                name: name.trim(),
+                kind,
+                bin: bin.trim(),
+                website: website.trim(),
+              },
             )
           : boPost<{ organization: OrgDTO }>("admin/organizations", {
               name: name.trim(),
@@ -89,10 +94,18 @@ export function OrgControls({ org }: { org?: OrgDTO }) {
         description={org ? org.name : t("create.lead")}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>
+            <Button
+              variant="ghost"
+              onClick={() => setOpen(false)}
+              disabled={busy}
+            >
               ✕
             </Button>
-            <Button loading={busy} disabled={!name.trim()} onClick={() => void save()}>
+            <Button
+              loading={busy}
+              disabled={!name.trim()}
+              onClick={() => void save()}
+            >
               {t(org ? "edit.submit" : "create.submit")}
             </Button>
           </>

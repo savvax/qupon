@@ -11,10 +11,7 @@ import {
 export async function startSession(
   req: Request,
   upstream:
-    | "/auth/login"
-    | "/auth/demo"
-    | "/auth/signup"
-    | "/auth/invite/accept",
+    "/auth/login" | "/auth/demo" | "/auth/signup" | "/auth/invite/accept",
 ) {
   if (!(await sameOrigin(req.headers.get("origin"))))
     return NextResponse.json(

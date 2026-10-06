@@ -101,8 +101,8 @@ export function SeriesRowControls({
   };
 
   return (
-    <div className="flex w-full max-w-[22rem] flex-col gap-2">
-      <div className="flex items-center gap-5">
+    <div className="flex w-full max-w-[22rem] flex-col gap-2 max-sm:max-w-none">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <span className="flex items-center gap-2 text-xs font-semibold">
           <Switch
             checked={!hidden}
@@ -136,8 +136,9 @@ export function SeriesRowControls({
           </span>
         </span>
       </div>
-      <div className="flex items-end gap-2">
-        <div className="w-24">
+      {/* phones: ticker + organisation share a row, Save takes the full width below */}
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="w-24 shrink-0">
           <label
             htmlFor={`kase-${mint}`}
             className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-n500"
@@ -156,7 +157,7 @@ export function SeriesRowControls({
             )}
           />
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[10rem] flex-1">
           <Select
             label={t("organisation")}
             value={org}
@@ -167,7 +168,12 @@ export function SeriesRowControls({
             ]}
           />
         </div>
-        <Button size="sm" variant="secondary" onClick={() => void save()}>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="max-sm:h-9 max-sm:w-full"
+          onClick={() => void save()}
+        >
           {t("save")}
         </Button>
       </div>

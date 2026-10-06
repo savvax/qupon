@@ -11,7 +11,7 @@ const at = (iso: string) => Math.floor(Date.parse(iso) / 1000);
 const organization = {
   id: 1,
   name: "Demo Issuer JSC", // same row as mocks/features/adminSeries.ts org 1 (the platform e2e joins them)
-  kind: "llp",
+  kind: "issuer", // organizations.kind is issuer | registrar (migration 006)
   bin: "220840012345",
   website: "https://steppe.qupon.test",
   createdAt: at("2026-10-01T09:00:00+05:00"),

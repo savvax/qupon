@@ -11,7 +11,12 @@
     "save": "Save profile",
     "saving": "Saving your profile…",
     "saved": "Profile saved",
-    "demo": "Demo accounts are shared by every visitor, so the organisation profile is read-only."
+    "demo": "Demo accounts are shared by every visitor, so the organisation profile is read-only.",
+    "kinds": {
+      "issuer": "Issuer",
+      "registrar": "Registrar",
+      "investor": "Investor"
+    }
   },
   "team": {
     "title": "Team",

@@ -20,7 +20,7 @@ export const issuerNav = (t: T): CabinetNavItem[] => [
   {
     href: "/issuer/documents",
     label: t("documents"),
-    icon: <Icon name="activity" />,
+    icon: <Icon name="statements" />,
   },
 ];
 

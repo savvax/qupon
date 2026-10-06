@@ -32,6 +32,7 @@ export function NotificationList({
   series: SeriesDTO[];
 }) {
   const t = useTranslations("notify");
+  const tk = useTranslations("landing.kinds");
   const locale = useLocale();
   const idx = useMemo(() => seriesIndex(series), [series]);
   const [items, setItems] = useState(initial);
@@ -82,6 +83,12 @@ export function NotificationList({
       >
         {shown.map((n) => {
           const v = notice(n, idx);
+          const vals = {
+            ...v.values,
+            actionKind: tk.has(v.values.actionKind)
+              ? tk(v.values.actionKind)
+              : v.values.actionKind,
+          };
           return (
             <StaggerItem as="li" key={n.id}>
               <Link
@@ -101,10 +108,10 @@ export function NotificationList({
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold text-n900">
-                    {t(`kinds.${v.kind}.title`, v.values)}
+                    {t(`kinds.${v.kind}.title`, vals)}
                   </span>
                   <span className="mt-0.5 block text-sm text-n600">
-                    {t(`kinds.${v.kind}.body`, v.values)}
+                    {t(`kinds.${v.kind}.body`, vals)}
                   </span>
                   <span className="num mt-1 block text-xs text-n500">
                     {formatDateTime(
