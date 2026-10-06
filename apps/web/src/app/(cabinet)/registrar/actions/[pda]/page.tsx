@@ -109,11 +109,12 @@ export default async function RegistrarActionPage({
     getKaseCheck(pda).catch(() => null),
   ]);
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
-  const [t, ts, tk, tstep] = await Promise.all([
+  const [t, ts, tk, tstep, tt] = await Promise.all([
     getTranslations("action"),
     getTranslations("status"),
     getTranslations("landing.kinds"),
     getTranslations("steps"),
+    getTranslations("trades"),
   ]);
 
   const ids = stepsForKind(action.kind);
@@ -123,7 +124,10 @@ export default async function RegistrarActionPage({
     Date.now(),
     // holders with bonds: zero-balance investors are never snapshotted (executor.NextStep compares units with supply)
     investors?.filter((i) => BigInt(i.units) > 0n).length,
+    series?.openTrades ?? 0,
   );
+  // open secondary trades block the record date (TradesInFlight): say so and link the page that clears them
+  const tradesWait = action.status === "Announced" && !next.step;
   const paidTx = paidTxByOwner(activity, pda);
   const label = (id: StepId) => tstep(`do.${id}`);
   const status = (s: string) => (
@@ -153,8 +157,9 @@ export default async function RegistrarActionPage({
     !funded && ["Settling", "Completed", "Retiring"].includes(action.status);
   const holders = action.holdersSnapshotted ?? 0;
 
-  const waitText =
-    action.status === "VotingOpen"
+  const waitText = tradesWait
+    ? tt("wait.open", { count: series?.openTrades ?? 0 })
+    : action.status === "VotingOpen"
       ? t("wait.voting")
       : action.status === "Finalized"
         ? t("wait.notApproved")
@@ -388,6 +393,17 @@ export default async function RegistrarActionPage({
             // a completed action needs no box: the status pill already says it
             <p className="rounded-btn bg-n100 px-3 py-2 text-sm font-semibold text-n700">
               {waitText}
+              {tradesWait && (
+                <>
+                  {" · "}
+                  <Link
+                    href={`/registrar/trades?mint=${action.seriesMint}`}
+                    className="text-g700 underline underline-offset-2"
+                  >
+                    {tt("wait.link")}
+                  </Link>
+                </>
+              )}
               {action.status === "VotingOpen" && action.votingEndsAt && (
                 <>
                   {" · "}

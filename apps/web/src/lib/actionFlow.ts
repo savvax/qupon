@@ -289,10 +289,17 @@ export function nextStep(
   now = Date.now(),
   /** investors holding bonds — once every one is snapshotted, finalize (executor.NextStep: units == supply) */
   investors?: number,
+  /** the series' open secondary trades: strike_record fails with TradesInFlight while any is admitted */
+  openTrades = 0,
 ): NextStep {
   const hs = a.holdersSnapshotted ?? 0;
   switch (a.status) {
     case "Announced":
+      if (openTrades > 0)
+        return {
+          step: null,
+          wait: `open secondary trades: settle or cancel them first (${openTrades})`,
+        };
       return { step: "strike", label: STEP_LABELS.strike };
     case "RecordStruck":
       if (investors !== undefined && hs > 0 && hs >= investors)
@@ -396,6 +403,12 @@ export const ERROR_EXPLANATIONS: Record<string, string> = {
     "invalid instruction parameters (e.g. price ≠ face value, or a CHAN announce)",
   KycAttestationInvalid:
     "no live KYC attestation (Solana Attestation Service) matching this wallet and its attributes",
+  TradesInFlight:
+    "the series has open secondary trades — settle or cancel them before the record date",
+  TradeStillOpen:
+    "the trade's bond escrow still holds bonds — settle or cancel the trade first, or return the bonds to the seller",
+  InvalidTrade:
+    "not a trade of this series: bond against the series' cash asset, between two active investors, with the registrar or paying agent as settlement authority",
 };
 
 const ERROR_NAMES = Object.keys(ERROR_EXPLANATIONS).sort(

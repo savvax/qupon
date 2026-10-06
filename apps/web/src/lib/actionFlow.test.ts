@@ -57,6 +57,18 @@ describe("stepsForKind", () => {
 });
 
 describe("nextStep (mirror of Go executor.NextStep)", () => {
+  it("offers no strike while the series has open secondary trades", () => {
+    const a = { ...base, status: "Announced" as const };
+    expect(nextStep(a, Date.now(), 3, 2)).toEqual({
+      step: null,
+      wait: "open secondary trades: settle or cancel them first (2)",
+    });
+    expect(nextStep(a, Date.now(), 3, 0)).toMatchObject({ step: "strike" });
+    // only the strike is gated: later steps run with the mint already paused
+    expect(
+      nextStep({ ...base, status: "RecordStruck" }, Date.now(), 3, 2),
+    ).toMatchObject({ step: "snapshot" });
+  });
   it("walks the coupon lifecycle", () => {
     expect(nextStep({ ...base, status: "Announced" })).toMatchObject({
       step: "strike",

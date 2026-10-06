@@ -13,6 +13,7 @@ import type {
   SeriesDTO,
 } from "../lib/api";
 import { featureMock } from "./features";
+import { openTradesOf } from "./features/trades";
 
 const MINT_QPNB1 = "QpNb1Dem0BondMint1111111111111111111111111111";
 const MINT_BTRK = "BTRKDeM0BondMint1111111111111111111111111111";
@@ -506,7 +507,12 @@ export function mockGet(path: string): Promise<unknown> {
     throw new Api404(`series ${path} not found`);
   };
 
-  if (path === "/series") return delay(series);
+  // openTrades (plan 13) follows the mutable trades mock
+  const withTrades = (s: SeriesDTO): SeriesDTO => ({
+    ...s,
+    openTrades: openTradesOf(s.mint),
+  });
+  if (path === "/series") return delay(series.map(withTrades));
   if (path.startsWith("/activity")) return delay(activity);
   if (path.startsWith("/registrar/audit")) return delay({ items: auditTrail });
   if (path.startsWith("/approvals")) {
@@ -524,7 +530,7 @@ export function mockGet(path: string): Promise<unknown> {
       return Promise.reject(new Mock500("mock registrar exploded (e2e)"));
     const found = series.find((s) => s.mint === seriesMatch[1]);
     return found
-      ? delay(found)
+      ? delay(withTrades(found))
       : Promise.reject(new Api404(`series ${seriesMatch[1]} not found`));
   }
   const subMatch = /^\/series\/([^/]+)\/(investors|schedule|actions)$/.exec(

@@ -19,6 +19,7 @@ import { listActivity } from "@/lib/api";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { useInvestor } from "./InvestorIdentity";
 import { HoldingsList } from "./HoldingsList";
+import { OpenTrades } from "./OpenTrades";
 import {
   faceTotals,
   nextPayment,
@@ -302,6 +303,8 @@ export function PortfolioView() {
   return (
     <div className="space-y-8">
       <PortfolioHeader rows={rows} />
+
+      <OpenTrades rows={rows} />
 
       <section aria-labelledby="holdings">
         <h2 id="holdings" className="mb-3 text-lg font-bold">

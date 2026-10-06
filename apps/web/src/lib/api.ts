@@ -5,7 +5,8 @@ import { BoError, boPost } from "./boClient";
 
 export type Schemas = components["schemas"];
 export type Amount = Schemas["Amount"];
-export type SeriesDTO = Schemas["SeriesDTO"];
+/** `openTrades` (plan 13): admitted secondary trades not yet settled or cancelled; OpenAPI gains it with task 1306. */
+export type SeriesDTO = Schemas["SeriesDTO"] & { openTrades?: number };
 export type InvestorDTO = Schemas["InvestorDTO"];
 export type EntitlementDTO = Schemas["EntitlementDTO"];
 export type ScheduleItem = Schemas["ScheduleItem"];

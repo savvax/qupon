@@ -355,6 +355,7 @@
       "newSeries": "New series",
       "actions": "Actions",
       "investors": "Investors",
+      "trades": "Trades",
       "activity": "Activity",
       "autopilot": "Autopilot",
       "portfolio": "Portfolio",
@@ -404,6 +405,7 @@
     "investorMeetings": "Meetings",
     "investorStatements": "Statements",
     "registrarInvestors": "Investors",
+    "registrarTrades": "Trades",
     "adminAssets": "Cash assets",
     "adminCustodian": "Wrapped digital tenge custodian",
     "admin": "Admin overview",
@@ -462,7 +464,10 @@
       "SupplyNotZero": "bond mint supply is not zero — retire every holder before closing the series",
       "BatchTooLarge": "too many holders for one transaction — the CLI batches automatically, retry",
       "InvalidParams": "invalid instruction parameters (e.g. price ≠ face value, or a CHAN announce)",
-      "KycAttestationInvalid": "no live KYC attestation (Solana Attestation Service) matching this wallet and its attributes"
+      "KycAttestationInvalid": "no live KYC attestation (Solana Attestation Service) matching this wallet and its attributes",
+      "TradesInFlight": "the series has open secondary trades — settle or cancel them before the record date",
+      "TradeStillOpen": "the trade's bond escrow still holds bonds — settle or cancel the trade first, or return the bonds to the seller",
+      "InvalidTrade": "not a trade of this series: bond against the series' cash asset, between two active investors, with the registrar or paying agent as settlement authority"
     }
   },
   "registrar": {

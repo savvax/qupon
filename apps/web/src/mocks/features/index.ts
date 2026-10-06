@@ -10,6 +10,7 @@ import { handlers as notify } from "./notify";
 import { handlers as onboarding } from "./onboarding";
 import { handlers as org } from "./org";
 import { handlers as reports } from "./reports";
+import { handlers as trades } from "./trades";
 import type { MockHandler } from "./types";
 
 const ALL: MockHandler[] = [
@@ -26,6 +27,7 @@ const ALL: MockHandler[] = [
   ...kase,
   ...kaseMarket,
   ...assets,
+  ...trades,
 ];
 
 /** First feature handler matching method + path ("/admin/users?q=x"), or undefined → the legacy fixtures. */

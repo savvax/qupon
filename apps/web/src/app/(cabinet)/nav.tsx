@@ -41,6 +41,11 @@ export const registrarNav = (t: T): CabinetNavItem[] => [
     icon: <Icon name="users" />,
   },
   {
+    href: "/registrar/trades",
+    label: t("trades"),
+    icon: <Icon name="coins" />,
+  },
+  {
     href: "/registrar/kyc",
     label: t("kyc"),
     icon: <Icon name="shield" />,

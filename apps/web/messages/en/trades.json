@@ -1,0 +1,90 @@
+{
+  "title": "Trades",
+  "lead": "Secondary trades between two registered investors of a series: bonds against cash, at par. An open trade blocks the next record date until you settle or cancel it.",
+  "settledBy": "Settled atomically by the Solana DvP program",
+  "noMatching": "Order matching, price discovery and a trading venue are not part of Qupon: the registrar records a trade the two investors have already agreed on.",
+  "noSeries": "No series yet",
+  "noSeriesBody": "Trades appear here once a series is issued.",
+  "empty": "No trades in this series yet.",
+  "col": {
+    "seller": "Seller",
+    "buyer": "Buyer",
+    "units": "Bonds",
+    "cash": "Cash amount",
+    "status": "Status",
+    "admitted": "Admitted",
+    "actions": "Actions"
+  },
+  "leg": {
+    "bonds": "Bonds",
+    "cash": "Cash",
+    "funded": "in escrow",
+    "pending": "not funded"
+  },
+  "status": {
+    "awaiting_funding": "Awaiting funding",
+    "ready": "Ready to settle",
+    "closed": "Closed"
+  },
+  "new": {
+    "button": "New trade",
+    "title": "New trade",
+    "lead": "Creates the trade record and admits its bond escrow in one transaction. Each investor then funds their own leg.",
+    "seller": "Seller",
+    "buyer": "Buyer",
+    "party": "{owner} · {units, plural, one {# bond} other {# bonds}}",
+    "units": "Bonds",
+    "unitsHint": "The seller holds {max}",
+    "unitsInvalid": "Enter a whole number from 1 to {max}",
+    "cashAtPar": "Cash amount at par",
+    "needTwo": "A trade needs two active investors in this series.",
+    "cancel": "Cancel",
+    "confirm": "Create trade",
+    "pending": "Creating the trade…",
+    "success": "Trade created"
+  },
+  "row": {
+    "settle": "Settle",
+    "settleHint": "Both legs must be funded first",
+    "settlePending": "Settling the trade…",
+    "settleSuccess": "Trade settled: bonds and cash moved in one transaction",
+    "cancel": "Cancel",
+    "confirmCancelTitle": "Cancel this trade?",
+    "confirmCancelBody": "Both legs go back to their owners in one transaction and the trade stops blocking the record date.",
+    "cancelPending": "Cancelling the trade…",
+    "cancelSuccess": "Trade cancelled",
+    "force": "Return bonds to seller",
+    "confirmForceTitle": "Return the bonds to the seller?",
+    "confirmForceBody": "Use this when a normal cancel fails. The escrowed bonds go back to the seller's registered account and the trade is released. The cash leg is not moved: the buyer takes the cash back themselves with the DvP program's reclaim.",
+    "forcePending": "Returning the bonds to the seller…",
+    "forceSuccess": "Trade released — bonds returned to the seller: {units}",
+    "fundDemo": "Fund both legs (demo)",
+    "fundPending": "Funding the {side, select, seller {bond} other {cash}} leg (demo)…",
+    "fundSuccess": "{side, select, seller {Bond} other {Cash}} leg funded",
+    "keep": "Keep the trade"
+  },
+  "open": {
+    "title": "Open trades",
+    "lead": "Trades admitted by the registrar where you are a party. Send your leg to the escrow; the registrar settles both legs in one transaction.",
+    "selling": "You sell {units, plural, one {# bond} other {# bonds}} for",
+    "buying": "You buy {units, plural, one {# bond} other {# bonds}} for",
+    "counterparty": "Counterparty",
+    "deliver": "Deliver {units, plural, one {# bond} other {# bonds}}",
+    "pay": "Pay {amount}",
+    "connect": "Connect wallet to sign",
+    "funded": "Your leg is in escrow",
+    "waitingOther": "Waiting for the other party",
+    "ready": "Both legs funded — waiting for the registrar to settle",
+    "pending": "Sending your leg to the escrow…",
+    "success": "Your leg is in escrow"
+  },
+  "wait": {
+    "open": "Open secondary trades: settle or cancel them first ({count})",
+    "link": "Go to Trades"
+  },
+  "errors": {
+    "trade_not_found": "This trade is no longer open — it was settled or cancelled. Refresh the page.",
+    "invalid_body": "The trade was not accepted: {message}",
+    "not_demo_investor": "Demo funding works only for the demo investors whose keys the server holds — this party funds the leg from their own wallet."
+  }
+}
