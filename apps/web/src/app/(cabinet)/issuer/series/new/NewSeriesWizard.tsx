@@ -22,6 +22,7 @@ import {
 } from "@/lib/schedulePreview";
 import { useRunWrite } from "@/lib/useRunWrite";
 import { importFromKase } from "./kaseImport";
+import { TermsheetDialog, type TermsheetParse } from "./TermsheetDialog";
 
 type Created = { series?: string; mint?: string; signatures: string[] };
 
@@ -56,6 +57,7 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
     setF((p) => ({ ...p, [k]: v }));
 
   const tk = useTranslations("kase.import");
+  const tts = useTranslations("termsheet");
   const tc = useTranslations("kase.compare");
   const [kase, setKase] = useState<KaseBond>();
   const [kaseTicker, setKaseTicker] = useState("");
@@ -93,6 +95,33 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
       setKase(undefined);
       setKaseError(res.code);
     }
+  };
+
+  /** EXPERIMENTAL term-sheet import (task 042): the second source for the same fields the KASE import fills.
+   * Missing fields keep whatever the form already had. */
+  const [termsheetApplied, setTermsheetApplied] = useState(false);
+  const applyTermsheet = ({ terms }: TermsheetParse) => {
+    const has = (x: { confidence: string }) => x.confidence !== "missing";
+    setF((p) => ({
+      ...p,
+      name: has(terms.ticker) ? terms.ticker.value : p.name,
+      isin: has(terms.isin) ? terms.isin.value : p.isin,
+      face: has(terms.faceValue) ? String(terms.faceValue.value / 100) : p.face,
+      rate: has(terms.couponBps)
+        ? (terms.couponBps.value / 100).toFixed(2)
+        : p.rate,
+      frequency: has(terms.frequency)
+        ? String(terms.frequency.value)
+        : p.frequency,
+      dayCount: has(terms.dayCount)
+        ? (terms.dayCount.value as DayCountId)
+        : p.dayCount,
+      issueDate: has(terms.issueDate) ? terms.issueDate.value : p.issueDate,
+      maturityDate: has(terms.maturityDate)
+        ? terms.maturityDate.value
+        : p.maturityDate,
+    }));
+    setTermsheetApplied(true);
   };
 
   const asset = assets.find((a) => a.key === f.cash) ?? assets[0];
@@ -285,6 +314,12 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
             <p className="mt-2 text-xs text-n500">
               <StableText>{tk("note")}</StableText>
             </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-n200 pt-3">
+              <TermsheetDialog onApply={applyTermsheet} />
+              {termsheetApplied && (
+                <span className="text-xs text-g700">{tts("applied")}</span>
+              )}
+            </div>
           </fieldset>
           <div className="grid gap-5 sm:grid-cols-2">
             <TextField

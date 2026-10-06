@@ -25,6 +25,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
+	"github.com/qupon-kz/qupon/services/registrar/internal/termsheet"
 )
 
 //go:embed openapi.yaml
@@ -59,6 +60,8 @@ type Deps struct {
 	TestRoutes bool
 	// Kase serves cached kase.kz market data (task 1001); nil → /kase/* answers 503.
 	Kase *kase.Service
+	// Termsheet parses pasted KASE text (task 042); nil → SIMULATED regex fallback only.
+	Termsheet *termsheet.Extractor
 }
 
 // New builds the HTTP handler tree.
@@ -280,6 +283,8 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	mountDisclosure(r, deps, st)
 
 	mountTrades(r, deps, st)
+
+	mountImport(r, deps, st)
 
 	if deps.TestRoutes {
 		r.With(registrar).Get("/_test/registrar", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, http.StatusOK, map[string]string{}) })

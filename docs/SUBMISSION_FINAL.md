@@ -101,6 +101,7 @@ Implemented vs simulated (same wording as the site's table):
 | KASE | **Read only** — Bond data is read from kase.kz and cached; the disclosure notice and package are generated automatically — submission to KASE is simulated. |
 | Mainnet | **Ready, not deployed** — Network profile, write confirmations and a dry-run deploy script are in place; everything runs on devnet. |
 | Secondary settlement | **Implemented** — Trades between registered investors settle on devnet through the Solana Foundation's DvP program; Qupon admits the escrow, refuses a record date while a trade is open and can return the bonds to the seller. Order matching and a trading venue are not included. |
+| Term-sheet import | **Experimental** — pasted KASE text is parsed into series terms by an LLM (Z.ai GLM) with a SIMULATED regex fallback; every field is confirmed by the issuer before issuance. |
 | Multisig issuer approval (Squads) | **Roadmap** — Planned. |
 
 Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are series configuration, not a statement of Kazakh law.

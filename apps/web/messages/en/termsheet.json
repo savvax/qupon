@@ -1,0 +1,42 @@
+{
+  "open": "Paste a term sheet (experimental)",
+  "title": "Paste a term sheet — experimental",
+  "lead": "Paste a KASE listing announcement or news item (EN or RU). The parsed terms are a suggestion: review every field before you use them.",
+  "text": "Term-sheet text",
+  "placeholder": "Bonds KZ2C00018703 (BTRKb33) of … face value – 1,000 tenge; coupon rate – 15.95% per annum …",
+  "parse": "Parse",
+  "parsing": "Parsing…",
+  "apply": "Use these values",
+  "cancel": "Cancel",
+  "sourceLlm": "Parsed by the model (Z.ai GLM) — experimental.",
+  "sourceRegex": "Parsed by the SIMULATED regex fallback (no model configured) — experimental.",
+  "applied": "Term-sheet values applied — review every field before issuing.",
+  "columns": {
+    "field": "Field",
+    "value": "Parsed value",
+    "confidence": "Confidence"
+  },
+  "fields": {
+    "isin": "ISIN",
+    "ticker": "Ticker",
+    "issuerName": "Issuer",
+    "faceValue": "Face value",
+    "currency": "Currency",
+    "couponBps": "Coupon rate",
+    "frequency": "Payments per year",
+    "dayCount": "Day count",
+    "issueDate": "Issue date",
+    "maturityDate": "Maturity date"
+  },
+  "confidence": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "missing": "Missing — kept as is"
+  },
+  "errors": {
+    "empty": "Paste some text first.",
+    "invalid_body": "The text could not be parsed.",
+    "default": "Parsing failed — try again."
+  }
+}

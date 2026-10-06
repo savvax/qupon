@@ -62,6 +62,7 @@ Announce EarlyRedemption with call date < maturity, principal + accrued coupon f
 | ARDFM registration of terms change | **Simulated** by registrar signature step |
 | KASE disclosure notice | Generated automatically; publication on kase.kz **not** integrated |
 | Secondary settlement | **Implemented on Solana devnet** through the Solana Foundation's DvP program: Qupon admits the trade's bond escrow, refuses a record date while a trade is open and can return escrowed bonds to the seller. Order matching and a trading venue are not included |
+| Term-sheet import | **Experimental** — pasted KASE text is parsed into series terms by an LLM (Z.ai GLM) with a SIMULATED regex fallback; every field is confirmed by the issuer before issuance |
 | Multisig issuer approval (Squads) | Roadmap |
 | Mainnet | Mainnet-ready profile, guard and dry-run deploy script; **not deployed** |
 

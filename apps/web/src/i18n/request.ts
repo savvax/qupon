@@ -16,6 +16,7 @@ export const NAMESPACES = [
   "wallet",
   "onboarding",
   "trades",
+  "termsheet",
 ] as const;
 /** All messages of a locale: the base file plus every feature namespace file. */
 export async function loadMessages(locale: Locale) {

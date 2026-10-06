@@ -30,6 +30,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
 	"github.com/qupon-kz/qupon/services/registrar/internal/scheduler"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
+	"github.com/qupon-kz/qupon/services/registrar/internal/termsheet"
 )
 
 var version = "0.1.0-dev"
@@ -192,6 +193,8 @@ func run() error {
 			Limit: auth.NewLimiter(5, time.Minute)},
 		// kase.kz market data (task 1001): public, cached, stale-if-error
 		Kase: kase.NewService(st),
+		// term-sheet import (task 042, EXPERIMENTAL): LLM when TERMSHEET_LLM_KEY/ZAI_API_KEY is set, else SIMULATED regex
+		Termsheet: termsheet.FromEnv(),
 	}
 	// /admin/system probes (task 702): nil-checked so an unconfigured backend reports not running.
 	if chainClient != nil {
