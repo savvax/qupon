@@ -211,6 +211,7 @@ const ROWS = [
   { key: "iso", tone: "warn" },
   { key: "ardfm", tone: "neutral" },
   { key: "notice", tone: "warn" },
+  { key: "trades", tone: "success" },
   { key: "mainnet", tone: "neutral" },
   { key: "squads", tone: "neutral" },
 ] as const;

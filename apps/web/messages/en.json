@@ -193,6 +193,11 @@
           "badge": "Read only",
           "text": "Bond data is read from kase.kz and cached; the disclosure notice and package are generated automatically — submission to KASE is simulated."
         },
+        "trades": {
+          "element": "Secondary settlement",
+          "badge": "Implemented",
+          "text": "Trades between registered investors settle on devnet through the Solana Foundation's DvP program; Qupon admits the escrow, refuses a record date while a trade is open and can return the bonds to the seller. Order matching and a trading venue are not included."
+        },
         "squads": {
           "element": "Multisig issuer approval (Squads)",
           "badge": "Roadmap",

@@ -16,8 +16,8 @@ The whole engine is driven from the web app at **https://qupon.85-192-29-7.sslip
 | Role | Cabinet | What you can do |
 | --- | --- | --- |
 | Issuer | [`/issuer`](https://qupon.85-192-29-7.sslip.io/issuer) | create a bond series in a 3-step wizard (terms → schedule preview → issue on-chain), announce a coupon / redemption / early call, call a bondholder meeting, fund the escrow |
-| Registrar | [`/registrar`](https://qupon.85-192-29-7.sslip.io/registrar) | onboard an investor (SAS KYC attestation, SIMULATED provider, + on-chain registration), run record date → snapshot → pay → complete step by step, reconcile, download ISO 20022 and the KASE notice, browse the audit trail |
-| Investor | [`/investor`](https://qupon.85-192-29-7.sslip.io/investor) | portfolio with a tx link per payment, subscribe at par, vote in meetings, seev.036 statements |
+| Registrar | [`/registrar`](https://qupon.85-192-29-7.sslip.io/registrar) | onboard an investor (SAS KYC attestation, SIMULATED provider, + on-chain registration), run record date → snapshot → pay → complete step by step, reconcile, download ISO 20022 and the KASE notice, browse the audit trail, create and settle secondary trades on the Solana DvP program (`/registrar/trades`) |
+| Investor | [`/investor`](https://qupon.85-192-29-7.sslip.io/investor) | portfolio with a tx link per payment, subscribe at par, fund your leg of a secondary trade, vote in meetings, seev.036 statements |
 
 Every action step confirms with a toast carrying its explorer link. The screenshots below are real devnet runs driven through this UI (local registrar + the deployed program; log: [`reports/live-check-local.md`](reports/live-check-local.md)):
 
