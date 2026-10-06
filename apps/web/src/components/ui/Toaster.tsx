@@ -47,8 +47,10 @@ function ToastIcon({ kind }: { kind: ToastKind }) {
     return (
       <span
         aria-hidden
-        className="animate-qp-pop mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-g600"
+        className="animate-qp-pop relative mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-g600"
       >
+        {/* a ring ripples out once as the check draws: the action is done */}
+        <span className="animate-qp-ripple absolute inset-0 rounded-full bg-g500/45" />
         <svg viewBox="0 0 16 16" className="size-3.5" fill="none">
           <path
             d="M3.5 8.5 6.5 11.5 12.5 4.5"
