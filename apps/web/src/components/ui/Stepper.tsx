@@ -22,10 +22,10 @@ export function Stepper({ steps }: { steps: Step[] }) {
           <span
             aria-hidden
             className={cx(
-              "grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold",
+              "grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold transition-colors duration-300",
               s.state === "done" && "bg-g600 text-white",
               s.state === "current" &&
-                "bg-n0 text-g700 ring-2 ring-g600 ring-inset",
+                "animate-qp-ring bg-n0 text-g700 ring-2 ring-g600 ring-inset",
               s.state === "todo" && "bg-n100 text-n500",
             )}
           >
@@ -38,7 +38,7 @@ export function Stepper({ steps }: { steps: Step[] }) {
             <span
               aria-hidden
               className={cx(
-                "ml-1 hidden h-0.5 w-8 rounded lg:block xl:w-14",
+                "ml-1 hidden h-0.5 w-8 rounded transition-colors duration-300 lg:block xl:w-14",
                 s.state === "done" ? "bg-g300" : "bg-n200",
               )}
             />

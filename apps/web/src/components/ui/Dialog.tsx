@@ -14,7 +14,8 @@ export type DialogProps = {
   children?: ReactNode;
 };
 
-const overlay = "fixed inset-0 z-50 bg-n900/40";
+const overlay =
+  "fixed inset-0 z-50 bg-n900/40 data-[state=open]:animate-qp-fade-in data-[state=closed]:animate-qp-fade-out";
 
 const CLOSE =
   "absolute top-4 right-4 rounded-sm px-1 text-n400 hover:bg-n100 hover:text-n700";
@@ -58,7 +59,7 @@ export function Dialog({
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className={overlay} />
-        <DialogPrimitive.Content className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto -translate-y-1/2 rounded-card bg-n0 p-6 shadow-[0_24px_64px_-24px_rgba(18,26,22,.45)]">
+        <DialogPrimitive.Content className="fixed top-1/2 left-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 overflow-y-auto -translate-y-1/2 rounded-card bg-n0 p-6 shadow-[0_24px_64px_-24px_rgba(18,26,22,.45)] data-[state=open]:animate-qp-dialog-in data-[state=closed]:animate-qp-fade-out">
           <Body title={title} description={description} footer={footer}>
             {children}
           </Body>
@@ -75,7 +76,7 @@ export function Drawer(props: DialogProps) {
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className={overlay} />
-        <DialogPrimitive.Content className="fixed inset-x-0 bottom-0 z-50 max-h-[90dvh] overflow-y-auto rounded-t-card bg-n0 p-6 shadow-[0_24px_64px_-24px_rgba(18,26,22,.45)] sm:inset-x-auto sm:top-0 sm:right-0 sm:h-full sm:max-h-none sm:w-[24rem] sm:rounded-t-none sm:rounded-l-card">
+        <DialogPrimitive.Content className="fixed inset-x-0 bottom-0 z-50 max-h-[90dvh] overflow-y-auto rounded-t-card bg-n0 p-6 shadow-[0_24px_64px_-24px_rgba(18,26,22,.45)] sm:inset-x-auto sm:top-0 sm:right-0 sm:h-full sm:max-h-none sm:w-[24rem] sm:rounded-t-none sm:rounded-l-card data-[state=open]:animate-qp-sheet-up sm:data-[state=open]:animate-qp-sheet-left data-[state=closed]:animate-qp-fade-out">
           <Body
             title={props.title}
             description={props.description}

@@ -69,3 +69,72 @@
     0 0 0 4px var(--color-g400);
   border-radius: var(--radius-btn);
 }
+
+/* Motion v1 (platform v2 §5.6): 120 / 200 / 300 ms, ease-out, a soft overshoot for toasts. JS motion lives in
+   components/motion; these keyframes serve CSS-driven entrances (Radix data-state, toasts). */
+@theme {
+  --ease-qp-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-qp-spring: cubic-bezier(0.2, 0.9, 0.25, 1.15);
+  --animate-qp-fade-in: qp-fade-in 200ms var(--ease-qp-out);
+  --animate-qp-fade-out: qp-fade-out 120ms ease-in forwards;
+  --animate-qp-dialog-in: qp-dialog-in 200ms var(--ease-qp-out);
+  --animate-qp-sheet-up: qp-sheet-up 300ms var(--ease-qp-out);
+  --animate-qp-sheet-left: qp-sheet-left 300ms var(--ease-qp-out);
+  --animate-qp-toast-in: qp-toast-in 320ms var(--ease-qp-spring);
+  --animate-qp-ring: qp-ring 900ms var(--ease-qp-out);
+
+  @keyframes qp-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes qp-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes qp-dialog-in {
+    from {
+      opacity: 0;
+      scale: 0.98;
+    }
+  }
+  @keyframes qp-sheet-up {
+    from {
+      translate: 0 24px;
+      opacity: 0;
+    }
+  }
+  @keyframes qp-sheet-left {
+    from {
+      translate: 24px 0;
+      opacity: 0;
+    }
+  }
+  @keyframes qp-toast-in {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+      scale: 0.97;
+    }
+  }
+  @keyframes qp-ring {
+    from {
+      box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-g400) 55%, transparent);
+    }
+    to {
+      box-shadow: 0 0 0 10px transparent;
+    }
+  }
+}
+
+/* Reduced motion: every CSS animation and transition ends at once (JS motion checks useReducedMotion). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

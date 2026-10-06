@@ -1,0 +1,77 @@
+import { expect, type Page, test } from "@playwright/test";
+import { signInAs } from "./session";
+
+/** Record every text a KPI value shows (MutationObserver from the first byte of every document). */
+async function recordKpis(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __kpi: string[] };
+    w.__kpi = [];
+    new MutationObserver((list) => {
+      for (const m of list) {
+        const el = (
+          m.target.nodeType === 3 ? m.target.parentElement : m.target
+        ) as Element | null;
+        if (el?.closest(".num")) w.__kpi.push(el.textContent ?? "");
+      }
+    }).observe(document, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
+  });
+}
+
+const kpiTexts = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __kpi: string[] }).__kpi);
+
+async function toDashboardClientSide(page: Page) {
+  await page.goto("/registrar/actions");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await page.evaluate(() => {
+    (window as unknown as { __kpi: string[] }).__kpi = [];
+  });
+  await page.getByRole("link", { name: "Dashboard" }).first().click();
+  await expect(page).toHaveURL(/\/registrar$/);
+  await expect(page.getByRole("heading", { name: "Pipeline" })).toBeVisible();
+  await page.waitForTimeout(1200); // count-up is 0.7 s
+}
+
+test("server HTML never hides content (no entrance styles on first load)", async ({
+  page,
+  baseURL,
+}) => {
+  await signInAs(page, "registrar", baseURL);
+  const html = await (await page.request.get("/registrar")).text();
+  expect(html).not.toMatch(/opacity:\s*0/);
+});
+
+test("KPI numbers count up after a client-side navigation", async ({
+  page,
+  baseURL,
+}) => {
+  await signInAs(page, "registrar", baseURL);
+  await recordKpis(page);
+  await toDashboardClientSide(page);
+  const seen = await kpiTexts(page);
+  expect(seen).toContain("0"); // started from zero
+  await expect(page.locator(".num").first()).not.toHaveText("0");
+});
+
+test.describe("reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("KPI numbers never count; dialogs and pages appear at once", async ({
+    page,
+    baseURL,
+  }) => {
+    await signInAs(page, "registrar", baseURL);
+    await recordKpis(page);
+    await toDashboardClientSide(page);
+    expect(await kpiTexts(page)).not.toContain("0");
+    const opacity = await page
+      .locator("main > div")
+      .first()
+      .evaluate((el) => getComputedStyle(el).opacity);
+    expect(opacity).toBe("1");
+  });
+});

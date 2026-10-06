@@ -27,6 +27,7 @@
     "@solana/wallet-adapter-react": "^0.15.40",
     "@solana/wallet-adapter-react-ui": "^0.9.40",
     "@solana/web3.js": "^1.99",
+    "motion": "^12",
     "next": "^15.5.0",
     "next-intl": "^4",
     "react": "^19.2.0",

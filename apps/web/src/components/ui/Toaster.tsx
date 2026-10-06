@@ -44,7 +44,7 @@ function ToastCard({ toast: t }: { toast: Toast }) {
   }, [t.id, t.kind]);
 
   return (
-    <div className="rounded-card border border-n200 bg-n0 p-4 shadow-[0_24px_64px_-24px_rgba(18,26,22,.45)]">
+    <div className="animate-qp-toast-in rounded-card border border-n200 bg-n0 p-4 shadow-[0_24px_64px_-24px_rgba(18,26,22,.45)]">
       <div className="flex items-start gap-2.5">
         <span
           aria-hidden

@@ -11,7 +11,11 @@ import { Button } from "@/components/ui/Button";
 import { boPost, boSend } from "@/lib/boClient";
 import { useRunWrite } from "@/lib/useRunWrite";
 
-export type LinkedWallet = { address: string; label: string; verifiedAt: number };
+export type LinkedWallet = {
+  address: string;
+  label: string;
+  verifiedAt: number;
+};
 
 /**
  * Link the connected wallet to the account by signing a one-time server challenge (no transaction, no fee),

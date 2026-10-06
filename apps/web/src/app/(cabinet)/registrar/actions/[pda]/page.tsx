@@ -1,3 +1,4 @@
+import { Pulse } from "@/components/motion/Pulse";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -341,7 +342,7 @@ export default async function RegistrarActionPage({
             <Badge tone={KIND_TONE[action.kind] ?? "neutral"}>
               {action.kind}
             </Badge>
-            {status(action.status)}
+            <Pulse trigger={action.status}>{status(action.status)}</Pulse>
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-n600">
             <span className="num">{action.corpId}</span>

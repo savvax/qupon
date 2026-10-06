@@ -1,9 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import {
-  type LinkedWallet,
-  WalletLink,
-} from "@/components/account/WalletLink";
+import { type LinkedWallet, WalletLink } from "@/components/account/WalletLink";
 import { Card } from "@/components/ui/Card";
 import { boFetch } from "@/lib/bo";
 import { getSession } from "@/lib/session";
@@ -30,9 +27,7 @@ export default async function AccountPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <header>
-        <h1 className="text-2xl font-extrabold tracking-tight">
-          {t("title")}
-        </h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
         <p className="mt-1 text-sm text-n600">
           {user.name} · {user.email} · {c(`roles.${user.role}`)}
         </p>
