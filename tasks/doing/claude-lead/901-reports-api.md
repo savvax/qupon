@@ -1,7 +1,7 @@
 ---
 id: 901
 title: Report builders and endpoints (statement, tax, holders, payouts)
-agent: glm
+agent: claude
 tier: T1
 depends_on: [801]
 verify: make verify
