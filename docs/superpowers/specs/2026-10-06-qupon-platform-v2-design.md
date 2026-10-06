@@ -111,6 +111,17 @@ CSV and printable HTML (the browser's "Save as PDF"; no server PDF engine): inve
 - Where: route transitions in cabinets (fade + 8 px rise), staggered table rows and cards on first load, KPI numbers count up, Stepper fill animates to the current step, status badge pulses once when polling sees a new status, toasts spring in, dialogs scale from 98 %, landing hero: subtle grid drift and card float (no parallax on phones).
 - `prefers-reduced-motion: reduce` → all primitives render final state instantly; checked by an e2e that emulates reduced motion.
 
+### 5.7 Solana wallet connection (added 2026-10-06 after review)
+- The wallet is a first-class action: a **Connect wallet** button in the public header and the cabinet top bar; once connected it becomes a chip (wallet icon, short address, network) with a menu: copy address, open in explorer, link to account (signed message, §5.3), disconnect.
+- **Detection** via the Wallet Standard (wallet-adapter `wallets` with `readyState`): exactly one installed wallet → the button connects to it directly ("Connect Phantom"); several → a picker listing the installed ones first (icon, name, "Detected"), then popular ones to install; none → a panel explaining what a Solana wallet is, install links (Phantom, Solflare, Backpack) and two fallbacks: open this page inside a mobile wallet browser (deep links) and **view by address** (paste a public key for a read-only portfolio; signing actions stay disabled with an explanation).
+- Our own dialog in the design system, EN/RU, animated; the generic English wallet-adapter modal is no longer shown anywhere.
+
+### 5.8 UX quality bar (added 2026-10-06)
+- No layout shift between locales: hero and headers keep their size in EN and RU (fixed heights, clamp() type, no wrapping nav); every page has loading, empty and error states; focus states visible; touch targets ≥ 40 px; consistent spacing scale.
+- The landing hero is alive: slow aurora/grid background drift and a lifecycle card that plays a corporate action (segments fill step by step, status chip and amounts update) — all transform/opacity, paused off-screen, static under reduced motion.
+- More micro-interactions: press/hover feedback on buttons and cards, sliding active indicators (nav, tabs), shimmer skeletons, copy confirmations, value transitions when polled numbers change.
+- Next.js dev indicator off (it is English-only and confused reviewers).
+
 ## 6. Security
 - New roles: `investor` (self-service), `admin`; issuer/registrar members belong to an organisation and act within it (issuer writes limited to series whose `series_settings.org_id` is their organisation; demo organisation for demo users). The on-chain issuer authority stays the platform's custodial operator key, as in v1 — organisations are an off-chain access boundary, not separate keys.
 - Wallet linking requires a fresh, single-use nonce bound to user and address; signatures over anything else are rejected.

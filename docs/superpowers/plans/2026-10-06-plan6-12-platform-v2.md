@@ -172,6 +172,18 @@ Registrar action page: "KASE schedule check" card (fixation date vs record date 
 ### Task 1102 (glm): motion across pages
 Stagger on series/actions/investors/KYC tables and bond cards; landing hero (grid drift, card float; static on phones and reduced motion); notification bell badge pop; sweep screenshots stable (`reducedMotion: "reduce"` in the sweep project).
 
+### Task 1103 (lead): landing hero v2 (spec §5.8)
+Fixed-size hero in EN and RU (same height at 1440/1024/390; clamp() headline; header nav and tagline never wrap), animated background (aurora blobs + grid drift, CSS transforms), lifecycle card that plays a corporate action in a loop (6 segments fill in order, status chip and total/holders count up; pauses when off-screen; reduced motion → final state), `devIndicators: false`.
+
+### Task 1104 (lead): Solana wallet connection UX (spec §5.7)
+`components/wallet/{WalletButton,WalletDialog,useWalletChoices}` replacing every `WalletModalProvider`/`setVisible` use; header and top-bar button; detection rules (1 → direct, many → picker, none → install + mobile deep link + view by address); EN/RU; e2e with injected Wallet Standard test wallets (0, 1, 2 wallets).
+
+### Task 1105 (glm): motion polish v2 (spec §5.8)
+Press (scale .98) and hover lift on Button/Card links; sliding active indicator in cabinet nav and Tabs (`layoutId`); shimmer Skeleton; Address copy → animated check; toast auto-dismiss progress bar; CountUp re-animates when a polled value changes (old → new). All via `components/motion` primitives and CSS tokens; reduced motion respected; e2e `motion.spec.ts` extended.
+
+### Task 1106 (lead + subagent): UX audit
+Screenshot sweep of every page (EN/RU × 1440/390) + checklist (§5.8): layout shift between locales, wrapping, empty/loading/error states, focus, contrast, touch targets, copy. Output `reports/ux-audit.md` and fix tasks `11NN-ux-*.md`.
+
 ## Plan 12 — Hardening and launch
 
 ### Task 1201 (glm): cross-feature e2e
