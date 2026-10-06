@@ -13,6 +13,7 @@ export const NAMESPACES = [
   "kase",
   "assets",
   "network",
+  "wallet",
 ] as const;
 export default getRequestConfig(async () => {
   const c = (await cookies()).get("NEXT_LOCALE")?.value;

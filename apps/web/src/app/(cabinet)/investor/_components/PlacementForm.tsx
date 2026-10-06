@@ -6,6 +6,7 @@
  * wallet, or by the demo custodial wallet through the session proxy.
  */
 
+import { useWalletUX } from "@/components/wallet/WalletUX";
 import { useMemo, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -43,6 +44,7 @@ const txsOf = (r: DemoWriteResult): string[] =>
 /** The /investor/placement page body inside <InvestorIdentity>. */
 export function PlacementForm() {
   const { mode, owner } = useInvestor();
+  const { connect } = useWalletUX();
   const { wallet } = useWallet();
   const t = useTranslations("investor.placement");
   const locale = useLocale() as "en" | "ru";
@@ -80,6 +82,11 @@ export function PlacementForm() {
       setBusy(false);
       reload();
     };
+    if (mode === "watch") {
+      setBusy(false);
+      connect();
+      return;
+    }
     if (mode === "demo") {
       const res = await runWrite({
         pending: t("toasts.subscribing", { units: unitsLabel, ticker }),
@@ -193,12 +200,16 @@ export function PlacementForm() {
             loading={busy}
             disabled={!row || !Number.isFinite(unitsN) || unitsN < 1}
           >
-            {t("subscribe")}
+            {mode === "watch" ? t("connectToSign") : t("subscribe")}
           </Button>
         </div>
       </form>
       <p className="mt-4 text-xs text-n500">
-        {mode === "demo" ? t("demoNote") : t("walletNote")}
+        {mode === "demo"
+          ? t("demoNote")
+          : mode === "watch"
+            ? t("watchNote")
+            : t("walletNote")}
       </p>
     </Card>
   );

@@ -30,11 +30,15 @@ test("@live issuer creates a series on devnet and sees it in /issuer/series", as
   await page.getByRole("button", { name: "Issue on Solana" }).click();
   // One devnet tx set: mint + series init (brief says ≤ 90 s).
   await expect(
-    page.getByRole("heading", { name: new RegExp(`${name} is live on devnet`) }),
+    page.getByRole("heading", {
+      name: new RegExp(`${name} is live on devnet`),
+    }),
   ).toBeVisible({ timeout: 90_000 });
 
   await expect(async () => {
     await page.goto("/issuer/series");
-    await expect(page.getByRole("link", { name: new RegExp(name) })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: new RegExp(name) }),
+    ).toBeVisible();
   }).toPass({ timeout: 60_000 });
 });

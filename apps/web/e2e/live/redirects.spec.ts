@@ -8,19 +8,22 @@ test.skip(!process.env.E2E_BASE_URL, "live e2e: set E2E_BASE_URL");
 const MINT = "E2ELegacyMint11111111111111111111111111111";
 const PDA = "E2ELegacyPda111111111111111111111111111111";
 
-const REDIRECTS: readonly (readonly [from: string, to: string, final: RegExp])[] =
+const REDIRECTS: readonly (readonly [
+  from: string,
+  to: string,
+  final: RegExp,
+])[] = [
+  ["/console", "/registrar", /\/login\?next=%2Fregistrar$/],
+  [`/series/${MINT}`, `/bonds/${MINT}`, new RegExp(`/bonds/${MINT}$`)],
   [
-    ["/console", "/registrar", /\/login\?next=%2Fregistrar$/],
-    [`/series/${MINT}`, `/bonds/${MINT}`, new RegExp(`/bonds/${MINT}$`)],
-    [
-      `/actions/${PDA}`,
-      `/registrar/actions/${PDA}`,
-      // The cabinet layout redirects to next=/registrar (path not preserved).
-      /\/login\?next=%2Fregistrar$/,
-    ],
-    ["/portal", "/investor", /\/investor$/],
-    ["/kitchen-sink", "/ui", /\/ui$/],
-  ];
+    `/actions/${PDA}`,
+    `/registrar/actions/${PDA}`,
+    // The cabinet layout redirects to next=/registrar (path not preserved).
+    /\/login\?next=%2Fregistrar$/,
+  ],
+  ["/portal", "/investor", /\/investor$/],
+  ["/kitchen-sink", "/ui", /\/ui$/],
+];
 
 test("@live legacy links redirect to the new pages (307/308)", async ({
   page,

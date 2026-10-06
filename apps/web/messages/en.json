@@ -812,12 +812,22 @@
       "connectWallet": "Connect wallet",
       "tryDemo": "Try the demo investor",
       "note": "Demo data is shared by every visitor and may be reset · Solana devnet.",
-      "failed": "Could not start the demo — try again."
+      "failed": "Could not start the demo — try again.",
+      "invalidAddress": "That is not a Solana address (base58, 32–44 characters).",
+      "detectedMany": "{count} Solana wallets found in this browser — you'll choose one.",
+      "detectedOne": "{name} found in this browser.",
+      "detectedNone": "No Solana wallet found in this browser — we'll show how to get one.",
+      "watchOpen": "View a wallet by address (read-only)",
+      "watchLabel": "Solana address",
+      "watchHint": "See holdings, payouts and meetings without connecting. Signing needs a wallet.",
+      "watchGo": "View"
     },
     "identity": {
       "wallet": "Investor wallet",
       "demoWallet": "Demo custodial wallet",
-      "demoBadge": "DEMO"
+      "demoBadge": "DEMO",
+      "watchWallet": "Wallet (view only)",
+      "watchBadge": "Read-only"
     },
     "portfolio": {
       "title": "Portfolio",
@@ -868,7 +878,9 @@
       "toasts": {
         "subscribing": "Subscribing to {units} × {ticker}…",
         "subscribed": "Subscribed: {units} × {ticker}"
-      }
+      },
+      "connectToSign": "Connect a wallet to subscribe",
+      "watchNote": "Read-only view: connect a wallet to subscribe — your wallet signs the DvP transaction."
     },
     "meetings": {
       "proposalRate": "coupon {from} → {to}",

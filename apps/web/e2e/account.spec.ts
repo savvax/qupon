@@ -12,7 +12,7 @@ test("member account lists linked wallets and offers to link the connected one",
   await expect(page.getByText("DL8G…aJEo")).toBeVisible();
   await expect(page.getByText("Primary")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Connect wallet" }),
+    page.getByRole("main").getByRole("button", { name: "Connect wallet" }),
   ).toBeVisible();
   // the top bar links back here and shows the network
   await expect(page.locator("[data-network=devnet]").first()).toBeVisible();

@@ -15,7 +15,9 @@ test("@live demo sign-in reaches each cabinet", async ({ page, context }) => {
     await context.clearCookies();
     await page.goto("/login");
     // A click that lands before hydration does nothing: retry until the sign-in navigates.
-    const button = page.getByRole("button", { name: new RegExp(`^${role}`, "i") });
+    const button = page.getByRole("button", {
+      name: new RegExp(`^${role}`, "i"),
+    });
     await expect(async () => {
       if (await button.isVisible()) await button.click();
       await expect(page).toHaveURL(home, { timeout: 5_000 });

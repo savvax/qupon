@@ -2,7 +2,6 @@
 
 import { getBase58Decoder } from "@solana/kit";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -10,6 +9,7 @@ import { Address } from "@/components/ui/Address";
 import { Button } from "@/components/ui/Button";
 import { boPost, boSend } from "@/lib/boClient";
 import { useRunWrite } from "@/lib/useRunWrite";
+import { useWalletUX } from "@/components/wallet/WalletUX";
 
 export type LinkedWallet = {
   address: string;
@@ -24,7 +24,7 @@ export type LinkedWallet = {
 export function WalletLink({ wallets }: { wallets: LinkedWallet[] }) {
   const t = useTranslations("account.wallets");
   const { publicKey, signMessage, connected, disconnect } = useWallet();
-  const { setVisible } = useWalletModal();
+  const { connect } = useWalletUX();
   const router = useRouter();
   const runWrite = useRunWrite();
   const [busy, setBusy] = useState(false);
@@ -102,7 +102,7 @@ export function WalletLink({ wallets }: { wallets: LinkedWallet[] }) {
             <p className="min-w-0 flex-1 text-sm text-n600">
               {t("connectHint")}
             </p>
-            <Button onClick={() => setVisible(true)}>{t("connect")}</Button>
+            <Button onClick={connect}>{t("connect")}</Button>
           </>
         ) : linked ? (
           <>

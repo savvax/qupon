@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { LocaleSwitch } from "./LocaleSwitch";
+import { WalletButton } from "@/components/wallet/WalletButton";
 import { NetworkBadge } from "./NetworkBadge";
 import { Logo } from "./Logo";
 import { MobileNav } from "./MobileNav";
@@ -51,6 +52,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-2">
             <NetworkBadge className="hidden md:inline-flex" />
             <LocaleSwitch />
+            <WalletButton compact labelAt="xl" />
             <span className="hidden sm:block">
               <Button asChild size="sm">
                 <Link href="/login">{c("signIn")}</Link>

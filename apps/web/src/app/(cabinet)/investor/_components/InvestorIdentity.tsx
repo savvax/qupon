@@ -6,18 +6,28 @@
  * session uses the labelled demo custodial wallet; else a chooser card.
  */
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  type FormEvent,
+  type ReactNode,
+  useContext,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { isAddress } from "@solana/kit";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { TextField } from "@/components/ui/TextField";
+import { Icon } from "@/components/shell/icons";
+import { useWalletUX } from "@/components/wallet/WalletUX";
 
 export type InvestorIdentityValue = {
-  mode: "wallet" | "demo";
+  /** wallet: connected, signs in the browser · demo: custodial demo wallet · watch: read-only by address */
+  mode: "wallet" | "demo" | "watch";
   owner: string;
 };
 
@@ -31,17 +41,22 @@ export function useInvestor(): InvestorIdentityValue {
   return id;
 }
 
-/** Card shown when neither a wallet nor a demo session is present. */
+/** Card shown when there is no wallet, no read-only address and no demo session (spec §5.7). */
 function Chooser() {
   const t = useTranslations("investor.chooser");
-  const { setVisible } = useWalletModal();
+  const w = useTranslations("wallet.button");
+  const { choices, connect, pending, setWatch } = useWalletUX();
   const router = useRouter();
-  const [pending, setPending] = useState(false);
+  const [demoPending, setDemoPending] = useState(false);
   const [error, setError] = useState<string>();
+  const [watchOpen, setWatchOpen] = useState(false);
+  const [address, setAddress] = useState("");
+  const [addressError, setAddressError] = useState<string>();
+  const only = choices.length === 1 ? choices[0] : undefined;
 
   const tryDemo = async () => {
-    if (pending) return;
-    setPending(true);
+    if (demoPending) return;
+    setDemoPending(true);
     setError(undefined);
     const res = await fetch("/api/session/demo", {
       method: "POST",
@@ -53,31 +68,85 @@ function Chooser() {
       return;
     }
     setError(t("failed"));
-    setPending(false);
+    setDemoPending(false);
+  };
+
+  const view = (e: FormEvent) => {
+    e.preventDefault();
+    if (!isAddress(address.trim())) {
+      setAddressError(t("invalidAddress"));
+      return;
+    }
+    setWatch(address.trim());
   };
 
   return (
     <Card className="mx-auto mt-8 max-w-xl text-center" padding="lg">
-      <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
+      <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-p900 text-white shadow-[0_12px_32px_-12px_rgba(6,36,30,.7)]">
+        <Icon name="wallet" className="size-7" />
+      </span>
+      <h1 className="mt-5 text-2xl font-extrabold tracking-tight">
+        {t("title")}
+      </h1>
       <p className="mx-auto mt-2 max-w-md text-sm text-n600">{t("body")}</p>
       <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-        <Button size="lg" onClick={() => setVisible(true)}>
-          {t("connectWallet")}
+        <Button size="lg" onClick={connect} loading={!!pending}>
+          {only ? w("connectNamed", { name: only.name }) : t("connectWallet")}
         </Button>
         <Button
           size="lg"
           variant="secondary"
-          loading={pending}
+          loading={demoPending}
           onClick={() => void tryDemo()}
         >
           {t("tryDemo")}
         </Button>
       </div>
+      <p className="mt-3 text-xs text-n500">
+        {choices.length > 1
+          ? t("detectedMany", { count: choices.length })
+          : only
+            ? t("detectedOne", { name: only.name })
+            : t("detectedNone")}
+      </p>
       {error && (
         <p role="alert" className="mt-4 text-sm font-semibold text-err-fg">
           {error}
         </p>
       )}
+      <div className="mt-6 border-t border-n100 pt-5 text-left">
+        {watchOpen ? (
+          <form onSubmit={view} className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <TextField
+                label={t("watchLabel")}
+                value={address}
+                onChange={(e) => {
+                  setAddress(e.target.value);
+                  setAddressError(undefined);
+                }}
+                error={addressError}
+                hint={t("watchHint")}
+                autoComplete="off"
+                spellCheck={false}
+                autoFocus
+              />
+            </div>
+            <Button type="submit" className="mt-6" disabled={!address.trim()}>
+              {t("watchGo")}
+            </Button>
+          </form>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setWatchOpen(true)}
+            className="mx-auto flex items-center gap-2 text-sm font-semibold text-g700 hover:underline"
+          >
+            <Icon name="eye" className="size-4" />
+            {t("watchOpen")}
+          </button>
+        )}
+      </div>
       <p className="mt-5 text-xs text-n500">{t("note")}</p>
     </Card>
   );
@@ -93,11 +162,14 @@ export function InvestorIdentity({
 }) {
   const t = useTranslations("investor.identity");
   const { publicKey } = useWallet();
+  const { watch } = useWalletUX();
   const id: InvestorIdentityValue | null = publicKey
     ? { mode: "wallet", owner: publicKey.toBase58() }
     : demoOwner
       ? { mode: "demo", owner: demoOwner }
-      : null;
+      : watch
+        ? { mode: "watch", owner: watch }
+        : null;
 
   if (!id) return <Chooser />;
 
@@ -105,9 +177,16 @@ export function InvestorIdentity({
     <Ctx.Provider value={id}>
       <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 className="text-2xl font-extrabold tracking-tight">
-          {t(id.mode === "wallet" ? "wallet" : "demoWallet")}
+          {t(
+            id.mode === "wallet"
+              ? "wallet"
+              : id.mode === "watch"
+                ? "watchWallet"
+                : "demoWallet",
+          )}
         </h1>
         {id.mode === "demo" && <Badge tone="warn">{t("demoBadge")}</Badge>}
+        {id.mode === "watch" && <Badge tone="warn">{t("watchBadge")}</Badge>}
         <span className="text-sm text-n600">
           <Address value={id.owner} />
         </span>

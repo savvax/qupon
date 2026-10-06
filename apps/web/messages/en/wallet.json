@@ -1,0 +1,49 @@
+{
+  "button": {
+    "connect": "Connect wallet",
+    "connectNamed": "Connect {name}",
+    "connectedWith": "Connected with {name}",
+    "viewing": "Viewing by address (read-only)",
+    "copy": "Copy address",
+    "copied": "Copied",
+    "explorer": "View in Solana Explorer",
+    "link": "Link to my Qupon account",
+    "disconnect": "Disconnect",
+    "stopViewing": "Stop viewing"
+  },
+  "dialog": {
+    "title": "Connect a Solana wallet",
+    "lead": "Choose the wallet that holds your bonds. Connecting only shares your public address — no transaction, no fee.",
+    "noneTitle": "No Solana wallet in this browser",
+    "noneLead": "A wallet is your account on Solana: bonds and coupon payments arrive there, and you sign subscriptions and votes with it.",
+    "installed": "Wallets in this browser",
+    "detected": "Detected in this browser",
+    "mobile": "Mobile wallet on this device",
+    "approve": "Approve the connection in {name}…",
+    "connect": "Connect",
+    "install": "Install a wallet",
+    "other": "Other popular wallets",
+    "why": {
+      "own": "You alone hold the keys — Qupon never sees them.",
+      "paid": "Coupons and redemptions are paid straight to it.",
+      "sign": "You sign subscriptions and bondholder votes."
+    },
+    "mobileTitle": "On a phone",
+    "mobileLead": "Open this page inside your wallet app's browser:",
+    "openIn": "Open in {name}",
+    "watch": {
+      "title": "Or view a wallet by address",
+      "label": "Solana address",
+      "hint": "Read-only: see holdings, payouts and meetings. Signing needs a connected wallet.",
+      "go": "View",
+      "invalid": "That is not a Solana address (base58, 32–44 characters)."
+    },
+    "devnetHint": "Qupon runs on Solana devnet: switch your wallet to Devnet (Phantom: Settings → Developer settings → Testnet mode).",
+    "errors": {
+      "rejected": "The connection was cancelled in the wallet. Try again when you are ready.",
+      "notReady": "This wallet is not ready — unlock it or reload the page.",
+      "timeout": "The wallet did not answer in time. Open it and try again.",
+      "generic": "The wallet could not connect. Try again or pick another one."
+    }
+  }
+}

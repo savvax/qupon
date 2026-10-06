@@ -52,9 +52,7 @@ class LiveMarkdownReporter implements Reporter {
       ),
       "",
       ...this.rows.flatMap((r) =>
-        r.error
-          ? [`## ${r.title}`, "", "```text", r.error, "```", ""]
-          : [],
+        r.error ? [`## ${r.title}`, "", "```text", r.error, "```", ""] : [],
       ),
     ].join("\n");
     writeFileSync(file, body);

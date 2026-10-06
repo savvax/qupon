@@ -4,14 +4,13 @@ import {
   ConnectionProvider,
   WalletProvider,
 } from "@solana/wallet-adapter-react";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import type { ReactNode } from "react";
 import { MotionProvider } from "@/components/motion/MotionProvider";
 import { MainnetConfirmHost } from "@/components/network/MainnetConfirm";
 import { NetworkProvider } from "@/components/network/NetworkContext";
 import type { NetworkInfo } from "@/lib/network";
 import { Toaster } from "@/components/ui/Toaster";
-import "@solana/wallet-adapter-react-ui/styles.css";
+import { WalletUX, reportWalletError } from "@/components/wallet/WalletUX";
 
 // Devnet endpoint; override with NEXT_PUBLIC_RPC_URL. NEXT_PUBLIC_* is inlined into the browser bundle, so use a
 // keyless or domain-restricted endpoint here — never the keyed RPC_URL from .env.
@@ -30,14 +29,15 @@ export default function Providers({
   return (
     <NetworkProvider value={network}>
       <ConnectionProvider endpoint={ENDPOINT}>
-        <WalletProvider wallets={[]} autoConnect>
-          <WalletModalProvider>
-            <MotionProvider>
+        <WalletProvider wallets={[]} autoConnect onError={reportWalletError}>
+          {/* MotionProvider wraps WalletUX: the wallet dialog animates with motion's LazyMotion (strict). */}
+          <MotionProvider>
+            <WalletUX>
               {children}
               <Toaster />
               <MainnetConfirmHost />
-            </MotionProvider>
-          </WalletModalProvider>
+            </WalletUX>
+          </MotionProvider>
         </WalletProvider>
       </ConnectionProvider>
     </NetworkProvider>

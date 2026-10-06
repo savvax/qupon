@@ -6,6 +6,7 @@
  * confirm dialog, and the tally.
  */
 
+import { useWalletUX } from "@/components/wallet/WalletUX";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -148,6 +149,7 @@ function MeetingCard({
 /** The /investor/meetings page body inside <InvestorIdentity>. */
 export function VotePanel() {
   const { mode, owner } = useInvestor();
+  const { connect } = useWalletUX();
   const { wallet } = useWallet();
   const t = useTranslations("investor.meetings");
   const runWrite = useRunWrite();
@@ -169,6 +171,11 @@ export function VotePanel() {
       setConfirm(null);
       reload();
     };
+    if (mode === "watch") {
+      setBusy(false);
+      connect();
+      return;
+    }
     if (mode === "demo") {
       await runWrite({
         pending: t("toasts.voting", { choice: t(`choice.${choice}`) }),

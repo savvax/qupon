@@ -11,7 +11,7 @@ test("anonymous visitor gets the wallet/demo chooser, no crash", async ({
 }) => {
   await page.goto("/investor");
   await expect(
-    page.getByRole("button", { name: "Connect wallet" }),
+    page.getByRole("main").getByRole("button", { name: "Connect wallet" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Try the demo investor" }),
