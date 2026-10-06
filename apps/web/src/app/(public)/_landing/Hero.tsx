@@ -22,7 +22,7 @@ export async function Hero({ live }: { live: Live }) {
         />
         <div
           aria-hidden
-          className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] bg-[size:28px_28px]"
+          className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] bg-[size:28px_28px] sm:animate-qp-hero-drift"
         />
         <div className="relative grid gap-10 p-6 sm:p-10 lg:grid-cols-[1.3fr_1fr] lg:items-center lg:gap-14 lg:p-14">
           <div>
@@ -48,7 +48,8 @@ export async function Hero({ live }: { live: Live }) {
             </div>
           </div>
 
-          <div className="rounded-card bg-n0 p-5 text-n900 shadow-[0_24px_64px_-24px_rgba(0,0,0,.55)] sm:p-6">
+          {/* Floating bond card — animated only ≥ sm and when the OS allows motion (§5.6: no parallax on phones). */}
+          <div className="rounded-card bg-n0 p-5 text-n900 shadow-[0_24px_64px_-24px_rgba(0,0,0,.55)] sm:p-6 sm:animate-qp-hero-float">
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-semibold text-n600">
                 {t("last.title")}

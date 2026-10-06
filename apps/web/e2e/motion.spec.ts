@@ -43,6 +43,9 @@ test("server HTML never hides content (no entrance styles on first load)", async
   await signInAs(page, "registrar", baseURL);
   const html = await (await page.request.get("/registrar")).text();
   expect(html).not.toMatch(/opacity:\s*0/);
+  // Task 1102: staggered table rows (registrar tables) and bond KPI cards — same rule on /bonds.
+  const bonds = await (await page.request.get("/bonds")).text();
+  expect(bonds).not.toMatch(/opacity:\s*0/);
 });
 
 test("KPI numbers count up after a client-side navigation", async ({

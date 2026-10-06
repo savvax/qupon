@@ -82,6 +82,9 @@
   --animate-qp-sheet-left: qp-sheet-left 300ms var(--ease-qp-out);
   --animate-qp-toast-in: qp-toast-in 320ms var(--ease-qp-spring);
   --animate-qp-ring: qp-ring 900ms var(--ease-qp-out);
+  /* Task 1102 ambient landing-hero loops; killed by the reduced-motion block below. */
+  --animate-qp-hero-drift: qp-hero-drift 24s linear infinite;
+  --animate-qp-hero-float: qp-hero-float 5s ease-in-out infinite alternate;
 
   @keyframes qp-fade-in {
     from {
@@ -120,10 +123,24 @@
   }
   @keyframes qp-ring {
     from {
-      box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-g400) 55%, transparent);
+      box-shadow: 0 0 0 0
+        color-mix(in oklab, var(--color-g400) 55%, transparent);
     }
     to {
       box-shadow: 0 0 0 10px transparent;
+    }
+  }
+  @keyframes qp-hero-drift {
+    to {
+      background-position: 28px 28px; /* one grid cell of the hero pattern → seamless loop */
+    }
+  }
+  @keyframes qp-hero-float {
+    from {
+      translate: 0 2px;
+    }
+    to {
+      translate: 0 -4px;
     }
   }
 }

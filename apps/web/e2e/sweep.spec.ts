@@ -1,5 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
+// Screenshots must be byte-stable: emulated reduced motion turns every ambient animation
+// (hero grid drift / card float, badge pops) and JS entrances into their final state (§5.6).
+test.use({ reducedMotion: "reduce" });
+
 // Every page × EN/RU × desktop/phone: no console errors (next-intl reports missing messages there), no
 // horizontal scroll, and a screenshot for review in reports/ui/sweep/.
 const MINT = "QpNb1Dem0BondMint1111111111111111111111111111";

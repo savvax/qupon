@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Stagger, StaggerItem } from "@/components/motion/Stagger";
 import { cx } from "@/lib/ui/cx";
 import { cellShownFrom, visibleColumns, type Bp } from "@/lib/ui/table";
 
@@ -13,7 +14,7 @@ export type Column<T> = {
 
 /**
  * Responsive data table: a real `<table>` from 640 px up, stacked cards below.
- * Presentational — safe in server and client components.
+ * Safe in server and client components; rows stagger in via components/motion (task 1102).
  */
 export function DataTable<T>({
   columns,
@@ -55,9 +56,10 @@ export function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody>
+          <Stagger as="tbody">
             {rows.map((row) => (
-              <tr
+              <StaggerItem
+                as="tr"
                 key={rowKey(row)}
                 className="relative border-b border-n100 transition-colors last:border-0 hover:bg-n50/60"
               >
@@ -73,15 +75,19 @@ export function DataTable<T>({
                     {col.render(row)}
                   </td>
                 ))}
-              </tr>
+              </StaggerItem>
             ))}
-          </tbody>
+          </Stagger>
         </table>
       </div>
       {/* < 640 px: one card per row, same columns minus those hidden below sm */}
-      <ul className="divide-y divide-n100 sm:hidden">
+      <Stagger as="ul" className="divide-y divide-n100 sm:hidden">
         {rows.map((row) => (
-          <li key={rowKey(row)} className="space-y-1.5 px-4 py-4">
+          <StaggerItem
+            as="li"
+            key={rowKey(row)}
+            className="space-y-1.5 px-4 py-4"
+          >
             {visibleColumns(columns, "sm").map((col) => (
               <div
                 key={col.key}
@@ -100,9 +106,9 @@ export function DataTable<T>({
                 </span>
               </div>
             ))}
-          </li>
+          </StaggerItem>
         ))}
-      </ul>
+      </Stagger>
     </div>
   );
 }

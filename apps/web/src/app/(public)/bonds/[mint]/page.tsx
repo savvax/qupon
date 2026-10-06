@@ -6,6 +6,7 @@ import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Kpi } from "@/components/ui/Kpi";
+import { Stagger, StaggerItem } from "@/components/motion/Stagger";
 import { Tabs } from "@/components/ui/Tabs";
 import {
   getSchedule,
@@ -245,32 +246,40 @@ export default async function BondPage({
         <Address value={series.mint} />
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <Kpi label={t("kpi.face")} value={money(series.faceValue)} />
-        <Kpi
-          label={t("kpi.coupon")}
-          value={
-            <span className="num">{bpsToPercent(series.couponRateBps)}</span>
-          }
-          hint={freq}
-        />
-        <Kpi
-          label={t("kpi.next")}
-          value={
-            <span className="num">{formatDate(series.nextCouponDate)}</span>
-          }
-        />
-        <Kpi
-          label={t("kpi.issued")}
-          value={
-            <span className="num">
-              {Number(series.totalIssued).toLocaleString(
-                locale === "ru" ? "ru-RU" : "en-US",
-              )}
-            </span>
-          }
-        />
-      </div>
+      <Stagger className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        <StaggerItem className="min-w-0">
+          <Kpi label={t("kpi.face")} value={money(series.faceValue)} />
+        </StaggerItem>
+        <StaggerItem className="min-w-0">
+          <Kpi
+            label={t("kpi.coupon")}
+            value={
+              <span className="num">{bpsToPercent(series.couponRateBps)}</span>
+            }
+            hint={freq}
+          />
+        </StaggerItem>
+        <StaggerItem className="min-w-0">
+          <Kpi
+            label={t("kpi.next")}
+            value={
+              <span className="num">{formatDate(series.nextCouponDate)}</span>
+            }
+          />
+        </StaggerItem>
+        <StaggerItem className="min-w-0">
+          <Kpi
+            label={t("kpi.issued")}
+            value={
+              <span className="num">
+                {Number(series.totalIssued).toLocaleString(
+                  locale === "ru" ? "ru-RU" : "en-US",
+                )}
+              </span>
+            }
+          />
+        </StaggerItem>
+      </Stagger>
 
       <div className="mt-8">
         <Tabs
