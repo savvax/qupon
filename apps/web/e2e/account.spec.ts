@@ -29,15 +29,13 @@ test("demo accounts cannot link wallets", async ({ page, baseURL }) => {
 
 test("RU strings render", async ({ page, baseURL }) => {
   await signInAs(page, "member", baseURL);
-  await page
-    .context()
-    .addCookies([
-      {
-        name: "NEXT_LOCALE",
-        value: "ru",
-        url: baseURL ?? "http://localhost:3000",
-      },
-    ]);
+  await page.context().addCookies([
+    {
+      name: "NEXT_LOCALE",
+      value: "ru",
+      url: baseURL ?? "http://localhost:3000",
+    },
+  ]);
   await page.goto("/account");
   await expect(page.getByRole("heading", { name: "Аккаунт" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Кошельки" })).toBeVisible();

@@ -26,13 +26,15 @@ export function PublicShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b border-n200 bg-n0/95 backdrop-blur">
         <div className={`${CONTAINER} flex h-16 items-center gap-4`}>
-          <Link href="/" className="flex items-center gap-2.5 rounded-btn">
+          {/* The tagline lives in the hero and the link title: in the bar it pushed the RU header past 1200 px. */}
+          <Link
+            href="/"
+            title={t("tagline")}
+            className="flex shrink-0 items-center gap-2.5 rounded-btn"
+          >
             <Logo />
             <span className="text-lg font-extrabold tracking-tight text-n900">
               Qupon
-            </span>
-            <span className="hidden border-l border-n200 pl-2.5 text-sm whitespace-nowrap text-n500 xl:inline">
-              {t("tagline")}
             </span>
           </Link>
           <nav
