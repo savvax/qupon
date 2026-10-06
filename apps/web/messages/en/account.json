@@ -1,1 +1,24 @@
-{}
+{
+  "title": "Account",
+  "wallets": {
+    "title": "Wallets",
+    "lead": "Coupons and redemptions are paid to the wallet you register with the registrar. Link it here by signing a one-time message — no transaction, no fee.",
+    "none": "No wallet linked yet.",
+    "primary": "Primary",
+    "verifiedAt": "Verified {date}",
+    "unlink": "Unlink",
+    "connect": "Connect wallet",
+    "connectHint": "Connect Phantom, Solflare or Backpack to link it to your account.",
+    "signHint": "Sign a message to prove you control",
+    "link": "Sign and link",
+    "linking": "Waiting for the wallet signature…",
+    "linked": "Wallet linked",
+    "unlinking": "Unlinking the wallet…",
+    "unlinked": "Wallet unlinked",
+    "alreadyLinked": "Linked:",
+    "switch": "Use another wallet",
+    "noSignMessage": "This wallet cannot sign messages. Use Phantom, Solflare or Backpack.",
+    "demo": "Demo accounts are shared by every visitor, so they cannot link wallets.",
+    "signup": "Create your own account"
+  }
+}
