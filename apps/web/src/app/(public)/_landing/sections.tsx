@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/shell/icons";
 
 const CONTAINER = "mx-auto w-full max-w-[1200px] px-4 sm:px-6";
 
@@ -32,6 +33,47 @@ function Section({
 }
 
 const STEPS = ["register", "record", "entitle", "pay", "report"] as const;
+
+const PLATFORM = [
+  { key: "accounts", icon: "shield" },
+  { key: "kase", icon: "building" },
+  { key: "tenge", icon: "coins" },
+  { key: "notify", icon: "bell" },
+  { key: "admin", icon: "server" },
+  { key: "mainnet", icon: "globe" },
+] as const;
+
+/** Platform v2 at a glance (task 1109): each card rises in as it scrolls into view and lifts on hover. */
+export function Platform() {
+  const t = useTranslations("landing.platform");
+  return (
+    <Section id="platform" eyebrow={t("eyebrow")} title={t("title")}>
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {PLATFORM.map((f) => (
+          <li
+            key={f.key}
+            className="group qp-reveal qp-lift relative overflow-hidden rounded-card border border-n200 bg-n0 p-6 hover:border-g200"
+          >
+            {/* a soft glow follows the card's corner on hover */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -top-16 -right-16 size-40 rounded-full bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--color-g400)_35%,transparent),transparent)] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            />
+            <span className="relative grid size-11 place-items-center rounded-xl bg-[linear-gradient(135deg,var(--color-g600),var(--color-p500))] text-white shadow-[0_10px_24px_-12px_rgba(4,67,26,.7)] transition-transform duration-300 ease-[cubic-bezier(.2,.9,.25,1.2)] group-hover:scale-110 group-hover:-rotate-3">
+              <Icon name={f.icon} className="size-5" />
+            </span>
+            <h3 className="relative mt-4 text-lg font-bold">
+              <StableText>{t(`${f.key}.title`)}</StableText>
+            </h3>
+            <p className="relative mt-1.5 text-sm text-n600">
+              <StableText>{t(`${f.key}.text`)}</StableText>
+            </p>
+          </li>
+        ))}
+      </ul>
+    </Section>
+  );
+}
 
 export function HowItWorks() {
   const t = useTranslations("landing.how");
@@ -135,10 +177,15 @@ export function Audiences() {
               </li>
             ))}
           </ul>
-          <div className="mt-7">
+          <div className="mt-7 flex flex-col gap-3 min-[480px]:flex-row">
             <Button asChild>
               <Link href="/login">{t(`${a}.cta`)}</Link>
             </Button>
+            {a === "investors" && (
+              <Button asChild variant="secondary">
+                <Link href="/signup">{t("investors.signup")}</Link>
+              </Button>
+            )}
           </div>
         </div>
       ))}
@@ -153,6 +200,7 @@ const ROWS = [
   { key: "iso", tone: "warn" },
   { key: "ardfm", tone: "neutral" },
   { key: "notice", tone: "warn" },
+  { key: "mainnet", tone: "neutral" },
   { key: "squads", tone: "neutral" },
 ] as const;
 

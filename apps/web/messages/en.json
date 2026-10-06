@@ -154,7 +154,8 @@
         "b1": "Holdings, next coupon and every payout with its transaction",
         "b2": "Subscribe at par with delivery versus payment",
         "b3": "Vote in bondholder meetings from your own wallet",
-        "cta": "Try as investor"
+        "cta": "Try as investor",
+        "signup": "Create an account"
       }
     },
     "simulated": {
@@ -169,13 +170,13 @@
         },
         "cash": {
           "element": "Cash leg",
-          "badge": "Partly simulated",
-          "text": "Real token transfers in devnet USDC (Circle) and test tKZT (Token-2022). Fiat tenge and the digital tenge are stood in for by our mint."
+          "badge": "Test tokens",
+          "text": "Real token transfers from an admin-managed registry: devnet USDC (Circle), tKZT and two tenge stand-ins (KZTE-dev, dKZT) with an investor faucet. Evo's KZTE is pre-registered for mainnet, off until its official mint is added."
         },
         "kyc": {
           "element": "KYC",
-          "badge": "Provider simulated",
-          "text": "Attested on-chain: a demo KYC-provider key issues a Solana Attestation Service attestation per wallet, and registration refuses wallets without a live, matching one. The provider is not a licensed KYC firm."
+          "badge": "Review simulated",
+          "text": "Investors upload documents and a registrar decides by hand — no licensed KYC vendor. Approval is real: a Solana Attestation Service attestation and the on-chain registration."
         },
         "iso": {
           "element": "ISO 20022 seev.031 / seev.036",
@@ -188,15 +189,48 @@
           "text": "Represented by a registrar signature step."
         },
         "notice": {
-          "element": "KASE disclosure notice",
-          "badge": "Not published",
-          "text": "Generated automatically; publication on kase.kz is not integrated."
+          "element": "KASE",
+          "badge": "Read only",
+          "text": "Bond data is read from kase.kz and cached; the disclosure notice and package are generated automatically — submission to KASE is simulated."
         },
         "squads": {
           "element": "Multisig issuer approval (Squads)",
           "badge": "Roadmap",
           "text": "Planned."
+        },
+        "mainnet": {
+          "element": "Mainnet",
+          "badge": "Ready, not deployed",
+          "text": "Network profile, write confirmations and a dry-run deploy script are in place; everything runs on devnet."
         }
+      }
+    },
+    "platform": {
+      "eyebrow": "Platform",
+      "title": "Everything around the engine, for every participant",
+      "accounts": {
+        "title": "Accounts and KYC",
+        "text": "Investors sign up, link their own wallet by signature and apply with documents; the registrar's approval attests the wallet on-chain."
+      },
+      "kase": {
+        "title": "kase.kz data",
+        "text": "Bond terms, schedules and market data from kase.kz: one-click import into a new series and a check of every record date against KASE."
+      },
+      "tenge": {
+        "title": "Tenge on Solana",
+        "text": "Settle in any registered token — test tenge stand-ins on devnet, Evo's KZTE ready for mainnet, USDC — each mint verified on-chain."
+      },
+      "notify": {
+        "title": "Notifications",
+        "text": "Holders hear about new actions, meetings and payments the moment they land on-chain, in the language they chose."
+      },
+      "admin": {
+        "title": "Admin panel",
+        "text": "Users and organisations, series visibility, cash assets, system health and a searchable audit trail with CSV export."
+      },
+      "mainnet": {
+        "title": "Mainnet-ready",
+        "text": "Same code, a network profile per deployment: demo access off and a typed confirmation for every write on mainnet."
       }
     }
   },

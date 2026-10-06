@@ -6,6 +6,7 @@ import {
   HowItWorks,
   ImplementedVsSimulated,
   Scenarios,
+  Platform,
 } from "./_landing/sections";
 
 import { metaTitle } from "@/lib/meta";
@@ -21,6 +22,7 @@ export default async function Home() {
       <Hero live={live} />
       <LiveStrip live={live} />
       <HowItWorks />
+      <Platform />
       <Scenarios />
       <Audiences />
       <ImplementedVsSimulated />

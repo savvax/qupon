@@ -76,3 +76,18 @@ test.describe("hero v2 (spec §5.8)", () => {
     });
   });
 });
+
+test("platform v2 section and the investor sign-up link (task 1109)", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const platform = page.locator("#platform");
+  await platform.scrollIntoViewIfNeeded();
+  await expect(platform.getByRole("heading", { level: 3 })).toHaveCount(6);
+  await expect(platform.getByText("Tenge on Solana")).toBeVisible();
+  await page
+    .locator("#investors")
+    .getByRole("link", { name: "Create an account" })
+    .click();
+  await expect(page).toHaveURL(/\/signup$/);
+});
