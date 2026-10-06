@@ -1,7 +1,7 @@
 ---
 id: 1105
 title: Motion polish v2: press/hover, sliding indicators, shimmer, copy check, value transitions
-agent: glm
+agent: claude
 tier: T1
 depends_on: [1103]
 verify: make verify
