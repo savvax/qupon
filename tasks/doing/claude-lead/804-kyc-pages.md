@@ -1,7 +1,7 @@
 ---
 id: 804
 title: KYC pages: investor application and registrar queue
-agent: glm
+agent: claude
 tier: T1
 depends_on: [803]
 verify: make verify
