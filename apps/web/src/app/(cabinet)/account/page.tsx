@@ -1,8 +1,9 @@
 import { StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { PasswordForm, ProfileForm } from "@/components/account/ProfileForms";
 import { type LinkedWallet, WalletLink } from "@/components/account/WalletLink";
+import { SignOutButton } from "@/components/shell/SignOutButton";
 import { Card } from "@/components/ui/Card";
 import { boFetch } from "@/lib/bo";
 import { getSession } from "@/lib/session";
@@ -15,6 +16,8 @@ export async function generateMetadata() {
 /** The signed-in user's account: profile, password and linked wallets (platform v2 §5.3). */
 export default async function AccountPage() {
   const t = await getTranslations("account");
+  // The form shows the language the interface is in now (switching it there also updates the profile).
+  const uiLocale = (await getLocale()) === "ru" ? "ru" : "en";
   const c = await getTranslations("cabinet");
   const user = await getSession();
   if (!user) return null; // the layout already redirected
@@ -27,7 +30,7 @@ export default async function AccountPage() {
       )?.wallets ?? []);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <header>
         <h1 className="text-2xl font-extrabold tracking-tight">
           <StableText>{t("title")}</StableText>
@@ -46,10 +49,7 @@ export default async function AccountPage() {
             <StableText>{t("profile.demo")}</StableText>
           </p>
         ) : (
-          <ProfileForm
-            name={user.name}
-            locale={user.locale === "ru" ? "ru" : "en"}
-          />
+          <ProfileForm name={user.name} locale={uiLocale} />
         )}
       </Card>
 
@@ -80,6 +80,9 @@ export default async function AccountPage() {
           <WalletLink wallets={wallets} />
         )}
       </Card>
+      <div className="sm:hidden">
+        <SignOutButton variant="secondary" size="md" />
+      </div>
     </div>
   );
 }

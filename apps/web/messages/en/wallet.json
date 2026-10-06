@@ -13,7 +13,7 @@
   },
   "dialog": {
     "title": "Connect a Solana wallet",
-    "lead": "Choose the wallet that holds your bonds. Connecting only shares your public address — no transaction, no fee.",
+    "lead": "Choose the wallet that holds your bonds. Connecting only shares your public address — no transaction, no fee.",
     "noneTitle": "No Solana wallet in this browser",
     "noneLead": "A wallet is your account on Solana: bonds and coupon payments arrive there, and you sign subscriptions and votes with it.",
     "installed": "Wallets in this browser",
@@ -24,7 +24,7 @@
     "install": "Install a wallet",
     "other": "Other popular wallets",
     "why": {
-      "own": "You alone hold the keys — Qupon never sees them.",
+      "own": "You alone hold the keys — Qupon never sees them.",
       "paid": "Coupons and redemptions are paid straight to it.",
       "sign": "You sign subscriptions and bondholder votes."
     },
@@ -41,7 +41,7 @@
     "devnetHint": "Qupon runs on Solana devnet: switch your wallet to Devnet (Phantom: Settings → Developer settings → Testnet mode).",
     "errors": {
       "rejected": "The connection was cancelled in the wallet. Try again when you are ready.",
-      "notReady": "This wallet is not ready — unlock it or reload the page.",
+      "notReady": "This wallet is not ready — unlock it or reload the page.",
       "timeout": "The wallet did not answer in time. Open it and try again.",
       "generic": "The wallet could not connect. Try again or pick another one."
     }

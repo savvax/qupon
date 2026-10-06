@@ -63,7 +63,7 @@ export default async function IssuerSeriesList() {
       header: tb("colCoupon"),
       align: "right",
       render: (s) => (
-        <span className="num">{bpsToPercent(s.couponRateBps)}</span>
+        <span className="num">{bpsToPercent(s.couponRateBps, locale)}</span>
       ),
     },
     {

@@ -33,7 +33,7 @@ export async function Hero({ live }: { live: Live }) {
             <p className="mt-5 max-w-xl text-base text-p100 sm:text-lg">
               <StableText>{t("hero.lead")}</StableText>
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-col gap-3 min-[480px]:flex-row">
               <Button asChild variant="primaryOnDark" size="lg">
                 <Link href="/login">
                   {t("hero.cta")} <span aria-hidden>→</span>

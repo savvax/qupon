@@ -88,6 +88,7 @@ export function WalletButton({
           )}
         >
           <StableLabel
+            align="start"
             template={only ? t.raw("connectNamed") : undefined}
             values={only ? { name: only.name } : undefined}
           >

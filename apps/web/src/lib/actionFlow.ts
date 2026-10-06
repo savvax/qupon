@@ -10,7 +10,8 @@ import type { ActionDTO, ActivityLike } from "./api";
 export type TimelineStep = {
   label: string;
   state: "done" | "current" | "pending" | "failed";
-  detail?: string;
+  /** Extra detail under a timeline row: a `steps.detail.*` message key with its values. */
+  detail?: StepDetail;
   /** tx signature of the step, when it executed on-chain */
   signature?: string | null;
   /** when the step happened (ISO 8601 with +05:00), shown in Almaty time */
@@ -171,21 +172,30 @@ function stepDone(step: StepId, a: ActionDTO, seriesClosed: boolean): boolean {
   return DONE_STATUSES[step].includes(a.status);
 }
 
-/** Extra human detail under a timeline row. */
-function stepDetail(step: StepId, a: ActionDTO): string | undefined {
+export type StepDetail = {
+  key: "snapshotted" | "paid" | "retired" | "voted";
+  values: Record<string, number | string>;
+};
+
+/** Extra human detail under a timeline row (translated by the page: steps.detail.<key>). */
+function stepDetail(step: StepId, a: ActionDTO): StepDetail | undefined {
   const hs = a.holdersSnapshotted ?? 0;
   switch (step) {
     case "snapshot":
       return a.status === "RecordStruck"
-        ? `${hs} holder${hs === 1 ? "" : "s"} snapshotted`
+        ? { key: "snapshotted", values: { count: hs } }
         : undefined;
     case "pay": {
       const paid = a.holdersPaid ?? 0;
-      return hs > 0 ? `${paid}/${hs} holders paid` : undefined;
+      return hs > 0
+        ? { key: "paid", values: { done: paid, count: hs } }
+        : undefined;
     }
     case "retire": {
       const r = a.holdersRetired ?? 0;
-      return hs > 0 ? `${r}/${hs} holders retired` : undefined;
+      return hs > 0
+        ? { key: "retired", values: { done: r, count: hs } }
+        : undefined;
     }
     case "votes": {
       const voted =
@@ -194,7 +204,10 @@ function stepDetail(step: StepId, a: ActionDTO): string | undefined {
         BigInt(a.votesAbstain ?? "0");
       const total = BigInt(a.unitsSnapshotted ?? "0");
       if (a.status !== "VotingOpen" || total === 0n) return undefined;
-      return `${voted}/${total} units voted`;
+      return {
+        key: "voted",
+        values: { done: voted.toString(), count: total.toString() },
+      };
     }
     default:
       return undefined;

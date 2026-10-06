@@ -2,10 +2,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { cx } from "@/lib/ui/cx";
 import { activeHref } from "@/lib/ui/nav";
 import { StableLabel } from "@/components/i18n/StableLabel";
+import { Drawer } from "@/components/ui/Dialog";
+import { Icon } from "./icons";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { Logo } from "./Logo";
 import { SignOutButton } from "./SignOutButton";
@@ -37,6 +39,7 @@ export function CabinetShell({
 }) {
   const t = useTranslations("cabinet");
   const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = useState(false);
   const active = activeHref(
     pathname,
     nav.map((n) => n.href),
@@ -102,35 +105,88 @@ export function CabinetShell({
                   </StableLabel>
                 </div>
               </Link>
-              <SignOutButton />
+              {/* Below lg the name block is hidden: an account button keeps /account one tap away. */}
+              <Link
+                href="/account"
+                aria-label={t("account")}
+                className="grid size-9 shrink-0 place-items-center rounded-btn text-n700 transition-colors hover:bg-n100 lg:hidden"
+              >
+                <Icon name="user" className="size-5" />
+              </Link>
+              <span className="hidden sm:contents">
+                <SignOutButton />
+              </span>
             </>
           )}
         </header>
-        <main className="p-4 pb-24 sm:p-8 md:pb-8">{children}</main>
+        <main className="overflow-x-clip p-4 pb-24 sm:p-8 md:pb-8">
+          {children}
+        </main>
       </div>
 
+      {/* Phones: up to five tabs; with more sections the fifth is "More", a sheet with the rest (spec §5.8). */}
       <nav
         aria-label={t("nav")}
-        className="fixed inset-x-0 bottom-0 z-30 grid h-16 border-t border-n200 bg-n0 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid h-16 border-t border-n200 bg-n0/95 backdrop-blur md:hidden"
         style={{
           gridTemplateColumns: `repeat(${Math.min(nav.length, 5)}, minmax(0, 1fr))`,
         }}
       >
-        {nav.slice(0, 5).map((n) => (
+        {(nav.length > 5 ? nav.slice(0, 4) : nav).map((n) => (
           <Link
             key={n.href}
             href={n.href}
             aria-current={n.href === active ? "page" : undefined}
             className={cx(
-              "flex flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-semibold",
+              "flex flex-col items-center justify-center gap-0.5 px-1 text-center text-[11px] leading-tight font-semibold transition-colors",
               n.href === active ? "text-g700" : "text-n600",
             )}
           >
             {n.icon}
-            <span className="max-w-full truncate">{n.label}</span>
+            <span className="line-clamp-2 max-w-full">{n.label}</span>
           </Link>
         ))}
+        {nav.length > 5 && (
+          <button
+            type="button"
+            onClick={() => setMoreOpen(true)}
+            aria-haspopup="dialog"
+            className={cx(
+              "flex flex-col items-center justify-center gap-0.5 px-1 text-[11px] leading-tight font-semibold",
+              nav.slice(4).some((n) => n.href === active)
+                ? "text-g700"
+                : "text-n600",
+            )}
+          >
+            <Icon name="menu" />
+            <span>{t("more")}</span>
+          </button>
+        )}
       </nav>
+      {nav.length > 5 && (
+        <Drawer open={moreOpen} onOpenChange={setMoreOpen} title={t("more")}>
+          <ul className="grid gap-1">
+            {nav.slice(4).map((n) => (
+              <li key={n.href}>
+                <Link
+                  href={n.href}
+                  onClick={() => setMoreOpen(false)}
+                  aria-current={n.href === active ? "page" : undefined}
+                  className={cx(
+                    "flex items-center gap-3 rounded-btn px-3 py-3 text-base font-semibold transition-colors",
+                    n.href === active
+                      ? "bg-g50 text-g700"
+                      : "text-n800 hover:bg-n50",
+                  )}
+                >
+                  {n.icon}
+                  {n.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Drawer>
+      )}
     </div>
   );
 }

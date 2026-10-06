@@ -72,7 +72,7 @@ export default async function BondsPage() {
       header: t("colCoupon"),
       align: "right",
       render: (s) => (
-        <span className="num">{bpsToPercent(s.couponRateBps)}</span>
+        <span className="num">{bpsToPercent(s.couponRateBps, locale)}</span>
       ),
     },
     {

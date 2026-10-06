@@ -1,9 +1,9 @@
 {
   "admin": {
     "title": "Cash assets",
-    "lead": "Assets are identified by mint address — tickers can be faked. A new asset is verified on-chain and stays disabled until you enable it.",
+    "lead": "Assets are identified by mint address — tickers can be faked. A new asset is verified on-chain and stays disabled until you enable it.",
     "add": "Add asset",
-    "empty": "No assets yet — add the first mint address.",
+    "empty": "No assets yet — add the first mint address.",
     "table": {
       "symbol": "Ticker",
       "name": "Name",
@@ -27,7 +27,7 @@
     },
     "addDialog": {
       "title": "Add asset by mint address",
-      "lead": "Paste the mint address — Qupon reads the account on-chain and fills the verified fields.",
+      "lead": "Paste the mint address — Qupon reads the account on-chain and fills the verified fields.",
       "mint": "Mint address",
       "mintHint": "The token's on-chain address, not its ticker.",
       "mintError": "Enter a valid base58 Solana address",
@@ -38,7 +38,7 @@
       "mintAuthority": "Mint authority",
       "freezeAuthority": "Freeze authority",
       "symbol": "Ticker",
-      "symbolHint": "Display only — holders always see the mint address.",
+      "symbolHint": "Display only — holders always see the mint address.",
       "name": "Name",
       "kind": "Kind",
       "note": "Issuer note",

@@ -41,8 +41,8 @@ function Holding({ row, lastTx }: { row: SeriesRow; lastTx?: string }) {
         <div className={dl}>
           <dt className={k}>{t("coupon")}</dt>
           <dd>
-            {bpsToPercent(row.series.couponRateBps)} ·{" "}
-            {frequencyLabel(row.series.frequency)}
+            {bpsToPercent(row.series.couponRateBps, locale)} ·{" "}
+            {frequencyLabel(row.series.frequency, locale)}
           </dd>
         </div>
         <div className={dl}>

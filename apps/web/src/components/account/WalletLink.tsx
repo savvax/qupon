@@ -4,7 +4,7 @@ import { StableText } from "@/components/i18n/StableLabel";
 import { getBase58Decoder } from "@solana/kit";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Address } from "@/components/ui/Address";
 import { Button } from "@/components/ui/Button";
@@ -24,6 +24,7 @@ export type LinkedWallet = {
  */
 export function WalletLink({ wallets }: { wallets: LinkedWallet[] }) {
   const t = useTranslations("account.wallets");
+  const locale = useLocale();
   const { publicKey, signMessage, connected, disconnect } = useWallet();
   const { connect } = useWalletUX();
   const router = useRouter();
@@ -82,11 +83,14 @@ export function WalletLink({ wallets }: { wallets: LinkedWallet[] }) {
               )}
               <span className="ml-auto text-xs text-n500">
                 {t("verifiedAt", {
-                  date: new Date(w.verifiedAt * 1000).toLocaleDateString(),
+                  date: new Date(w.verifiedAt * 1000).toLocaleDateString(
+                    locale,
+                  ),
                 })}
               </span>
               <Button
                 variant="ghost"
+                className="text-n600 hover:bg-err-bg hover:text-err-fg"
                 size="sm"
                 onClick={() => void unlink(w.address)}
               >

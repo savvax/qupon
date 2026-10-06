@@ -23,7 +23,7 @@
   },
   "wallets": {
     "title": "Wallets",
-    "lead": "Coupons and redemptions are paid to the wallet you register with the registrar. Link it here by signing a one-time message — no transaction, no fee.",
+    "lead": "Coupons and redemptions are paid to the wallet you register with the registrar. Link it here by signing a one-time message — no transaction, no fee.",
     "none": "No wallet linked yet.",
     "primary": "Primary",
     "verifiedAt": "Verified {date}",

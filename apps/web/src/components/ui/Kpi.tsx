@@ -12,8 +12,9 @@ export function Kpi({
   hint?: ReactNode;
 }) {
   return (
-    <div className="min-w-0 rounded-card border border-n200 bg-n0 px-5 py-4">
-      <div className="text-xs font-semibold text-n500">
+    <div className="flex h-full min-w-0 flex-col rounded-card border border-n200 bg-n0 px-5 py-4">
+      {/* Two label lines reserved: values line up across a row whatever the language (§5.8). */}
+      <div className="min-h-[2lh] text-xs font-semibold text-n500">
         {typeof label === "string" ? <StableText>{label}</StableText> : label}
       </div>
       <div className="num mt-1 truncate text-xl font-bold">

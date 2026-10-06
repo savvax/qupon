@@ -1,5 +1,5 @@
 import { metaTitle } from "@/lib/meta";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -21,6 +21,7 @@ export default async function RegistrarInvestors({
   searchParams: Promise<{ mint?: string }>;
 }) {
   const t = await getTranslations("registrar.investors");
+  const locale = (await getLocale()) === "ru" ? "ru" : "en";
   const { mint: wanted } = await searchParams;
   const series = (await listSeries().catch(() => null)) ?? [];
   const selected = series.find((s) => s.mint === wanted) ?? series[0];
@@ -59,7 +60,7 @@ export default async function RegistrarInvestors({
       header: t("tax"),
       hideBelow: "md",
       render: (r) =>
-        r.taxRateBps != null ? bpsToPercent(r.taxRateBps) : t("none"),
+        r.taxRateBps != null ? bpsToPercent(r.taxRateBps, locale) : t("none"),
     },
     {
       key: "kyc",

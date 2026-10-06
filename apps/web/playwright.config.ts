@@ -21,6 +21,8 @@ export default defineConfig({
   // Outside apps/web: failure artifacts must not wake next dev's watcher mid-run (routes 404).
   outputDir: "/tmp/qupon-e2e-results",
   timeout: 60_000,
+  // The UX audit (e2e/ux-audit.spec.ts, task 1106) only runs on request: `pnpm e2e --grep @audit`.
+  grepInvert: process.env.AUDIT ? undefined : /@audit/,
   workers: 1, // next dev compiles routes on demand — serial keeps a cold dev server reliable
   retries: process.env.CI ? 1 : 0,
   reporter: reporters,

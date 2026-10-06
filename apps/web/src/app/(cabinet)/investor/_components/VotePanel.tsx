@@ -8,7 +8,7 @@
 
 import { useWalletUX } from "@/components/wallet/WalletUX";
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { address } from "@solana/kit";
 import { Address } from "@/components/ui/Address";
@@ -57,14 +57,15 @@ function MeetingCard({
   onVote: (choice: VoteChoiceName) => void;
 }) {
   const t = useTranslations("investor.meetings");
+  const locale = useLocale() === "ru" ? "ru" : "en";
   const { row, action } = meeting;
   const mine = row.entitlements.find((e) => e.actionPda === action.pda);
   const proposal =
     action.proposalNewRateBps !== null &&
     action.proposalNewRateBps !== undefined
       ? t("proposalRate", {
-          from: bpsToPercent(row.series.couponRateBps),
-          to: bpsToPercent(action.proposalNewRateBps),
+          from: bpsToPercent(row.series.couponRateBps, locale),
+          to: bpsToPercent(action.proposalNewRateBps, locale),
         })
       : action.proposalNewMaturity
         ? t("proposalMaturity", { date: action.proposalNewMaturity })
@@ -110,23 +111,33 @@ function MeetingCard({
         <span className="mb-1.5 block text-xs font-semibold text-n500">
           {t("castYourVote")}
         </span>
+        {/* Three equal, neutral choices: none looks pre-selected; the confirm dialog carries the decision. */}
         <div
-          className="flex flex-wrap gap-2"
+          className="grid grid-cols-3 gap-2"
           role="group"
           aria-label={t("castYourVote")}
         >
           {CHOICES.map((c) => (
             <Button
               key={c}
-              variant={
-                c === "For"
-                  ? "primary"
-                  : c === "Against"
-                    ? "destructive"
-                    : "secondary"
-              }
+              variant="secondary"
+              block
               disabled={busy || voted !== null}
               onClick={() => onVote(c)}
+              iconLeft={
+                <span
+                  aria-hidden
+                  className={
+                    c === "For"
+                      ? "text-g600"
+                      : c === "Against"
+                        ? "text-err-fg"
+                        : "text-n500"
+                  }
+                >
+                  {c === "For" ? "✓" : c === "Against" ? "✕" : "○"}
+                </span>
+              }
             >
               {t(`choice.${c}`)}
             </Button>

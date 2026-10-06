@@ -210,7 +210,9 @@ export default async function IssuerSeriesPage({
         <Kpi
           label={tb("kpi.coupon")}
           value={
-            <span className="num">{bpsToPercent(series.couponRateBps)}</span>
+            <span className="num">
+              {bpsToPercent(series.couponRateBps, locale)}
+            </span>
           }
         />
         <Kpi

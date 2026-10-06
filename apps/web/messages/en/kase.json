@@ -7,20 +7,20 @@
     "fixation": "KASE fixation",
     "match": "Match",
     "mismatch": "Mismatch",
-    "stale": "cached — kase.kz unreachable, showing the last good data ({date})",
-    "noTicker": "No KASE ticker linked to this series — add one in Admin → Series.",
+    "stale": "cached — kase.kz unreachable, showing the last good data ({date})",
+    "noTicker": "No KASE ticker linked to this series — add one in Admin → Series.",
     "noPeriod": "This action has no coupon period to compare.",
     "noSchedule": "kase.kz has no coupon schedule row covering this period.",
-    "unavailable": "kase.kz is unavailable — try again later."
+    "unavailable": "kase.kz is unavailable — try again later."
   },
   "disclosure": {
     "title": "Disclosure package",
     "lead": "Notices RU/EN, seev.031 and one seev.036 per holder in one ZIP.",
     "download": "Download ZIP",
-    "submit": "Submit to KASE — SIMULATED",
+    "submit": "Submit to KASE — SIMULATED",
     "submitPending": "Submitting…",
     "submitted": "Submitted (audit row recorded)",
-    "note": "SIMULATED: submission records an audit row only — nothing is sent to kase.kz."
+    "note": "SIMULATED: submission records an audit row only — nothing is sent to kase.kz."
   },
   "import": {
     "title": "Import from KASE",

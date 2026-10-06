@@ -10,12 +10,12 @@ export type Step = {
 /** Lifecycle progress: done steps are green ticks, the current one is ringed, the rest muted. */
 export function Stepper({ steps }: { steps: Step[] }) {
   return (
-    <ol className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-n200 bg-n0 px-4 py-3 sm:px-6">
+    <ol className="flex items-center gap-x-3 overflow-x-auto rounded-card border border-n200 bg-n0 px-4 py-3 [scrollbar-width:thin] sm:px-6">
       {steps.map((s, i) => (
         <li
           key={s.key}
           className={cx(
-            "flex items-center gap-2 text-[13px] font-semibold",
+            "flex shrink-0 items-center gap-2 text-[13px] font-semibold whitespace-nowrap",
             s.state === "todo" && "text-n500",
           )}
         >

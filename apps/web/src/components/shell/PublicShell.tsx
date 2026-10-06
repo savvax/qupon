@@ -57,7 +57,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <LocaleSwitch />
             <WalletButton compact labelAt="xl" />
             <span className="hidden sm:block">
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="h-9">
                 <Link href="/login">{c("signIn")}</Link>
               </Button>
             </span>

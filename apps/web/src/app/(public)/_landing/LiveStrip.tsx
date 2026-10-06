@@ -16,7 +16,7 @@ export async function LiveStrip({ live }: { live: Live }) {
     "inline-flex shrink-0 items-center gap-2 rounded-full border border-n200 bg-n0 px-3.5 py-1.5 text-sm whitespace-nowrap text-n700";
   return (
     // One scrollable row (no wrapping): RU dates are longer and must not push the page down (spec §5.8).
-    <div className="mx-auto flex max-w-[1200px] [scrollbar-width:none] gap-2 overflow-x-auto px-4 pt-6 sm:px-6 [&::-webkit-scrollbar]:hidden">
+    <div className="mx-auto flex max-w-[1200px] [scrollbar-width:none] gap-2 overflow-x-auto px-4 pt-6 sm:px-6 [mask-image:linear-gradient(90deg,black_85%,transparent)] sm:[mask-image:none] [&::-webkit-scrollbar]:hidden">
       {live.active.map((s) => (
         <a
           key={s.mint}

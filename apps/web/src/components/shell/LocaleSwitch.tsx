@@ -21,7 +21,7 @@ export function LocaleSwitch() {
     <div
       role="group"
       aria-label="Language"
-      className="inline-flex h-8 items-center gap-0.5 rounded-btn border border-n300 bg-n0 p-0.5"
+      className="inline-flex h-9 items-center gap-0.5 rounded-btn border border-n300 bg-n0 p-0.5 sm:h-8"
     >
       {(["en", "ru"] as const).map((l) => (
         <button
@@ -31,7 +31,7 @@ export function LocaleSwitch() {
           aria-pressed={locale === l}
           disabled={pending}
           className={cx(
-            "h-7 rounded-sm px-2 text-xs font-bold uppercase",
+            "h-8 min-w-8 rounded-sm px-2 text-xs font-bold uppercase transition-colors sm:h-7",
             locale === l
               ? "bg-g600 text-white"
               : "text-n600 hover:bg-n50 hover:text-n900",

@@ -92,7 +92,7 @@ function Chooser() {
       <p className="mx-auto mt-2 max-w-md text-sm text-n600">
         <StableText>{t("body")}</StableText>
       </p>
-      <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+      <div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
         <Button size="lg" onClick={connect} loading={!!pending}>
           {only ? w("connectNamed", { name: only.name }) : t("connectWallet")}
         </Button>
@@ -143,7 +143,7 @@ function Chooser() {
           <button
             type="button"
             onClick={() => setWatchOpen(true)}
-            className="mx-auto flex items-center gap-2 text-sm font-semibold text-g700 hover:underline"
+            className="mx-auto flex items-center gap-2 rounded-btn px-3 py-2 text-sm font-semibold text-g700 transition-colors hover:bg-g50"
           >
             <Icon name="eye" className="size-4" />
             <StableLabel>{t("watchOpen")}</StableLabel>

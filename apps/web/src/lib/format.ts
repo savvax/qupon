@@ -26,20 +26,33 @@ export function formatDateTime(iso: string): string {
   return `${date} ${time}`;
 }
 
-/** 1000 bps → "10.00%" */
-export function bpsToPercent(bps: number): string {
-  return `${(bps / 100).toFixed(2)}%`;
+/** 1000 bps → "10.00%" (EN) / "10,00 %" (RU). */
+export function bpsToPercent(bps: number, locale: "en" | "ru" = "en"): string {
+  const n = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(bps / 100);
+  return locale === "ru" ? `${n}\u00a0%` : `${n}%`;
 }
 
-const FREQUENCIES: Record<number, string> = {
-  1: "annual",
-  2: "semi-annual",
-  4: "quarterly",
-  12: "monthly",
+const FREQUENCIES: Record<"en" | "ru", Record<number, string>> = {
+  en: { 1: "annual", 2: "semi-annual", 4: "quarterly", 12: "monthly" },
+  ru: {
+    1: "раз в год",
+    2: "раз в полгода",
+    4: "ежеквартально",
+    12: "ежемесячно",
+  },
 };
 
-export function frequencyLabel(frequency: number): string {
-  return FREQUENCIES[frequency] ?? `${frequency}×/yr`;
+export function frequencyLabel(
+  frequency: number,
+  locale: "en" | "ru" = "en",
+): string {
+  return (
+    FREQUENCIES[locale][frequency] ??
+    (locale === "ru" ? `${frequency} раз в год` : `${frequency}×/yr`)
+  );
 }
 
 /** Amount rendering is the API's `display` string — keep monospace. */

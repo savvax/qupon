@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { explorerHref, useNetwork } from "@/components/network/NetworkContext";
 
@@ -15,6 +16,7 @@ export function Address({
 }) {
   const [copied, setCopied] = useState(false);
   const network = useNetwork();
+  const t = useTranslations("common");
   const short =
     value.length > 12 ? `${value.slice(0, 4)}…${value.slice(-4)}` : value;
   return (
@@ -30,14 +32,14 @@ export function Address({
       </a>
       <button
         type="button"
-        aria-label={copied ? "Copied" : "Copy"}
+        aria-label={copied ? t("copied") : t("copy")}
         onClick={() => {
           void navigator.clipboard.writeText(value).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 1200);
           });
         }}
-        className="grid size-6 shrink-0 place-items-center rounded-sm text-xs text-n500 hover:bg-n100 hover:text-n900"
+        className="-m-1 grid size-8 shrink-0 place-items-center rounded-btn text-xs text-n500 transition-colors hover:bg-n100 hover:text-n900"
       >
         {copied ? "✓" : "⧉"}
       </button>

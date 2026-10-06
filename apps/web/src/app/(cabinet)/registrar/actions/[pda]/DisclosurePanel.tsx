@@ -1,7 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { disclosureZipUrl, postDisclosureSubmit } from "@/lib/api";
 import { useRunWrite } from "@/lib/useRunWrite";
@@ -41,9 +40,7 @@ export function DisclosurePanel({ pda }: { pda: string }) {
           {t("submit")}
         </Button>
       </div>
-      <div className="mt-3">
-        <Badge tone="neutral">{t("note")}</Badge>
-      </div>
+      <p className="mt-3 max-w-prose text-xs text-n500">{t("note")}</p>
     </section>
   );
 }

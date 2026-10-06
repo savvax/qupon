@@ -181,7 +181,7 @@ describe("buildTimeline", () => {
     );
     expect(steps.find((s) => s.label === "Pay holders")).toMatchObject({
       state: "current",
-      detail: "1/3 holders paid",
+      detail: { key: "paid", values: { done: 1, count: 3 } },
     });
   });
 });

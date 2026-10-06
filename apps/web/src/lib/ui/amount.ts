@@ -11,8 +11,13 @@ export function formatAmount(
   const sep = locale === "ru" ? " " : ",";
   const dot = locale === "ru" ? "," : ".";
   const whole = (abs / base).toString().replace(/\B(?=(\d{3})+(?!\d))/g, sep);
+  // Trailing zeros past the cents are noise (USDC: 1,000.000000 → 1,000.00); significant digits stay.
+  const digits =
+    decimals > 0
+      ? (abs % base).toString().padStart(decimals, "0").replace(/0+$/, "")
+      : "";
   const frac =
-    decimals > 0 ? dot + (abs % base).toString().padStart(decimals, "0") : "";
+    decimals > 0 ? dot + digits.padEnd(Math.min(2, decimals), "0") : "";
   return `${neg ? "-" : ""}${whole}${frac}`;
 }
 

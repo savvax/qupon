@@ -184,7 +184,7 @@ export default async function BondPage({
     [
       t("terms.rate"),
       <span key="rate" className="num">
-        {bpsToPercent(series.couponRateBps)}
+        {bpsToPercent(series.couponRateBps, locale)}
       </span>,
     ],
     [t("terms.frequency"), freq],
@@ -204,13 +204,13 @@ export default async function BondPage({
     [
       t("terms.quorum"),
       <span key="q" className="num">
-        {bpsToPercent(series.quorumBps)}
+        {bpsToPercent(series.quorumBps, locale)}
       </span>,
     ],
     [
       t("terms.approval"),
       <span key="a" className="num">
-        {bpsToPercent(series.approvalBps)}
+        {bpsToPercent(series.approvalBps, locale)}
       </span>,
     ],
     ...(series.issuer
@@ -258,7 +258,9 @@ export default async function BondPage({
           <Kpi
             label={t("kpi.coupon")}
             value={
-              <span className="num">{bpsToPercent(series.couponRateBps)}</span>
+              <span className="num">
+                {bpsToPercent(series.couponRateBps, locale)}
+              </span>
             }
             hint={freq}
           />

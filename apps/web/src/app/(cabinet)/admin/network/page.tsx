@@ -71,30 +71,36 @@ export default async function AdminNetworkPage() {
           <p className="mt-2 text-sm text-err-fg">{t("unavailable")}</p>
         ) : (
           <ul className="mt-4 divide-y divide-n100">
-            {r.checks.map((c) => (
-              <li
-                key={c.key}
-                data-check={c.key}
-                data-ok={c.ok}
-                className="flex flex-wrap items-center gap-3 py-2.5"
-              >
-                <span
-                  aria-hidden
-                  className={cx(
-                    "grid size-5 place-items-center rounded-full text-[11px] font-bold text-white",
-                    c.ok ? "bg-g600" : "bg-err-fg",
-                  )}
+            {r.checks.map((c) => {
+              // "Demo sign-in off on mainnet" only applies to mainnet: on devnet it is neither passed nor failed.
+              const na = c.key === "demo_login" && !r.mainnet;
+              return (
+                <li
+                  key={c.key}
+                  data-check={c.key}
+                  data-ok={c.ok}
+                  className="flex flex-wrap items-center gap-3 py-2.5"
                 >
-                  {c.ok ? "✓" : "!"}
-                </span>
-                <span className="font-semibold">{t(`checks.${c.key}`)}</span>
-                {c.detail && (
-                  <span className="ml-auto min-w-0 truncate text-sm text-n500">
-                    {c.detail}
+                  <span
+                    aria-hidden
+                    className={cx(
+                      "grid size-5 place-items-center rounded-full text-[11px] font-bold text-white",
+                      na ? "bg-n300" : c.ok ? "bg-g600" : "bg-err-fg",
+                    )}
+                  >
+                    {na ? "–" : c.ok ? "✓" : "!"}
                   </span>
-                )}
-              </li>
-            ))}
+                  <span className={cx("font-semibold", na && "text-n500")}>
+                    {t(`checks.${c.key}`)}
+                  </span>
+                  {(na || c.detail) && (
+                    <span className="ml-auto min-w-0 truncate text-sm text-n500">
+                      {na ? t("notApplicable") : c.detail}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </Card>
@@ -104,7 +110,23 @@ export default async function AdminNetworkPage() {
         <p className="mt-1 text-sm text-n600">{t("mainnetLead")}</p>
         <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm">
           {MAINNET_STEPS.map((k) => (
-            <li key={k}>{t(`steps.${k}`)}</li>
+            <li key={k}>
+              {t(`steps.${k}`)
+                .split("`")
+                .map((part, i) =>
+                  i % 2 ? (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static split of one message
+                    <code
+                      key={i}
+                      className="rounded bg-n100 px-1 font-mono text-[0.9em]"
+                    >
+                      {part}
+                    </code>
+                  ) : (
+                    part
+                  ),
+                )}
+            </li>
           ))}
         </ol>
         <p className="mt-4 rounded-card bg-n50 p-3 font-mono text-xs">

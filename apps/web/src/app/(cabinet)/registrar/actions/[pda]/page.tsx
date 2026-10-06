@@ -204,7 +204,7 @@ export default async function RegistrarActionPage({
         {formatDate(`${action.periodStart}T00:00:00+05:00`)} –{" "}
         {formatDate(`${action.periodEnd}T00:00:00+05:00`)} ·{" "}
         {t("facts.days", { n: action.accrualDays ?? 0 })}
-        {action.rateBps != null && ` · ${bpsToPercent(action.rateBps)}`}
+        {action.rateBps != null && ` · ${bpsToPercent(action.rateBps, locale)}`}
       </span>,
     ]);
   if (action.snapshotSlot != null)
@@ -417,9 +417,9 @@ export default async function RegistrarActionPage({
               label={t("kpi.proposal")}
               value={
                 <span className="num">
-                  {series ? bpsToPercent(series.couponRateBps) : "—"} →{" "}
+                  {series ? bpsToPercent(series.couponRateBps, locale) : "—"} →{" "}
                   {action.proposalNewRateBps != null
-                    ? bpsToPercent(action.proposalNewRateBps)
+                    ? bpsToPercent(action.proposalNewRateBps, locale)
                     : "—"}
                 </span>
               }
@@ -532,7 +532,11 @@ export default async function RegistrarActionPage({
                       {s.at && (
                         <span className="num">{formatDateTime(s.at)}</span>
                       )}
-                      {s.detail && <span>{s.detail}</span>}
+                      {s.detail && (
+                        <span>
+                          {tstep(`detail.${s.detail.key}`, s.detail.values)}
+                        </span>
+                      )}
                       {s.signature && <Address value={s.signature} kind="tx" />}
                     </div>
                   </div>
@@ -596,12 +600,12 @@ export default async function RegistrarActionPage({
               <p className="text-sm text-n700">
                 {t("meeting.proposal")}{" "}
                 <span className="num font-semibold">
-                  {series ? bpsToPercent(series.couponRateBps) : "—"}
+                  {series ? bpsToPercent(series.couponRateBps, locale) : "—"}
                 </span>{" "}
                 →{" "}
                 <span className="num font-semibold text-g700">
                   {action.proposalNewRateBps != null
-                    ? bpsToPercent(action.proposalNewRateBps)
+                    ? bpsToPercent(action.proposalNewRateBps, locale)
                     : "—"}
                 </span>
               </p>

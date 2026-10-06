@@ -71,7 +71,7 @@ test("RU strings render on both pages", async ({ page, baseURL }) => {
     page.getByRole("heading", { name: "Обзор платформы" }),
   ).toBeVisible();
   await expect(page.getByText("Заявки на KYC")).toBeVisible();
-  await expect(page.getByText(/проверка — SIMULATED/)).toBeVisible();
+  await expect(page.getByText(/проверка\s— SIMULATED/)).toBeVisible();
 
   await page.goto("/admin/system");
   await expect(
