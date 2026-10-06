@@ -82,15 +82,13 @@ test("RU strings render on the schedule check and disclosure cards", async ({
   baseURL,
 }) => {
   await signIn(page);
-  await page
-    .context()
-    .addCookies([
-      {
-        name: "NEXT_LOCALE",
-        value: "ru",
-        url: baseURL ?? "http://localhost:3000",
-      },
-    ]);
+  await page.context().addCookies([
+    {
+      name: "NEXT_LOCALE",
+      value: "ru",
+      url: baseURL ?? "http://localhost:3000",
+    },
+  ]);
   await page.goto(`/registrar/actions/${INTR}`);
   await expect(
     page.getByRole("heading", { name: "Сверка графика KASE" }),

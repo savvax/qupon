@@ -58,7 +58,7 @@ export async function KasePanel({
     <section
       data-testid="kase-panel"
       className="rounded-card border border-n200 bg-n0 p-5"
-      aria-label={t("title")}
+      aria-label={t("title", { ticker })}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-bold tracking-wide text-n600 uppercase">

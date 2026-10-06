@@ -22,9 +22,7 @@ test("wizard imports a KASE ticker and highlights schedule mismatches", async ({
 
   await page.getByLabel("KASE ticker").fill("TEBNb10");
   await page.getByRole("button", { name: "Import", exact: true }).click();
-  await expect(
-    page.getByText(/Imported TEBNb10 \(ForteBank\)/),
-  ).toBeVisible();
+  await expect(page.getByText(/Imported TEBNb10 \(ForteBank\)/)).toBeVisible();
 
   // Prefilled terms from the fixture: name, ISIN, 8 % semi-annual, dates.
   await expect(page.getByLabel("Series name")).toHaveValue("TEBNb10");
@@ -41,7 +39,9 @@ test("wizard imports a KASE ticker and highlights schedule mismatches", async ({
   await expect(
     page.getByRole("row", { name: /Mismatch/ }).first(),
   ).toBeVisible();
-  await expect(page.getByRole("row", { name: /Matches/ }).first()).toBeVisible();
+  await expect(
+    page.getByRole("row", { name: /Matches/ }).first(),
+  ).toBeVisible();
 });
 
 test("wizard import of an unknown ticker says so without breaking the form", async ({
@@ -66,13 +66,13 @@ test("bond page shows the KASE panel with source and quote time; RU renders", as
   await expect(panel.getByText("67.52%")).toBeVisible();
   await expect(panel.getByText(/Source: kase\.kz · fetched/)).toBeVisible();
   await expect(panel.getByText(/No recent trades/)).toBeVisible();
-  await expect(
-    panel.getByText(/securities of 48 titles/),
-  ).toBeVisible();
+  await expect(panel.getByText(/securities of 48 titles/)).toBeVisible();
 
-  await page.context().addCookies([
-    { name: "NEXT_LOCALE", value: "ru", url: new URL(page.url()).origin },
-  ]);
+  await page
+    .context()
+    .addCookies([
+      { name: "NEXT_LOCALE", value: "ru", url: new URL(page.url()).origin },
+    ]);
   await page.goto(`/bonds/${MINT_QPNB1}`);
   await expect(panel.getByText("Чистая цена")).toBeVisible();
   await expect(panel.getByText(/Источник: kase\.kz/)).toBeVisible();
