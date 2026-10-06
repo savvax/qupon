@@ -1,7 +1,7 @@
 ---
 id: 91102
 title: Notification bell badge pop when the unread count rises
-agent: glm
+agent: claude
 tier: T1
 depends_on: [805]
 verify: make verify
