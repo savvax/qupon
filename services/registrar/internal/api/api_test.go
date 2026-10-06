@@ -123,6 +123,10 @@ func TestCORSReadOnly(t *testing.T) {
 		if got := resp.Header.Get("Access-Control-Allow-Origin"); got != tc.want {
 			t.Errorf("%s %s allow-origin = %q, want %q", tc.method, tc.path, got, tc.want)
 		}
+		// Decided (task 9601): reads echo Origin but are never credentialed — keep it that way.
+		if got := resp.Header.Get("Access-Control-Allow-Credentials"); got != "" {
+			t.Errorf("%s %s sent Access-Control-Allow-Credentials %q", tc.method, tc.path, got)
+		}
 	}
 }
 

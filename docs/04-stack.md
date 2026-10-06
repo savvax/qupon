@@ -52,3 +52,4 @@
 - Next dev + Playwright: never run two dev servers on one `.next` (kill and wait for the port to free before `rm -rf .next`); a click can land before hydration and do nothing — retry with `toPass`, and make critical buttons work as plain forms (demo sign-in posts and redirects).
 - `executor.NextStep` must compare `units_snapshotted` with the mint supply (what `finalize_snapshot` checks); the program skips zero-balance holders, so counting registered investors loops forever.
 - SQLite cannot ALTER a CHECK constraint: migration 006 rebuilds `users` (copy → drop → rename); with foreign_keys on, the drop cascades to `sessions`, so everyone signs in again once after the upgrade.
+- CORS (decided, task 9601): public GET/HEAD reads echo the request Origin with `Vary: Origin` and never send `Access-Control-Allow-Credentials`; writes get no CORS headers. Scanners flag it — do not change `corsReadOnly` in feature tasks (it caused rebase conflicts across parallel branches).
