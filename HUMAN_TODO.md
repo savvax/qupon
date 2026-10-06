@@ -30,3 +30,4 @@ The human answers inline under the item. The planner pass folds answers into tas
 - [ ] 2026-10-06 06:46 (1001) rebase conflict on task/1001-kase-client-api (branch kept) — resolve by hand or let the lead/planner split; then delete blocked_reason.
 - [ ] 2026-10-06 06:46 (702) rebase conflict on task/702-system-health-api (branch kept) — resolve by hand or let the lead/planner split; then delete blocked_reason.
 - [ ] 2026-10-06 07:43 (704) rebase conflict on task/704-admin-series-audit-pages (branch kept) — resolve by hand or let the lead/planner split; then delete blocked_reason.
+- [ ] 2026-10-06 08:46 (1002) rebase conflict on task/1002-kase-ui (branch kept) — resolve by hand or let the lead/planner split; then delete blocked_reason.
