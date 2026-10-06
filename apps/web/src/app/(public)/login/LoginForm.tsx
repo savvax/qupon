@@ -1,4 +1,5 @@
 "use client";
+import { StableText } from "@/components/i18n/StableLabel";
 import { useTranslations } from "next-intl";
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
@@ -57,8 +58,12 @@ export function SignInCard({ next }: { next?: string }) {
       className="rounded-hero border border-n200 bg-n0 p-6 sm:p-8"
       noValidate
     >
-      <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
-      <p className="mt-1.5 text-sm text-n600">{t("lead")}</p>
+      <h1 className="text-2xl font-extrabold tracking-tight">
+        <StableText>{t("title")}</StableText>
+      </h1>
+      <p className="mt-1.5 text-sm text-n600">
+        <StableText>{t("lead")}</StableText>
+      </p>
       <div className="mt-6 space-y-4">
         <TextField
           label={t("email")}
@@ -88,7 +93,9 @@ export function SignInCard({ next }: { next?: string }) {
       >
         {t("submit")}
       </Button>
-      <p className="mt-4 text-xs text-n500">{t("accountsNote")}</p>
+      <p className="mt-4 text-xs text-n500">
+        <StableText>{t("accountsNote")}</StableText>
+      </p>
     </form>
   );
 }
@@ -132,12 +139,14 @@ export function DemoPanel({ next }: { next?: string }) {
       <div className="relative">
         <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold ring-1 ring-white/15">
           <span className="size-1.5 rounded-full bg-g400" />
-          {t("badge")}
+          <StableText>{t("badge")}</StableText>
         </span>
         <h2 className="mt-4 text-2xl font-extrabold tracking-tight">
-          {t("title")}
+          <StableText>{t("title")}</StableText>
         </h2>
-        <p className="mt-1.5 text-sm text-p100">{t("lead")}</p>
+        <p className="mt-1.5 text-sm text-p100">
+          <StableText>{t("lead")}</StableText>
+        </p>
         {/* A plain form posts to the server before hydration (slow phones); once hydrated the click handler takes over. */}
         <form
           method="post"
@@ -160,9 +169,11 @@ export function DemoPanel({ next }: { next?: string }) {
               className="group flex items-center gap-4 rounded-card bg-n0 p-4 text-left text-n900 transition hover:bg-g50 disabled:opacity-70"
             >
               <span className="min-w-0 flex-1">
-                <span className="block font-bold">{t(`${d.role}.title`)}</span>
+                <span className="block font-bold">
+                  <StableText>{t(`${d.role}.title`)}</StableText>
+                </span>
                 <span className="mt-0.5 block text-sm text-n600">
-                  {t(`${d.role}.text`)}
+                  <StableText>{t(`${d.role}.text`)}</StableText>
                 </span>
               </span>
               <span
@@ -183,7 +194,9 @@ export function DemoPanel({ next }: { next?: string }) {
             {error}
           </p>
         )}
-        <p className="mt-5 text-xs text-p100/80">{t("note")}</p>
+        <p className="mt-5 text-xs text-p100/80">
+          <StableText>{t("note")}</StableText>
+        </p>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { explorerHref, useNetwork } from "@/components/network/NetworkContext";
+import { StableLabel } from "@/components/i18n/StableLabel";
 import { Icon } from "@/components/shell/icons";
 import { cx } from "@/lib/ui/cx";
 import { shortAddress } from "@/lib/wallets";
@@ -86,7 +87,12 @@ export function WalletButton({
                 : "sr-only sm:not-sr-only"),
           )}
         >
-          {label}
+          <StableLabel
+            template={only ? t.raw("connectNamed") : undefined}
+            values={only ? { name: only.name } : undefined}
+          >
+            {label}
+          </StableLabel>
         </span>
       </button>
     );

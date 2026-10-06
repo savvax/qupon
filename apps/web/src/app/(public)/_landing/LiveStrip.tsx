@@ -13,9 +13,10 @@ export async function LiveStrip({ live }: { live: Live }) {
     timeZone: "Asia/Almaty",
   });
   const chip =
-    "inline-flex items-center gap-2 rounded-full border border-n200 bg-n0 px-3.5 py-1.5 text-sm text-n700";
+    "inline-flex shrink-0 items-center gap-2 rounded-full border border-n200 bg-n0 px-3.5 py-1.5 text-sm whitespace-nowrap text-n700";
   return (
-    <div className="mx-auto flex max-w-[1200px] flex-wrap gap-2 px-4 pt-6 sm:px-6">
+    // One scrollable row (no wrapping): RU dates are longer and must not push the page down (spec §5.8).
+    <div className="mx-auto flex max-w-[1200px] [scrollbar-width:none] gap-2 overflow-x-auto px-4 pt-6 sm:px-6 [&::-webkit-scrollbar]:hidden">
       {live.active.map((s) => (
         <a
           key={s.mint}

@@ -4,6 +4,9 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 import "./globals.css";
 import Providers from "@/components/Providers";
+import { AltLabelsProvider } from "@/components/i18n/StableLabel";
+import { altLabelMap } from "@/i18n/altLabels";
+import { type Locale, loadMessages } from "@/i18n/request";
 import { getNetwork } from "@/lib/network";
 
 const manrope = Manrope({
@@ -42,13 +45,20 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const locale = await getLocale();
+  const locale = (await getLocale()) as Locale;
   const network = await getNetwork();
+  // Controls reserve the width of the longer EN/RU label (spec §5.8): ship the other locale's short labels.
+  const altLabels = altLabelMap(
+    await loadMessages(locale),
+    await loadMessages(locale === "ru" ? "en" : "ru"),
+  );
   return (
     <html lang={locale} className={manrope.variable}>
       <body className="min-h-screen font-sans">
         <NextIntlClientProvider>
-          <Providers network={network}>{children}</Providers>
+          <AltLabelsProvider map={altLabels}>
+            <Providers network={network}>{children}</Providers>
+          </AltLabelsProvider>
         </NextIntlClientProvider>
       </body>
     </html>

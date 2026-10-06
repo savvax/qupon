@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { LocaleSwitch } from "./LocaleSwitch";
+import { StableLabel } from "@/components/i18n/StableLabel";
 import { WalletButton } from "@/components/wallet/WalletButton";
 import { NetworkBadge } from "./NetworkBadge";
 import { Logo } from "./Logo";
@@ -47,7 +48,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
                 href={l.href}
                 className="rounded-btn px-3 py-2 text-sm font-semibold whitespace-nowrap text-n700 transition-colors hover:bg-n100 hover:text-n900"
               >
-                {l.label}
+                <StableLabel>{l.label}</StableLabel>
               </Link>
             ))}
           </nav>

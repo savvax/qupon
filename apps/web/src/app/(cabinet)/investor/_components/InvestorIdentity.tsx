@@ -6,6 +6,7 @@
  * session uses the labelled demo custodial wallet; else a chooser card.
  */
 
+import { StableLabel, StableText } from "@/components/i18n/StableLabel";
 import {
   createContext,
   type FormEvent,
@@ -86,9 +87,11 @@ function Chooser() {
         <Icon name="wallet" className="size-7" />
       </span>
       <h1 className="mt-5 text-2xl font-extrabold tracking-tight">
-        {t("title")}
+        <StableText>{t("title")}</StableText>
       </h1>
-      <p className="mx-auto mt-2 max-w-md text-sm text-n600">{t("body")}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm text-n600">
+        <StableText>{t("body")}</StableText>
+      </p>
       <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
         <Button size="lg" onClick={connect} loading={!!pending}>
           {only ? w("connectNamed", { name: only.name }) : t("connectWallet")}
@@ -143,11 +146,13 @@ function Chooser() {
             className="mx-auto flex items-center gap-2 text-sm font-semibold text-g700 hover:underline"
           >
             <Icon name="eye" className="size-4" />
-            {t("watchOpen")}
+            <StableLabel>{t("watchOpen")}</StableLabel>
           </button>
         )}
       </div>
-      <p className="mt-5 text-xs text-n500">{t("note")}</p>
+      <p className="mt-5 text-xs text-n500">
+        <StableText>{t("note")}</StableText>
+      </p>
     </Card>
   );
 }
@@ -177,13 +182,15 @@ export function InvestorIdentity({
     <Ctx.Provider value={id}>
       <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 className="text-2xl font-extrabold tracking-tight">
-          {t(
-            id.mode === "wallet"
-              ? "wallet"
-              : id.mode === "watch"
-                ? "watchWallet"
-                : "demoWallet",
-          )}
+          <StableText>
+            {t(
+              id.mode === "wallet"
+                ? "wallet"
+                : id.mode === "watch"
+                  ? "watchWallet"
+                  : "demoWallet",
+            )}
+          </StableText>
         </h1>
         {id.mode === "demo" && <Badge tone="warn">{t("demoBadge")}</Badge>}
         {id.mode === "watch" && <Badge tone="warn">{t("watchBadge")}</Badge>}

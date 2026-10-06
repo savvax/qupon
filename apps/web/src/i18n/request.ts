@@ -15,9 +15,8 @@ export const NAMESPACES = [
   "network",
   "wallet",
 ] as const;
-export default getRequestConfig(async () => {
-  const c = (await cookies()).get("NEXT_LOCALE")?.value;
-  const locale: Locale = c === "ru" ? "ru" : "en";
+/** All messages of a locale: the base file plus every feature namespace file. */
+export async function loadMessages(locale: Locale) {
   const base = (await import(`../../messages/${locale}.json`)).default;
   const parts = await Promise.all(
     NAMESPACES.map(
@@ -28,5 +27,11 @@ export default getRequestConfig(async () => {
         ] as const,
     ),
   );
-  return { locale, messages: { ...base, ...Object.fromEntries(parts) } };
+  return { ...base, ...Object.fromEntries(parts) } as Record<string, unknown>;
+}
+
+export default getRequestConfig(async () => {
+  const c = (await cookies()).get("NEXT_LOCALE")?.value;
+  const locale: Locale = c === "ru" ? "ru" : "en";
+  return { locale, messages: await loadMessages(locale) };
 });

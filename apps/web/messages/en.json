@@ -817,7 +817,7 @@
       "detectedMany": "{count} Solana wallets found in this browser — you'll choose one.",
       "detectedOne": "{name} found in this browser.",
       "detectedNone": "No Solana wallet found in this browser — we'll show how to get one.",
-      "watchOpen": "View a wallet by address (read-only)",
+      "watchOpen": "View by address (read-only)",
       "watchLabel": "Solana address",
       "watchHint": "See holdings, payouts and meetings without connecting. Signing needs a wallet.",
       "watchGo": "View"

@@ -80,73 +80,78 @@ export function HeroLifecycle({
   const status = STEPS[step] ?? "Completed";
 
   return (
-    <div
-      ref={ref}
-      className="rounded-card bg-n0 p-5 text-n900 shadow-[0_24px_64px_-24px_rgba(0,0,0,.55)] sm:p-6 sm:animate-qp-hero-float"
-    >
-      <div className="truncate text-sm font-semibold text-n600">
-        {t("last.title")}
-      </div>
-      <div className="mt-3 flex h-7 items-center gap-2">
-        <span className="text-xl font-extrabold">{last.ticker}</span>
-        <span className="min-w-0 flex-1 truncate text-sm text-n500">
-          {last.kind} · {t(`kinds.${last.kind}`)}
-        </span>
-        <m.span
-          key={status}
-          initial={playing ? { opacity: 0, y: 4 } : false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          <Badge status={status} />
-        </m.span>
-      </div>
-      <div className="mt-5 text-xs font-semibold text-n500">
-        {t("last.total")}
-      </div>
-      <Amount
-        minor={shown}
-        currency={last.currency}
-        locale={locale}
-        className="block h-9 text-3xl font-extrabold"
-      />
-      <div className="mt-1 h-5 truncate text-sm text-n600">
-        {t("last.holders", { count: holders })}
-      </div>
-      <div className="mt-5 flex gap-1" aria-hidden>
-        {STEPS.map((s, i) => {
-          const filled = i < step || step === DONE;
-          const current = i === step && step !== DONE;
-          return (
-            <span
-              key={s}
-              className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-n100"
-            >
-              <span
-                className={cx(
-                  "absolute inset-0 origin-left rounded-full bg-g500",
-                  current && "animate-qp-segment",
-                )}
-                style={{
-                  scale: filled || current ? undefined : "0 1",
-                  animationDuration: current ? `${DURATION[i]}s` : undefined,
-                }}
-              />
+    // Float on the outer box, the iridescent 1.5 px rim (a turning conic gradient) on the inner one:
+    // two animations, two elements.
+    <div ref={ref} className="sm:animate-qp-hero-float">
+      <div className="qp-iris-rim rounded-[calc(var(--radius-card)+1.5px)] p-[1.5px] shadow-[0_24px_64px_-24px_rgba(0,0,0,.55)]">
+        <div className="rounded-card bg-n0 p-5 text-n900 sm:p-6">
+          <div className="truncate text-sm font-semibold text-n600">
+            {t("last.title")}
+          </div>
+          <div className="mt-3 flex h-7 items-center gap-2">
+            <span className="text-xl font-extrabold">{last.ticker}</span>
+            <span className="min-w-0 flex-1 truncate text-sm text-n500">
+              {last.kind} · {t(`kinds.${last.kind}`)}
             </span>
-          );
-        })}
-      </div>
-      <div className="mt-2 flex h-5 items-center justify-between gap-2 text-xs text-n500">
-        <span className="truncate" aria-live="off">
-          {step === DONE
-            ? t("last.steps")
-            : t("last.stepOf", { n: step + 1, total: STEPS.length })}
-        </span>
-        {last.sig ? (
-          <Address value={last.sig} kind="tx" />
-        ) : (
-          <span className="truncate">{t("last.example")}</span>
-        )}
+            <m.span
+              key={status}
+              initial={playing ? { opacity: 0, y: 4 } : false}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <Badge status={status} />
+            </m.span>
+          </div>
+          <div className="mt-5 text-xs font-semibold text-n500">
+            {t("last.total")}
+          </div>
+          <Amount
+            minor={shown}
+            currency={last.currency}
+            locale={locale}
+            className="block h-9 text-3xl font-extrabold"
+          />
+          <div className="mt-1 h-5 truncate text-sm text-n600">
+            {t("last.holders", { count: holders })}
+          </div>
+          <div className="mt-5 flex gap-1" aria-hidden>
+            {STEPS.map((s, i) => {
+              const filled = i < step || step === DONE;
+              const current = i === step && step !== DONE;
+              return (
+                <span
+                  key={s}
+                  className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-n100"
+                >
+                  <span
+                    className={cx(
+                      "absolute inset-0 origin-left rounded-full bg-g500",
+                      current && "animate-qp-segment",
+                    )}
+                    style={{
+                      scale: filled || current ? undefined : "0 1",
+                      animationDuration: current
+                        ? `${DURATION[i]}s`
+                        : undefined,
+                    }}
+                  />
+                </span>
+              );
+            })}
+          </div>
+          <div className="mt-2 flex h-5 items-center justify-between gap-2 text-xs text-n500">
+            <span className="truncate" aria-live="off">
+              {step === DONE
+                ? t("last.steps")
+                : t("last.stepOf", { n: step + 1, total: STEPS.length })}
+            </span>
+            {last.sig ? (
+              <Address value={last.sig} kind="tx" />
+            ) : (
+              <span className="truncate">{t("last.example")}</span>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

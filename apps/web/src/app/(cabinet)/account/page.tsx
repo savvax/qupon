@@ -1,3 +1,4 @@
+import { StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { PasswordForm, ProfileForm } from "@/components/account/ProfileForms";
@@ -28,16 +29,22 @@ export default async function AccountPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <header>
-        <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
+        <h1 className="text-2xl font-extrabold tracking-tight">
+          <StableText>{t("title")}</StableText>
+        </h1>
         <p className="mt-1 text-sm text-n600">
           {user.name} · {user.email} · {c(`roles.${user.role}`)}
         </p>
       </header>
 
       <Card>
-        <h2 className="mb-4 text-lg font-bold">{t("profile.title")}</h2>
+        <h2 className="mb-4 text-lg font-bold">
+          <StableText>{t("profile.title")}</StableText>
+        </h2>
         {user.isDemo ? (
-          <p className="text-sm text-n600">{t("profile.demo")}</p>
+          <p className="text-sm text-n600">
+            <StableText>{t("profile.demo")}</StableText>
+          </p>
         ) : (
           <ProfileForm
             name={user.name}
@@ -48,14 +55,20 @@ export default async function AccountPage() {
 
       {!user.isDemo && (
         <Card>
-          <h2 className="mb-4 text-lg font-bold">{t("password.title")}</h2>
+          <h2 className="mb-4 text-lg font-bold">
+            <StableText>{t("password.title")}</StableText>
+          </h2>
           <PasswordForm />
         </Card>
       )}
 
       <Card>
-        <h2 className="text-lg font-bold">{t("wallets.title")}</h2>
-        <p className="mt-1 mb-4 text-sm text-n600">{t("wallets.lead")}</p>
+        <h2 className="text-lg font-bold">
+          <StableText>{t("wallets.title")}</StableText>
+        </h2>
+        <p className="mt-1 mb-4 text-sm text-n600">
+          <StableText>{t("wallets.lead")}</StableText>
+        </p>
         {user.isDemo ? (
           <p className="rounded-card bg-warn-bg p-4 text-sm text-warn-fg">
             {t("wallets.demo")}{" "}

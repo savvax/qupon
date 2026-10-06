@@ -1,5 +1,6 @@
 "use client";
 
+import { StableLabel } from "@/components/i18n/StableLabel";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import type { ReactNode } from "react";
 
@@ -23,7 +24,7 @@ export function Tabs({ items, defaultValue }: TabsProps) {
             value={t.value}
             className="h-8 rounded-sm px-3 text-sm font-semibold text-n600 transition-colors data-[state=active]:bg-n0 data-[state=active]:text-n900 data-[state=active]:shadow-sm"
           >
-            {t.label}
+            <StableLabel>{t.label}</StableLabel>
           </TabsPrimitive.Trigger>
         ))}
       </TabsPrimitive.List>

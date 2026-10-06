@@ -1,3 +1,4 @@
+import { StableText } from "@/components/i18n/StableLabel";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Amount } from "@/components/ui/Amount";
 import { Card } from "@/components/ui/Card";
@@ -63,8 +64,12 @@ export default async function RegistrarDashboard() {
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
-        <p className="mt-1 text-sm text-n600">{t("lead")}</p>
+        <h1 className="text-2xl font-extrabold tracking-tight">
+          <StableText>{t("title")}</StableText>
+        </h1>
+        <p className="mt-1 text-sm text-n600">
+          <StableText>{t("lead")}</StableText>
+        </p>
       </header>
 
       {series === null ? (

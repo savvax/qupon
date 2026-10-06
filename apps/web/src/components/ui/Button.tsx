@@ -1,7 +1,15 @@
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import {
+  type ButtonHTMLAttributes,
+  type ReactElement,
+  type ReactNode,
+  cloneElement,
+  forwardRef,
+  isValidElement,
+} from "react";
+import { stabilize } from "@/components/i18n/StableLabel";
 import {
   buttonClasses,
   type ButtonSize,
@@ -39,10 +47,19 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) {
     const classes = cx(buttonClasses({ variant, size, block }), className);
+    // Labels keep the width of their longer EN/RU version: switching language never moves a button (§5.8).
     if (asChild) {
+      const child = isValidElement<{ children?: ReactNode }>(children)
+        ? cloneElement(children as ReactElement<{ children?: ReactNode }>, {
+            children: stabilize(
+              (children as ReactElement<{ children?: ReactNode }>).props
+                .children,
+            ),
+          })
+        : children;
       return (
         <Slot ref={ref} className={classes} {...rest}>
-          {children}
+          {child}
         </Slot>
       );
     }
@@ -64,7 +81,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ) : (
           iconLeft
         )}
-        {children}
+        {stabilize(children)}
         {!loading && iconRight}
       </button>
     );

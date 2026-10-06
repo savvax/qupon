@@ -1,3 +1,4 @@
+import { StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Amount } from "@/components/ui/Amount";
@@ -98,9 +99,11 @@ export default async function BondsPage() {
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6 sm:py-12">
       <h1 className="text-[28px] font-bold leading-tight text-n900">
-        {t("title")}
+        <StableText>{t("title")}</StableText>
       </h1>
-      <p className="mt-2 max-w-2xl text-n600">{t("lead")}</p>
+      <p className="mt-2 max-w-2xl text-n600">
+        <StableText>{t("lead")}</StableText>
+      </p>
       <div className="mt-6">
         <Tabs
           defaultValue="active"

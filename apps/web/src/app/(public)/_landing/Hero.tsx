@@ -1,3 +1,4 @@
+import { StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/Button";
@@ -27,10 +28,10 @@ export async function Hero({ live }: { live: Live }) {
               {t("hero.badge")}
             </span>
             <h1 className="mt-5 text-[clamp(1.85rem,1.1rem+2.6vw,2.9rem)] leading-[1.08] font-extrabold tracking-tight text-balance">
-              {t("hero.title")}
+              <StableText>{t("hero.title")}</StableText>
             </h1>
             <p className="mt-5 max-w-xl text-base text-p100 sm:text-lg">
-              {t("hero.lead")}
+              <StableText>{t("hero.lead")}</StableText>
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild variant="primaryOnDark" size="lg">

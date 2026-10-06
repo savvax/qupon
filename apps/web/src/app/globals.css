@@ -91,6 +91,8 @@
   --animate-qp-aurora-c: qp-aurora-c 18s ease-in-out infinite alternate;
   --animate-qp-sweep: qp-sweep 9s cubic-bezier(0.45, 0, 0.55, 1) infinite;
   --animate-qp-segment: qp-segment 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-qp-iris-a: qp-spin 38s linear infinite;
+  --animate-qp-iris-b: qp-spin-reverse 26s linear infinite;
 
   @keyframes qp-fade-in {
     from {
@@ -177,6 +179,16 @@
       opacity: 0;
     }
   }
+  @keyframes qp-spin {
+    to {
+      rotate: 360deg;
+    }
+  }
+  @keyframes qp-spin-reverse {
+    to {
+      rotate: -360deg;
+    }
+  }
   @keyframes qp-segment {
     from {
       scale: 0 1;
@@ -203,5 +215,68 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Locale-stable labels (spec §5.8): the other language's text reserves its width invisibly in the same cell. */
+.stable-label {
+  display: inline-grid;
+  justify-items: center;
+  max-width: 100%;
+}
+.stable-label[data-align="start"] {
+  justify-items: start;
+}
+.stable-label[data-align="end"] {
+  justify-items: end;
+}
+.stable-label > span,
+.stable-label::after {
+  grid-area: 1 / 1;
+}
+.stable-label::after {
+  content: attr(data-alt);
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Locale-stable text blocks: the other language's text reserves its height (wraps at the same width). */
+.stable-text {
+  display: inline-grid;
+  max-width: 100%;
+}
+.stable-text > span,
+.stable-text::after {
+  grid-area: 1 / 1;
+}
+.stable-text::after {
+  content: attr(data-alt);
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Iridescent rim (hero card): a conic gradient whose start angle turns; @property makes the angle animatable. */
+@property --qp-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.qp-iris-rim {
+  background: conic-gradient(
+    from var(--qp-angle),
+    #16b46a,
+    #2ad2c9,
+    #1e6fd0,
+    #7be3a5,
+    #0b7a43,
+    #16b46a
+  );
+  animation: qp-rim 7s linear infinite;
+}
+@keyframes qp-rim {
+  to {
+    --qp-angle: 360deg;
   }
 }

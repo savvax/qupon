@@ -35,15 +35,17 @@ export default async function AdminOverviewPage() {
       boFetch<{ users: UserRow[] }>("admin/users").catch(() => null),
       boFetch<{ series: unknown[] }>("admin/series").catch(() => null),
       boFetch<SystemHealth>("admin/system").catch(() => null),
-      boFetch<{ applications: unknown[] }>("registrar/kyc?status=pending").catch(
-        () => null,
-      ),
+      boFetch<{ applications: unknown[] }>(
+        "registrar/kyc?status=pending",
+      ).catch(() => null),
       listSeries().catch(() => null),
     ]);
 
   const actions = publicSeries
     ? (
-        await Promise.all(publicSeries.map((s) => listActions(s.mint).catch(() => [])))
+        await Promise.all(
+          publicSeries.map((s) => listActions(s.mint).catch(() => [])),
+        )
       ).flat()
     : [];
   const openActions = actions.filter((a) => OPEN.has(a.status)).length;

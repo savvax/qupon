@@ -1,3 +1,4 @@
+import { StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
@@ -20,10 +21,10 @@ function Section({
   return (
     <section id={id} className={`${CONTAINER} scroll-mt-20 py-14 sm:py-20`}>
       <div className="text-sm font-bold tracking-wider text-g700 uppercase">
-        {eyebrow}
+        <StableText>{eyebrow}</StableText>
       </div>
       <h2 className="mt-2 max-w-3xl text-2xl font-extrabold tracking-tight text-balance sm:text-[2rem] sm:leading-tight">
-        {title}
+        <StableText>{title}</StableText>
       </h2>
       <div className="mt-8 sm:mt-10">{children}</div>
     </section>
@@ -42,8 +43,12 @@ export function HowItWorks() {
             <span className="flex size-8 items-center justify-center rounded-full bg-g600 text-sm font-bold text-white">
               {i + 1}
             </span>
-            <h3 className="mt-4 font-bold">{t(`${s}.title`)}</h3>
-            <p className="mt-1.5 text-sm text-n600">{t(`${s}.text`)}</p>
+            <h3 className="mt-4 font-bold">
+              <StableText>{t(`${s}.title`)}</StableText>
+            </h3>
+            <p className="mt-1.5 text-sm text-n600">
+              <StableText>{t(`${s}.text`)}</StableText>
+            </p>
           </li>
         ))}
       </ol>
@@ -70,8 +75,12 @@ export function Scenarios() {
               className="rounded-card border border-n200 bg-n50 p-5 sm:p-6"
             >
               <Badge tone={s.tone}>{s.code}</Badge>
-              <h3 className="mt-3 text-lg font-bold">{t(`${s.key}.title`)}</h3>
-              <p className="mt-1.5 text-sm text-n600">{t(`${s.key}.text`)}</p>
+              <h3 className="mt-3 text-lg font-bold">
+                <StableText>{t(`${s.key}.title`)}</StableText>
+              </h3>
+              <p className="mt-1.5 text-sm text-n600">
+                <StableText>{t(`${s.key}.text`)}</StableText>
+              </p>
             </div>
           ))}
         </div>
@@ -113,7 +122,7 @@ export function Audiences() {
           className="flex scroll-mt-20 flex-col rounded-hero border border-n200 bg-n0 p-6 sm:p-8"
         >
           <h2 className="text-2xl font-extrabold tracking-tight">
-            {t(`${a}.title`)}
+            <StableText>{t(`${a}.title`)}</StableText>
           </h2>
           <ul className="mt-5 flex-1 space-y-3">
             {(["b1", "b2", "b3"] as const).map((b) => (
@@ -159,12 +168,16 @@ export function ImplementedVsSimulated() {
             </div>
             <div className="text-sm text-n600">
               <Badge tone={r.tone}>{t(`rows.${r.key}.badge`)}</Badge>
-              <p className="mt-1.5">{t(`rows.${r.key}.text`)}</p>
+              <p className="mt-1.5">
+                <StableText>{t(`rows.${r.key}.text`)}</StableText>
+              </p>
             </div>
           </div>
         ))}
       </div>
-      <p className="mt-4 text-sm text-n500">{t("note")}</p>
+      <p className="mt-4 text-sm text-n500">
+        <StableText>{t("note")}</StableText>
+      </p>
     </Section>
   );
 }

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { cx } from "@/lib/ui/cx";
 import { activeHref } from "@/lib/ui/nav";
+import { StableLabel } from "@/components/i18n/StableLabel";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { Logo } from "./Logo";
 import { SignOutButton } from "./SignOutButton";
@@ -72,7 +73,7 @@ export function CabinetShell({
       </aside>
 
       <div className="md:pl-60">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-n200 bg-n0/95 px-4 backdrop-blur sm:px-8">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-2 sm:gap-3 border-b border-n200 bg-n0/95 px-4 backdrop-blur sm:px-8">
           <Link href="/" aria-label="Qupon" className="md:hidden">
             <Logo />
           </Link>
@@ -96,7 +97,9 @@ export function CabinetShell({
                   {user.name}
                 </div>
                 <div className="text-xs text-n500">
-                  {t(`roles.${user.role}`)}
+                  <StableLabel align="end">
+                    {t(`roles.${user.role}`)}
+                  </StableLabel>
                 </div>
               </Link>
               <SignOutButton />

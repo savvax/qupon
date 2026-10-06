@@ -1,4 +1,5 @@
 "use client";
+import { StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
@@ -132,13 +133,19 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
           ✓
         </div>
         <h2 className="mt-4 text-2xl font-extrabold tracking-tight">
-          {t("doneTitle", { name: created.series ?? f.name })}
+          <StableText>
+            {t("doneTitle", { name: created.series ?? f.name })}
+          </StableText>
         </h2>
-        <p className="mt-1 text-n600">{t("doneLead")}</p>
+        <p className="mt-1 text-n600">
+          <StableText>{t("doneLead")}</StableText>
+        </p>
         <dl className="mt-6 space-y-3 text-sm">
           {created.mint && (
             <div>
-              <dt className="text-xs font-semibold text-n500">{t("mint")}</dt>
+              <dt className="text-xs font-semibold text-n500">
+                <StableText>{t("mint")}</StableText>
+              </dt>
               <dd>
                 <Address value={created.mint} />
               </dd>
@@ -146,7 +153,7 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
           )}
           <div>
             <dt className="text-xs font-semibold text-n500">
-              {t("transactions")}
+              <StableText>{t("transactions")}</StableText>
             </dt>
             <dd className="flex flex-wrap gap-3">
               {created.signatures.map((s) => (
@@ -167,7 +174,9 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
             </Button>
           </div>
         )}
-        <p className="mt-4 text-xs text-n500">{t("nextHint")}</p>
+        <p className="mt-4 text-xs text-n500">
+          <StableText>{t("nextHint")}</StableText>
+        </p>
       </div>
     );
   }
@@ -271,7 +280,9 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
               error={err("maturityDate")}
             />
           </div>
-          <p className="mt-5 text-xs text-n500">{t("meetingDefaults")}</p>
+          <p className="mt-5 text-xs text-n500">
+            <StableText>{t("meetingDefaults")}</StableText>
+          </p>
           <div className="mt-6 flex justify-end">
             <Button type="submit">{t("next")}</Button>
           </div>
@@ -281,9 +292,13 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
       {step === 1 && (
         <div className="rounded-hero border border-n200 bg-n0 p-6 sm:p-8">
           <h2 className="text-lg font-bold">
-            {t("scheduleTitle", { count: rows.length })}
+            <StableText>
+              {t("scheduleTitle", { count: rows.length })}
+            </StableText>
           </h2>
-          <p className="mt-1 text-sm text-n600">{t("scheduleLead")}</p>
+          <p className="mt-1 text-sm text-n600">
+            <StableText>{t("scheduleLead")}</StableText>
+          </p>
           <div className="mt-5 overflow-hidden rounded-card border border-n200">
             <table className="w-full text-sm">
               <thead className="bg-n50 text-left text-[11px] font-bold tracking-[0.06em] text-n500 uppercase">
@@ -337,7 +352,9 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
 
       {step === 2 && faceMinor !== undefined && rateBps !== undefined && (
         <div className="rounded-hero border border-n200 bg-n0 p-6 sm:p-8">
-          <h2 className="text-lg font-bold">{t("reviewTitle")}</h2>
+          <h2 className="text-lg font-bold">
+            <StableText>{t("reviewTitle")}</StableText>
+          </h2>
           <dl className="mt-5 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
             {(
               [
@@ -372,7 +389,7 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
             ))}
           </dl>
           <p className="mt-6 rounded-btn bg-p50 px-4 py-3 text-sm text-p700">
-            {t("onchainNote")}
+            <StableText>{t("onchainNote")}</StableText>
           </p>
           <div className="mt-6 flex justify-between gap-3">
             <Button variant="ghost" onClick={() => setStep(1)} disabled={busy}>

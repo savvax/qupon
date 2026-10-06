@@ -1,5 +1,6 @@
 "use client";
 
+import { StableText } from "@/components/i18n/StableLabel";
 import { getBase58Decoder } from "@solana/kit";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/navigation";
@@ -100,7 +101,7 @@ export function WalletLink({ wallets }: { wallets: LinkedWallet[] }) {
         {!connected || !address ? (
           <>
             <p className="min-w-0 flex-1 text-sm text-n600">
-              {t("connectHint")}
+              <StableText>{t("connectHint")}</StableText>
             </p>
             <Button onClick={connect}>{t("connect")}</Button>
           </>
@@ -116,7 +117,7 @@ export function WalletLink({ wallets }: { wallets: LinkedWallet[] }) {
         ) : (
           <>
             <p className="min-w-0 flex-1 text-sm text-n600">
-              {t("signHint")} <Address value={address} />
+              <StableText>{t("signHint")}</StableText> <Address value={address} />
             </p>
             <Button
               onClick={() => void link()}
