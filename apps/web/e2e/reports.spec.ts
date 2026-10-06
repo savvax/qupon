@@ -69,9 +69,12 @@ test("investor: statement filters, tax year, CSV keeps the filters (brief number
   await page.waitForURL(/year=2028/);
   await expect(page.getByRole("table").nth(1)).toContainText("10,000.00");
 
-  // RU renders with natural translations.
+  // RU renders with natural translations: locale money groups and the translated status.
   await switchLocale(page, "ru", "Отчёты");
   await expect(page.getByRole("table").first()).toContainText("Начислено");
+  // RU money groups (U+202F) and the translated status; the 2028 redemption sits in the tax table/KPIs.
+  await expect(page.locator("body")).toContainText(/10\s000,00/);
+  await expect(page.getByRole("table").first()).toContainText("Выплачено");
   expect(await noOverflow(page)).toBeLessThanOrEqual(1);
   expect(errors).toEqual([]);
 });

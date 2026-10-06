@@ -1,6 +1,6 @@
 /** Exact decimal formatting from integer minor units (no float), grouped per locale. */
 export function formatAmount(
-  minor: string | bigint,
+  minor: string | bigint | number,
   decimals: number,
   locale: "en" | "ru",
 ): string {
@@ -19,6 +19,16 @@ export function formatAmount(
   const frac =
     decimals > 0 ? dot + digits.padEnd(Math.min(2, decimals), "0") : "";
   return `${neg ? "-" : ""}${whole}${frac}`;
+}
+
+/** "10,000.00" / "10000.5" (API major-unit string) → integer minor units for <Amount>. */
+export function majorToMinor(major: string, decimals: number): bigint {
+  const s = major.trim().replace(/,/g, "");
+  const neg = s.startsWith("-");
+  const [w = "0", f = ""] = s.replace("-", "").split(".");
+  const frac = (f + "0".repeat(decimals)).slice(0, decimals);
+  const n = BigInt(w || "0") * 10n ** BigInt(decimals) + BigInt(frac || "0");
+  return neg ? -n : n;
 }
 
 export const CURRENCY_SIGN: Record<string, string> = {

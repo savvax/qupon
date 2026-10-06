@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { Amount } from "@/components/ui/Amount";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatDate, formatDateTime } from "@/lib/format";
+import { majorToMinor } from "@/lib/ui/amount";
 import {
   csvHref,
   getHolders,
   getPayouts,
   getStatement,
   getTax,
-  majorMinor,
   type HoldersReport,
   type PayoutRow,
   type PayoutTotals,
@@ -225,7 +227,9 @@ export default async function PrintReportPage({
                       <td className="num px-1 py-1.5 text-right">
                         {h.taxBps / 100}%
                       </td>
-                      <td className="px-1 py-1.5">{h.status}</td>
+                      <td className="px-1 py-1.5">
+                        <Badge status={h.status} />
+                      </td>
                       <td className="num px-1 py-1.5">{short(h.kycRef)}</td>
                     </tr>
                   ))
@@ -243,21 +247,43 @@ export default async function PrintReportPage({
                       </td>
                       <td className="px-1 py-1.5">{p.kind}</td>
                       <td className="num px-1 py-1.5 text-right">{p.units}</td>
-                      <td className="num px-1 py-1.5 text-right">
-                        {majorMinor(p.gross, p.decimals)}
+                      <td className="px-1 py-1.5 text-right">
+                        <Amount
+                          minor={p.gross}
+                          currency={p.currency}
+                          decimals={p.decimals}
+                          locale={locale}
+                        />
                       </td>
-                      <td className="num px-1 py-1.5 text-right">
-                        {majorMinor(p.tax, p.decimals)}
+                      <td className="px-1 py-1.5 text-right">
+                        <Amount
+                          minor={p.tax}
+                          currency={p.currency}
+                          decimals={p.decimals}
+                          locale={locale}
+                        />
                       </td>
-                      <td className="num px-1 py-1.5 text-right">
-                        {majorMinor(p.net, p.decimals)}
+                      <td className="px-1 py-1.5 text-right">
+                        <Amount
+                          minor={p.net}
+                          currency={p.currency}
+                          decimals={p.decimals}
+                          locale={locale}
+                        />
                       </td>
                       {p.principal > 0 && (
-                        <td className="num px-1 py-1.5 text-right">
-                          {majorMinor(p.principal, p.decimals)}
+                        <td className="px-1 py-1.5 text-right">
+                          <Amount
+                            minor={p.principal}
+                            currency={p.currency}
+                            decimals={p.decimals}
+                            locale={locale}
+                          />
                         </td>
                       )}
-                      <td className="px-1 py-1.5">{p.status}</td>
+                      <td className="px-1 py-1.5">
+                        <Badge status={p.status} />
+                      </td>
                       <td className="num px-1 py-1.5">{short(p.action)}</td>
                     </tr>
                   ))}
@@ -273,20 +299,38 @@ export default async function PrintReportPage({
                       {t("totals.title")} ·{" "}
                       {t("totals.payouts", { n: x.payouts })}
                     </td>
-                    <td className="num px-1 py-1.5 text-right">
-                      {x.gross} {x.currency}
+                    <td className="px-1 py-1.5 text-right">
+                      <Amount
+                        minor={majorToMinor(x.gross, 2)}
+                        currency={x.currency}
+                        locale={locale}
+                      />
                     </td>
-                    <td className="num px-1 py-1.5 text-right">
-                      {x.tax} {x.currency}
+                    <td className="px-1 py-1.5 text-right">
+                      <Amount
+                        minor={majorToMinor(x.tax, 2)}
+                        currency={x.currency}
+                        locale={locale}
+                      />
                     </td>
-                    <td className="num px-1 py-1.5 text-right">
-                      {x.net} {x.currency}
+                    <td className="px-1 py-1.5 text-right">
+                      <Amount
+                        minor={majorToMinor(x.net, 2)}
+                        currency={x.currency}
+                        locale={locale}
+                      />
                     </td>
                     {payouts.some((p: PayoutRow) => p.principal > 0) && (
-                      <td className="num px-1 py-1.5 text-right">
-                        {Number(x.principal) > 0
-                          ? `${x.principal} ${x.currency}`
-                          : "—"}
+                      <td className="px-1 py-1.5 text-right">
+                        {Number(x.principal) > 0 ? (
+                          <Amount
+                            minor={majorToMinor(x.principal, 2)}
+                            currency={x.currency}
+                            locale={locale}
+                          />
+                        ) : (
+                          "—"
+                        )}
                       </td>
                     )}
                     <td colSpan={2} />

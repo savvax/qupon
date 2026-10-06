@@ -17,7 +17,7 @@ export function Kpi({
       <div className="min-h-[2lh] text-xs font-semibold text-n500">
         {typeof label === "string" ? <StableText>{label}</StableText> : label}
       </div>
-      <div className="num mt-1 truncate text-xl font-bold">
+      <div className="num mt-1 text-xl font-bold">
         {typeof value === "string" || typeof value === "number" ? (
           <CountUp value={String(value)} />
         ) : (

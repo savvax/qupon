@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { Amount } from "@/components/ui/Amount";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -6,11 +7,11 @@ import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Kpi } from "@/components/ui/Kpi";
 import { formatDate } from "@/lib/format";
+import { majorToMinor } from "@/lib/ui/amount";
 import {
   csvHref,
   getStatement,
   getTax,
-  majorMinor,
   printHref,
   type PayoutRow,
   type PayoutTotals,
@@ -46,10 +47,11 @@ export default async function InvestorReportsPage({
   const tax = user ? await getTax(year).catch(() => null) : null;
 
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
-  const [t, tc, tm] = await Promise.all([
+  const [t, tc, tm, tk] = await Promise.all([
     getTranslations("reports.investor"),
     getTranslations("reports.cols"),
     getTranslations("reports.totals"),
+    getTranslations("landing.kinds"),
   ]);
 
   const hasPrincipal = (ps: PayoutRow[]) => ps.some((p) => p.principal > 0);
@@ -74,7 +76,12 @@ export default async function InvestorReportsPage({
       key: "kind",
       header: tc("kind"),
       hideBelow: "md",
-      render: (p) => <Badge tone="neutral">{p.kind}</Badge>,
+      render: (p) => (
+        <span className="flex items-center gap-1.5">
+          <Badge tone="neutral">{p.kind}</Badge>
+          {tk.has(p.kind) ? tk(p.kind) : p.kind}
+        </span>
+      ),
     },
     {
       key: "units",
@@ -88,7 +95,12 @@ export default async function InvestorReportsPage({
       header: tc("gross"),
       align: "right",
       render: (p) => (
-        <span className="num">{majorMinor(p.gross, p.decimals)}</span>
+        <Amount
+          minor={p.gross}
+          currency={p.currency}
+          decimals={p.decimals}
+          locale={locale}
+        />
       ),
     },
     {
@@ -96,7 +108,12 @@ export default async function InvestorReportsPage({
       header: tc("tax"),
       align: "right",
       render: (p) => (
-        <span className="num">{majorMinor(p.tax, p.decimals)}</span>
+        <Amount
+          minor={p.tax}
+          currency={p.currency}
+          decimals={p.decimals}
+          locale={locale}
+        />
       ),
     },
     {
@@ -104,7 +121,12 @@ export default async function InvestorReportsPage({
       header: tc("net"),
       align: "right",
       render: (p) => (
-        <span className="num">{majorMinor(p.net, p.decimals)}</span>
+        <Amount
+          minor={p.net}
+          currency={p.currency}
+          decimals={p.decimals}
+          locale={locale}
+        />
       ),
     },
     ...(withPrincipal
@@ -114,7 +136,12 @@ export default async function InvestorReportsPage({
             header: tc("principal"),
             align: "right",
             render: (p) => (
-              <span className="num">{majorMinor(p.principal, p.decimals)}</span>
+              <Amount
+                minor={p.principal}
+                currency={p.currency}
+                decimals={p.decimals}
+                locale={locale}
+              />
             ),
           },
         ] as Column<PayoutRow>[])
@@ -122,7 +149,7 @@ export default async function InvestorReportsPage({
     {
       key: "status",
       header: tc("status"),
-      render: (p) => <Badge status={p.status}>{p.status}</Badge>,
+      render: (p) => <Badge status={p.status} />,
     },
     {
       key: "action",
@@ -133,22 +160,66 @@ export default async function InvestorReportsPage({
   ];
 
   const totalsCards = (totals: PayoutTotals[]) =>
-    totals.map((x) => (
-      <div
-        key={x.currency}
-        className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
-      >
-        {/* totals come as major-unit strings from the API (task 901 Sum) */}
-        <Kpi label={tc("gross")} value={`${x.gross} ${x.currency}`} />
-        <Kpi label={tc("tax")} value={`${x.tax} ${x.currency}`} />
-        <Kpi label={tc("net")} value={`${x.net} ${x.currency}`} />
-        <Kpi
-          label={tc("principal")}
-          value={Number(x.principal) > 0 ? `${x.principal} ${x.currency}` : "—"}
-          hint={tm("payouts", { n: x.payouts })}
-        />
-      </div>
-    ));
+    totals.map((x) => {
+      // Totals are major-unit strings; <Amount> takes minor units (text-base: no cut at 390 px).
+      const minor = (v: string) => majorToMinor(v, 2);
+      return (
+        <div
+          key={x.currency}
+          className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
+        >
+          <Kpi
+            label={tc("gross")}
+            value={
+              <Amount
+                minor={minor(x.gross)}
+                currency={x.currency}
+                locale={locale}
+                className="text-base"
+              />
+            }
+          />
+          <Kpi
+            label={tc("tax")}
+            value={
+              <Amount
+                minor={minor(x.tax)}
+                currency={x.currency}
+                locale={locale}
+                className="text-base"
+              />
+            }
+          />
+          <Kpi
+            label={tc("net")}
+            value={
+              <Amount
+                minor={minor(x.net)}
+                currency={x.currency}
+                locale={locale}
+                className="text-base"
+              />
+            }
+          />
+          <Kpi
+            label={tc("principal")}
+            value={
+              Number(x.principal) > 0 ? (
+                <Amount
+                  minor={minor(x.principal)}
+                  currency={x.currency}
+                  locale={locale}
+                  className="text-base"
+                />
+              ) : (
+                "—"
+              )
+            }
+            hint={tm("payouts", { n: x.payouts })}
+          />
+        </div>
+      );
+    });
 
   const inputCx =
     "rounded-btn border border-n300 bg-n0 px-3 py-2 text-sm text-n900 focus:border-g600 focus:outline-none";
@@ -256,7 +327,8 @@ export default async function InvestorReportsPage({
                   className={`mt-1 block ${inputCx}`}
                 >
                   {/* −4…+4: demo data settles future-dated redemptions too */}
-                  {[-4, -3, -2, -1, 0, 1, 2, 3, 4].map((d) => new Date().getFullYear() + d)
+                  {[-4, -3, -2, -1, 0, 1, 2, 3, 4]
+                    .map((d) => new Date().getFullYear() + d)
                     .map((y) => (
                       <option key={y} value={y}>
                         {y}

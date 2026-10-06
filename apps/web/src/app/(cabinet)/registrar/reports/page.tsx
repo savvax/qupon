@@ -15,8 +15,6 @@ export async function generateMetadata() {
   return { title: `${t("title")} · Qupon` };
 }
 
-const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-
 /** Holder register per series (platform v2 §5.4): /registrar/reports/holders/{mint}. */
 export default async function RegistrarReportsPage({
   searchParams,
@@ -27,6 +25,8 @@ export default async function RegistrarReportsPage({
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
   const t = await getTranslations("reports.registrar");
   const tc = await getTranslations("reports.cols");
+  // Same investor-type/residency vocabulary as the registrar KYC queue.
+  const tkyc = await getTranslations("kyc.registrar");
 
   const series = (await listSeries().catch(() => null)) ?? [];
   const selected = series.find((s) => s.mint === sp.mint) ?? series[0];
@@ -52,13 +52,21 @@ export default async function RegistrarReportsPage({
       key: "investorType",
       header: tc("investorType"),
       hideBelow: "md",
-      render: (h) => <span className="num text-sm">{h.investorType}</span>,
+      render: (h) => (
+        <span className="text-sm">
+          {tkyc(`types.${h.investorType}`, { defaultValue: h.investorType })}
+        </span>
+      ),
     },
     {
       key: "residency",
       header: tc("residency"),
       hideBelow: "md",
-      render: (h) => <span className="num text-sm">{h.residency}</span>,
+      render: (h) => (
+        <span className="text-sm">
+          {tkyc(`residencies.${h.residency}`, { defaultValue: h.residency })}
+        </span>
+      ),
     },
     {
       key: "taxBps",
@@ -72,18 +80,13 @@ export default async function RegistrarReportsPage({
     {
       key: "status",
       header: tc("status"),
-      render: (h) => <Badge status={h.status}>{h.status}</Badge>,
+      render: (h) => <Badge status={h.status} />,
     },
     {
       key: "kycRef",
       header: tc("kycRef"),
       hideBelow: "lg",
-      render: (h) =>
-        BASE58.test(h.kycRef) ? (
-          <Address value={h.kycRef} />
-        ) : (
-          <span className="num text-sm">{h.kycRef}</span>
-        ),
+      render: (h) => <Address value={h.kycRef} />,
     },
   ];
 

@@ -1,6 +1,5 @@
 import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { boFetch } from "@/lib/bo";
@@ -36,7 +35,9 @@ export default async function AdminOrganizationsPage() {
       key: "kind",
       header: t("colKind"),
       render: (o) => (
-        <Badge tone="neutral">{t(`kinds.${o.kind}`, { defaultValue: o.kind })}</Badge>
+        <Badge tone="neutral">
+          {t(`kinds.${o.kind}`, { defaultValue: o.kind })}
+        </Badge>
       ),
     },
     {
@@ -95,14 +96,12 @@ export default async function AdminOrganizationsPage() {
       {down ? (
         <EmptyState title={t("unreachable")} body={t("unreachableBody")} />
       ) : (
-        <Card>
-          <DataTable
-            columns={columns}
-            rows={orgs}
-            rowKey={(o) => String(o.id)}
-            empty={t("empty")}
-          />
-        </Card>
+        <DataTable
+          columns={columns}
+          rows={orgs}
+          rowKey={(o) => String(o.id)}
+          empty={t("empty")}
+        />
       )}
     </div>
   );

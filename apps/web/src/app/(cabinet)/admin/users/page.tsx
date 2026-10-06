@@ -50,8 +50,7 @@ export default async function AdminUsersPage({
 
   const orgName = (id: number | null) =>
     id == null ? "—" : (orgs.find((o) => o.id === id)?.name ?? `#${id}`);
-  const roleLabel = (role: string) =>
-    roles.has(role) ? roles(role) : role;
+  const roleLabel = (role: string) => (roles.has(role) ? roles(role) : role);
 
   const columns: Column<UserDTO>[] = [
     {
@@ -194,14 +193,12 @@ export default async function AdminUsersPage({
       {down ? (
         <EmptyState title={t("unreachable")} body={t("unreachableBody")} />
       ) : (
-        <Card>
-          <DataTable
-            columns={columns}
-            rows={users}
-            rowKey={(u) => String(u.id)}
-            empty={t("empty")}
-          />
-        </Card>
+        <DataTable
+          columns={columns}
+          rows={users}
+          rowKey={(u) => String(u.id)}
+          empty={t("empty")}
+        />
       )}
     </div>
   );

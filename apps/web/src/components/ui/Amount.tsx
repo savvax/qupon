@@ -13,7 +13,7 @@ export function Amount({
   locale = "en",
   className,
 }: {
-  minor: string | bigint;
+  minor: string | bigint | number;
   currency: string;
   decimals?: number;
   locale?: "en" | "ru";
