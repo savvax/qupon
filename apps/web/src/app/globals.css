@@ -85,6 +85,12 @@
   /* Task 1102 ambient landing-hero loops; killed by the reduced-motion block below. */
   --animate-qp-hero-drift: qp-hero-drift 24s linear infinite;
   --animate-qp-hero-float: qp-hero-float 5s ease-in-out infinite alternate;
+  /* Task 1103: hero v2 — aurora fields, light sweep, lifecycle segment fill. */
+  --animate-qp-aurora-a: qp-aurora-a 22s ease-in-out infinite alternate;
+  --animate-qp-aurora-b: qp-aurora-b 28s ease-in-out infinite alternate;
+  --animate-qp-aurora-c: qp-aurora-c 18s ease-in-out infinite alternate;
+  --animate-qp-sweep: qp-sweep 9s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  --animate-qp-segment: qp-segment 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 
   @keyframes qp-fade-in {
     from {
@@ -133,6 +139,50 @@
   @keyframes qp-hero-drift {
     to {
       background-position: 28px 28px; /* one grid cell of the hero pattern → seamless loop */
+    }
+  }
+  @keyframes qp-aurora-a {
+    to {
+      translate: -12% 10%;
+      scale: 1.15;
+    }
+  }
+  @keyframes qp-aurora-b {
+    to {
+      translate: 14% -8%;
+      scale: 0.9;
+    }
+  }
+  @keyframes qp-aurora-c {
+    from {
+      translate: -10% 6%;
+      opacity: 0.35;
+    }
+    to {
+      translate: 18% -10%;
+      opacity: 0.7;
+    }
+  }
+  @keyframes qp-sweep {
+    0%,
+    55% {
+      translate: 0 0;
+      opacity: 0;
+    }
+    60% {
+      opacity: 1;
+    }
+    100% {
+      translate: 450% 0;
+      opacity: 0;
+    }
+  }
+  @keyframes qp-segment {
+    from {
+      scale: 0 1;
+    }
+    to {
+      scale: 1 1;
     }
   }
   @keyframes qp-hero-float {

@@ -22,7 +22,7 @@ export function MobileNav({
         type="button"
         aria-label={menuLabel}
         onClick={() => setOpen(true)}
-        className="inline-flex size-10 items-center justify-center rounded-btn text-n700 hover:bg-n100 md:hidden"
+        className="inline-flex size-10 items-center justify-center rounded-btn text-n700 hover:bg-n100 lg:hidden"
       >
         <Icon name="menu" />
       </button>

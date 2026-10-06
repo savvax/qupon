@@ -13,6 +13,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // No x-powered-by header on the public site.
   poweredByHeader: false,
+  // The dev-tools bubble is English-only and reviewers took it for part of the product (spec §5.8).
+  devIndicators: false,
   // The prototype's console and portal live on in the new cabinets; old links (README, reports, bookmarks) still land.
   async redirects() {
     return [

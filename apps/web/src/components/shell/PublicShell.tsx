@@ -30,19 +30,19 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <span className="text-lg font-extrabold tracking-tight text-n900">
               Qupon
             </span>
-            <span className="hidden border-l border-n200 pl-2.5 text-sm text-n500 lg:inline">
+            <span className="hidden border-l border-n200 pl-2.5 text-sm whitespace-nowrap text-n500 xl:inline">
               {t("tagline")}
             </span>
           </Link>
           <nav
             aria-label={t("main")}
-            className="ml-2 hidden items-center gap-1 md:flex"
+            className="ml-2 hidden items-center gap-1 lg:flex"
           >
             {links.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
-                className="rounded-btn px-3 py-2 text-sm font-semibold text-n700 hover:bg-n100 hover:text-n900"
+                className="rounded-btn px-3 py-2 text-sm font-semibold whitespace-nowrap text-n700 transition-colors hover:bg-n100 hover:text-n900"
               >
                 {l.label}
               </Link>

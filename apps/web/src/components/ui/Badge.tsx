@@ -21,7 +21,7 @@ export function Badge({
   return (
     <span
       className={cx(
-        "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold",
+        "inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold whitespace-nowrap",
         t.bg,
         t.fg,
       )}
