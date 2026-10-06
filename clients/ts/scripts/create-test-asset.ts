@@ -21,7 +21,8 @@ import { getCreateMintInstructionPlan } from "@solana-program/token";
 import { configPath, loadConfig, updateConfig, type TestAsset } from "../src/lib/config.js";
 import { loadKeypair } from "../src/lib/keys.js";
 import { createRpc, loadEnvFile, sendInstructions, type QuponRpc } from "../src/lib/tx.js";
-import { TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
+import { TOKEN_PROGRAM_ADDRESS, fetchMint } from "@solana-program/token";
+import { address } from "@solana/kit";
 
 const KINDS = new Set(["test", "stablecoin", "wrapped_cbdc", "spl"]);
 
@@ -35,6 +36,16 @@ function rentClient(rpc: QuponRpc): { getMinimumBalance: (space: number) => Prom
     getMinimumBalance: async (space: number) =>
       BigInt(await rpc.getMinimumBalanceForRentExemption(BigInt(space)).send()),
   };
+}
+
+/** True when the mint address exists on-chain as a classic SPL mint (a previous run's config write can be interrupted). */
+async function mintExistsOnChain(rpc: QuponRpc, mint: string): Promise<boolean> {
+  try {
+    const account = await fetchMint(rpc, address(mint));
+    return account.exists && account.programAddress === TOKEN_PROGRAM_ADDRESS;
+  } catch {
+    return false;
+  }
 }
 
 function arg(name: string): string {
@@ -89,14 +100,19 @@ async function main(): Promise<void> {
   const registrar = await loadKeypair("QUPON_REGISTRAR_KEYPAIR");
 
   // Classic SPL mint (like mainnet KZTE): mint authority = registrar operator, no freeze authority.
-  const plan = await getCreateMintInstructionPlan(rentClient(rpc), {
-    payer: registrar,
-    newMint: mintSigner,
-    decimals,
-    mintAuthority: registrar,
-  });
-  const mintSig = await sendInstructions(rpc, registrar, flattenInstructionPlan(plan).map(n => n.instruction), `create ${symbol} mint`);
-  log(`mint created: ${mint} (tx ${mintSig})`);
+  let mintSig: string | undefined;
+  if (await mintExistsOnChain(rpc, mint)) {
+    log(`mint ${mint} already exists on-chain — recording config only`);
+  } else {
+    const plan = await getCreateMintInstructionPlan(rentClient(rpc), {
+      payer: registrar,
+      newMint: mintSigner,
+      decimals,
+      mintAuthority: registrar,
+    });
+    mintSig = await sendInstructions(rpc, registrar, flattenInstructionPlan(plan).map(n => n.instruction), `create ${symbol} mint`);
+    log(`mint created: ${mint} (tx ${mintSig})`);
+  }
 
   const entry: TestAsset = { symbol, mint, decimals, kind: kind as TestAsset["kind"] };
   updateConfig(cfgPath, { testAssets: [...existing, entry] });
@@ -118,7 +134,7 @@ async function main(): Promise<void> {
     ],
   });
   log(`testAssets + cashAssets written to ${cfgPath}`);
-  console.log(JSON.stringify({ symbol, mint, created: true, mintTx: mintSig, decimals, kind }));
+  console.log(JSON.stringify({ symbol, mint, created: true, mintTx: mintSig ?? null, decimals, kind }));
 }
 
 main().catch(e => {

@@ -57,6 +57,42 @@
       "kind": "stablecoin",
       "issuerNote": "Circle's devnet USDC (faucet.circle.com).",
       "enabled": true
+    },
+    {
+      "symbol": "KZTE-dev",
+      "name": "Evo tenge (devnet stand-in)",
+      "mint": "7H3MbktQifAeYqKS44ar9ck1c4kQZ3Sgj36bmQzm2atq",
+      "decimals": 2,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "kind": "stablecoin",
+      "issuerNote": "Qupon devnet test mint; mint authority = Qupon operator.",
+      "mintAuthority": "Bnq22GvV6AQcXWeTp6x3uTYkC7HKKrysiFve2uCDqE97",
+      "enabled": true
+    },
+    {
+      "symbol": "dKZT",
+      "name": "Digital tenge (custodian-wrapped, SIMULATED)",
+      "mint": "WsSWxpZXuuDcBmymLitFpvfEWWebiBUXBRNQRFBT29k",
+      "decimals": 2,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "kind": "wrapped_cbdc",
+      "issuerNote": "Qupon devnet test mint; mint authority = Qupon operator.",
+      "mintAuthority": "Bnq22GvV6AQcXWeTp6x3uTYkC7HKKrysiFve2uCDqE97",
+      "enabled": true
+    }
+  ],
+  "testAssets": [
+    {
+      "symbol": "KZTE-dev",
+      "mint": "7H3MbktQifAeYqKS44ar9ck1c4kQZ3Sgj36bmQzm2atq",
+      "decimals": 2,
+      "kind": "stablecoin"
+    },
+    {
+      "symbol": "dKZT",
+      "mint": "WsSWxpZXuuDcBmymLitFpvfEWWebiBUXBRNQRFBT29k",
+      "decimals": 2,
+      "kind": "wrapped_cbdc"
     }
   ]
 }
