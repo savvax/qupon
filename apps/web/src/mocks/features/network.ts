@@ -43,6 +43,8 @@ export const handlers: MockHandler[] = [
         tokenProgram: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
       },
     ],
+  },
+  {
     method: "GET",
     path: /^\/admin\/network\/readiness$/,
     reply: () => ({
