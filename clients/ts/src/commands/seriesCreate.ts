@@ -1,4 +1,5 @@
 /** `series:create` — mint + initialize a new bond series from CLI flags (run by POST /issuer/series). */
+import { isAddress } from "@solana/kit";
 import type { Command } from "commander";
 import { ensureBondMint } from "../lib/bondMintFlow.js";
 import { configPath, loadConfig, updateConfig } from "../lib/config.js";
@@ -16,7 +17,8 @@ export interface SeriesTerms {
 	dayCount: "THIRTY_360" | "ACT_365";
 	issueDate: string;
 	maturityDate: string;
-	cash: "tkzt" | "usdc";
+	/** config value: "tKZT" | "USDC" (aliases) or a raw cash mint address (any registered cash asset). */
+	cashMint: string;
 	quorumBps: number;
 	approvalBps: number;
 }
@@ -47,21 +49,22 @@ export function parseSeriesCreateArgs(o: Record<string, string>): SeriesTerms {
 	const maturityDate = o.maturityDate ?? "";
 	if (!YMD.test(maturityDate)) throw new Error("maturity date must be YYYY-MM-DD");
 	if (Date.parse(maturityDate) <= Date.parse(issueDate)) throw new Error("maturity date must be after the issue date");
-	const cash = o.cash ?? "";
-	if (cash !== "tkzt" && cash !== "usdc") throw new Error("cash must be tkzt or usdc");
+	if (o.cash && o.cashMint) throw new Error("pass --cash or --cash-mint, not both");
+	let cashMint: string;
+	if (o.cashMint) {
+		if (!isAddress(o.cashMint)) throw new Error("cash-mint must be a base58 mint address");
+		cashMint = o.cashMint;
+	} else if (o.cash === "tkzt" || o.cash === "usdc") {
+		cashMint = o.cash === "tkzt" ? "tKZT" : "USDC";
+	} else throw new Error("cash must be tkzt or usdc (or pass --cash-mint <address>)");
 	return {
 		name, isin, faceValue, couponRateBps,
 		frequency: fq as 1 | 2 | 4 | 12,
 		dayCount: dayCount as "THIRTY_360" | "ACT_365",
-		issueDate, maturityDate, cash,
+		issueDate, maturityDate, cashMint,
 		quorumBps: bpsRange({ ...o, quorumBps: o.quorumBps ?? "5000" }, "quorumBps", "quorum-bps"),
 		approvalBps: bpsRange({ ...o, approvalBps: o.approvalBps ?? "6667" }, "approvalBps", "approval-bps"),
 	};
-}
-
-/** Config alias for the cash leg (--cash tkzt → "tKZT", usdc → "USDC"). */
-function cashAlias(cash: "tkzt" | "usdc"): "tKZT" | "USDC" {
-	return cash === "tkzt" ? "tKZT" : "USDC";
 }
 
 /** Whole years between issue and maturity (config/devnet.json termYears), at least 1. */
@@ -79,7 +82,8 @@ interface CreateOpts extends GlobalOptions {
 	dayCount: string;
 	issueDate: string;
 	maturityDate: string;
-	cash: string;
+	cash?: string;
+	cashMint?: string;
 	quorumBps?: string;
 	approvalBps?: string;
 }
@@ -87,7 +91,8 @@ interface CreateOpts extends GlobalOptions {
 async function runSeriesCreate(opts: CreateOpts, cmd: Command): Promise<void> {
 	const terms = parseSeriesCreateArgs({
 		name: opts.name, isin: opts.isin, face: opts.face, rateBps: opts.rateBps, frequency: opts.frequency,
-		dayCount: opts.dayCount, issueDate: opts.issueDate, maturityDate: opts.maturityDate, cash: opts.cash,
+		dayCount: opts.dayCount, issueDate: opts.issueDate, maturityDate: opts.maturityDate,
+		cash: opts.cash ?? "", cashMint: opts.cashMint ?? "",
 		quorumBps: opts.quorumBps ?? "5000", approvalBps: opts.approvalBps ?? "6667",
 	});
 	loadEnvFile();
@@ -100,7 +105,7 @@ async function runSeriesCreate(opts: CreateOpts, cmd: Command): Promise<void> {
 			...cfg.series,
 			[terms.name]: {
 				mint: "",
-				cashMint: cashAlias(terms.cash),
+				cashMint: terms.cashMint,
 				isin: terms.isin,
 				faceValue: Number(terms.faceValue),
 				couponRateBps: terms.couponRateBps,
@@ -135,7 +140,8 @@ export function registerSeriesCreateCommand(program: Command): void {
 		.requiredOption("--day-count <THIRTY_360|ACT_365>", "day-count convention")
 		.requiredOption("--issue-date <ymd>", "issue date YYYY-MM-DD")
 		.requiredOption("--maturity-date <ymd>", "maturity date YYYY-MM-DD (after the issue date)")
-		.requiredOption("--cash <tkzt|usdc>", "cash leg mint alias")
+		.option("--cash <tkzt|usdc>", "cash leg alias from config (tKZT or USDC)")
+		.option("--cash-mint <address>", "cash leg mint address: any registered cash asset (KZTE, dKZT, …)")
 		.option("--quorum-bps <n>", "bondholder-meeting quorum in bps", "5000")
 		.option("--approval-bps <n>", "bondholder-meeting approval in bps", "6667")
 		.action(runSeriesCreate);

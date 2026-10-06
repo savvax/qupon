@@ -7,6 +7,12 @@ describe("parseSeriesCreateArgs", () => {
     expect(t.faceValue).toBe(100000n);
     expect(t.frequency).toBe(2);
     expect(t.quorumBps).toBe(5000);
+    expect(t.cashMint).toBe("tKZT");
+  });
+  it("accepts any cash mint address instead of an alias", () => {
+    const mint = "HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF";
+    expect(parseSeriesCreateArgs({ ...ok, cash: "", cashMint: mint }).cashMint).toBe(mint);
+    expect(parseSeriesCreateArgs({ ...ok, cash: "usdc" }).cashMint).toBe("USDC");
   });
   it.each([
     [{ isin: "KZ2C0" }, /ISIN/],
@@ -16,6 +22,9 @@ describe("parseSeriesCreateArgs", () => {
     [{ maturityDate: "2026-07-03" }, /maturity/],
     [{ name: "has space" }, /name/],
     [{ cash: "eur" }, /cash/],
+    [{ cash: "", cashMint: "not-an-address" }, /cash-mint/],
+    [{ cashMint: "HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF" }, /not both/],
+    [{ cash: "" }, /cash/],
   ])("rejects %o", (patch, msg) => {
     expect(() => parseSeriesCreateArgs({ ...ok, ...patch })).toThrow(msg);
   });

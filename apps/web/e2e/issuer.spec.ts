@@ -52,3 +52,24 @@ test("issuer cannot open the registrar cabinet", async ({ page }) => {
   await page.goto("/registrar/actions");
   await expect(page).toHaveURL(/\/forbidden\?role=issuer/);
 });
+
+test("wizard pays in any enabled cash asset: KZTE-dev goes out as cashMint", async ({
+  page,
+}) => {
+  await page.goto("/issuer/series/new");
+  await page.getByLabel("Series name").fill("E2E-KZTE");
+  await page.getByLabel("ISIN").fill("KZ2C00012345");
+  await page.getByRole("combobox", { name: "Paid in" }).click();
+  await page.getByRole("option", { name: /KZTE-dev — Evo tenge/ }).click();
+  await expect(page.getByText("₸").first()).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue" }).click();
+  const req = page.waitForRequest(
+    (r) => r.method() === "POST" && r.url().endsWith("/api/bo/issuer/series"),
+  );
+  await page.getByRole("button", { name: "Issue on Solana" }).click();
+  const body = (await req).postDataJSON() as Record<string, unknown>;
+  expect(body.cashMint).toBe("KZTEdevMint11111111111111111111111111111111");
+  expect(body.cash).toBeUndefined();
+  expect(body.faceValue).toBe(100000); // 1,000 major units at 2 decimals
+});

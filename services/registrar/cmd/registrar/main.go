@@ -240,6 +240,7 @@ func noticeReader(c *chain.Client, st *store.Store) *notice.Reader {
 	}
 	r := notice.NewReader(c, "")
 	r.Activity = st
+	r.Symbol = st.CashAssetSymbol
 	return r
 }
 

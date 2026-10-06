@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/Select";
 import { Stepper } from "@/components/ui/Stepper";
 import { TextField } from "@/components/ui/TextField";
 import { boPost } from "@/lib/boClient";
+import { type CashOption, cashField, cashSuffix } from "@/lib/cashAssets";
 import {
   addMonthsYmd,
   parseMajor,
@@ -18,9 +19,6 @@ import {
 } from "@/lib/schedulePreview";
 import { useRunWrite } from "@/lib/useRunWrite";
 
-type Cash = "tkzt" | "usdc";
-const CURRENCY: Record<Cash, string> = { tkzt: "tKZT", usdc: "USDC" };
-const DECIMALS: Record<Cash, number> = { tkzt: 2, usdc: 6 };
 type Created = { series?: string; mint?: string; signatures: string[] };
 
 const todayAlmaty = () =>
@@ -29,7 +27,7 @@ const todayAlmaty = () =>
   );
 
 /** Three steps — terms, schedule preview, review — then one request that mints and initialises the series. */
-export function NewSeriesWizard() {
+export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
   const t = useTranslations("issuer.wizard");
   const locale = useLocale() === "ru" ? "ru" : "en";
   const runWrite = useRunWrite();
@@ -41,7 +39,7 @@ export function NewSeriesWizard() {
     return {
       name: "",
       isin: "",
-      cash: "tkzt" as Cash,
+      cash: assets[0]?.key ?? "",
       face: "1000",
       rate: "10",
       frequency: "2",
@@ -53,8 +51,10 @@ export function NewSeriesWizard() {
   const set = (k: keyof typeof f) => (v: string) =>
     setF((p) => ({ ...p, [k]: v }));
 
+  const asset = assets.find((a) => a.key === f.cash) ?? assets[0];
+  const decimals = asset?.decimals ?? 2;
   // Same rules as the API (services/registrar/internal/api/issuer.go) and init_series on-chain.
-  const faceMinor = parseMajor(f.face, DECIMALS[f.cash]);
+  const faceMinor = parseMajor(f.face, decimals);
   const rateBps = parseRateBps(f.rate);
   const freq = Number(f.frequency) as 1 | 2 | 4 | 12;
   const firstCoupon = /^\d{4}-\d{2}-\d{2}$/.test(f.issueDate)
@@ -64,8 +64,7 @@ export function NewSeriesWizard() {
   if (!/^[A-Za-z0-9-]{1,16}$/.test(f.name)) errors.name = t("errors.name");
   if (!/^[A-Z]{2}[A-Z0-9]{9}[0-9]$/.test(f.isin))
     errors.isin = t("errors.isin");
-  if (faceMinor === undefined)
-    errors.face = t("errors.face", { decimals: DECIMALS[f.cash] });
+  if (faceMinor === undefined) errors.face = t("errors.face", { decimals });
   if (rateBps === undefined) errors.rate = t("errors.rate");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(f.issueDate))
     errors.issueDate = t("errors.date");
@@ -93,10 +92,16 @@ export function NewSeriesWizard() {
     [valid, faceMinor, rateBps, freq, f.dayCount, f.issueDate, f.maturityDate],
   );
   const totalCoupons = rows.reduce((a, r) => a + r.perUnitMinor, 0n);
-  const currency = CURRENCY[f.cash];
+  const currency = asset?.symbol ?? "";
 
   const issue = async () => {
-    if (busy || !valid || faceMinor === undefined || rateBps === undefined)
+    if (
+      busy ||
+      !valid ||
+      !asset ||
+      faceMinor === undefined ||
+      rateBps === undefined
+    )
       return;
     setBusy(true);
     const res = await runWrite<Created>({
@@ -112,7 +117,7 @@ export function NewSeriesWizard() {
           dayCount: f.dayCount,
           issueDate: f.issueDate,
           maturityDate: f.maturityDate,
-          cash: f.cash,
+          ...cashField(asset),
         }),
       txs: (r) => r.signatures,
     });
@@ -209,17 +214,17 @@ export function NewSeriesWizard() {
               label={t("cash")}
               value={f.cash}
               onValueChange={set("cash")}
-              options={[
-                { value: "tkzt", label: t("cashTkzt") },
-                { value: "usdc", label: t("cashUsdc") },
-              ]}
+              options={assets.map((a) => ({
+                value: a.key,
+                label: `${a.symbol} — ${a.name}${a.kind === "wrapped_cbdc" ? " (SIMULATED)" : ""}`,
+              }))}
             />
             <TextField
               label={t("face")}
               inputMode="decimal"
               value={f.face}
               onChange={(e) => set("face")(e.target.value)}
-              suffix={f.cash === "tkzt" ? "₸" : "USDC"}
+              suffix={asset ? cashSuffix(asset) : undefined}
               error={err("face")}
             />
             <TextField

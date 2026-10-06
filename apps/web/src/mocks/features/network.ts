@@ -13,4 +13,35 @@ export const handlers: MockHandler[] = [
       demoLogin: true,
     }),
   },
+  {
+    // The public asset list (GET /assets) travels with the network profile in mock mode.
+    method: "GET",
+    path: /^\/assets$/,
+    reply: () => [
+      {
+        mint: "tKZTDeM0CashMint1111111111111111111111111111",
+        symbol: "tKZT",
+        name: "Test tenge (devnet)",
+        decimals: 2,
+        kind: "test",
+        tokenProgram: "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      },
+      {
+        mint: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+        symbol: "USDC",
+        name: "USD Coin (Circle devnet)",
+        decimals: 6,
+        kind: "stablecoin",
+        tokenProgram: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      },
+      {
+        mint: "KZTEdevMint11111111111111111111111111111111",
+        symbol: "KZTE-dev",
+        name: "Evo tenge (devnet stand-in)",
+        decimals: 2,
+        kind: "stablecoin",
+        tokenProgram: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      },
+    ],
+  },
 ];

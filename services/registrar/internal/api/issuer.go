@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"time"
 
+	solana "github.com/solana-foundation/solana-go/v2"
+
 	"github.com/qupon-kz/qupon/services/registrar/internal/execconfig"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
@@ -31,7 +33,8 @@ type seriesCreateRequest struct {
 	DayCount      string `json:"dayCount"`
 	IssueDate     string `json:"issueDate"`
 	MaturityDate  string `json:"maturityDate"`
-	Cash          string `json:"cash"`
+	Cash          string `json:"cash"`     // legacy alias tkzt | usdc
+	CashMint      string `json:"cashMint"` // any enabled cash asset of this network (platform v2 §5.1)
 }
 
 var (
@@ -72,8 +75,15 @@ func (req *seriesCreateRequest) validate() error {
 	if !maturity.After(issue) {
 		return errors.New("maturity date must be after the issue date")
 	}
-	if req.Cash != "tkzt" && req.Cash != "usdc" {
-		return errors.New("cash must be tkzt or usdc")
+	switch {
+	case req.Cash != "" && req.CashMint != "":
+		return errors.New("send cash or cashMint, not both")
+	case req.CashMint != "":
+		if _, err := solana.PublicKeyFromBase58(req.CashMint); err != nil {
+			return errors.New("cashMint must be a base58 mint address")
+		}
+	case req.Cash != "tkzt" && req.Cash != "usdc":
+		return errors.New("cash must be tkzt or usdc, or send cashMint")
 	}
 	return nil
 }
@@ -90,8 +100,11 @@ func (req *seriesCreateRequest) termYears() int {
 // termsRow is the registry entry (store.RegistryRow.Terms): the series config
 // the executor config is generated from; execconfig.Write adds the mint.
 func (req *seriesCreateRequest) termsRow() (store.RegistryRow, error) {
-	cashMint := "tKZT"
-	if req.Cash == "usdc" {
+	cashMint := req.CashMint // the CLI resolves a raw address as the cash mint
+	switch req.Cash {
+	case "tkzt":
+		cashMint = "tKZT"
+	case "usdc":
 		cashMint = "USDC"
 	}
 	terms, err := json.Marshal(map[string]any{
@@ -140,6 +153,17 @@ func createSeries(deps Deps, st *store.Store) http.HandlerFunc {
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params", err.Error())
 			return
 		}
+		// A cash mint must be an enabled asset of this network: the registry, not the client, decides what pays.
+		if req.CashMint != "" {
+			a, err := st.GetCashAsset(r.Context(), assetNetwork(deps), req.CashMint)
+			if errors.Is(err, store.ErrNotFound) || (err == nil && !a.Enabled) {
+				writeErrorCode(w, http.StatusBadRequest, "asset_not_enabled", "cash asset "+req.CashMint+" is not enabled on this network")
+				return
+			} else if err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+		}
 
 		// Reserve the name before minting: the second operator gets 409, nothing is minted twice.
 		row, err := req.termsRow()
@@ -171,7 +195,7 @@ func createSeries(deps Deps, st *store.Store) http.HandlerFunc {
 			"--day-count", req.DayCount,
 			"--issue-date", req.IssueDate,
 			"--maturity-date", req.MaturityDate,
-			"--cash", req.Cash,
+			cashFlag(req), cashValue(req),
 		)
 		if err == nil && !res.OK {
 			err = errors.New(res.Error)
@@ -412,4 +436,19 @@ func issuerFund(deps Deps, st *store.Store) http.HandlerFunc {
 		audit(st, r, params, true, detail, sigs)
 		writeJSON(w, http.StatusOK, map[string]any{"signatures": sigs, "skipped": res.Skipped})
 	}
+}
+
+// cashFlag/cashValue pick the CLI's --cash alias or --cash-mint address (validated fields only).
+func cashFlag(req seriesCreateRequest) string {
+	if req.CashMint != "" {
+		return "--cash-mint"
+	}
+	return "--cash"
+}
+
+func cashValue(req seriesCreateRequest) string {
+	if req.CashMint != "" {
+		return req.CashMint
+	}
+	return req.Cash
 }

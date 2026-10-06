@@ -49,6 +49,8 @@ type Reader struct {
 	// notice tx links (nil keeps the placeholder; see txLinks).
 	Activity   Activity
 	IssuerName string
+	// Symbol, when set, names the cash asset from the registry (KZTE, dKZT, …); nil keeps tKZT/USDC.
+	Symbol func(ctx context.Context, mint string) (string, bool)
 }
 
 // NewReader creates a Reader over the chain client.
@@ -106,7 +108,7 @@ func (r *Reader) FetchAction(ctx context.Context, pda solana.PublicKey, lang str
 		ISIN:           fixedString(series.ISIN[:]),
 		Ticker:         fixedString(series.Ticker[:]),
 		TotalNet:       action.TotalNet,
-		Ccy:            chain.CashCurrency(action.CashMint),
+		Ccy:            r.currency(ctx, action.CashMint),
 		Decimals:       mint.Decimals,
 		Holders:        int(action.HoldersSnapshotted),
 		RecordDate:     date(action.RecordAt),
@@ -171,4 +173,13 @@ func (r *Reader) Notice(ctx context.Context, pda solana.PublicKey, lang string) 
 		return "", err
 	}
 	return Render(d)
+}
+
+func (r *Reader) currency(ctx context.Context, mint solana.PublicKey) string {
+	if r.Symbol != nil {
+		if sym, ok := r.Symbol(ctx, mint.String()); ok {
+			return sym
+		}
+	}
+	return chain.CashCurrency(mint)
 }

@@ -277,3 +277,45 @@ func TestIssuerFundTwiceSkips(t *testing.T) {
 		}
 	}
 }
+
+// A cash mint must be an enabled registry asset of this network; the CLI then gets --cash-mint.
+func TestCreateSeriesWithCashMint(t *testing.T) {
+	srv, st, cliLog, issuer, _ := issuerServer(t)
+	const kzte = "HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF"
+	body := strings.Replace(seriesBody, `"cash":"tkzt"`, `"cashMint":"`+kzte+`"`, 1)
+
+	if code, out := postSeries(t, srv.URL, issuer, body); code != http.StatusBadRequest || out["code"] != "asset_not_enabled" {
+		t.Fatalf("unregistered mint: %d %v", code, out)
+	}
+	asset := store.CashAsset{Network: "devnet", Mint: kzte, Symbol: "KZTE-dev", Name: "Evo (devnet)", Decimals: 2,
+		TokenProgram: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", Kind: "stablecoin"}
+	if err := st.UpsertCashAsset(t.Context(), asset); err != nil {
+		t.Fatal(err)
+	}
+	if code, out := postSeries(t, srv.URL, issuer, body); code != http.StatusBadRequest || out["code"] != "asset_not_enabled" {
+		t.Fatalf("disabled asset: %d %v", code, out)
+	}
+	if _, err := os.Stat(cliLog); err == nil && len(cliLogLines(t, cliLog)) > 0 {
+		t.Fatal("cli ran for a rejected asset")
+	}
+	asset.Enabled = true
+	if err := st.UpsertCashAsset(t.Context(), asset); err != nil {
+		t.Fatal(err)
+	}
+	if code, out := postSeries(t, srv.URL, issuer, body); code != http.StatusCreated {
+		t.Fatalf("enabled asset: %d %v", code, out)
+	}
+	want := strings.Replace(wantSeriesArgv, "--cash tkzt", "--cash-mint "+kzte, 1)
+	if lines := cliLogLines(t, cliLog); len(lines) != 1 || lines[0] != want {
+		t.Fatalf("argv = %q, want %q", lines, want)
+	}
+	rows, _ := st.ListRegistry(t.Context())
+	if len(rows) != 1 || !strings.Contains(string(rows[0].Terms), `"cashMint":"`+kzte+`"`) {
+		t.Fatalf("registry terms = %+v", rows)
+	}
+
+	both := strings.Replace(seriesBody, `"cash":"tkzt"`, `"cash":"tkzt","cashMint":"`+kzte+`"`, 1)
+	if code, out := postSeries(t, srv.URL, issuer, both); code != http.StatusBadRequest || out["code"] != "invalid_params" {
+		t.Fatalf("both cash fields: %d %v", code, out)
+	}
+}

@@ -107,3 +107,13 @@ func (s *Store) ListCashAssets(ctx context.Context, network string, onlyEnabled 
 	}
 	return out, rows.Err()
 }
+
+// CashAssetSymbol is the registry symbol of a cash mint on any network (mints are unique pubkeys); ok=false
+// when the mint is not registered.
+func (s *Store) CashAssetSymbol(ctx context.Context, mint string) (string, bool) {
+	var sym string
+	if err := s.db.QueryRowContext(ctx, `SELECT symbol FROM cash_assets WHERE mint = ? LIMIT 1`, mint).Scan(&sym); err != nil {
+		return "", false
+	}
+	return sym, true
+}

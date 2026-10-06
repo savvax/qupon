@@ -59,8 +59,12 @@ func (m money) amount(v uint64) Amount {
 	return Amount{Minor: minor, Display: display + " " + m.currency, Currency: m.currency}
 }
 
-func cashMoney(ctx context.Context, rm ReadModel, cashMint solana.PublicKey) (money, error) {
+// cashMoney labels amounts with the cash asset's registry symbol (KZTE, dKZT, …), else the built-in tKZT/USDC.
+func cashMoney(ctx context.Context, rm ReadModel, st *store.Store, cashMint solana.PublicKey) (money, error) {
 	cur := chain.CashCurrency(cashMint)
+	if sym, ok := st.CashAssetSymbol(ctx, cashMint.String()); ok {
+		cur = sym
+	}
 	m, err := rm.FetchMint(ctx, cashMint)
 	if err != nil {
 		return money{}, fmt.Errorf("cash mint %s: %w", cashMint, err)
@@ -403,7 +407,7 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			writeError(w, http.StatusNotFound, "no series for mint "+mint.String())
 			return pda, nil, money{}, false
 		}
-		m, err := cashMoney(r.Context(), rm, s.CashMint)
+		m, err := cashMoney(r.Context(), rm, st, s.CashMint)
 		if err != nil {
 			fail(w, err)
 			return pda, nil, money{}, false
@@ -444,7 +448,7 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			if settings[rec.Series.Mint.String()].Hidden {
 				continue
 			}
-			m, err := cashMoney(r.Context(), rm, rec.Series.CashMint)
+			m, err := cashMoney(r.Context(), rm, st, rec.Series.CashMint)
 			if err != nil {
 				fail(w, err)
 				return
@@ -505,7 +509,7 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 		}
 		out := make([]seriesSchedule, 0, len(recs))
 		for _, rec := range recs {
-			m, err := cashMoney(r.Context(), rm, rec.Series.CashMint)
+			m, err := cashMoney(r.Context(), rm, st, rec.Series.CashMint)
 			if err != nil {
 				fail(w, err)
 				return
@@ -584,7 +588,7 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			fail(w, fmt.Errorf("series %s of action %s: %w", a.Series, pda, err))
 			return pda, nil, nil, money{}, false
 		}
-		m, err := cashMoney(r.Context(), rm, a.CashMint)
+		m, err := cashMoney(r.Context(), rm, st, a.CashMint)
 		if err != nil {
 			fail(w, err)
 			return pda, nil, nil, money{}, false
