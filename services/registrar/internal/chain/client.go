@@ -83,6 +83,31 @@ func (c *Client) GetAccountAt(ctx context.Context, key solana.PublicKey, minSlot
 	return out, err
 }
 
+// AccountData is raw account data together with its owner program.
+type AccountData struct {
+	Data  []byte
+	Owner solana.PublicKey
+}
+
+// GetAccountWithOwner is GetAccount plus the owning program (nil if absent).
+// The cash-asset registry (platform v2 §5.1) needs the owner to tell a Token
+// mint from a Token-2022 mint from an account owned by another program.
+func (c *Client) GetAccountWithOwner(ctx context.Context, key solana.PublicKey) (*AccountData, error) {
+	var out *AccountData
+	err := c.withRetry(ctx, func() error {
+		res, err := c.rpc.GetAccountInfoWithOpts(ctx, key, &rpc.GetAccountInfoOpts{Commitment: defaultCommitm_})
+		if err != nil {
+			return err
+		}
+		out = &AccountData{Data: res.Value.Data.GetBinary(), Owner: res.Value.Owner}
+		return nil
+	})
+	if errors.Is(err, rpc.ErrNotFound) {
+		return nil, nil
+	}
+	return out, err
+}
+
 // GetProgramAccounts scans program accounts by Anchor discriminator plus
 // optional memcmp filters (ANDed). Discriminator filter sits at offset 0.
 func (c *Client) GetProgramAccounts(

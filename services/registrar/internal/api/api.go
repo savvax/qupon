@@ -235,7 +235,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	// Platform v2 feature routes (docs/superpowers/plans/2026-10-06-plan6-12-platform-v2.md): each task replaces
 	// exactly its own anchor below with mount<Feature>(r, deps, st). Keep one blank line between anchors.
-	// mount: assets
+	mountAssets(r, deps, st)
 
 	// mount: faucet
 
