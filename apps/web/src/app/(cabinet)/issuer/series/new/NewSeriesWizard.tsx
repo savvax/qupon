@@ -82,7 +82,9 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
         isin: res.bond.isin || p.isin,
         face: res.bond.face > 0 ? String(res.bond.face / 100) : p.face,
         rate: (res.bond.couponRate / 100).toFixed(2),
-        frequency: res.bond.frequency ? String(res.bond.frequency) : p.frequency,
+        frequency: res.bond.frequency
+          ? String(res.bond.frequency)
+          : p.frequency,
         dayCount: res.bond.dayCount || p.dayCount,
         issueDate: res.bond.issueDate || p.issueDate,
         maturityDate: res.bond.maturityDate || p.maturityDate,
@@ -245,7 +247,9 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
           }}
         >
           <fieldset className="mb-6 rounded-card border border-n200 bg-n50/60 p-4">
-            <legend className="px-1 text-sm font-semibold">{tk("title")}</legend>
+            <legend className="px-1 text-sm font-semibold">
+              {tk("title")}
+            </legend>
             <div className="flex flex-wrap items-start gap-3">
               <div className="min-w-44 flex-1">
                 <TextField
@@ -279,7 +283,9 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
                 {tk("done", { ticker: kase.ticker, issuer: kase.issuer })}
               </p>
             )}
-            <p className="mt-2 text-xs text-n500">{tk("note")}</p>
+            <p className="mt-2 text-xs text-n500">
+              <StableText>{tk("note")}</StableText>
+            </p>
           </fieldset>
           <div className="grid gap-5 sm:grid-cols-2">
             <TextField
@@ -421,7 +427,9 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
           </div>
           {kase && rateBps !== undefined && (
             <div className="mt-6 rounded-card border border-warn-bd p-4">
-              <h3 className="text-sm font-bold">{tc("title", { ticker: kase.ticker })}</h3>
+              <h3 className="text-sm font-bold">
+                {tc("title", { ticker: kase.ticker })}
+              </h3>
               <p className="mt-1 text-xs text-n600">{tc("lead")}</p>
               <div className="mt-3 max-h-72 overflow-auto rounded-btn border border-n200">
                 <table className="w-full text-xs">
@@ -434,27 +442,29 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {compareKaseSchedule(kase.schedule, rows, rateBps).map((r) => (
-                      <tr
-                        key={r.n}
-                        className={`border-t border-n200 ${r.mismatch ? "bg-warn-bg font-semibold text-warn-fg" : ""}`}
-                      >
-                        <td className="num px-3 py-2">{r.n}</td>
-                        <td className="num px-3 py-2">
-                          {r.kase
-                            ? `${r.kase.start} – ${r.kase.end} · ${(r.kase.rate / 100).toFixed(2)}%`
-                            : "—"}
-                        </td>
-                        <td className="num px-3 py-2">
-                          {r.preview
-                            ? `${r.preview.periodStart} – ${r.preview.periodEnd}`
-                            : "—"}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          {r.mismatch ? tc("mismatch") : tc("match")}
-                        </td>
-                      </tr>
-                    ))}
+                    {compareKaseSchedule(kase.schedule, rows, rateBps).map(
+                      (r) => (
+                        <tr
+                          key={r.n}
+                          className={`border-t border-n200 ${r.mismatch ? "bg-warn-bg font-semibold text-warn-fg" : ""}`}
+                        >
+                          <td className="num px-3 py-2">{r.n}</td>
+                          <td className="num px-3 py-2">
+                            {r.kase
+                              ? `${r.kase.start} – ${r.kase.end} · ${(r.kase.rate / 100).toFixed(2)}%`
+                              : "—"}
+                          </td>
+                          <td className="num px-3 py-2">
+                            {r.preview
+                              ? `${r.preview.periodStart} – ${r.preview.periodEnd}`
+                              : "—"}
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            {r.mismatch ? tc("mismatch") : tc("match")}
+                          </td>
+                        </tr>
+                      ),
+                    )}
                   </tbody>
                 </table>
               </div>

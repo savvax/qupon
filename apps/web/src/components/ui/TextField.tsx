@@ -1,5 +1,6 @@
 "use client";
 
+import { StableText } from "@/components/i18n/StableLabel";
 import { useId, type InputHTMLAttributes, type ReactNode } from "react";
 import { cx } from "@/lib/ui/cx";
 
@@ -64,7 +65,8 @@ export function TextField({
       </div>
       {hint && !error && (
         <p id={hintId} className="mt-1 text-xs text-n500">
-          {hint}
+          {/* reserves the longer locale's height: fields below never move with the language */}
+          <StableText>{hint}</StableText>
         </p>
       )}
       {error && (

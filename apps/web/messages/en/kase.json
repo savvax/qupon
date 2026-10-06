@@ -25,15 +25,15 @@
   "import": {
     "title": "Import from KASE",
     "ticker": "KASE ticker",
-    "tickerHint": "e.g. TEBNb10 — listed bond on kase.kz",
+    "tickerHint": "e.g. TEBNb10 — listed bond on kase.kz",
     "button": "Import",
-    "done": "Imported {ticker} ({issuer}) — review every term before issuing.",
+    "done": "Imported {ticker} ({issuer}) — review every term before issuing.",
     "note": "Public kase.kz reference data, cached by the platform. Always verify against the prospectus.",
     "errors": {
       "invalid_ticker": "Ticker must be 2–12 letters or digits.",
       "kase_not_found": "kase.kz has no bond with this ticker.",
-      "kase_unavailable": "kase.kz is unavailable right now — enter the terms manually.",
-      "default": "Import failed — enter the terms manually."
+      "kase_unavailable": "kase.kz is unavailable right now — enter the terms manually.",
+      "default": "Import failed — enter the terms manually."
     }
   },
   "compare": {
@@ -44,7 +44,7 @@
     "status": "Check",
     "match": "Matches",
     "mismatch": "Mismatch",
-    "legend": "A row matches when KASE's coupon fixation falls inside the preview's period and the rate equals the annual coupon. Historical KASE fixings (older rates, partial periods) surface as mismatches — check the prospectus."
+    "legend": "A row matches when KASE's coupon fixation falls inside the preview's period and the rate equals the annual coupon. Historical KASE fixings (older rates, partial periods) surface as mismatches — check the prospectus."
   },
   "panel": {
     "title": "KASE · {ticker}",

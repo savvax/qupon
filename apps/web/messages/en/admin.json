@@ -100,7 +100,7 @@
     "empty": "No series yet",
     "emptyBody": "Series appear here once they are issued on-chain.",
     "unreachable": "Series settings are unavailable",
-    "unreachableBody": "The registrar API is not answering right now — try again in a moment."
+    "unreachableBody": "The registrar API is not answering right now — try again in a moment."
   },
   "audit": {
     "title": "Audit log",
@@ -127,7 +127,7 @@
     "ok": "OK",
     "failed": "Failed",
     "empty": "No audit entries for these filters.",
-    "unreachable": "The audit trail is unavailable — try again in a moment.",
+    "unreachable": "The audit trail is unavailable — try again in a moment.",
     "roles": {
       "admin": "Administrator",
       "registrar": "Registrar",
