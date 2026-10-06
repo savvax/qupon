@@ -1,0 +1,8 @@
+{
+  "badge": {
+    "devnet": "Devnet",
+    "mainnet-beta": "Mainnet",
+    "devnetHint": "Test network: tokens have no value",
+    "mainnetHint": "Live network: transactions move real assets"
+  }
+}

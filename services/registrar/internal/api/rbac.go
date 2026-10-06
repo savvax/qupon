@@ -45,6 +45,11 @@ func requireRole(svc *auth.Service, roles ...string) func(http.Handler) http.Han
 	}
 }
 
+// requireUser admits any signed-in user, whatever the role (account, notifications, documents).
+func requireUser(svc *auth.Service) func(http.Handler) http.Handler {
+	return requireRole(svc, "issuer", "registrar", "investor_demo", "investor")
+}
+
 // writeErrorCode writes the openapi Error shape ({code, message}); "error" repeats the message for older clients.
 func writeErrorCode(w http.ResponseWriter, status int, code, msg string) {
 	writeJSON(w, status, map[string]string{"code": code, "message": msg, "error": msg})

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { featureMock } from "@/mocks/features";
 import {
   MOCK_SESSIONS,
   apiBase,
@@ -10,10 +11,13 @@ import { isAllowedWrite } from "../allowlist";
 const err = (status: number, code: string, message: string) =>
   NextResponse.json({ code, message }, { status });
 
-/** Session proxy for back-office writes: JSON only, same origin, bearer from the httpOnly cookie. */
-export async function POST(
+type Ctx = { params: Promise<{ path: string[] }> };
+
+/** Session proxy for signed-in writes: JSON only, same origin, bearer from the httpOnly cookie. */
+async function forward(
+  method: "POST" | "PATCH" | "DELETE",
   req: Request,
-  { params }: { params: Promise<{ path: string[] }> },
+  { params }: Ctx,
 ) {
   const path = (await params).path.join("/");
   if (!isAllowedWrite(path)) return err(403, "forbidden_path", "not allowed");
@@ -23,22 +27,26 @@ export async function POST(
     return err(415, "bad_content_type", "JSON only");
   const token = await sessionToken();
   if (!token) return err(401, "unauthenticated", "sign in required");
-  if (MOCK_SESSIONS)
+  const body = await req.text();
+  if (MOCK_SESSIONS) {
+    const feature = featureMock(method, `/${path}`, JSON.parse(body || "{}"));
+    if (feature) return NextResponse.json(feature.value);
     return NextResponse.json({
       mock: true,
       signatures: [
         "MockSig1111111111111111111111111111111111111111111111111111111111111111111111111111111",
       ],
     });
+  }
   let res: Response;
   try {
     res = await fetch(`${apiBase()}/${path}`, {
-      method: "POST",
+      method,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: await req.text(),
+      body,
     });
   } catch {
     return err(502, "upstream", "registrar API unreachable");
@@ -50,3 +58,7 @@ export async function POST(
     },
   });
 }
+
+export const POST = (req: Request, ctx: Ctx) => forward("POST", req, ctx);
+export const PATCH = (req: Request, ctx: Ctx) => forward("PATCH", req, ctx);
+export const DELETE = (req: Request, ctx: Ctx) => forward("DELETE", req, ctx);

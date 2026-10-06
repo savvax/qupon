@@ -9,7 +9,8 @@ import { LocaleSwitch } from "./LocaleSwitch";
 import { Logo } from "./Logo";
 import { SignOutButton } from "./SignOutButton";
 
-export type CabinetRole = "issuer" | "registrar" | "investor_demo" | "admin";
+export type CabinetRole =
+  "issuer" | "registrar" | "investor_demo" | "investor" | "admin";
 export type CabinetNavItem = { href: string; label: string; icon?: ReactNode };
 export type CabinetUser = { name: string; role: CabinetRole; isDemo: boolean };
 
@@ -22,12 +23,15 @@ export function CabinetShell({
   nav,
   user,
   breadcrumb,
+  topbar,
   children,
 }: {
   role: CabinetRole;
   nav: CabinetNavItem[];
   user: CabinetUser | null;
   breadcrumb?: ReactNode;
+  /** Server-rendered top-bar items (network badge, notification bell): <TopbarExtras />. */
+  topbar?: ReactNode;
   children: ReactNode;
 }) {
   const t = useTranslations("cabinet");
@@ -80,17 +84,21 @@ export function CabinetShell({
               {t("demo")}
             </span>
           )}
+          {topbar}
           <LocaleSwitch />
           {user && (
             <>
-              <div className="hidden text-right leading-tight lg:block">
+              <Link
+                href="/account"
+                className="hidden rounded-lg px-2 py-1 text-right leading-tight transition hover:bg-n50 lg:block"
+              >
                 <div className="text-sm font-semibold text-n900">
                   {user.name}
                 </div>
                 <div className="text-xs text-n500">
                   {t(`roles.${user.role}`)}
                 </div>
-              </div>
+              </Link>
               <SignOutButton />
             </>
           )}

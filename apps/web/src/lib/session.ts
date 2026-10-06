@@ -6,20 +6,25 @@ import { API_BASE_URL, MOCK_ENABLED } from "@/lib/api";
 /** httpOnly cookie holding the back-office session token; the browser's JS never sees it. */
 export const SESSION_COOKIE = "qupon_session";
 
-export type Role = "issuer" | "registrar" | "investor_demo" | "admin";
+export type Role =
+  "issuer" | "registrar" | "investor_demo" | "investor" | "admin";
 export type SessionUser = {
   id: number;
   email: string;
   name: string;
   role: Role;
   isDemo: boolean;
+  orgId?: number | null;
+  status?: "active" | "disabled" | "pending";
+  locale?: "en" | "ru";
 };
 
 export const ROLE_HOME: Record<Role, string> = {
   issuer: "/issuer",
   registrar: "/registrar",
   investor_demo: "/investor",
-  admin: "/registrar",
+  investor: "/investor",
+  admin: "/admin",
 };
 
 /** Server-to-server base URL: inside compose the API is http://registrar:8080. */
@@ -36,17 +41,30 @@ const DEMO_ROLES: Record<string, Role> = {
   registrar: "registrar",
   investor: "investor_demo",
 };
+/** Mock-only accounts for e2e (set the cookie `qupon_session=mock:admin` / `mock:member`): not demo identities. */
+const MOCK_ACCOUNTS: Record<string, Role> = {
+  admin: "admin",
+  member: "investor",
+};
 
 export function mockUser(token: string): SessionUser | null {
   const demo = token.startsWith("mock:") ? token.slice(5) : "";
-  const role = DEMO_ROLES[demo];
+  const role = DEMO_ROLES[demo] ?? MOCK_ACCOUNTS[demo];
   if (!role) return null;
+  const isDemo = demo in DEMO_ROLES;
   return {
-    id: 1,
-    email: `demo-${demo}@qupon.demo`,
-    name: `Demo ${demo}`,
+    id: isDemo ? 1 : 2,
+    email: isDemo ? `demo-${demo}@qupon.demo` : `${demo}@qupon.test`,
+    name: isDemo
+      ? `Demo ${demo}`
+      : demo === "admin"
+        ? "Ada Admin"
+        : "Mira Member",
     role,
-    isDemo: true,
+    isDemo,
+    orgId: role === "issuer" ? 1 : role === "registrar" ? 2 : null,
+    status: "active",
+    locale: "en",
   };
 }
 

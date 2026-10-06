@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { boErrorFrom } from "@/lib/boClient";
 
-type Role = "issuer" | "registrar" | "investor_demo" | "admin";
+type Role = "issuer" | "registrar" | "investor_demo" | "investor" | "admin";
 const HOME: Record<Role, string> = {
   issuer: "/issuer",
   registrar: "/registrar",
   investor_demo: "/investor",
-  admin: "/registrar",
+  investor: "/investor",
+  admin: "/admin",
 };
 
 /** Full navigation after sign-in: the next page renders on the server with the fresh session cookie. */

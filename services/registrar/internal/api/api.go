@@ -20,6 +20,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
+	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
@@ -45,6 +46,10 @@ type Deps struct {
 	SignInLimit *auth.Limiter
 	// ReadCacheTTL caches GET chain read models (cache.go); 0 disables (tests).
 	ReadCacheTTL time.Duration
+	// Network is the cluster this instance serves (platform v2 §5.1); zero value = devnet.
+	Network network.Profile
+	// DataDir holds uploaded documents (platform v2 §5.3); empty = documents disabled.
+	DataDir string
 	// TestRoutes registers GET /_test/registrar (role-gated no-op) for RBAC tests; never set in production.
 	TestRoutes bool
 }
@@ -216,6 +221,47 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	investorDemo := requireRole(deps.Auth, "investor_demo")
 	r.With(investorDemo, write).Post("/demo/investor/subscribe", demoSubscribe(deps, st))
 	r.With(investorDemo, write).Post("/demo/investor/vote", demoVote(deps, st))
+
+	r.Get("/network", func(w http.ResponseWriter, _ *http.Request) {
+		p := deps.Network
+		if p.Name == "" {
+			p, _ = network.New("devnet", "")
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"network": p.Name, "programId": p.ProgramID, "explorerCluster": p.ExplorerCluster, "mainnet": p.Mainnet,
+			"demoLogin": deps.Auth != nil && deps.Auth.DemoLogin && !p.Mainnet,
+		})
+	})
+
+	// Platform v2 feature routes (docs/superpowers/plans/2026-10-06-plan6-12-platform-v2.md): each task replaces
+	// exactly its own anchor below with mount<Feature>(r, deps, st). Keep one blank line between anchors.
+	// mount: assets
+
+	// mount: faucet
+
+	// mount: admin
+
+	// mount: system
+
+	// mount: wallets
+
+	// mount: signup
+
+	// mount: documents
+
+	// mount: kyc
+
+	// mount: notifications
+
+	// mount: account
+
+	// mount: org
+
+	// mount: reports
+
+	// mount: kase
+
+	// mount: disclosure
 
 	if deps.TestRoutes {
 		r.With(registrar).Get("/_test/registrar", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, http.StatusOK, map[string]string{}) })

@@ -41,6 +41,31 @@ export const registrarNav = (t: T): CabinetNavItem[] => [
   },
 ];
 
+export const adminNav = (t: T): CabinetNavItem[] => [
+  { href: "/admin", label: t("overview"), icon: <Icon name="dashboard" /> },
+  { href: "/admin/users", label: t("users"), icon: <Icon name="users" /> },
+  {
+    href: "/admin/organizations",
+    label: t("organizations"),
+    icon: <Icon name="building" />,
+  },
+  { href: "/admin/assets", label: t("assets"), icon: <Icon name="coins" /> },
+  { href: "/admin/series", label: t("series"), icon: <Icon name="series" /> },
+  { href: "/admin/system", label: t("system"), icon: <Icon name="server" /> },
+  { href: "/admin/network", label: t("network"), icon: <Icon name="globe" /> },
+  { href: "/admin/audit", label: t("audit"), icon: <Icon name="shield" /> },
+];
+
+/** The shared account area (/account) shows the nav of the user's own cabinet. */
+export const navForRole = (role: string, t: T): CabinetNavItem[] =>
+  role === "admin"
+    ? adminNav(t)
+    : role === "issuer"
+      ? issuerNav(t)
+      : role === "registrar"
+        ? registrarNav(t)
+        : investorNav(t);
+
 export const investorNav = (t: T): CabinetNavItem[] => [
   { href: "/investor", label: t("portfolio"), icon: <Icon name="wallet" /> },
   {

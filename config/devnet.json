@@ -36,5 +36,27 @@
       "6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC"
     ],
     "outsider": "EiAZ7r9tVciGeibwdFmjbhhZVeSGXxY2CMuqP71MaN6g"
-  }
+  },
+  "cashAssets": [
+    {
+      "symbol": "tKZT",
+      "name": "Test tenge (devnet)",
+      "mint": "HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF",
+      "decimals": 2,
+      "tokenProgram": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      "kind": "test",
+      "issuerNote": "Qupon devnet test token; mint authority = Qupon operator.",
+      "enabled": true
+    },
+    {
+      "symbol": "USDC",
+      "name": "USD Coin (Circle devnet)",
+      "mint": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+      "decimals": 6,
+      "tokenProgram": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+      "kind": "stablecoin",
+      "issuerNote": "Circle's devnet USDC (faucet.circle.com).",
+      "enabled": true
+    }
+  ]
 }

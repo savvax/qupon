@@ -12,6 +12,7 @@ import type {
   ScheduleItem,
   SeriesDTO,
 } from "../lib/api";
+import { featureMock } from "./features";
 
 const MINT_QPNB1 = "QpNb1Dem0BondMint1111111111111111111111111111";
 const MINT_BTRK = "BTRKDeM0BondMint1111111111111111111111111111";
@@ -497,8 +498,10 @@ function mockReconcile(pda: string) {
 const delay = <T>(body: T): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(body), 30));
 
-/** Serve one registrar API path from the fixtures above. */
+/** Serve one registrar API path from the feature mocks (platform v2) or the fixtures above. */
 export function mockGet(path: string): Promise<unknown> {
+  const feature = featureMock("GET", path);
+  if (feature) return delay(feature.value);
   const notFound = () => {
     throw new Api404(`series ${path} not found`);
   };

@@ -45,6 +45,9 @@ func (s *Service) Login(ctx context.Context, email, password string) (string, st
 	if err != nil {
 		return "", store.User{}, fmt.Errorf("login: %w", err)
 	}
+	if u.Status != "active" { // disabled accounts look like a wrong password: no account-state oracle
+		return "", store.User{}, ErrBadCredentials
+	}
 	return s.issue(ctx, u)
 }
 

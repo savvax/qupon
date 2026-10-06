@@ -306,7 +306,8 @@
       "issuer": "Issuer",
       "registrar": "Registrar",
       "investor_demo": "Investor",
-      "admin": "Administrator"
+      "admin": "Administrator",
+      "investor": "Investor"
     },
     "menu": {
       "dashboard": "Dashboard",
@@ -319,7 +320,14 @@
       "portfolio": "Portfolio",
       "placement": "Placement",
       "meetings": "Meetings",
-      "statements": "Statements"
+      "statements": "Statements",
+      "overview": "Overview",
+      "users": "Users",
+      "organizations": "Organizations",
+      "assets": "Cash assets",
+      "system": "System",
+      "network": "Network",
+      "audit": "Audit log"
     },
     "placeholder": {
       "hello": "Hello, {name}",

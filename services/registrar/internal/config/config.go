@@ -19,6 +19,8 @@ type Config struct {
 	DemoLogin      bool   // DEMO_LOGIN — enable one-click demo sign-in (POST /auth/demo) and seed the demo users
 	Users          string // QUPON_USERS — JSON [{"email","name","role","password"}] upserted at startup
 	Port           string // PORT — HTTP listen port
+	DataDir        string // DATA_DIR — uploaded documents (platform v2)
+	HideSeries     string // HIDE_SERIES — mints hidden at first start (comma/space separated; admin panel owns it after)
 
 	// Scheduler / autopilot (task 024). Scheduler defaults off; -demo-speed
 	// implies -scheduler with short cadence (2-minute announce lead).
@@ -54,6 +56,8 @@ func FromFlags(args []string) Config {
 		DemoLogin:        envBool("DEMO_LOGIN"),
 		Users:            env("QUPON_USERS", ""),
 		Port:             env("PORT", "8080"),
+		DataDir:          env("DATA_DIR", "/data"),
+		HideSeries:       env("HIDE_SERIES", ""),
 		Scheduler:        envBool("SCHEDULER"),
 		DemoSpeed:        envBool("DEMO_SPEED"),
 		AutoFund:         envBool("AUTOFUND"),

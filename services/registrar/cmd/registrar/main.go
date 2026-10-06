@@ -24,6 +24,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/execconfig"
 	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/ingest"
+	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
 	"github.com/qupon-kz/qupon/services/registrar/internal/scheduler"
@@ -133,6 +134,13 @@ func run() error {
 	if err := seedUsers(ctx, st, cfg); err != nil {
 		return fmt.Errorf("seed users: %w", err)
 	}
+	profile, err := network.FromConfig(cfg.QuponConfig)
+	if err != nil {
+		return err
+	}
+	if err := seedPlatform(ctx, st, cfg, profile); err != nil {
+		return fmt.Errorf("seed platform: %w", err)
+	}
 
 	srv := &http.Server{
 		Addr: ":" + cfg.Port,
@@ -143,6 +151,8 @@ func run() error {
 			Chain:        chainClient,
 			Executor:     exec,
 			BaseConfig:   cfg.QuponConfig,
+			Network:      profile,
+			DataDir:      cfg.DataDir,
 			ReadCacheTTL: 10 * time.Second,
 			SignInLimit:  auth.NewLimiter(20, time.Minute),
 			// demo accounts are public: bound what they can spend of the operator keys
@@ -262,6 +272,58 @@ func seedUsers(ctx context.Context, st *store.Store, cfg config.Config) error {
 			return fmt.Errorf("hash password for %s: %w", email, err)
 		}
 		if _, err := st.UpsertUser(ctx, store.User{Email: email, Name: u.Name, Role: u.Role}, hash); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// seedPlatform prepares platform v2 rows (spec 2026-10-06 §4) without overwriting admin edits: demo organisations
+// with the demo users in them, the network's cash-asset presets from the base config ("cashAssets"), and the
+// HIDE_SERIES list as hidden series settings.
+func seedPlatform(ctx context.Context, st *store.Store, cfg config.Config, profile network.Profile) error {
+	if cfg.DemoLogin {
+		for _, d := range []struct{ org, kind, role string }{
+			{"Demo Issuer JSC", "issuer", "issuer"},
+			{"Demo Registrar", "registrar", "registrar"},
+		} {
+			o, err := st.OrganizationByName(ctx, d.org)
+			if errors.Is(err, store.ErrNotFound) {
+				o, err = st.CreateOrganization(ctx, store.Organization{Name: d.org, Kind: d.kind})
+			}
+			if err != nil {
+				return err
+			}
+			u, err := st.DemoUser(ctx, d.role)
+			if err != nil {
+				return err
+			}
+			if err := st.SetUserOrg(ctx, u.ID, &o.ID); err != nil {
+				return err
+			}
+		}
+	}
+	raw, err := os.ReadFile(cfg.QuponConfig)
+	if err != nil {
+		return fmt.Errorf("read %s: %w", cfg.QuponConfig, err)
+	}
+	var base struct {
+		CashAssets []store.CashAsset `json:"cashAssets"`
+	}
+	if err := json.Unmarshal(raw, &base); err != nil {
+		return fmt.Errorf("parse cashAssets in %s: %w", cfg.QuponConfig, err)
+	}
+	for _, a := range base.CashAssets {
+		if a.Mint == "" { // e.g. mainnet KZTE until its address is confirmed from an official source
+			continue
+		}
+		a.Network = profile.Name
+		if err := st.InsertCashAssetIfMissing(ctx, a); err != nil {
+			return err
+		}
+	}
+	for _, m := range strings.FieldsFunc(cfg.HideSeries, func(r rune) bool { return r == ',' || r == ' ' || r == '\n' }) {
+		if err := st.HideSeriesIfUnset(ctx, m); err != nil {
 			return err
 		}
 	}

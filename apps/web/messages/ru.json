@@ -306,7 +306,8 @@
       "issuer": "Эмитент",
       "registrar": "Регистратор",
       "investor_demo": "Инвестор",
-      "admin": "Администратор"
+      "admin": "Администратор",
+      "investor": "Инвестор"
     },
     "menu": {
       "dashboard": "Обзор",
@@ -319,7 +320,14 @@
       "portfolio": "Портфель",
       "placement": "Размещение",
       "meetings": "Собрания",
-      "statements": "Выписки"
+      "statements": "Выписки",
+      "overview": "Обзор",
+      "users": "Пользователи",
+      "organizations": "Организации",
+      "assets": "Денежные активы",
+      "system": "Система",
+      "network": "Сеть",
+      "audit": "Журнал аудита"
     },
     "placeholder": {
       "hello": "Здравствуйте, {name}",

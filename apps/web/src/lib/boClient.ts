@@ -61,11 +61,20 @@ export function explainBoError(e: BoErrorLike, t: ErrorText = english): string {
 }
 
 /** POST a back-office write through the session proxy (/api/bo/<path>); throws BoError. */
-export async function boPost<T>(path: string, body: unknown = {}): Promise<T> {
+export function boPost<T>(path: string, body: unknown = {}): Promise<T> {
+  return boSend<T>("POST", path, body);
+}
+
+/** Any write verb through the session proxy (PATCH /admin/users/3, DELETE /me/wallets/X); throws BoError. */
+export async function boSend<T>(
+  method: "POST" | "PATCH" | "DELETE",
+  path: string,
+  body: unknown = {},
+): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`/api/bo/${path}`, {
-      method: "POST",
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });

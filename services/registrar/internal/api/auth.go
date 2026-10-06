@@ -21,10 +21,14 @@ type userDTO struct {
 	Name   string `json:"name"`
 	Role   string `json:"role"`
 	IsDemo bool   `json:"isDemo"`
+	OrgID  *int64 `json:"orgId"`
+	Status string `json:"status"`
+	Locale string `json:"locale"`
 }
 
 func toUserDTO(u store.User) userDTO {
-	return userDTO{ID: u.ID, Email: u.Email, Name: u.Name, Role: u.Role, IsDemo: u.IsDemo}
+	return userDTO{ID: u.ID, Email: u.Email, Name: u.Name, Role: u.Role, IsDemo: u.IsDemo,
+		OrgID: u.OrgID, Status: u.Status, Locale: u.Locale}
 }
 
 // demoRoles maps the public demo role names to back-office roles.

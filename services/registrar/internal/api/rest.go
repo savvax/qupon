@@ -412,6 +412,12 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 	}
 
 	r.Get("/series", func(w http.ResponseWriter, r *http.Request) {
+		// Series an admin hid (platform v2 §5.2) stay on-chain but leave every public list.
+		settings, err := st.ListSeriesSettings(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 		if rm == nil { // no chain reader: serve the mirror indexed at startup
 			rows, err := st.ListSeries(r.Context())
 			if err != nil {
@@ -420,6 +426,9 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			}
 			out := make([]json.RawMessage, 0, len(rows))
 			for _, row := range rows {
+				if settings[row.Mint].Hidden {
+					continue
+				}
 				out = append(out, row.Data)
 			}
 			writeJSON(w, http.StatusOK, out)
@@ -432,6 +441,9 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 		}
 		out := make([]SeriesDTO, 0, len(recs))
 		for _, rec := range recs {
+			if settings[rec.Series.Mint.String()].Hidden {
+				continue
+			}
 			m, err := cashMoney(r.Context(), rm, rec.Series.CashMint)
 			if err != nil {
 				fail(w, err)
