@@ -69,5 +69,58 @@
       "confirm": "Enable anyway",
       "cancel": "Cancel"
     }
+  },
+  "custodian": {
+    "title": "Wrapped digital tenge custodian",
+    "lead": "The custodian holds digital tenge (CBDC) and wraps it 1:1 as dKZT for bond settlements. Record a deposit reference to mint, or a withdrawal to burn.",
+    "simulated": "SIMULATED",
+    "simulatedBody": "The custodian is a simulation for the demo: there is no real CBDC bridge. Movements wrap the devnet dKZT test asset only and are audited like every other write.",
+    "assetMint": "Mint",
+    "assetDecimals": "Decimals: {decimals}",
+    "empty": "No custodian movements yet.",
+    "unreachable": "Custodian is unavailable",
+    "unreachableBody": "The registrar API is not answering right now — try again in a moment.",
+    "failed": "failed",
+    "kinds": {
+      "deposit": "Deposit",
+      "withdraw": "Withdrawal"
+    },
+    "table": {
+      "time": "Time",
+      "kind": "Movement",
+      "reference": "CBDC reference",
+      "amount": "Amount",
+      "treasury": "Treasury",
+      "by": "By",
+      "signature": "Transaction"
+    },
+    "dialog": {
+      "open": "Record movement",
+      "title": "Custodian movement (SIMULATED)",
+      "lead": "A deposit mints {symbol} to an issuer treasury; a withdrawal burns it from the platform treasury.",
+      "op": "Movement",
+      "ops": {
+        "deposit": "Deposit (mint)",
+        "withdraw": "Withdrawal (burn)"
+      },
+      "reference": "CBDC reference",
+      "referenceHint": "The deposit or withdrawal reference from the (simulated) CBDC system.",
+      "referencePlaceholder": "e.g. CBDC-2026-001",
+      "amount": "Amount",
+      "amountHint": "Whole tenge; {symbol} uses 2 decimals on-chain.",
+      "to": "Treasury address",
+      "toHint": "The issuer wallet that receives the wrapped tokens.",
+      "toPlaceholder": "e.g. 9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM",
+      "toError": "Enter a valid base58 Solana address",
+      "submit": {
+        "deposit": "Mint {symbol} (SIMULATED)",
+        "withdraw": "Burn {symbol} (SIMULATED)"
+      },
+      "pending": "Recording {kind}…",
+      "deposited": "{symbol} minted (SIMULATED)",
+      "withdrawn": "{symbol} burned (SIMULATED)",
+      "close": "Close",
+      "simulatedNote": "SIMULATED: no real CBDC moves — the reference is only recorded in the transaction memo and the audit ledger."
+    }
   }
 }

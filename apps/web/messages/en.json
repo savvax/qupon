@@ -371,7 +371,8 @@
       "verification": "Verification",
       "organization": "Organisation",
       "team": "Team",
-      "documents": "Documents"
+      "documents": "Documents",
+      "custodian": "Digital tenge"
     },
     "placeholder": {
       "hello": "Hello, {name}",
@@ -402,6 +403,7 @@
     "investorStatements": "Statements",
     "registrarInvestors": "Investors",
     "adminAssets": "Cash assets",
+    "adminCustodian": "Wrapped digital tenge custodian",
     "admin": "Admin overview",
     "adminSystem": "System health",
     "adminSeries": "Series",

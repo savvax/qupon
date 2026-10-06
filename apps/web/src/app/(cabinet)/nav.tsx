@@ -71,6 +71,11 @@ export const adminNav = (t: T): CabinetNavItem[] => [
     icon: <Icon name="building" />,
   },
   { href: "/admin/assets", label: t("assets"), icon: <Icon name="coins" /> },
+  {
+    href: "/admin/custodian",
+    label: t("custodian"),
+    icon: <Icon name="bank" />,
+  },
   { href: "/admin/series", label: t("series"), icon: <Icon name="series" /> },
   { href: "/admin/system", label: t("system"), icon: <Icon name="server" /> },
   { href: "/admin/network", label: t("network"), icon: <Icon name="globe" /> },

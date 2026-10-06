@@ -182,3 +182,99 @@ export const handlers: MockHandler[] = [
     },
   },
 ];
+
+// ---- Wrapped-CBDC custodian (task 606, SIMULATED) ---------------------------------
+// Mirrors internal/api/custodian.go: the wrapped_cbdc asset + the audit-row
+// ledger; deposits mint dKZT to a treasury, withdrawals burn it.
+
+const DKZT_ASSET = {
+  symbol: "dKZT",
+  mint: "dKZTCbdcMint1111111111111111111111111111111",
+  decimals: 2,
+};
+
+type CustodianEntry = {
+  id: number;
+  ts: number;
+  kind: string;
+  reference: string;
+  amount: number;
+  to?: string;
+  email: string;
+  ok: boolean;
+  detail: string;
+  signature?: string;
+};
+
+let custodianSeq = 2;
+const custodianLedger: CustodianEntry[] = [
+  {
+    id: 1,
+    ts: nowSec() - 3600,
+    kind: "deposit",
+    reference: "CBDC-2026-0001",
+    amount: 1_200_000,
+    to: "TreasuryWa11etAddress55555555555555555555555",
+    email: "admin@qupon.kz",
+    ok: true,
+    detail: "SIMULATED custodian deposit: dKZT minted",
+    signature:
+      "4NxL1mockSignatureCustodianDepositRow1111111111111111111111111111111111111111111",
+  },
+];
+
+custodianMock();
+custodianMock();
+
+function custodianMock() {
+  handlers.push(
+    {
+      method: "GET",
+      path: /^\/admin\/custodian$/,
+      reply: () => ({ asset: DKZT_ASSET, ledger: custodianLedger }),
+    },
+    {
+      method: "POST",
+      path: /^\/admin\/custodian\/(deposit|withdraw)$/,
+      reply: (m, body) => {
+        const kind = m[1] === "withdraw" ? "withdraw" : "deposit";
+        const req = body as {
+          reference?: string;
+          amount?: number;
+          to?: string;
+        };
+        const reference = String(req.reference ?? "").trim();
+        const amount = Number(req.amount ?? 0);
+        if (!reference || amount < 1)
+          return { code: "invalid_params", message: "" };
+        const to = String(req.to ?? "").trim();
+        if (kind === "deposit" && !BASE58.test(to))
+          return { code: "invalid_params", message: "" };
+        const signature = `5Cust0dianMock${kind}Sig${reference}`
+          .replace(/[^1-9A-HJ-NP-Za-km-z]/g, "1")
+          .padEnd(87, "x");
+        const row: CustodianEntry = {
+          id: ++custodianSeq,
+          ts: nowSec(),
+          kind,
+          reference,
+          amount: Math.round(amount * 10 ** DKZT_ASSET.decimals),
+          ...(kind === "deposit" ? { to } : {}),
+          email: "admin@qupon.kz",
+          ok: true,
+          detail: `SIMULATED custodian ${kind}: dKZT ${kind === "deposit" ? "minted" : "burned"}`,
+          signature,
+        };
+        custodianLedger.unshift(row);
+        return {
+          ok: true,
+          kind,
+          reference,
+          amount: row.amount,
+          signature,
+          explorerUrl: `https://explorer.solana.com/tx/${signature}?cluster=devnet`,
+        };
+      },
+    },
+  );
+}

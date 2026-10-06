@@ -371,7 +371,8 @@
       "verification": "Верификация",
       "organization": "Организация",
       "team": "Команда",
-      "documents": "Документы"
+      "documents": "Документы",
+      "custodian": "Цифровой тенге"
     },
     "placeholder": {
       "hello": "Здравствуйте, {name}",
@@ -402,6 +403,7 @@
     "investorStatements": "Выписки",
     "registrarInvestors": "Инвесторы",
     "adminAssets": "Денежные активы",
+    "adminCustodian": "Кастодиан цифрового тенге",
     "admin": "Обзор платформы",
     "adminSystem": "Состояние системы",
     "adminSeries": "Серии",

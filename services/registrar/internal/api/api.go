@@ -251,6 +251,8 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	mountFaucet(r, deps, st)
 
+	mountCustodian(r, deps, st)
+
 	mountAdmin(r, deps, st)
 
 	mountSystem(r, deps, st)
