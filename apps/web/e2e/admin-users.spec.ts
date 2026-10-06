@@ -70,6 +70,8 @@ test("users: create, disable, reset-link modal, reset page sets a password", asy
 
   // The reset page (public) sets a password with that token (mock backend).
   const token = (await urlInput.inputValue()).split("/reset/")[1];
+  // the person resetting is signed out (a signed-in visitor to /login is sent home)
+  await page.context().clearCookies();
   await page.goto(`/reset/${token}`);
   await expect(
     page.getByRole("heading", { name: "Set a new password" }),

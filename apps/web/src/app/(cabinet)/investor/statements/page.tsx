@@ -20,6 +20,7 @@ export default async function InvestorStatementsPage() {
     <InvestorIdentity
       title={(await getTranslations("cabinet.menu"))("statements")}
       demoOwner={demoOwner}
+      selfRegistered={s?.role === "investor"}
     >
       <Statements />
     </InvestorIdentity>

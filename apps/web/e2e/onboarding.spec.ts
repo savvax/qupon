@@ -76,4 +76,11 @@ test("no checklist on a mainnet profile", async ({ page, baseURL }) => {
   await expect(page.getByRole("button", { name: "Get KZTE-dev" })).toHaveCount(
     0,
   );
+  // the KYC banner stands in: still exactly one onboarding block (task 91109)
+  await expect(
+    page.getByRole("heading", { name: /Two steps to your first bond/ }),
+  ).toBeVisible();
+  await expect(
+    page.locator("section[aria-labelledby^=onboarding]"),
+  ).toHaveCount(1);
 });

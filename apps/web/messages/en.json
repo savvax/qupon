@@ -882,7 +882,8 @@
       "demoWallet": "Demo custodial wallet",
       "demoBadge": "DEMO",
       "watchWallet": "Wallet (view only)",
-      "watchBadge": "Read-only"
+      "watchBadge": "Read-only",
+      "bodyAccount": "Connect the wallet you linked to your account to see positions, payouts and votes — or view any address read-only."
     },
     "portfolio": {
       "title": "Portfolio",

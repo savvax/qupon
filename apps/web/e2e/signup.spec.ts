@@ -19,10 +19,18 @@ test("sign-up lands on /investor with the onboarding banner", async ({
   await page.getByLabel("Password").fill("steppe-bonds-2026");
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/\/investor$/);
+  // one onboarding block: the devnet checklist, its current step is KYC (the mock member has a wallet)
   await expect(
-    page.getByRole("heading", { name: /Two steps to your first bond/ }),
-  ).toBeVisible();
-  await page.getByRole("link", { name: "Start verification" }).click();
+    page.locator("section[aria-labelledby^=onboarding]"),
+  ).toHaveCount(1);
+  await expect(page.locator("li[aria-current=step]")).toHaveAttribute(
+    "data-key",
+    "kycApproved",
+  );
+  await page
+    .locator("li[aria-current=step]")
+    .getByRole("link", { name: "Apply" })
+    .click();
   await expect(page).toHaveURL(/\/investor\/kyc$/);
 });
 

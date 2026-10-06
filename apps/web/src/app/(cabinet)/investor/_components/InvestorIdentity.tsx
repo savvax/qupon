@@ -43,7 +43,7 @@ export function useInvestor(): InvestorIdentityValue {
 }
 
 /** Card shown when there is no wallet, no read-only address and no demo session (spec §5.7). */
-function Chooser() {
+function Chooser({ selfRegistered = false }: { selfRegistered?: boolean }) {
   const t = useTranslations("investor.chooser");
   const w = useTranslations("wallet.button");
   const { choices, connect, pending, setWatch } = useWalletUX();
@@ -90,20 +90,23 @@ function Chooser() {
         <StableText>{t("title")}</StableText>
       </h1>
       <p className="mx-auto mt-2 max-w-md text-sm text-n600">
-        <StableText>{t("body")}</StableText>
+        <StableText>{t(selfRegistered ? "bodyAccount" : "body")}</StableText>
       </p>
       <div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
         <Button size="lg" onClick={connect} loading={!!pending}>
           {only ? w("connectNamed", { name: only.name }) : t("connectWallet")}
         </Button>
-        <Button
-          size="lg"
-          variant="secondary"
-          loading={demoPending}
-          onClick={() => void tryDemo()}
-        >
-          {t("tryDemo")}
-        </Button>
+        {/* a signed-in investor would lose their session to the demo one: no demo button for them */}
+        {!selfRegistered && (
+          <Button
+            size="lg"
+            variant="secondary"
+            loading={demoPending}
+            onClick={() => void tryDemo()}
+          >
+            {t("tryDemo")}
+          </Button>
+        )}
       </div>
       <p className="mt-3 text-xs text-n500">
         {choices.length > 1
@@ -160,12 +163,15 @@ function Chooser() {
 export function InvestorIdentity({
   title,
   demoOwner,
+  selfRegistered = false,
   children,
 }: {
   /** The section name (Portfolio, Placement…) — the page's h1; the wallet goes on the line below. */
   title: string;
   /** Demo custodial wallet address when the session role is investor_demo; null otherwise. */
   demoOwner: string | null;
+  /** Signed in with an own investor account: the chooser offers no demo switch. */
+  selfRegistered?: boolean;
   children: ReactNode;
 }) {
   const t = useTranslations("investor.identity");
@@ -179,7 +185,7 @@ export function InvestorIdentity({
         ? { mode: "watch", owner: watch }
         : null;
 
-  if (!id) return <Chooser />;
+  if (!id) return <Chooser selfRegistered={selfRegistered} />;
 
   return (
     <Ctx.Provider value={id}>

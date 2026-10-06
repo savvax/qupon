@@ -29,5 +29,20 @@
     "success": "Test {symbol} is on its way to your wallet",
     "note": "Devnet faucet: one request per asset per hour."
   },
-  "allDone": "All steps complete — you are ready to invest."
+  "allDone": "All steps complete — you are ready to invest.",
+  "progress": "{done} of {total} done",
+  "kyc": {
+    "submitted": "Your application is under review — you will be notified.",
+    "rejected": "Your application was rejected — see the reason and apply again."
+  },
+  "actions": {
+    "wallet": "Link a wallet",
+    "subscribe": "Subscribe",
+    "kyc": {
+      "none": "Apply",
+      "submitted": "View application",
+      "rejected": "See the reason",
+      "approved": "View"
+    }
+  }
 }
