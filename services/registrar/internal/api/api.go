@@ -239,7 +239,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	// mount: faucet
 
-	// mount: admin
+	mountAdmin(r, deps, st)
 
 	// mount: system
 
@@ -278,10 +278,14 @@ func corsReadOnly(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
 			h := w.Header()
-			// Wildcard is deliberate: public devnet reads for the investor portal;
-			// credentials are never allowed (no Allow-Credentials header), so
-			// browsers refuse credentialed requests. Writes get no CORS headers.
-			h.Set("Access-Control-Allow-Origin", "*")
+			// Public devnet reads for the investor portal: any origin may read, but
+			// the request Origin is echoed instead of a wildcard and credentials are
+			// never allowed (no Allow-Credentials header), so browsers refuse
+			// credentialed requests. Writes get no CORS headers.
+			if o := r.Header.Get("Origin"); o != "" {
+				h.Set("Access-Control-Allow-Origin", o)
+				h.Add("Vary", "Origin")
+			}
 			h.Set("Access-Control-Allow-Methods", "GET, HEAD")
 		}
 		if r.Method == http.MethodOptions {

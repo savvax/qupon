@@ -109,8 +109,8 @@ func TestCORSReadOnly(t *testing.T) {
 	for _, tc := range []struct {
 		method, path, want string
 	}{
-		{http.MethodGet, "/healthz", "*"},                                          // portal reads from any origin
-		{http.MethodOptions, "/series", "*"},                                       // preflight
+		{http.MethodGet, "/healthz", "https://qupon.vercel.app"},                   // any origin echoed; never credentialed
+		{http.MethodOptions, "/series", "https://qupon.vercel.app"},                // preflight
 		{http.MethodPost, "/actions/11111111111111111111111111111111/advance", ""}, // writes: same-origin only
 	} {
 		req, _ := http.NewRequest(tc.method, srv.URL+tc.path, nil)
