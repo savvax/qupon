@@ -185,6 +185,20 @@ Press (scale .98) and hover lift on Button/Card links; sliding active indicator 
 ### Task 1106 (lead + subagent): UX audit
 Screenshot sweep of every page (EN/RU × 1440/390) + checklist (§5.8): layout shift between locales, wrapping, empty/loading/error states, focus, contrast, touch targets, copy. Output `reports/ux-audit.md` and fix tasks `11NN-ux-*.md`.
 
+### Task 1107 (lead): locale-stable controls and the iridescent hero (spec §5.8, review 2026-10-06)
+Buttons keep their size and position when the language changes: `Button` reserves the width of the longer of its EN/RU labels (alt-locale label map from the root layout, invisible `::after` with `content: attr(data-alt)`), `StableLabel` does the same for nav links and other controls; text blocks above key buttons reserve their line count (hero headline/lead). The hero background becomes iridescent: a slowly rotating conic gradient in brand hues blended over the aurora, and a shimmering edge on the lifecycle card. e2e: button boxes on the landing, header, login and investor chooser are identical in EN and RU.
+
+### Task 1108 (lead): motion polish v3 — "very beautiful" across the product
+On top of 1105: scroll-reveal of landing sections, spring hover on cards, animated progress bars and step connectors, number morphs on value changes, success check draw on completed actions, refined page/route transitions, dialog/drawer choreography; all reduced-motion safe and GPU-only.
+
+### Task 9700 (glm): fixes from the 2026-10-06 review of 601/701/604/705/1102
+- HIGH 705: `src/app/(cabinet)/admin/page.tsx` queries `registrar/kyc?status=pending`; the API accepts `submitted|approved|rejected` → use `submitted`; fix the mock in `mocks/features/kyc.ts` to `submitted` too; add an e2e assertion that the KYC card shows a number.
+- MEDIUM 601: `internal/assets/verify_test.go` — assert `errors.Is(err, ErrNotMint)` / `ErrUnknownProgram`; `verify.go` — reject uninitialised mints (`data[45] != 1`); `assets.go` PATCH — symbol 1–12 and name 1–60 chars, non-empty symbol before enabling.
+- MEDIUM 701: audit `to=YYYY-MM-DD` includes the whole day (end of day, Almaty); self-lockout blocks any non-active status for self; refuse reset links and PATCH on `IsDemo` users; consume the reset token and set the password in one transaction; audit CSV neutralises cells starting with `= + - @` (prefix `'`).
+- MEDIUM 1102: cap the list stagger — only the first 12 items get increasing delays (rest appear with the 12th); no stagger above 60 rows.
+- LOW 604: i18n for the hard-coded placeholders and `aria-label` on the ✕ buttons; error state instead of "No assets yet" when the API fails; valid base58 mock mints and the mock PATCH mirrors `freeze_authority_unconfirmed`.
+- LOW 705: show a "data may be stale" banner when a refresh fails after a successful load.
+
 ## Plan 12 — Hardening and launch
 
 ### Task 1201 (glm): cross-feature e2e
