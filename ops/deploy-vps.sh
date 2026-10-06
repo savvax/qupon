@@ -34,6 +34,8 @@ kp() { tr -d ' \n' < "$1"; }
 {
   echo "RPC_URL=$RPC_URL"
   echo "DEMO_LOGIN=1"
+  # absolute links the API hands out: admin password-reset links, organisation invites (platform v2)
+  echo "PUBLIC_URL=https://qupon.$HOST"
   [ -z "${QUPON_USERS:-}" ] || echo "QUPON_USERS=$QUPON_USERS"
   echo "QUPON_REGISTRAR_KEYPAIR_JSON=$(kp "$QUPON_REGISTRAR_KEYPAIR")"
   echo "QUPON_ISSUER_KEYPAIR_JSON=$(kp "$QUPON_ISSUER_KEYPAIR")"
