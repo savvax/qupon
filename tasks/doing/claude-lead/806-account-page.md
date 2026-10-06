@@ -1,7 +1,7 @@
 ---
 id: 806
 title: Account page: profile, locale, password
-agent: glm
+agent: claude
 tier: T1
 depends_on: [801]
 verify: make verify
