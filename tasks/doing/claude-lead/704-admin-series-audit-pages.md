@@ -1,5 +1,4 @@
 ---
-blocked_reason: rebase conflict with main
 id: 704
 title: Admin pages: series settings and audit
 agent: glm
