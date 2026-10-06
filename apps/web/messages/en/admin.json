@@ -1,1 +1,75 @@
-{}
+{
+  "overview": {
+    "title": "Overview",
+    "lead": "The register at a glance: users, verification queue, series and operator health.",
+    "kpi": {
+      "users": "Users",
+      "pendingKyc": "Pending KYC",
+      "pendingKycHint": "review is SIMULATED",
+      "series": "Series",
+      "openActions": "Open actions",
+      "lowOperators": "Low-balance operators",
+      "lowOperatorsHint": "under 0.5 SOL",
+      "allFunded": "all operator wallets funded",
+      "unavailable": "unavailable"
+    }
+  },
+  "system": {
+    "title": "System health",
+    "lead": "Live probe of the registrar: RPC, operator wallets, executor and ingest. Refreshes every 15 s.",
+    "refresh": "Refresh",
+    "updated": "Updated {time}",
+    "loading": "Probing the registrar…",
+    "unavailable": "System stats unavailable",
+    "retry": "Retry",
+    "network": "Network",
+    "rpc": {
+      "title": "RPC",
+      "ok": "Reachable",
+      "down": "Unreachable",
+      "latency": "Latency",
+      "ms": "{n} ms",
+      "slot": "Slot"
+    },
+    "ops": {
+      "title": "Operator wallets",
+      "registrar": "Registrar",
+      "issuer": "Issuer",
+      "payingAgent": "Paying agent",
+      "low": "Low",
+      "sol": "{n} SOL"
+    },
+    "executor": {
+      "title": "Executor",
+      "running": "Running",
+      "queued": "Queued",
+      "capacity": "Capacity"
+    },
+    "scheduler": {
+      "title": "Scheduler",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "lastTick": "Last tick",
+      "never": "not yet"
+    },
+    "ingest": {
+      "title": "Ingest",
+      "lastSlot": "Last slot",
+      "lag": "Lag",
+      "slots": "{n} slots"
+    },
+    "kase": {
+      "title": "kase.kz cache",
+      "entries": "Cached entries",
+      "lastFetch": "Last fetch",
+      "never": "never",
+      "lastError": "Last error",
+      "none": "none"
+    },
+    "demo": {
+      "title": "Demo usage",
+      "writes": "Writes this hour",
+      "series": "Series today"
+    }
+  }
+}

@@ -356,7 +356,9 @@
     "investorMeetings": "Meetings",
     "investorStatements": "Statements",
     "registrarInvestors": "Investors",
-    "adminAssets": "Cash assets"
+    "adminAssets": "Cash assets",
+    "admin": "Admin overview",
+    "adminSystem": "System health"
   },
   "errors": {
     "failed": "Something went wrong",

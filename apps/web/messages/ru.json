@@ -356,7 +356,9 @@
     "investorMeetings": "Собрания",
     "investorStatements": "Выписки",
     "registrarInvestors": "Инвесторы",
-    "adminAssets": "Денежные активы"
+    "adminAssets": "Денежные активы",
+    "admin": "Обзор платформы",
+    "adminSystem": "Состояние системы"
   },
   "errors": {
     "failed": "Что-то пошло не так",
