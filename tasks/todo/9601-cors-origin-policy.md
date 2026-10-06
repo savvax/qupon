@@ -1,7 +1,7 @@
 ---
 id: 9601
 title: Pin the CORS decision with a test and a doc line (no behaviour change)
-agent: flash
+agent: claude
 tier: T1
 depends_on: []
 verify: make verify
