@@ -158,13 +158,12 @@ func (e *Extractor) llm(ctx context.Context, text string) (Terms, error) {
 	if model == "" {
 		model = defaultModel
 	}
-	// response_format and thinking are Z.ai-documented; OpenAI-compatible
-	// servers that do not know `thinking` generally ignore it.
+	// response_format is Z.ai-documented and OpenAI-compatible. No `thinking` field: GLM-5.3 refuses
+	// "disabled" (HTTP 400, code 1210) and answers with the JSON in `content` anyway (checked 2026-10-07).
 	body, err := json.Marshal(map[string]any{
 		"model":           model,
 		"temperature":     0.1,
 		"response_format": map[string]string{"type": "json_object"},
-		"thinking":        map[string]string{"type": "disabled"},
 		"messages": []map[string]string{
 			{"role": "system", "content": systemPrompt},
 			{"role": "user", "content": text},

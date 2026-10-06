@@ -38,6 +38,8 @@ kp() { tr -d ' \n' < "$1"; }
   # absolute links the API hands out: admin password-reset links, organisation invites (platform v2)
   echo "PUBLIC_URL=https://qupon.$HOST"
   [ -z "${QUPON_USERS:-}" ] || echo "QUPON_USERS=$QUPON_USERS"
+  # Term-sheet import (task 042): without the key the API uses the SIMULATED regex fallback.
+  [ -z "${ZAI_API_KEY:-}" ] || echo "TERMSHEET_LLM_KEY=$ZAI_API_KEY"
   echo "QUPON_REGISTRAR_KEYPAIR_JSON=$(kp "$QUPON_REGISTRAR_KEYPAIR")"
   echo "QUPON_ISSUER_KEYPAIR_JSON=$(kp "$QUPON_ISSUER_KEYPAIR")"
   echo "QUPON_PAYING_AGENT_KEYPAIR_JSON=$(kp "$QUPON_PAYING_AGENT_KEYPAIR")"
