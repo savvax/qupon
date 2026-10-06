@@ -354,7 +354,8 @@
     "investorPlacement": "Placement",
     "investorMeetings": "Meetings",
     "investorStatements": "Statements",
-    "registrarInvestors": "Investors"
+    "registrarInvestors": "Investors",
+    "adminAssets": "Cash assets"
   },
   "errors": {
     "failed": "Something went wrong",

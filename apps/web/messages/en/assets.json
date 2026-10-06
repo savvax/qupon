@@ -1,1 +1,66 @@
-{}
+{
+  "admin": {
+    "title": "Cash assets",
+    "lead": "Assets are identified by mint address — tickers can be faked. A new asset is verified on-chain and stays disabled until you enable it.",
+    "add": "Add asset",
+    "empty": "No assets yet — add the first mint address.",
+    "table": {
+      "symbol": "Ticker",
+      "name": "Name",
+      "kind": "Kind",
+      "decimals": "Decimals",
+      "tokenProgram": "Token program",
+      "authorities": "Authorities",
+      "enabled": "Enabled",
+      "none": "None"
+    },
+    "kinds": {
+      "test": "Test token",
+      "stablecoin": "Stablecoin",
+      "wrapped_cbdc": "Wrapped CBDC",
+      "spl": "SPL token"
+    },
+    "warnings": {
+      "freeze_authority": "Freeze authority live",
+      "mint_authority": "Mint authority live",
+      "symbol_collision": "Ticker already used"
+    },
+    "addDialog": {
+      "title": "Add asset by mint address",
+      "lead": "Paste the mint address — Qupon reads the account on-chain and fills the verified fields.",
+      "mint": "Mint address",
+      "mintHint": "The token's on-chain address, not its ticker.",
+      "mintError": "Enter a valid base58 Solana address",
+      "verify": "Verify on-chain",
+      "verified": "Verified on-chain",
+      "decimals": "Decimals",
+      "tokenProgram": "Token program",
+      "mintAuthority": "Mint authority",
+      "freezeAuthority": "Freeze authority",
+      "symbol": "Ticker",
+      "symbolHint": "Display only — holders always see the mint address.",
+      "name": "Name",
+      "kind": "Kind",
+      "note": "Issuer note",
+      "noteHint": "Shown to investors, e.g. the custodian behind a wrapped asset.",
+      "enableNow": "Enable now (issuers can use it for new series)",
+      "acceptFreeze": "I understand this mint can be frozen by its authority and accept the risk",
+      "save": "Save asset",
+      "saved": "Asset saved",
+      "again": "Add another mint",
+      "pending": "Verifying mint on-chain…",
+      "success": "Asset added (disabled)"
+    },
+    "toggle": {
+      "on": "Enabled",
+      "off": "Disabled",
+      "enabling": "Enabling asset…",
+      "enabled": "Asset enabled",
+      "disabling": "Disabling asset…",
+      "disabled": "Asset disabled",
+      "confirmTitle": "This mint has a freeze authority",
+      "confirmBody": "The issuer of this token can freeze token accounts. Enable it only if you trust the authority.",
+      "confirm": "Enable anyway"
+    }
+  }
+}

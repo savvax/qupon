@@ -354,7 +354,8 @@
     "investorPlacement": "Размещение",
     "investorMeetings": "Собрания",
     "investorStatements": "Выписки",
-    "registrarInvestors": "Инвесторы"
+    "registrarInvestors": "Инвесторы",
+    "adminAssets": "Денежные активы"
   },
   "errors": {
     "failed": "Что-то пошло не так",
