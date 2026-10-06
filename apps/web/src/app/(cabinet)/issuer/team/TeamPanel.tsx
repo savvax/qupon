@@ -37,7 +37,9 @@ export function TeamPanel({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(null);
+  const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(
+    null,
+  );
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -47,7 +49,11 @@ export function TeamPanel({
     const r = await runWrite({
       pending: t("creating"),
       success: () => t("inviteTitle"),
-      call: () => boPost<{ url: string; expiresAt: string }>("org/invites", { email, role: "issuer" }),
+      call: () =>
+        boPost<{ url: string; expiresAt: string }>("org/invites", {
+          email,
+          role: "issuer",
+        }),
     });
     setBusy(false);
     if (r) {
@@ -78,17 +84,24 @@ export function TeamPanel({
         <span>
           <span className="font-semibold text-n900">{m.name}</span>
           {m.id === meId && (
-            <span className="ml-2 text-xs font-semibold text-g600">{t("you")}</span>
+            <span className="ml-2 text-xs font-semibold text-g600">
+              {t("you")}
+            </span>
           )}
           <span className="mt-0.5 block text-xs text-n500">{m.email}</span>
         </span>
       ),
     },
-    { key: "email", header: t("email"), render: (m) => m.email, hideBelow: "md" },
+    {
+      key: "email",
+      header: t("email"),
+      render: (m) => m.email,
+      hideBelow: "md",
+    },
     {
       key: "role",
       header: t("role"),
-      render: (m) => t("roleIssuer"),
+      render: () => t("roleIssuer"),
       hideBelow: "sm",
     },
     {
@@ -106,7 +119,12 @@ export function TeamPanel({
 
   return (
     <div>
-      <DataTable columns={cols} rows={members} rowKey={(m) => String(m.id)} empty={t("empty")} />
+      <DataTable
+        columns={cols}
+        rows={members}
+        rowKey={(m) => String(m.id)}
+        empty={t("empty")}
+      />
       {demo ? (
         <p className="mt-4 text-sm text-n600">
           <StableTextLike>{t("demo")}</StableTextLike>
@@ -117,7 +135,14 @@ export function TeamPanel({
         </div>
       )}
 
-      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setLink(null); }} title={t("inviteTitle")}>
+      <Dialog
+        open={open}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (!o) setLink(null);
+        }}
+        title={t("inviteTitle")}
+      >
         {link ? (
           <div className="space-y-3">
             <p className="text-sm font-semibold">{t("linkTitle")}</p>
@@ -126,7 +151,9 @@ export function TeamPanel({
             </code>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-n600">
-                {t("expires", { date: new Date(link.expiresAt).toLocaleString() })}
+                {t("expires", {
+                  date: new Date(link.expiresAt).toLocaleString(),
+                })}
               </span>
               <Button
                 variant="secondary"
@@ -151,9 +178,17 @@ export function TeamPanel({
               inputMode="email"
               autoComplete="off"
             />
-            <Select label={t("role")} options={roleOptions} value="issuer" disabled />
+            <Select
+              label={t("role")}
+              options={roleOptions}
+              value="issuer"
+              disabled
+            />
             <div className="flex justify-end">
-              <Button onClick={() => void invite()} disabled={busy || !email.includes("@")}>
+              <Button
+                onClick={() => void invite()}
+                disabled={busy || !email.includes("@")}
+              >
                 {busy ? t("creating") : t("create")}
               </Button>
             </div>
