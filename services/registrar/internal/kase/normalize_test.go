@@ -39,9 +39,12 @@ func TestNormalizeTEBNb10(t *testing.T) {
 	if out.Currency != "KZT" {
 		t.Errorf("currency = %s, want KZT", out.Currency)
 	}
-	// nominal 0,01 KZT → 1 tiyn; coupon 8,000 % → 800 bps
+	// nominal 0,01 KZT → 1 tiyn; coupon 8,000 % → 800 bps; basis 30/360 → THIRTY_360
 	if out.Face != 1 || out.CouponRate != 800 {
 		t.Errorf("face/couponRate = %d/%d, want 1/800", out.Face, out.CouponRate)
+	}
+	if out.DayCount != "THIRTY_360" {
+		t.Errorf("dayCount = %q, want THIRTY_360", out.DayCount)
 	}
 	if out.Frequency != 2 {
 		t.Errorf("frequency = %d, want 2 (semi-annual)", out.Frequency)
@@ -134,6 +137,13 @@ func TestParseNumberAndDateOnly(t *testing.T) {
 	} {
 		if got := dateOnly(s); got != want {
 			t.Errorf("dateOnly(%q) = %q, want %q", s, got, want)
+		}
+	}
+	for s, want := range map[string]string{
+		"30/360": "THIRTY_360", "360/360": "THIRTY_360", " act/365 ": "ACT_365", "ACT365": "ACT_365", "?": "",
+	} {
+		if got := dayCount(s); got != want {
+			t.Errorf("dayCount(%q) = %q, want %q", s, got, want)
 		}
 	}
 	// JSON round-trip: the DTO marshals with the spec's field names.

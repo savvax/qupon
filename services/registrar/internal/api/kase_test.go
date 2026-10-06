@@ -59,7 +59,7 @@ func kaseUpstream(t *testing.T, failing *atomic.Bool) *httptest.Server {
 
 // newKaseServer builds the API with a kase service pointed at the fixture
 // upstream. The clock is controllable so tests can age the cache past its TTLs.
-func newKaseServer(t *testing.T, upstream string) (http.Handler, *time.Time) {
+func newKaseServer(t *testing.T, upstream string) (http.Handler, *time.Time, *store.Store) {
 	t.Helper()
 	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "kase.db"))
 	if err != nil {
@@ -72,12 +72,12 @@ func newKaseServer(t *testing.T, upstream string) (http.Handler, *time.Time) {
 		Store:  st,
 		Now:    func() time.Time { return clock },
 	}})
-	return h, &clock
+	return h, &clock, st
 }
 
 func kaseAPI(t *testing.T, upstream string) *httptest.Server {
 	t.Helper()
-	h, _ := newKaseServer(t, upstream)
+	h, _, _ := newKaseServer(t, upstream)
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
 	return srv
@@ -163,7 +163,7 @@ func TestKaseBondHTMLEnvironment(t *testing.T) {
 func TestKaseBondStaleAfterFailure(t *testing.T) {
 	failing := new(atomic.Bool)
 	up := kaseUpstream(t, failing)
-	h, clock := newKaseServer(t, up.URL)
+	h, clock, _ := newKaseServer(t, up.URL)
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
 
@@ -214,6 +214,39 @@ func TestKaseNewsEndpoint(t *testing.T) {
 		t.Errorf("default lang = %s, want ru", news.Lang)
 	}
 	getJSON(t, srv.URL+"/kase/news/ASBN?lang=fr", http.StatusBadRequest, nil)
+}
+
+// GET /kase/series/{mint} is the series→ticker link the bond page's KASE panel needs.
+func TestKaseSeriesTickerLink(t *testing.T) {
+	h, _, st := newKaseServer(t, kaseUpstream(t, new(atomic.Bool)).URL)
+	linked := "QpNb1Dem0BondMint1111111111111111111111111111"
+	unlinked := "BTRKDeM0BondMint1111111111111111111111111111"
+	if err := st.UpsertSeriesSettings(t.Context(), store.SeriesSettings{SeriesMint: linked, KaseTicker: "TEBNb10"}); err != nil {
+		t.Fatalf("seed settings: %v", err)
+	}
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+
+	for _, tc := range []struct {
+		name, mint, wantTicker string
+		status                 int
+		code                   string
+	}{
+		{"linked series", linked, "TEBNb10", http.StatusOK, ""},
+		{"no settings row", unlinked, "", http.StatusNotFound, "no_kase_ticker"},
+		{"not a mint", "TEBNb10", "", http.StatusBadRequest, "invalid_mint"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var out struct {
+				Ticker string `json:"ticker"`
+				Code   string `json:"code"`
+			}
+			getJSON(t, srv.URL+"/kase/series/"+tc.mint, tc.status, &out)
+			if out.Ticker != tc.wantTicker || out.Code != tc.code {
+				t.Errorf("out = %+v, want ticker %q code %q", out, tc.wantTicker, tc.code)
+			}
+		})
+	}
 }
 
 func TestKaseNotConfigured(t *testing.T) {

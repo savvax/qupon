@@ -15,12 +15,39 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
-func mountKase(r chi.Router, deps Deps, _ *store.Store) {
+func mountKase(r chi.Router, deps Deps, st *store.Store) {
 	r.Get("/kase/bonds/{ticker}", kaseBond(deps))
 	// The star route catches path-shaped "tickers" (../x) so the handler can
 	// reject them with invalid_ticker instead of chi's anonymous 404.
 	r.Get("/kase/bonds/{ticker}/*", kaseBond(deps))
 	r.Get("/kase/news/{issuer}", kaseNews(deps))
+	// The series→ticker link (series_settings.kase_ticker, task 701) so the
+	// public bond page knows which series carry a KASE panel (task 1002).
+	r.Get("/kase/series/{mint}", kaseSeriesTicker(st))
+}
+
+// kaseSeriesTicker answers {ticker} for a series linked in series_settings, 404
+// no_kase_ticker when the series has no link. Public read: tickers are not secret.
+func kaseSeriesTicker(st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		mint := chi.URLParam(r, "mint")
+		// Length sanity only: the mint never reaches an upstream URL, just a
+		// parameterised store lookup, and demo placeholder mints need not decode.
+		if len(mint) < 32 || len(mint) > 48 {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_mint", "mint must be a base58 address")
+			return
+		}
+		x, err := st.GetSeriesSettings(r.Context(), mint)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if x.KaseTicker == "" {
+			writeErrorCode(w, http.StatusNotFound, "no_kase_ticker", "series has no KASE ticker")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"ticker": x.KaseTicker})
+	}
 }
 
 func kaseBond(deps Deps) http.HandlerFunc {

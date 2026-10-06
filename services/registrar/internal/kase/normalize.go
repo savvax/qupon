@@ -20,6 +20,7 @@ type Bond struct {
 	Face         int64           `json:"face"`
 	CouponRate   int64           `json:"couponRate"` // bps per year
 	Frequency    int             `json:"frequency"`  // coupons per year (0 = unknown)
+	DayCount     string          `json:"dayCount"`   // THIRTY_360 | ACT_365 | "" (unknown)
 	IssueDate    string          `json:"issueDate"`
 	MaturityDate string          `json:"maturityDate"`
 	Schedule     []ScheduleEntry `json:"schedule"`
@@ -164,6 +165,9 @@ func NormalizeBond(bond, characteristics, coupons, tradeInfo, lastDeals []byte) 
 		if v, ok := chars.value("848", "ISIN"); ok && out.ISIN == "" {
 			out.ISIN = strings.TrimSpace(v)
 		}
+		if v, ok := chars.value("552", "Расчетный базис"); ok {
+			out.DayCount = dayCount(v)
+		}
 	}
 
 	if len(coupons) > 0 {
@@ -241,6 +245,19 @@ func (cl *charList) value(id, labelNeedle string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// dayCount maps kase.kz's day-count basis (characteristic 552, e.g. "30/360",
+// "ACT/365") to the program's enum; "" when the wording is unknown.
+func dayCount(s string) string {
+	switch strings.NewReplacer(" ", "", "\t", "").Replace(strings.ToLower(s)) {
+	case "30/360", "360/360":
+		return "THIRTY_360"
+	case "act/365", "a/365", "act365":
+		return "ACT_365"
+	default:
+		return ""
+	}
 }
 
 // frequency derives coupons per year from the median gap between period starts.
