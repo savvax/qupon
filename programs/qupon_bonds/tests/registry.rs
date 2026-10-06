@@ -273,3 +273,78 @@ fn kyc_attestation_rejects_each_corrupted_field() {
     .data();
     assert_err(env.send(&[ix], &[]), QuponError::KycAttestationInvalid);
 }
+
+/// Close the owner's empty bond account and recreate it: DefaultAccountState brings it back frozen.
+fn close_and_recreate_bond_account(
+    env: &mut Env,
+    b: &Bond,
+    owner: &Keypair,
+) -> anchor_lang::prelude::Pubkey {
+    let bond_ata = ata(&owner.pubkey(), &b.mint, &spl_token_2022::ID);
+    let close = spl_token_2022::instruction::close_account(
+        &spl_token_2022::ID,
+        &bond_ata,
+        &owner.pubkey(),
+        &owner.pubkey(),
+        &[],
+    )
+    .unwrap();
+    env.send(&[close], &[owner]).expect("close");
+    let recreate = anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent(
+        &env.registrar.pubkey(),
+        &owner.pubkey(),
+        &b.mint,
+        &spl_token_2022::ID,
+    );
+    env.send(&[recreate], &[]).expect("recreate");
+    assert!(env.is_frozen(&bond_ata));
+    bond_ata
+}
+
+#[test]
+fn recreated_bond_account_is_thawed_by_reinstate() {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let issuer = env.issuer.insecure_clone();
+    let alice = Keypair::new();
+    env.register(&b, &alice.pubkey()).expect("register");
+
+    // Without a thaw the Active investor could never hold the bond again.
+    let bond_ata = close_and_recreate_bond_account(&mut env, &b, &alice);
+    let ix = env.issue_ix(&b, &issuer.pubkey(), &alice.pubkey(), 1);
+    assert!(env.send(&[ix], &[&issuer]).is_err());
+
+    let ix = env.set_status_ix(&b, &alice.pubkey(), false);
+    env.send(&[ix], &[])
+        .expect("reinstate thaws the recreated account");
+    assert!(!env.is_frozen(&bond_ata));
+    let inv: Investor = env.account(&investor_pda(&b.series, &alice.pubkey()));
+    assert_eq!(inv.status, InvestorStatus::Active as u8);
+    let ix = env.issue_ix(&b, &issuer.pubkey(), &alice.pubkey(), 1);
+    env.send(&[ix], &[&issuer]).expect("issue after the thaw");
+    assert_eq!(env.balance(&bond_ata), 1);
+
+    // An Active investor with a thawed account is still not "reinstated".
+    let ix = env.set_status_ix(&b, &alice.pubkey(), false);
+    assert_err(env.send(&[ix], &[]), QuponError::InvestorNotActive);
+}
+
+#[test]
+fn investor_with_a_recreated_bond_account_can_be_suspended() {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let bob = Keypair::new();
+    env.register(&b, &bob.pubkey()).expect("register");
+    let bond_ata = close_and_recreate_bond_account(&mut env, &b, &bob);
+
+    let ix = env.set_status_ix(&b, &bob.pubkey(), true);
+    env.send(&[ix], &[])
+        .expect("suspend with the account already frozen");
+    let inv: Investor = env.account(&investor_pda(&b.series, &bob.pubkey()));
+    assert_eq!(inv.status, InvestorStatus::Suspended as u8);
+    assert!(env.is_frozen(&bond_ata));
+
+    let ix = env.set_status_ix(&b, &bob.pubkey(), false);
+    env.send(&[ix], &[]).expect("reinstate");
+    assert!(!env.is_frozen(&bond_ata));
+}

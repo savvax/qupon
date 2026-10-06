@@ -201,8 +201,12 @@ pub fn handle_set_investor_status(ctx: Context<SetInvestorStatus>, suspend: bool
     } else {
         (InvestorStatus::Suspended, InvestorStatus::Active)
     };
+    // A bond account its owner closed and recreated comes back frozen (DefaultAccountState) while the investor is
+    // still Active: `reinstate_investor` thaws it again, and `suspend_investor` must not trip over the frozen account.
+    let frozen = ctx.accounts.bond_ata.is_frozen();
+    let rethaw = !suspend && frozen && ctx.accounts.investor.status == to as u8;
     require!(
-        ctx.accounts.investor.status == from as u8,
+        rethaw || ctx.accounts.investor.status == from as u8,
         if suspend {
             QuponError::InvestorSuspended
         } else {
@@ -217,16 +221,18 @@ pub fn handle_set_investor_status(ctx: Context<SetInvestorStatus>, suspend: bool
     let mint_info = ctx.accounts.mint.to_account_info();
     let authority = ctx.accounts.series.to_account_info();
     if suspend {
-        freeze_account(CpiContext::new_with_signer(
-            program,
-            FreezeAccount {
-                account,
-                mint: mint_info,
-                authority,
-            },
-            &[seeds],
-        ))?;
-    } else {
+        if !frozen {
+            freeze_account(CpiContext::new_with_signer(
+                program,
+                FreezeAccount {
+                    account,
+                    mint: mint_info,
+                    authority,
+                },
+                &[seeds],
+            ))?;
+        }
+    } else if frozen {
         thaw_account(CpiContext::new_with_signer(
             program,
             ThawAccount {
