@@ -250,33 +250,32 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
             <legend className="px-1 text-sm font-semibold">
               {tk("title")}
             </legend>
-            <div className="flex flex-wrap items-start gap-3">
-              <div className="min-w-44 flex-1">
-                <TextField
-                  label={tk("ticker")}
-                  hint={tk("tickerHint")}
-                  value={kaseTicker}
-                  // KASE tickers are case-sensitive (TEBNb10): trim, never upper-case
-                  onChange={(e) => setKaseTicker(e.target.value.trim())}
-                  error={
-                    kaseError
-                      ? tk.has(`errors.${kaseError}`)
-                        ? tk(`errors.${kaseError}`)
-                        : tk("errors.default")
-                      : undefined
-                  }
-                  maxLength={12}
-                />
-              </div>
-              <Button
-                type="button"
-                variant="secondary"
-                loading={importing}
-                onClick={doImport}
-              >
-                {tk("button")}
-              </Button>
-            </div>
+            <TextField
+              label={tk("ticker")}
+              hint={tk("tickerHint")}
+              value={kaseTicker}
+              // KASE tickers are case-sensitive (TEBNb10): trim, never upper-case
+              onChange={(e) => setKaseTicker(e.target.value.trim())}
+              error={
+                kaseError
+                  ? tk.has(`errors.${kaseError}`)
+                    ? tk(`errors.${kaseError}`)
+                    : tk("errors.default")
+                  : undefined
+              }
+              maxLength={12}
+              // the button sits on the input's row, not at the label line (user report 2026-10-06)
+              action={
+                <Button
+                  type="button"
+                  variant="secondary"
+                  loading={importing}
+                  onClick={doImport}
+                >
+                  {tk("button")}
+                </Button>
+              }
+            />
             {kase && (
               <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-g700">
                 <Badge tone="success">{kase.ticker}</Badge>

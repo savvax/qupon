@@ -35,7 +35,7 @@ export async function Hero({ live }: { live: Live }) {
             </p>
             <div className="mt-8 flex flex-col gap-3 min-[480px]:flex-row">
               <Button asChild variant="primaryOnDark" size="lg">
-                <Link href="/login">
+                <Link href="/login?choose=1">
                   {t("hero.cta")} <span aria-hidden>→</span>
                 </Link>
               </Button>

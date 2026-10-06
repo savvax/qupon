@@ -16,9 +16,18 @@ const HOME: Record<Role, string> = {
   admin: "/admin",
 };
 
-/** Full navigation after sign-in: the next page renders on the server with the fresh session cookie. */
+/**
+ * Full navigation after sign-in: the next page renders on the server with the fresh session cookie. `next` is
+ * honoured only inside the chosen role's area — /login?next=/issuer then "Registrar" goes to /registrar, not to a
+ * cabinet that would refuse it.
+ */
 function useEnter(next?: string) {
-  return (role: Role) => window.location.assign(next ?? HOME[role]);
+  return (role: Role) =>
+    window.location.assign(
+      next && (next.startsWith(HOME[role]) || next.startsWith("/account"))
+        ? next
+        : HOME[role],
+    );
 }
 
 export function SignInCard({ next }: { next?: string }) {

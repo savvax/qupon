@@ -122,25 +122,25 @@ function Chooser({ selfRegistered = false }: { selfRegistered?: boolean }) {
       )}
       <div className="mt-6 border-t border-n100 pt-5 text-left">
         {watchOpen ? (
-          <form onSubmit={view} className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">
-              <TextField
-                label={t("watchLabel")}
-                value={address}
-                onChange={(e) => {
-                  setAddress(e.target.value);
-                  setAddressError(undefined);
-                }}
-                error={addressError}
-                hint={t("watchHint")}
-                autoComplete="off"
-                spellCheck={false}
-                autoFocus
-              />
-            </div>
-            <Button type="submit" className="mt-6" disabled={!address.trim()}>
-              {t("watchGo")}
-            </Button>
+          <form onSubmit={view}>
+            <TextField
+              label={t("watchLabel")}
+              value={address}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                setAddressError(undefined);
+              }}
+              error={addressError}
+              hint={t("watchHint")}
+              autoComplete="off"
+              spellCheck={false}
+              autoFocus
+              action={
+                <Button type="submit" disabled={!address.trim()}>
+                  {t("watchGo")}
+                </Button>
+              }
+            />
           </form>
         ) : (
           <button

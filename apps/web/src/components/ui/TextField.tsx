@@ -13,6 +13,8 @@ export type TextFieldProps = Omit<
   error?: string;
   /** Right-aligned adornment, e.g. `₸` for amount fields. */
   suffix?: ReactNode;
+  /** A control on the input's row (e.g. an Import button): same line and height as the input, hint below both. */
+  action?: ReactNode;
   className?: string;
 };
 
@@ -22,6 +24,7 @@ export function TextField({
   hint,
   error,
   suffix,
+  action,
   className,
   id: idProp,
   ...input
@@ -41,27 +44,30 @@ export function TextField({
           {label}
         </label>
       )}
-      <div className="relative">
-        <input
-          id={id}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
-          className={cx(
-            "h-10 w-full rounded-btn border border-n300 bg-n0 px-3 text-sm focus:border-g600",
-            "disabled:cursor-not-allowed disabled:bg-n100 disabled:text-n400",
-            error && "border-err-bd",
-            suffix ? "pr-10" : undefined,
+      <div className={cx(action ? "flex items-center gap-2" : undefined)}>
+        <div className={cx("relative", action ? "min-w-0 flex-1" : undefined)}>
+          <input
+            id={id}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
+            className={cx(
+              "h-10 w-full rounded-btn border border-n300 bg-n0 px-3 text-sm focus:border-g600",
+              "disabled:cursor-not-allowed disabled:bg-n100 disabled:text-n400",
+              error && "border-err-bd",
+              suffix ? "pr-10" : undefined,
+            )}
+            {...input}
+          />
+          {suffix && (
+            <span
+              aria-hidden
+              className="absolute top-1/2 right-3 -translate-y-1/2 text-sm text-n500"
+            >
+              {suffix}
+            </span>
           )}
-          {...input}
-        />
-        {suffix && (
-          <span
-            aria-hidden
-            className="absolute top-1/2 right-3 -translate-y-1/2 text-sm text-n500"
-          >
-            {suffix}
-          </span>
-        )}
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
       </div>
       {hint && !error && (
         <p id={hintId} className="mt-1 text-xs text-n500">

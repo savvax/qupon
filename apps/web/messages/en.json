@@ -329,7 +329,9 @@
       "note": "Demo data is shared by every visitor and may be reset."
     },
     "newInvestor": "New investor?",
-    "createAccount": "Create an account"
+    "createAccount": "Create an account",
+    "signedInAs": "You are signed in as {name} ({role}). Pick a demo role below to switch, or continue.",
+    "continue": "Continue to my cabinet"
   },
   "footer": {
     "devnet": "Runs on Solana devnet with test tokens — no real money moves.",

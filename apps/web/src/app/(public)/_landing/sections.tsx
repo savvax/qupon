@@ -190,7 +190,7 @@ export function Audiences() {
           </ul>
           <div className="mt-7 flex flex-col gap-3 min-[480px]:flex-row">
             <Button asChild>
-              <Link href="/login">{t(`${a}.cta`)}</Link>
+              <Link href="/login?choose=1">{t(`${a}.cta`)}</Link>
             </Button>
             {a === "investors" && (
               <Button asChild variant="secondary">
