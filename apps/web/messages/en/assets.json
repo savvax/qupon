@@ -3,7 +3,9 @@
     "title": "Cash assets",
     "lead": "Assets are identified by mint address — tickers can be faked. A new asset is verified on-chain and stays disabled until you enable it.",
     "add": "Add asset",
-    "empty": "No assets yet — add the first mint address.",
+    "empty": "No assets yet — add the first mint address.",
+    "unreachable": "Cash assets are unavailable",
+    "unreachableBody": "The registrar API is not answering right now — try again in a moment.",
     "table": {
       "symbol": "Ticker",
       "name": "Name",
@@ -32,14 +34,16 @@
       "mintHint": "The token's on-chain address, not its ticker.",
       "mintError": "Enter a valid base58 Solana address",
       "verify": "Verify on-chain",
-      "verified": "Verified on-chain",
+      "mintPlaceholder": "e.g. 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
       "decimals": "Decimals",
       "tokenProgram": "Token program",
       "mintAuthority": "Mint authority",
       "freezeAuthority": "Freeze authority",
       "symbol": "Ticker",
       "symbolHint": "Display only — holders always see the mint address.",
+      "symbolPlaceholder": "e.g. KZTE-dev",
       "name": "Name",
+      "namePlaceholder": "e.g. Evo tenge (devnet stand-in)",
       "kind": "Kind",
       "note": "Issuer note",
       "noteHint": "Shown to investors, e.g. the custodian behind a wrapped asset.",
@@ -48,6 +52,7 @@
       "save": "Save asset",
       "saved": "Asset saved",
       "again": "Add another mint",
+      "close": "Close",
       "pending": "Verifying mint on-chain…",
       "success": "Asset added (disabled)"
     },
@@ -60,7 +65,8 @@
       "disabled": "Asset disabled",
       "confirmTitle": "This mint has a freeze authority",
       "confirmBody": "The issuer of this token can freeze token accounts. Enable it only if you trust the authority.",
-      "confirm": "Enable anyway"
+      "confirm": "Enable anyway",
+      "cancel": "Cancel"
     }
   }
 }

@@ -48,7 +48,7 @@ const CUSTODIAN = "CzustoD1anWa11etAddre55555555555555555555555555";
 
 const assets: Asset[] = [
   asset({
-    mint: "tKZTDeM0CashMint1111111111111111111111111111",
+    mint: "BYPKzbKvf1up8iJSjx21gS87YwzLKH7gdq5uLJUHZia4",
     symbol: "tKZT",
     name: "Test tenge",
     kind: "test",
@@ -162,7 +162,17 @@ export const handlers: MockHandler[] = [
         kind?: string;
         issuerNote?: string;
         enabled?: boolean;
+        acceptFreezeAuthority?: boolean;
       };
+      // Mirrors internal/api/assets.go: enabling a freezable mint demands an
+      // explicit confirmation (task 9700).
+      if (
+        req.enabled === true &&
+        a.freezeAuthority &&
+        req.acceptFreezeAuthority !== true
+      ) {
+        return { code: "freeze_authority_unconfirmed", message: "" };
+      }
       if (req.symbol !== undefined) a.symbol = req.symbol.trim();
       if (req.name !== undefined) a.name = req.name;
       if (req.kind !== undefined) a.kind = req.kind;

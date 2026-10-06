@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -125,6 +126,13 @@ func TestVerifyMint(t *testing.T) {
 			wantInfo: MintInfo{Mint: mint.String(), TokenProgram: TokenProgram, Decimals: testDecimals, Supply: "1000000"},
 		},
 		{
+			// 82 bytes of mint layout but is_initialized = 0: not a usable mint (task 9700)
+			name:        "uninitialised mint",
+			owner:       TokenProgram,
+			data:        func() []byte { d := splMint(nil, nil); d[45] = 0; return d }(),
+			wantNotMint: true,
+		},
+		{
 			name:  "token-2022 mint with extensions",
 			owner: Token2022Program,
 			data:  token2022Mint(&authority, nil),
@@ -157,12 +165,16 @@ func TestVerifyMint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			info, err := VerifyMint(t.Context(), rpcClient(t, tc.owner, tc.data), mint)
 			switch {
-			case tc.wantNotMint && err == nil:
-				t.Fatal("expected ErrNotMint")
-			case tc.wantUnknown && err == nil:
-				t.Fatal("expected ErrUnknownProgram")
-			case tc.wantNotMint || tc.wantUnknown:
-				return // error path covered
+			case tc.wantNotMint:
+				if !errors.Is(err, ErrNotMint) {
+					t.Fatalf("error = %v, want ErrNotMint", err)
+				}
+				return
+			case tc.wantUnknown:
+				if !errors.Is(err, ErrUnknownProgram) {
+					t.Fatalf("error = %v, want ErrUnknownProgram", err)
+				}
+				return
 			case err != nil:
 				t.Fatalf("VerifyMint: %v", err)
 			}

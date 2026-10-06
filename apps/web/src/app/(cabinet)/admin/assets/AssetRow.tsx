@@ -112,6 +112,7 @@ export function EnabledSwitch({ a }: { a: AssetDTO }) {
             <Button
               size="sm"
               variant="ghost"
+              aria-label={t("cancel")}
               onClick={() => setConfirming(false)}
             >
               ✕

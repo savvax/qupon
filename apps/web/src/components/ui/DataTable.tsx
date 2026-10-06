@@ -62,10 +62,11 @@ export function DataTable<T>({
             </tr>
           </thead>
           <Stagger as="tbody">
-            {rows.map((row) => (
+            {rows.map((row, i) => (
               <StaggerItem
                 as="tr"
                 key={rowKey(row)}
+                index={i}
                 className="relative border-b border-n100 transition-colors last:border-0 hover:bg-n50/60"
               >
                 {columns.map((col) => (
@@ -87,10 +88,11 @@ export function DataTable<T>({
       </div>
       {/* < 640 px: one card per row, same columns minus those hidden below sm */}
       <Stagger as="ul" className="divide-y divide-n100 sm:hidden">
-        {rows.map((row) => (
+        {rows.map((row, i) => (
           <StaggerItem
             as="li"
             key={rowKey(row)}
+            index={i}
             className={phoneRow ? "px-4 py-3" : "space-y-1.5 px-4 py-4"}
           >
             {phoneRow

@@ -4,6 +4,7 @@ import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { boFetch } from "@/lib/bo";
 import { AddAssetDialog } from "./AddAssetDialog";
 import { AuthorityBadges, EnabledSwitch, type AssetDTO } from "./AssetRow";
@@ -16,8 +17,12 @@ export async function generateMetadata() {
 /** Admin cash-asset registry (§5.1): every asset of this network, disabled ones included. */
 export default async function AdminAssetsPage() {
   const t = await getTranslations("assets.admin");
-  const assets =
-    (await boFetch<AssetDTO[]>("admin/assets").catch(() => [])) ?? [];
+  let assets: AssetDTO[] | null = null;
+  try {
+    assets = await boFetch<AssetDTO[]>("admin/assets");
+  } catch {
+    assets = null; // a failed load is an error state, not "no assets" (task 9700)
+  }
 
   const columns: Column<AssetDTO>[] = [
     {
@@ -86,14 +91,21 @@ export default async function AdminAssetsPage() {
         </div>
         <AddAssetDialog />
       </header>
-      <Card>
-        <DataTable
-          columns={columns}
-          rows={assets}
-          rowKey={(a) => a.mint}
-          empty={t("empty")}
+      {assets === null ? (
+        <EmptyState
+          title={t("unreachable")}
+          body={t("unreachableBody")}
         />
-      </Card>
+      ) : (
+        <Card>
+          <DataTable
+            columns={columns}
+            rows={assets}
+            rowKey={(a) => a.mint}
+            empty={t("empty")}
+          />
+        </Card>
+      )}
     </div>
   );
 }

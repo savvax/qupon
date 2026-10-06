@@ -84,6 +84,10 @@ func decodeMint(mint solana.PublicKey, data []byte, program string) (MintInfo, e
 	if len(data) < mintFixedLen {
 		return MintInfo{}, ErrNotMint
 	}
+	if data[45] != 1 {
+		// is_initialized flag: an uninitialised mint cannot hold tokens (task 9700)
+		return MintInfo{}, ErrNotMint
+	}
 	info := MintInfo{
 		Mint:         mint.String(),
 		TokenProgram: program,

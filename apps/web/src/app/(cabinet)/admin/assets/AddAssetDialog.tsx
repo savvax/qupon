@@ -80,8 +80,9 @@ export function AddAssetDialog() {
       success: () => t("addDialog.saved"),
       call: () =>
         boSend<AddResponse>("PATCH", `admin/assets/${added.asset.mint}`, {
-          symbol: symbol.trim(),
-          name,
+          // Empty optional fields are omitted: the API rejects blank symbol/name (task 9700).
+          ...(symbol.trim() ? { symbol: symbol.trim() } : {}),
+          ...(name.trim() ? { name: name.trim() } : {}),
           kind,
           issuerNote: note,
           ...(enableNow
@@ -128,6 +129,7 @@ export function AddAssetDialog() {
             <>
               <Button
                 variant="ghost"
+                aria-label={t("addDialog.close")}
                 onClick={() => setOpen(false)}
                 disabled={busy}
               >
@@ -150,7 +152,7 @@ export function AddAssetDialog() {
               setMint(e.target.value);
               setMintError(undefined);
             }}
-            placeholder="e.g. 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
+            placeholder={t("addDialog.mintPlaceholder")}
             spellCheck={false}
             autoComplete="off"
           />
@@ -197,14 +199,14 @@ export function AddAssetDialog() {
               hint={t("addDialog.symbolHint")}
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
-              placeholder="e.g. KZTE-dev"
+              placeholder={t("addDialog.symbolPlaceholder")}
               spellCheck={false}
             />
             <TextField
               label={t("addDialog.name")}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Evo tenge (devnet stand-in)"
+              placeholder={t("addDialog.namePlaceholder")}
             />
             <Select
               label={t("addDialog.kind")}

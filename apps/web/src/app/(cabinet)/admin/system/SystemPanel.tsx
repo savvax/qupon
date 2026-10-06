@@ -108,6 +108,16 @@ export function SystemPanel() {
         </Button>
       </div>
 
+      {/* A failed refresh keeps the last good values on screen — say so (task 9700). */}
+      {failed && (
+        <p
+          role="status"
+          className="rounded-card border border-warn-bd bg-warn-bg px-4 py-3 text-sm text-warn-fg"
+        >
+          {t("stale")}
+        </p>
+      )}
+
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <Card>
           <h2 className="text-base font-bold">{t("rpc.title")}</h2>

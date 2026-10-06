@@ -146,10 +146,17 @@ func adminPatchUser(st *store.Store) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
+		if u.IsDemo {
+			// Demo identities are shared and seeded: no admin-owned password lifecycle (task 9700).
+			writeErrorCode(w, http.StatusForbidden, "demo_account", "demo accounts are shared and read-only")
+			return
+		}
 		if self, ok := auth.UserFrom(r.Context()); ok && self.ID == u.ID {
-			// An admin must not lock themselves out of the panel.
-			if (req.Status != nil && *req.Status == "disabled") || (req.Role != nil && *req.Role != "admin") {
-				writeErrorCode(w, http.StatusBadRequest, "self_lockout", "admins cannot disable or demote themselves")
+			// An admin must not lock themselves out of the panel — any non-active
+			// status counts, not only an explicit disable (task 9700).
+			if (req.Status != nil && *req.Status != "active") || (req.Role != nil && *req.Role != "admin") {
+				writeErrorCode(w, http.StatusBadRequest, "self_lockout",
+					"admins cannot disable, set themselves pending or demote themselves")
 				return
 			}
 		}
@@ -191,11 +198,16 @@ func adminResetLink(st *store.Store) http.HandlerFunc {
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "user id must be a number")
 			return
 		}
-		if _, err := st.GetUser(r.Context(), id); errors.Is(err, store.ErrNotFound) {
+		u, err := st.GetUser(r.Context(), id)
+		if errors.Is(err, store.ErrNotFound) {
 			writeErrorCode(w, http.StatusNotFound, "not_found", "no such user")
 			return
 		} else if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if u.IsDemo {
+			writeErrorCode(w, http.StatusForbidden, "demo_account", "demo accounts are shared and read-only")
 			return
 		}
 		raw := make([]byte, 32)
@@ -219,7 +231,7 @@ func adminResetLink(st *store.Store) http.HandlerFunc {
 }
 
 // authReset is public: it consumes a one-time reset token and sets a new
-// password (10+ characters), revoking the user's sessions.
+// password (10+ characters) in the same transaction, revoking the user's sessions.
 func authReset(st *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
@@ -233,24 +245,17 @@ func authReset(st *store.Store) http.HandlerFunc {
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "need a token and a password of 10+ characters")
 			return
 		}
-		userID, err := st.ConsumeResetLink(r.Context(), auth.HashToken(req.Token), time.Now().Unix())
-		if errors.Is(err, store.ErrNotFound) {
-			writeErrorCode(w, http.StatusBadRequest, "invalid_token", "reset link is unknown, used or expired")
-			return
-		} else if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
+		// Hash first: a failure here must not burn the token.
 		hash, err := auth.HashPassword(req.Password)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		if err := st.SetUserPassword(r.Context(), userID, hash); err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+		userID, err := st.ResetPassword(r.Context(), auth.HashToken(req.Token), time.Now().Unix(), hash)
+		if errors.Is(err, store.ErrNotFound) {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_token", "reset link is unknown, used or expired")
 			return
-		}
-		if err := st.DeleteUserSessions(r.Context(), userID); err != nil {
+		} else if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -480,7 +485,13 @@ func adminAudit(st *store.Store) http.HandlerFunc {
 				if t, err := strconv.ParseInt(v, 10, 64); err == nil {
 					*dst = t
 				} else if p, err := time.Parse("2006-01-02", v); err == nil {
-					*dst = p.Unix()
+					// A date is a whole Almaty day: "from" is its midnight there, "to" runs to
+					// the end of it (task 9700). Kazakhstan is UTC+5 year-round (no DST since 2024).
+					day := time.Date(p.Year(), p.Month(), p.Day(), 0, 0, 0, 0, almaty)
+					*dst = day.Unix()
+					if name == "to" {
+						*dst = day.Add(24*time.Hour - time.Second).Unix()
+					}
 				} else {
 					writeErrorCode(w, http.StatusBadRequest, "invalid_params", name+" must be unix seconds or YYYY-MM-DD")
 					return
@@ -506,12 +517,25 @@ func adminAudit(st *store.Store) http.HandlerFunc {
 			cw := csv.NewWriter(w)
 			_ = cw.Write([]string{"id", "time", "user", "role", "route", "ok", "detail", "params", "signatures"})
 			for _, e := range entries {
-				_ = cw.Write([]string{strconv.FormatInt(e.ID, 10), dateTime(e.Ts), e.Email, e.Role, e.Route,
-					strconv.FormatBool(e.OK), e.Detail, string(e.Params), strings.Join(e.Signatures, " ")})
+				row := []string{strconv.FormatInt(e.ID, 10), dateTime(e.Ts), e.Email, e.Role, e.Route,
+					strconv.FormatBool(e.OK), e.Detail, string(e.Params), strings.Join(e.Signatures, " ")}
+				for i, c := range row { // formula-injection guard (task 9700)
+					row[i] = csvSafe(c)
+				}
+				_ = cw.Write(row)
 			}
 			cw.Flush()
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"entries": entries})
 	}
+}
+
+// csvSafe neutralises spreadsheet formula injection: a cell that starts with
+// =, +, - or @ is prefixed with an apostrophe so Excel/Sheets shows it as text.
+func csvSafe(s string) string {
+	if s != "" && strings.ContainsRune("=+-@", rune(s[0])) {
+		return "'" + s
+	}
+	return s
 }

@@ -19,7 +19,7 @@ export const handlers: MockHandler[] = [
     path: /^\/assets$/,
     reply: () => [
       {
-        mint: "tKZTDeM0CashMint1111111111111111111111111111",
+        mint: "BYPKzbKvf1up8iJSjx21gS87YwzLKH7gdq5uLJUHZia4",
         symbol: "tKZT",
         name: "Test tenge (devnet)",
         decimals: 2,

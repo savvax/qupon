@@ -23,7 +23,7 @@ const usdc = (minor: string) => ({
 function series(over: Partial<SeriesDTO> = {}): SeriesDTO {
   return {
     mint: "QpNb1Dem0BondMint1111111111111111111111111111",
-    cashMint: "tKZTDeM0CashMint1111111111111111111111111111",
+    cashMint: "BYPKzbKvf1up8iJSjx21gS87YwzLKH7gdq5uLJUHZia4",
     isin: "KZ2C0QUPON01",
     ticker: "QPNb1",
     faceValue: kzt("100000"),
@@ -116,7 +116,7 @@ const actions: ActionDTO[] = [
     rateBps: 1000,
     perUnitGross: kzt("5000"),
     perUnitPrincipal: kzt("0"),
-    cashMint: "tKZTDeM0CashMint1111111111111111111111111111",
+    cashMint: "BYPKzbKvf1up8iJSjx21gS87YwzLKH7gdq5uLJUHZia4",
     escrow: "EscrowDem0PDA11111111111111111111111111111111",
     escrowBalance: kzt("500000"),
     status: "Completed",

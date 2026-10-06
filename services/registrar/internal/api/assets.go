@@ -153,6 +153,22 @@ func patchAsset(deps Deps, st *store.Store) http.HandlerFunc {
 				"kind must be test, stablecoin, wrapped_cbdc or spl")
 			return
 		}
+		// Metadata bounds (task 9700): symbol 1-12 chars, name 1-60, both trimmed.
+		symbol, name := "", ""
+		if req.Symbol != nil {
+			symbol = strings.TrimSpace(*req.Symbol)
+			if l := len(symbol); l < 1 || l > 12 {
+				writeErrorCode(w, http.StatusBadRequest, "invalid_params", "symbol must be 1-12 characters")
+				return
+			}
+		}
+		if req.Name != nil {
+			name = strings.TrimSpace(*req.Name)
+			if l := len(name); l < 1 || l > 60 {
+				writeErrorCode(w, http.StatusBadRequest, "invalid_params", "name must be 1-60 characters")
+				return
+			}
+		}
 		mint := chi.URLParam(r, "mint")
 		a, err := st.GetCashAsset(r.Context(), assetNetwork(deps), mint)
 		if errors.Is(err, store.ErrNotFound) {
@@ -168,11 +184,20 @@ func patchAsset(deps Deps, st *store.Store) http.HandlerFunc {
 				"mint has a freeze authority — pass acceptFreezeAuthority to enable anyway")
 			return
 		}
+		// An enabled asset is public: it must carry a ticker (task 9700).
+		effectiveSymbol := a.Symbol
 		if req.Symbol != nil {
-			a.Symbol = strings.TrimSpace(*req.Symbol)
+			effectiveSymbol = symbol
+		}
+		if req.Enabled != nil && *req.Enabled && effectiveSymbol == "" {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "set a symbol before enabling the asset")
+			return
+		}
+		if req.Symbol != nil {
+			a.Symbol = symbol
 		}
 		if req.Name != nil {
-			a.Name = *req.Name
+			a.Name = name
 		}
 		if req.Kind != nil {
 			a.Kind = *req.Kind

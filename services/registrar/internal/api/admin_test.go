@@ -73,6 +73,72 @@ func TestAdminDisableUserKillsSessionsAndLogin(t *testing.T) {
 	}
 }
 
+// Task 9700: self-lockout also blocks non-active statuses (pending), not just disabled.
+func TestAdminSelfLockoutBlocksNonActiveStatus(t *testing.T) {
+	h, svc, st := newAuthServer(t, false)
+	admin := signIn(t, h, st, svc, "admin")
+	if code, body := doPatch(t, h, "/admin/users/"+itoa(adminID(t, h, admin)), `{"status":"pending"}`, admin); code != http.StatusBadRequest || body["code"] != "self_lockout" {
+		t.Fatalf("self pending = %d %v, want 400 self_lockout", code, body["code"])
+	}
+}
+
+// Task 9700: demo identities are shared and seeded — no PATCH, no reset links.
+func TestAdminDemoUsersAreReadOnly(t *testing.T) {
+	h, svc, st := newAuthServer(t, false)
+	admin := signIn(t, h, st, svc, "admin")
+	demoID, err := st.UpsertUser(t.Context(), store.User{Email: "demo-issuer@qupon.demo", Name: "Demo Issuer", Role: "issuer", IsDemo: true}, "!")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code, body := doPatch(t, h, "/admin/users/"+itoa(demoID), `{"role":"registrar"}`, admin); code != http.StatusForbidden || body["code"] != "demo_account" {
+		t.Fatalf("patch demo = %d %v, want 403 demo_account", code, body["code"])
+	}
+	if code, body := doPost(t, h, "/admin/users/"+itoa(demoID)+"/reset-link", `{}`, admin); code != http.StatusForbidden || body["code"] != "demo_account" {
+		t.Fatalf("reset-link demo = %d %v, want 403 demo_account", code, body["code"])
+	}
+}
+
+// Task 9700: a date-only audit filter is a whole Almaty day — "to" includes its evening.
+func TestAdminAuditDateFilterIsWholeAlmatyDay(t *testing.T) {
+	h, svc, st := newAuthServer(t, false)
+	admin := signIn(t, h, st, svc, "admin")
+	id := adminID(t, h, admin)
+	rows := []store.AuditEntry{
+		{Ts: time.Date(2026, 10, 6, 20, 0, 0, 0, almaty).Unix(), UserID: id, Role: "admin", Route: "GET /x", Params: []byte("{}"), OK: true, Detail: "late evening"},
+		{Ts: time.Date(2026, 10, 7, 4, 0, 0, 0, almaty).Unix(), UserID: id, Role: "admin", Route: "GET /y", Params: []byte("{}"), OK: true, Detail: "next day early"},
+	}
+	for _, e := range rows {
+		if err := st.InsertAudit(t.Context(), e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	feed := func(query string) int {
+		t.Helper()
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/admin/audit?"+query, nil)
+		req.Header.Set("Authorization", "Bearer "+admin)
+		h.ServeHTTP(rec, req)
+		var out struct {
+			Entries []struct {
+				Detail string `json:"detail"`
+			} `json:"entries"`
+		}
+		if json.Unmarshal(rec.Body.Bytes(), &out) != nil {
+			t.Fatalf("audit %s = %s", query, rec.Body)
+		}
+		return len(out.Entries)
+	}
+	if n := feed("to=2026-10-06"); n != 1 {
+		t.Fatalf("to=2026-10-06 has %d entries, want 1 (the Almaty evening)", n)
+	}
+	if n := feed("from=2026-10-06&to=2026-10-07"); n != 2 {
+		t.Fatalf("both days = %d entries, want 2", n)
+	}
+	if n := feed("from=2026-10-07"); n != 1 {
+		t.Fatalf("from=2026-10-07 = %d entries, want 1", n)
+	}
+}
+
 func TestAdminResetLinkSingleUseAndExpiry(t *testing.T) {
 	h, svc, st := newAuthServer(t, false)
 	admin := signIn(t, h, st, svc, "admin")
@@ -160,6 +226,51 @@ func TestAdminAuditCSVHeaderAndEscaping(t *testing.T) {
 	}
 	if rec2.Code != http.StatusOK || json.Unmarshal(rec2.Body.Bytes(), &feed) != nil || len(feed.Entries) != 1 || feed.Entries[0].Email != "admin@test.kz" || feed.Entries[0].Route != "POST /admin/users" {
 		t.Fatalf("filtered feed = %d %s", rec2.Code, rec2.Body)
+	}
+}
+
+// Task 9700: CSV cells that would start a spreadsheet formula get a leading apostrophe.
+func TestAdminAuditCSVNeutralisesFormulas(t *testing.T) {
+	h, svc, st := newAuthServer(t, false)
+	admin := signIn(t, h, st, svc, "admin")
+	// The only attacker-influenceable column is the acting user's email; "=x@q.kz"
+	// passes the admin create validation (it only demands an "@").
+	if code, _ := doPost(t, h, "/admin/users", `{"email":"=x@q.kz","name":"X","role":"investor","password":"longenough1"}`, admin); code != http.StatusCreated {
+		t.Fatalf("create = %d", code)
+	}
+	var list struct {
+		Users []struct {
+			ID int64 `json:"id"`
+		} `json:"users"`
+	}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/users?q==x@q.kz", nil)
+	req.Header.Set("Authorization", "Bearer "+admin)
+	h.ServeHTTP(rec, req)
+	if json.Unmarshal(rec.Body.Bytes(), &list) != nil || len(list.Users) != 1 {
+		t.Fatalf("find user = %s", rec.Body)
+	}
+	if err := st.InsertAudit(t.Context(), store.AuditEntry{Ts: time.Now().Unix(), UserID: list.Users[0].ID, Role: "investor", Route: "GET /z", Params: []byte("{}"), OK: true, Detail: "-1+1|A1"}); err != nil {
+		t.Fatal(err)
+	}
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/admin/audit?format=csv&user==x@q.kz", nil)
+	req.Header.Set("Authorization", "Bearer "+admin)
+	h.ServeHTTP(rec, req)
+	body := rec.Body.String() // capture before the csv reader drains the buffer
+	rows, err := csv.NewReader(strings.NewReader(body)).ReadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range rows {
+		for _, cell := range row {
+			if cell != "" && strings.ContainsRune("=+-@", rune(cell[0])) {
+				t.Fatalf("formula cell %q in %v", cell, row)
+			}
+		}
+	}
+	if !strings.Contains(body, "'=x@q.kz") || !strings.Contains(body, "'-1+1|A1") {
+		t.Fatalf("neutralised cells missing: %s", body)
 	}
 }
 
@@ -304,4 +415,18 @@ func adminID(t *testing.T, h http.Handler, token string) int64 {
 		t.Fatalf("/me = %s", rec.Body)
 	}
 	return me.User.ID
+}
+
+// csvSafe unit: each dangerous lead byte is prefixed, safe cells untouched.
+func TestCsvSafe(t *testing.T) {
+	for _, s := range []string{"=SUM(A1)", "+1", "-1", "@cmd"} {
+		if got := csvSafe(s); got != "'"+s {
+			t.Errorf("csvSafe(%q) = %q", s, got)
+		}
+	}
+	for _, s := range []string{"", "hello", "123", "{}"} {
+		if got := csvSafe(s); got != s {
+			t.Errorf("csvSafe(%q) = %q", s, got)
+		}
+	}
 }

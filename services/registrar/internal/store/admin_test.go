@@ -87,6 +87,33 @@ func TestAdminResetLinks(t *testing.T) {
 	}
 }
 
+// Task 9700: ResetPassword consumes the token, sets the hash and kills the
+// sessions in one transaction; the token works exactly once.
+func TestResetPasswordSingleTransaction(t *testing.T) {
+	st := openT(t)
+	issuerID, adminID := seedAdminUsers(t, st)
+	now := time.Now().Unix()
+	if err := st.CreateResetLink(t.Context(), "tx-h", issuerID, now+3600, adminID); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.CreateSession(t.Context(), "sess-h", issuerID, now+3600); err != nil {
+		t.Fatal(err)
+	}
+	id, err := st.ResetPassword(t.Context(), "tx-h", now, "new-hash")
+	if err != nil || id != issuerID {
+		t.Fatalf("reset = %d %v", id, err)
+	}
+	if _, hash, _ := st.UserByEmail(t.Context(), "i@q.kz"); hash != "new-hash" {
+		t.Fatalf("password not set: %q", hash)
+	}
+	if _, err := st.SessionUser(t.Context(), "sess-h", now); !errors.Is(err, ErrNoSession) {
+		t.Fatalf("session survived reset: %v", err)
+	}
+	if _, err := st.ResetPassword(t.Context(), "tx-h", now, "again-hash"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("reuse = %v, want ErrNotFound", err)
+	}
+}
+
 func TestAdminSearchAudit(t *testing.T) {
 	st := openT(t)
 	issuerID, adminID := seedAdminUsers(t, st)

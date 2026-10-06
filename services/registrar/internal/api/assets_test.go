@@ -175,10 +175,13 @@ func TestAddAssetStoresDisabled(t *testing.T) {
 }
 
 func TestAddAssetErrors(t *testing.T) {
+	uninit := fixtureMint(false, false)
+	uninit[45] = 0 // is_initialized flag = 0: an unusable mint (task 9700)
 	h, st, svc := newAssetServer(t, map[string][2]any{
 		mintA: {assets.TokenProgram, fixtureMint(false, false)},
 		mintB: {assetProgram, fixtureMint(false, false)}, // a valid non-token program owner
 		"So11111111111111111111111111111111111111112": {assets.TokenProgram, make([]byte, 165)},
+		"11111111111111111111111111111111":            {assets.TokenProgram, uninit},
 	})
 	admin := signIn(t, h, st, svc, "admin")
 	addAssetOK(t, h, admin, mintA)
@@ -192,6 +195,7 @@ func TestAddAssetErrors(t *testing.T) {
 		{"duplicate", mintA, http.StatusConflict, "asset_exists"},
 		{"absent on chain", "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", http.StatusBadRequest, "not_a_mint"},
 		{"token account", "So11111111111111111111111111111111111111112", http.StatusBadRequest, "not_a_mint"},
+		{"uninitialised mint", "11111111111111111111111111111111", http.StatusBadRequest, "not_a_mint"},
 		{"foreign program", mintB, http.StatusBadRequest, "unknown_token_program"},
 	}
 	for _, tc := range cases {
@@ -270,5 +274,33 @@ func TestPatchAssetMetadataAndWarnings(t *testing.T) {
 	if code, body := doJSONReq(t, h, http.MethodPatch, "/admin/assets/"+mintA,
 		`{"kind":"nft"}`, admin); code != http.StatusBadRequest || body["code"] != "invalid_params" {
 		t.Errorf("patch bad kind = %d %v, want 400 invalid_params", code, body)
+	}
+}
+
+// Task 9700: PATCH metadata bounds and the symbol-required-before-enable rule.
+func TestPatchAssetValidation(t *testing.T) {
+	h, st, svc := newAssetServer(t, map[string][2]any{
+		mintA: {assets.TokenProgram, fixtureMint(false, false)},
+	})
+	admin := signIn(t, h, st, svc, "admin")
+	addAssetOK(t, h, admin, mintA)
+
+	for _, tc := range []struct{ name, body string }{
+		{"symbol too long", `{"symbol":"ABCDEFGHIJKLM"}`}, // 13 chars
+		{"symbol blank", `{"symbol":"   "}`},
+		{"name too long", `{"name":"` + strings.Repeat("n", 61) + `"}`},
+		{"name blank", `{"name":"  "}`},
+	} {
+		if code, body := doJSONReq(t, h, http.MethodPatch, "/admin/assets/"+mintA, tc.body, admin); code != http.StatusBadRequest || body["code"] != "invalid_params" {
+			t.Errorf("%s: got %d %v, want 400 invalid_params", tc.name, code, body["code"])
+		}
+	}
+
+	// Enabling without a symbol is refused; with one it works.
+	if code, body := doJSONReq(t, h, http.MethodPatch, "/admin/assets/"+mintA, `{"enabled":true}`, admin); code != http.StatusBadRequest || body["code"] != "invalid_params" {
+		t.Fatalf("enable without symbol = %d %v, want 400 invalid_params", code, body["code"])
+	}
+	if code, body := doJSONReq(t, h, http.MethodPatch, "/admin/assets/"+mintA, `{"symbol":"TKZ","enabled":true}`, admin); code != http.StatusOK {
+		t.Fatalf("enable with symbol = %d %v", code, body)
 	}
 }

@@ -137,6 +137,43 @@ func (s *Store) ConsumeResetLink(ctx context.Context, tokenHash string, now int6
 	return userID, nil
 }
 
+// ResetPassword consumes a one-time reset token and sets the new password in a
+// single transaction (task 9700): the token can never be spent without the new
+// hash landing, and the user's sessions are revoked with it. ErrNotFound when
+// the token is unknown, used or expired.
+func (s *Store) ResetPassword(ctx context.Context, tokenHash string, now int64, passwordHash string) (int64, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, fmt.Errorf("begin reset: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx,
+		`UPDATE reset_links SET used_at = ? WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?`,
+		now, tokenHash, now)
+	if err != nil {
+		return 0, fmt.Errorf("consume reset link: %w", err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return 0, ErrNotFound
+	}
+	var userID int64
+	if err := tx.QueryRowContext(ctx,
+		`SELECT user_id FROM reset_links WHERE token_hash = ?`, tokenHash).Scan(&userID); err != nil {
+		return 0, fmt.Errorf("reset link user: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx,
+		`UPDATE users SET password_hash = ? WHERE id = ?`, passwordHash, userID); err != nil {
+		return 0, fmt.Errorf("set password %d: %w", userID, err)
+	}
+	if _, err := tx.ExecContext(ctx, `DELETE FROM sessions WHERE user_id = ?`, userID); err != nil {
+		return 0, fmt.Errorf("delete user sessions: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("commit reset: %w", err)
+	}
+	return userID, nil
+}
+
 // UpdateOrganization writes the mutable fields of an organisation.
 func (s *Store) UpdateOrganization(ctx context.Context, o Organization) error {
 	res, err := s.db.ExecContext(ctx,
