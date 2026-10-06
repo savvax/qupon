@@ -141,6 +141,39 @@ export const listEntitlements = (actionPda: string) =>
   get<EntitlementDTO[]>(`/actions/${actionPda}/entitlements`);
 export const getAction = (pda: string) => get<ActionDTO>(`/actions/${pda}`);
 
+/** KASE schedule check (platform v2 §5.5): kase.kz fixation vs on-chain record date. */
+export type KaseCheck = {
+  status: "ok" | "no_ticker" | "no_period" | "no_schedule" | "error";
+  actionPda: string;
+  ticker?: string;
+  recordDate?: string;
+  kaseFixation?: string;
+  period?: { start: string; end: string } | null;
+  kasePeriod?: {
+    recordDate: string;
+    start: string;
+    end: string;
+    rate: number;
+  } | null;
+  match: boolean;
+  stale: boolean;
+  fetchedAt?: string;
+};
+export const getKaseCheck = (pda: string) =>
+  get<KaseCheck>(`/actions/${pda}/kase-check`);
+
+/** Disclosure ZIP (notices RU/EN, seev.031, seev.036 per holder, manifest) — platform v2 §5.5. */
+export const disclosureZipUrl = (pda: string) =>
+  `${API_BASE_URL}/actions/${pda}/disclosure.zip`;
+
+/** "Submit to KASE" is SIMULATED: records an audit row only, nothing is sent. */
+export async function postDisclosureSubmit(pda: string): Promise<{
+  ok: boolean;
+  simulated: boolean;
+}> {
+  return boPost(`registrar/actions/${pda}/disclosure/submit`, {});
+}
+
 /** Public lists also skip the series the live e2e issues on every run (tickers `E2E-…`); cabinets still show them. */
 export const listPublicSeries = () =>
   listSeries().then((all) => all.filter((s) => !s.ticker.startsWith("E2E-")));

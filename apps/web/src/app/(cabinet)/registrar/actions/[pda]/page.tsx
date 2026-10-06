@@ -18,6 +18,7 @@ import {
 } from "@/lib/actionFlow";
 import {
   getAction,
+  getKaseCheck,
   getNoticeText,
   getSeries,
   listInvestors,
@@ -33,6 +34,8 @@ import { KIND_TONE } from "@/lib/ui/badge";
 import { cx } from "@/lib/ui/cx";
 import { Countdown } from "./Countdown";
 import { NoticePanel } from "./NoticePanel";
+import { DisclosurePanel } from "./DisclosurePanel";
+import { KaseCheckPanel } from "./KaseCheckPanel";
 import { ReconcilePanel } from "./ReconcilePanel";
 import { StepButton } from "./StepButton";
 import { metaTitle } from "@/lib/meta";
@@ -87,15 +90,24 @@ export default async function RegistrarActionPage({
     if (status === 404 || status === 400) notFound();
     throw e;
   });
-  const [series, entitlements, activity, noticeEn, noticeRu, investors] =
-    await Promise.all([
-      getSeries(action.seriesMint).catch(() => null),
-      listEntitlements(pda).catch(() => [] as EntitlementDTO[]),
-      listActivity(200),
-      getNoticeText(pda, "en").catch(() => "notice unavailable"),
-      getNoticeText(pda, "ru").catch(() => "уведомление недоступно"),
-      listInvestors(action.seriesMint).catch(() => undefined),
-    ]);
+  const [
+    series,
+    entitlements,
+    activity,
+    noticeEn,
+    noticeRu,
+    investors,
+    kaseCheck,
+  ] = await Promise.all([
+    getSeries(action.seriesMint).catch(() => null),
+    listEntitlements(pda).catch(() => [] as EntitlementDTO[]),
+    listActivity(200),
+    getNoticeText(pda, "en").catch(() => "notice unavailable"),
+    getNoticeText(pda, "ru").catch(() => "уведомление недоступно"),
+    listInvestors(action.seriesMint).catch(() => undefined),
+    // kase.kz outages degrade the card, never the page
+    getKaseCheck(pda).catch(() => null),
+  ]);
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
   const [t, ts, tk, tstep] = await Promise.all([
     getTranslations("action"),
@@ -649,6 +661,10 @@ export default async function RegistrarActionPage({
           </Panel>
 
           <ReconcilePanel pda={pda} />
+
+          <KaseCheckPanel check={kaseCheck} />
+
+          <DisclosurePanel pda={pda} />
 
           <Panel title={t("downloads.title")}>
             <ul className="space-y-2 text-sm">
