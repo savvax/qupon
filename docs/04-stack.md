@@ -45,6 +45,7 @@
 - **Alpenglow**: `confirmed` ≈ `finalized` on devnet; nothing to change in code, but don't rely on `processed`.
 - **SBPFv3**: address 0 reads succeed silently; stricter stack frames — avoid huge stack arrays in instruction handlers; box large accounts.
 - **Clock in tests**: LiteSVM `svm.warp_to_slot()` and set the `Clock` sysvar to control `unix_timestamp`.
+- **LiteSVM is not a cluster for limits**: it does not enforce the 1232-byte transaction size (a 10-triple `pay_batch` runs in tests but needs a lookup table on-chain), and its SPL Token program is the bundled p-token build, not a devnet dump (`tests/cu_benchmarks.rs`).
 - **Z.ai plan**: GLM-5.3 consumes 3× quota at peak (Mon–Fri 11:00–15:00 Astana); Flash 0.4×; schedule heavy GLM runs off-peak.
 - **Claude Code `-p` runs do not auto-wait on usage limits** — the orchestrator sleeps and retries.
 - solana-go v2 puts the full request URL (query included) into its RPC errors — a keyed endpoint (`?api-key=`) leaks into logs and 502 bodies. Build clients with `chain.NewRPC` (keyless URL, key added on the wire); the executor also redacts `api-key=` from CLI output.
