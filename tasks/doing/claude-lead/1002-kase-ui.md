@@ -1,5 +1,4 @@
 ---
-blocked_reason: rebase conflict with main
 id: 1002
 title: KASE import in the wizard and KASE panel on bond pages
 agent: glm
