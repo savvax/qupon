@@ -261,6 +261,8 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	mountKyc(r, deps, st)
 
+	mountOnboarding(r, deps, st)
+
 	mountNotifications(r, deps, st)
 
 	mountAccount(r, deps, st)
