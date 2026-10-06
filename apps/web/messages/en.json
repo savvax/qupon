@@ -328,7 +328,9 @@
       "assets": "Cash assets",
       "system": "System",
       "network": "Network",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "kyc": "KYC queue",
+      "verification": "Verification"
     },
     "placeholder": {
       "hello": "Hello, {name}",

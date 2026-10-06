@@ -36,7 +36,7 @@ export default async function AdminOverviewPage() {
       boFetch<{ series: unknown[] }>("admin/series").catch(() => null),
       boFetch<SystemHealth>("admin/system").catch(() => null),
       boFetch<{ applications: unknown[] }>(
-        "registrar/kyc?status=pending",
+        "registrar/kyc?status=submitted",
       ).catch(() => null),
       listSeries().catch(() => null),
     ]);

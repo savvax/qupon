@@ -117,7 +117,8 @@ export function WalletLink({ wallets }: { wallets: LinkedWallet[] }) {
         ) : (
           <>
             <p className="min-w-0 flex-1 text-sm text-n600">
-              <StableText>{t("signHint")}</StableText> <Address value={address} />
+              <StableText>{t("signHint")}</StableText>{" "}
+              <Address value={address} />
             </p>
             <Button
               onClick={() => void link()}

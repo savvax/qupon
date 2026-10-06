@@ -328,7 +328,9 @@
       "assets": "Денежные активы",
       "system": "Система",
       "network": "Сеть",
-      "audit": "Журнал аудита"
+      "audit": "Журнал аудита",
+      "kyc": "Очередь KYC",
+      "verification": "Верификация"
     },
     "placeholder": {
       "hello": "Здравствуйте, {name}",

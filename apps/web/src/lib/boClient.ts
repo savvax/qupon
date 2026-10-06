@@ -132,6 +132,50 @@ export async function boUpload<T>(
 }
 
 /**
+ * Like boUpload, with upload progress (0..1) — fetch cannot report request-body progress, XMLHttpRequest can.
+ */
+export function boUploadWithProgress<T>(
+  path: string,
+  file: File,
+  kind: string,
+  onProgress: (share: number) => void,
+): Promise<T> {
+  const form = new FormData();
+  form.set("kind", kind);
+  form.set("file", file);
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `/api/bo-upload/${path}`);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(e.loaded / e.total);
+    };
+    xhr.onerror = () => reject(new BoError(0, "upstream", "network error"));
+    xhr.onload = () => {
+      let body: Record<string, unknown> = {};
+      try {
+        body = JSON.parse(xhr.responseText) as Record<string, unknown>;
+      } catch {
+        // non-JSON error page
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(1);
+        resolve(body as T);
+        return;
+      }
+      const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+      reject(
+        new BoError(
+          xhr.status,
+          str(body.code) ?? `http_${xhr.status}`,
+          str(body.message) ?? str(body.error) ?? xhr.statusText,
+        ),
+      );
+    };
+    xhr.send(form);
+  });
+}
+
+/**
  * Only same-site paths survive as ?next=: one leading slash, then no slash/backslash, and no control characters
  * anywhere (browsers strip tab/newline, so "/\t/evil.com" would become "//evil.com").
  */

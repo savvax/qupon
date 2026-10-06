@@ -1,1 +1,150 @@
-{}
+{
+  "investor": {
+    "title": "Verification",
+    "lead": "Get verified once to be registered in bond issues: link your wallet, upload an identity document and tell the registrar who you are.",
+    "simulated": "Review is SIMULATED: there is no KYC vendor in this demo — a registrar checks the application by hand and attests your wallet on-chain (Solana Attestation Service).",
+    "steps": {
+      "wallet": "Wallet",
+      "documents": "Documents",
+      "details": "Details",
+      "status": "Decision"
+    },
+    "wallet": {
+      "title": "Link your wallet",
+      "lead": "Coupons are paid to this wallet and you sign subscriptions and votes with it. Linking only signs a message — no transaction, no fee."
+    },
+    "documents": {
+      "title": "Upload documents",
+      "lead": "An identity document is required; a proof of address speeds up the review. PDF, PNG or JPEG, up to 10 MB each.",
+      "kind": "Document type",
+      "kinds": {
+        "id_document": "Identity document",
+        "proof_of_address": "Proof of address"
+      },
+      "drop": "Drop a file here or click to choose",
+      "formats": "PDF, PNG or JPEG · up to 10 MB",
+      "choose": "Choose a file",
+      "tooLarge": "The file is larger than 10 MB.",
+      "unsupported": "Upload a PDF, PNG or JPEG.",
+      "failed": "The upload failed. Try again."
+    },
+    "details": {
+      "title": "Your details",
+      "fullName": "Full name (as in the document)",
+      "wallet": "Wallet to register",
+      "type": "Investor type",
+      "types": {
+        "individual": "Individual",
+        "legal_entity": "Legal entity"
+      },
+      "residency": "Tax residency",
+      "residencies": {
+        "resident": "Resident of Kazakhstan",
+        "nonresident": "Non-resident"
+      },
+      "tax": "Withholding on coupons: {rate} (SIMULATED rules: residents 0 %, non-residents 15 %).",
+      "series": "Issues to join",
+      "submit": "Send for review",
+      "submitting": "Sending the application…",
+      "submitted": "Application sent",
+      "pending": "You already have an application under review.",
+      "walletNotLinked": "Link this wallet first."
+    },
+    "status": {
+      "title": "Application",
+      "states": {
+        "submitted": "Under review",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "lead": {
+        "submitted": "The registrar will review your documents. You will get a notification with the decision.",
+        "approved": "You are verified and registered in the issues below. You can subscribe and vote from your wallet.",
+        "rejected": "The registrar rejected the application. Fix what the reason says and apply again."
+      },
+      "submittedAt": "Submitted",
+      "wallet": "Wallet",
+      "series": "Issues",
+      "reason": "Reason",
+      "reapply": "Apply again"
+    },
+    "gate": {
+      "title": "Create an account to get verified",
+      "body": "Verification belongs to an account: sign up with your email, link your wallet and send the application.",
+      "demoTitle": "Demo accounts cannot apply",
+      "demoBody": "The demo investor is shared by every visitor and is already registered. Create your own account to go through verification.",
+      "signup": "Create an account",
+      "signin": "Sign in"
+    }
+  },
+  "registrar": {
+    "title": "KYC queue",
+    "lead": "Applications from self-registered investors. Approving attests the wallet in the Solana Attestation Service and registers it in each requested issue.",
+    "detailTitle": "KYC application",
+    "filter": "Status",
+    "unavailable": "The queue is unavailable — the registrar API did not answer.",
+    "simulated": "Review is SIMULATED: no KYC vendor; decisions are made by hand.",
+    "tabs": {
+      "submitted": "Under review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "states": {
+      "submitted": "Under review",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "empty": {
+      "submitted": "No applications waiting for review.",
+      "approved": "No approved applications yet.",
+      "rejected": "No rejected applications."
+    },
+    "col": {
+      "applicant": "Applicant",
+      "wallet": "Wallet",
+      "profile": "Profile",
+      "series": "Issues",
+      "submitted": "Submitted",
+      "status": "Status"
+    },
+    "types": {
+      "individual": "Individual",
+      "legal_entity": "Legal entity"
+    },
+    "residencies": {
+      "resident": "Resident",
+      "nonresident": "Non-resident"
+    },
+    "applicant": "Applicant",
+    "email": "Email",
+    "type": "Investor type",
+    "residency": "Residency",
+    "tax": "Withholding",
+    "documents": "Documents",
+    "noDocuments": "No documents attached.",
+    "docKinds": {
+      "id_document": "Identity document",
+      "proof_of_address": "Proof of address"
+    },
+    "seriesTitle": "Requested issues",
+    "decision": {
+      "title": "Decision",
+      "lead": "Approve to attest the wallet and register it in every requested issue (on-chain, safe to retry), or reject with a reason the investor will see.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approving": "Attesting and registering…",
+      "approved": "Approved — the investor is registered",
+      "partial": "Some issues failed — the application stays under review",
+      "rejecting": "Rejecting…",
+      "rejected": "Application rejected",
+      "doneApproved": "Approved: the wallet is attested and registered.",
+      "doneRejected": "Rejected.",
+      "seriesDone": "Registered",
+      "seriesFailed": "Failed",
+      "rejectTitle": "Reject the application",
+      "rejectLead": "The investor sees this reason and can apply again.",
+      "reason": "Reason",
+      "cancel": "Cancel"
+    }
+  }
+}

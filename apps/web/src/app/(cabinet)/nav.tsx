@@ -30,6 +30,11 @@ export const registrarNav = (t: T): CabinetNavItem[] => [
     icon: <Icon name="users" />,
   },
   {
+    href: "/registrar/kyc",
+    label: t("kyc"),
+    icon: <Icon name="shield" />,
+  },
+  {
     href: "/registrar/activity",
     label: t("activity"),
     icon: <Icon name="activity" />,
@@ -77,6 +82,11 @@ export const investorNav = (t: T): CabinetNavItem[] => [
     href: "/investor/meetings",
     label: t("meetings"),
     icon: <Icon name="vote" />,
+  },
+  {
+    href: "/investor/kyc",
+    label: t("verification"),
+    icon: <Icon name="shield" />,
   },
   {
     href: "/investor/statements",
