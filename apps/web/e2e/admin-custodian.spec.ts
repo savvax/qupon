@@ -86,3 +86,23 @@ test("RU strings render", async ({ page, baseURL }) => {
     dialog.getByRole("button", { name: /Выпустить dKZT \(СИМУЛИРОВАНО\)/ }),
   ).toBeDisabled();
 });
+
+test("RU ledger: locale date and amount; the phone card keeps the transaction (task 9606)", async ({
+  page,
+  baseURL,
+}) => {
+  await signInAs(page, "admin", baseURL);
+  await page
+    .context()
+    .addCookies([{ name: "NEXT_LOCALE", value: "ru", url: baseURL ?? "" }]);
+  await page.goto("/admin/custodian");
+  await expect(
+    page.getByText(/\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}/).first(),
+  ).toBeVisible();
+  await expect(page.getByText(/12\s000,00/).first()).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(
+    page.locator("li").getByRole("link", { name: /…/ }).last(),
+  ).toBeVisible();
+});

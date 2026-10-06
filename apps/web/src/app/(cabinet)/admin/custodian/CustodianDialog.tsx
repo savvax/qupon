@@ -72,7 +72,8 @@ export function CustodianDialog({ asset }: { asset: Asset | null }) {
     setBusy(true);
     const res = await runWrite<MoveResponse>({
       pending: t("pending", { kind: t(`ops.${op}`) }),
-      success: () => t(op === "deposit" ? "deposited" : "withdrawn", { symbol }),
+      success: () =>
+        t(op === "deposit" ? "deposited" : "withdrawn", { symbol }),
       call: () =>
         boPost<MoveResponse>(`admin/custodian/${op}`, {
           reference: reference.trim(),
@@ -108,7 +109,9 @@ export function CustodianDialog({ asset }: { asset: Asset | null }) {
             </Button>
             <Button
               loading={busy}
-              disabled={!reference.trim() || !amount || (op === "deposit" && !to.trim())}
+              disabled={
+                !reference.trim() || !amount || (op === "deposit" && !to.trim())
+              }
               onClick={() => void submit()}
             >
               {t(`submit.${op}`, { symbol: asset?.symbol ?? "dKZT" })}

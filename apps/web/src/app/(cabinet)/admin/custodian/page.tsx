@@ -1,4 +1,5 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { Amount } from "@/components/ui/Amount";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -26,6 +27,7 @@ export async function generateMetadata() {
  */
 export default async function AdminCustodianPage() {
   const t = await getTranslations("assets.custodian");
+  const locale = (await getLocale()) === "ru" ? "ru" : "en";
   let status: CustodianStatus | null = null;
   try {
     status = await boFetch<CustodianStatus>("admin/custodian");
@@ -40,7 +42,7 @@ export default async function AdminCustodianPage() {
       header: t("table.time"),
       render: (e) => (
         <span className="num whitespace-nowrap">
-          {formatDateTime(new Date(e.ts * 1000).toISOString())}
+          {formatDateTime(new Date(e.ts * 1000).toISOString(), locale)}
         </span>
       ),
     },
@@ -48,7 +50,9 @@ export default async function AdminCustodianPage() {
       key: "kind",
       header: t("table.kind"),
       render: (e) => (
-        <Badge tone={e.ok ? (e.kind === "deposit" ? "success" : "violet") : "danger"}>
+        <Badge
+          tone={e.ok ? (e.kind === "deposit" ? "success" : "violet") : "danger"}
+        >
           {t(`kinds.${e.kind}`)}
           {!e.ok && ` · ${t("failed")}`}
         </Badge>
@@ -57,26 +61,30 @@ export default async function AdminCustodianPage() {
     {
       key: "reference",
       header: t("table.reference"),
-      render: (e) => <span className="font-semibold">{e.reference || "—"}</span>,
+      render: (e) => (
+        <span className="font-semibold">{e.reference || "—"}</span>
+      ),
     },
     {
       key: "amount",
       header: t("table.amount"),
       align: "right",
       render: (e) => (
-        <span className="num whitespace-nowrap">
-          {(e.amount / 10 ** decimals).toLocaleString("en-GB", {
-            maximumFractionDigits: 9,
-          })}{" "}
-          {status?.asset?.symbol ?? "dKZT"}
-        </span>
+        <Amount
+          minor={String(e.amount)}
+          currency={status?.asset?.symbol ?? "dKZT"}
+          decimals={decimals}
+          locale={locale}
+          className="whitespace-nowrap"
+        />
       ),
     },
     {
       key: "to",
       header: t("table.treasury"),
       hideBelow: "md",
-      render: (e) => (e.to ? <Address value={e.to} /> : <span className="text-n400">—</span>),
+      render: (e) =>
+        e.to ? <Address value={e.to} /> : <span className="text-n400">—</span>,
     },
     {
       key: "email",
@@ -86,6 +94,7 @@ export default async function AdminCustodianPage() {
     },
     {
       key: "signature",
+      essential: true,
       header: t("table.signature"),
       hideBelow: "lg",
       render: (e) =>
@@ -127,14 +136,12 @@ export default async function AdminCustodianPage() {
               </span>
             </Card>
           )}
-          <Card>
-            <DataTable
-              columns={columns}
-              rows={status.ledger}
-              rowKey={(e) => String(e.id)}
-              empty={t("empty")}
-            />
-          </Card>
+          <DataTable
+            columns={columns}
+            rows={status.ledger}
+            rowKey={(e) => String(e.id)}
+            empty={t("empty")}
+          />
         </>
       )}
     </div>
