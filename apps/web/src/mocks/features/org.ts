@@ -10,7 +10,7 @@ const at = (iso: string) => Math.floor(Date.parse(iso) / 1000);
 
 const organization = {
   id: 1,
-  name: "Steppe Capital LLP",
+  name: "Demo Issuer JSC", // same row as mocks/features/adminSeries.ts org 1 (the platform e2e joins them)
   kind: "llp",
   bin: "220840012345",
   website: "https://steppe.qupon.test",

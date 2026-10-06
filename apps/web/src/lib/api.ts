@@ -28,6 +28,8 @@ export const MOCK_ENABLED =
   process.env.API_MOCKING === "enabled" ||
   process.env.NEXT_PUBLIC_API_MOCKING === "enabled";
 const MOCK = process.env.NODE_ENV === "development" && MOCK_ENABLED;
+/** Whether reads are served by the in-process mock registrar — server components use it to mirror mock-only behaviour. */
+export const MOCK_API = MOCK;
 let mockWarned = false;
 
 export class ApiError extends Error {
@@ -176,10 +178,26 @@ export const seriesDocumentUrl = (id: number) =>
 /** Documents attached to a series (public metadata, task 807); failures never block the page. */
 export async function listSeriesDocuments(
   mint: string,
-): Promise<{ id: number; kind: string; filename: string; size: number; createdAt: number }[]> {
-  return get<{ documents: { id: number; kind: string; filename: string; size: number; createdAt: number }[]}>(
-    `/series/${mint}/documents`,
-  ).then((b) => b.documents ?? []).catch(() => []);
+): Promise<
+  {
+    id: number;
+    kind: string;
+    filename: string;
+    size: number;
+    createdAt: number;
+  }[]
+> {
+  return get<{
+    documents: {
+      id: number;
+      kind: string;
+      filename: string;
+      size: number;
+      createdAt: number;
+    }[];
+  }>(`/series/${mint}/documents`)
+    .then((b) => b.documents ?? [])
+    .catch(() => []);
 }
 
 /** "Submit to KASE" is SIMULATED: records an audit row only, nothing is sent. */

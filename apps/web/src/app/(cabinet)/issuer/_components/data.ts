@@ -1,15 +1,37 @@
 import {
+  apiGet,
   listActions,
   listSeries,
+  MOCK_API,
   type ActionDTO,
   type SeriesDTO,
 } from "@/lib/api";
+import { getSession } from "@/lib/session";
 
 /** The issuer's series: filtered by ISSUER_PUBKEY when the deployment sets it (single-issuer demo: all series). */
 export async function issuerSeries(): Promise<SeriesDTO[]> {
   const all = await listSeries().catch(() => [] as SeriesDTO[]);
   const issuer = process.env.ISSUER_PUBKEY;
-  return issuer ? all.filter((s) => s.issuer === issuer) : all;
+  if (issuer) return all.filter((s) => s.issuer === issuer);
+  if (MOCK_API) {
+    // Mock mode mirrors task 807's issuerOwnsSeries: the cabinet lists only the
+    // organisation's series (series_settings.org_id); an unassigned series stays out.
+    const user = await getSession();
+    if (user?.orgId) {
+      const settings = await apiGet<{
+        series: { mint: string; orgId: number | null }[];
+      }>("/admin/series").catch(() => null);
+      if (settings) {
+        const mine = new Set(
+          settings.series
+            .filter((r) => r.orgId === user.orgId)
+            .map((r) => r.mint),
+        );
+        return all.filter((s) => mine.has(s.mint));
+      }
+    }
+  }
+  return all;
 }
 
 export type ActionRow = { a: ActionDTO; s: SeriesDTO };

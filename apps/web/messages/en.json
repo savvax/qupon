@@ -867,6 +867,7 @@
     "chooser": {
       "title": "Investor cabinet",
       "body": "Connect a self-custody wallet (Phantom, Backpack, Solflare) to see your holdings, payouts and votes — or try the demo investor.",
+      "bodyAccount": "Connect a self-custody wallet (Phantom, Backpack, Solflare) to see this account's holdings, payouts and votes.",
       "connectWallet": "Connect wallet",
       "tryDemo": "Try the demo investor",
       "note": "Demo data is shared by every visitor and may be reset · Solana devnet.",
