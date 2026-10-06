@@ -11,6 +11,8 @@
 | Registrar / paying agent | KCSD (Central Securities Depository) or KASE as DFA operator | Registrar Console (web) | onboard investors (KYC attributes), announce actions, strike record date, snapshot, verify funding, pay, complete, retire, close; download seev.031/036 XML and KASE-style notice |
 | Issuer | A KASE-listed company (e.g. Baiterek) | Console (issuer tab) or CLI | create series, fund escrow before record date, propose terms change, call bonds early |
 | Investor | Retail or institutional holder with a KYC'd wallet | Investor Portal (web, wallet) | subscribe (DvP), see holdings/schedule/entitlements/history, vote |
+| Self-registered investor (v2) | A retail investor with their own wallet | `/signup` → `/account` → `/investor/kyc` | sign up, link a wallet by signature, apply for KYC with documents, follow notifications and statements |
+| Admin (v2) | Platform operator | `/admin` | manage users and organisations, series visibility and KASE tickers, cash assets; watch system health; search the audit |
 | Auditor / judge | KASE judges | Explorer links, README, XML files | verify every state transition on devnet |
 
 ## Scenarios (all run on Solana devnet)
@@ -47,12 +49,14 @@ Announce EarlyRedemption with call date < maturity, principal + accrued coupon f
 | Element | Status |
 |---|---|
 | Bond token, holder registry, record date, entitlement math, coupon payment, redemption, burn/close, voting, terms change, on-chain events | **Implemented on Solana devnet** |
-| Cash leg | Real token transfers: USDC devnet (Circle) and test tKZT (Token-2022); fiat KZT and Evo/digital tenge are **simulated** by our mint |
-| KYC | **Simulated**: registrar records attributes (type, residency, tax rate); no KYC provider integrated |
+| Cash leg | Real token transfers from an admin-managed registry: USDC devnet (Circle), test tKZT, KZTE-dev and dKZT (our mints standing in for the digital-tenge-backed KZTE and a digital tenge); Evo KZTE is pre-registered for mainnet, disabled until its official mint is added |
+| KYC | **Attested on-chain, review simulated**: investors upload documents and apply; a registrar decides by hand; approval issues a Solana Attestation Service attestation (type, residency, tax rate) and registers the wallet — no licensed KYC vendor |
+| kase.kz | Public bond data read and cached (terms, schedule, market data); disclosure-package submission **simulated** |
 | ISO 20022 seev.031 / seev.036 | Generated from on-chain state; Swift network delivery **simulated** (downloadable files) |
 | ARDFM registration of terms change | **Simulated** by registrar signature step |
 | KASE disclosure notice | Generated automatically; publication on kase.kz **not** integrated |
-| Multisig issuer approval (Squads), SAS KYC attestation | Optional T2; if not shipped, listed as roadmap |
+| Multisig issuer approval (Squads) | Roadmap |
+| Mainnet | Mainnet-ready profile, guard and dry-run deploy script; **not deployed** |
 
 ## Non-goals for the hackathon
 Secondary trading venue, order book, fiat on/off-ramp, real KYC vendor, mainnet deployment, confidential transfers, Token ACL integration (listed as compatible roadmap items).

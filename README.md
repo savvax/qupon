@@ -32,6 +32,22 @@ The deployed site is checked the same way — live e2e 4/4 and a full coupon thr
 
 Every page × EN/RU × 1440/390 px is swept by `apps/web/e2e/sweep.spec.ts` (no console errors — that is where missing translations surface — and no horizontal scroll at 390 px); the 80 shots live in [`reports/ui/sweep/`](reports/ui/sweep). Public pages need no sign-in: [landing](https://qupon.85-192-29-7.sslip.io/) · [bond board](https://qupon.85-192-29-7.sslip.io/bonds).
 
+## Platform v2 — accounts, KYC, KASE data, cash assets, admin
+
+Beyond the three demo roles, Qupon now runs as a multi-user platform (spec: [`docs/superpowers/specs/2026-10-06-qupon-platform-v2-design.md`](docs/superpowers/specs/2026-10-06-qupon-platform-v2-design.md)):
+
+| Area | What is there |
+| --- | --- |
+| **Investor accounts** | Self sign-up at `/signup` (email + password, EN/RU) → onboarding banner → link a Solana wallet by signing a message (no transaction, no fee) → KYC application at `/investor/kyc`: upload an ID / proof of address (PDF/PNG/JPEG ≤ 10 MB, real upload progress), investor type, tax residency (withholding 0 % resident / 15 % non-resident — SIMULATED rules), issues to join. `/account`: profile, interface language, password, linked wallets. |
+| **KYC review** | Registrar queue `/registrar/kyc` → application with documents → **Approve** attests the wallet on the Solana Attestation Service and registers it in every requested issue (per-issue result with tx links, safe to retry) or **Reject** with a reason the investor sees. Review is SIMULATED (no KYC vendor); the attestation and registration are real devnet transactions. |
+| **Notifications** | Ingested on-chain events fan out to the holders of the series (linked wallets): coupon/redemption announced, meeting opened/finalised, payment received, KYC decision. Bell in every cabinet (live count, latest notices), `/account/notifications`. Idempotent per user and event. |
+| **kase.kz data** | Public kase.kz bond data read through the registrar (cached, rate-limited, degrades instead of failing): KASE panel on bond pages (quotes, schedule), **Import from KASE** in the issuance wizard (prefills ISIN, face, rate, frequency, day count, dates and compares the schedule), a **schedule check** on each action (KASE fixation date vs the on-chain record date) and a **disclosure package** (RU + EN notices, seev.031, schedule) — submission to KASE is SIMULATED. |
+| **Cash-asset registry** | Admin-managed list of settlement tokens, each verified on-chain when added (mint, decimals, token program, freeze/mint authority warnings): tKZT and USDC (devnet), KZTE-dev and dKZT test tenge tokens with an investor faucet; the issuance wizard offers every enabled asset. Evo's KZTE (the digital-tenge-backed stablecoin on Solana) is listed for mainnet, disabled until its official mint is added by address. |
+| **Admin panel** | `/admin`: overview KPIs, system health (RPC, operator balances with low-SOL alerts, executor, scheduler, ingest lag, kase.kz cache), series visibility/featured/KASE ticker, cash assets, audit search with CSV export, network readiness. |
+| **Mainnet-ready** | One code base, a network profile per deployment (`config/devnet.json`, `config/mainnet-beta.json`): on mainnet demo sign-in is off and every write needs a typed confirmation (`X-Confirm-Network`), the UI shows a red network badge and confirms each write. `ops/deploy-mainnet.sh` is a dry run by default. **Not deployed to mainnet.** |
+| **Wallet UX** | Wallet Standard detection: one installed wallet connects in one click, several open a picker, none explains how to install one (desktop and mobile deep links) or view any address read-only. |
+| **Quality** | EN/RU with controls that keep their size in both languages (`e2e/locale-stability.spec.ts`), locale dates and numbers, phone layouts without horizontal scroll (UX audit: 34 routes × EN/RU × 1440/390 px), motion that runs only after hydration and stops under reduced motion. |
+
 ## The problem
 
 KASE became Kazakhstan's first licensed digital-financial-asset platform operator in May 2026 and plans tokenized notes first, bonds and equities from December 2026; the Central Securities Depository may now keep DFA holder registers (July 2026). Tokenizing a bond is the easy part — **servicing it for its whole life** (coupons, redemption, early calls, bondholder meetings) is where depositories spend their effort, and nothing on Solana does it in a standardized, verifiable way. Sources: [`docs/research/01-market-kase-iso20022-prior-art.md`](docs/research/01-market-kase-iso20022-prior-art.md).
@@ -125,6 +141,9 @@ From chain state the registrar serves `seev.031` (corporate action notification)
 | ARDFM registration of terms change                                                                                                        | **Simulated** by registrar signature step                                                                                                                                                                                                                                                    |
 | KASE disclosure notice                                                                                                                    | Generated automatically; publication on kase.kz **not** integrated                                                                                                                                                                                                                           |
 | Multisig issuer approval (Squads)                                                                                                         | Roadmap                                                                                                                                                                                                                                                                                      |
+| KYC document review                                                                                                                       | **Simulated vendor**: documents are uploaded and stored (content-addressed, owner/registrar access only); a registrar decides by hand. Approval produces real SAS attestations and registrations on devnet |
+| kase.kz                                                                                                                                   | **Read integration** with public kase.kz data (bond terms, schedule, market data — cached); disclosure-package **submission simulated** |
+| Digital tenge / KZT tokens                                                                                                                | Devnet stand-ins KZTE-dev and dKZT (our mints, faucet for investors); Evo KZTE on mainnet is registered as a disabled asset pending its official mint — **no mainnet deployment** |
 
 Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are **series configuration**, not asserted as Kazakh law.
 
@@ -199,7 +218,7 @@ The IDL is also readable in the [explorer's IDL tab](https://explorer.solana.com
 
 ## Roadmap
 
-Token ACL (sRFC-37) instead of the custom registry thaw · Squads multisig for issuer/registrar · a licensed KYC provider issuing the SAS attestations · confidential coupon amounts · tax-vault remittance and escrow refunds · KASE disclosure publication · mainnet with a regulated cash leg (digital tenge / bank deposit token).
+Token ACL (sRFC-37) instead of the custom registry thaw · Squads multisig for issuer/registrar · a licensed KYC provider issuing the SAS attestations · confidential coupon amounts · tax-vault remittance and escrow refunds · KASE disclosure publication through an IRIS account · mainnet launch with Evo KZTE (or a bank deposit token) as the cash leg once the official mint and operator wallets are in place.
 
 ## License
 
