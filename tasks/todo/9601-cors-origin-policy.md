@@ -1,26 +1,22 @@
 ---
 id: 9601
-title: Decide CORS origin policy for public reads (scanner heuristic vs documented wildcard)
+title: Pin the CORS decision with a test and a doc line (no behaviour change)
 agent: flash
-tier: T2
+tier: T1
 depends_on: []
 verify: make verify
 timeout_min: 30
 ---
 ## Goal
-The static scanner flags `Access-Control-Allow-Origin: *` in `services/registrar/internal/api/api.go` (`corsReadOnly`). The code is deliberate and documented (public devnet reads for the investor portal from any origin; no `Allow-Credentials` header is ever sent, so credentialed requests are impossible; writes get no CORS headers). Decide once, with the human, whether to keep the documented wildcard or restrict reads to configured origins.
-
-## Read first
-- `services/registrar/internal/api/api.go` (`corsReadOnly` and its comments)
-- `reports/questions/601-cors-wildcard.md`
+Decision (lead, 2026-10-06): keep `corsReadOnly` as it is on main — GET/HEAD echo the request Origin with `Vary: Origin`, never `Access-Control-Allow-Credentials`; writes get no CORS headers. Feature tasks kept rewriting this block because a scanner flags it, which caused rebase conflicts. Pin it so nobody changes it again.
 
 ## Steps
-- Ask the human which web origins must read the API from a browser (portal domain, sslip.io domain, localhost dev).
-- Default (if no answer): keep the wildcard for GET/HEAD and add the rationale to the scanner's ignore list or a documented suppression; do not add `Allow-Credentials`.
-- Alternative: `Deps.AllowedOrigins []string` (env `QUPON_ALLOWED_ORIGINS`); when set, echo the request Origin only for entries in the list, else no CORS headers.
+- Add a table case to `TestCORSReadOnly` (services/registrar/internal/api/api_test.go) asserting that no response (GET, OPTIONS, POST) ever carries `Access-Control-Allow-Credentials`.
+- Add one line under Gotchas in `docs/04-stack.md`: "CORS: public reads echo Origin without credentials (decided, task 9601). Scanners flag it; do not change `corsReadOnly` in feature tasks."
+- Delete `reports/questions/601-cors-wildcard.md` if present (answered here).
 
 ## Acceptance criteria
-- Decision recorded in `docs/04-stack.md` or a comment; scanner finding resolved or consciously suppressed with a reference; `make verify` green.
+- `corsReadOnly` code unchanged; the new test passes; the doc line exists; `make verify` green.
 
 ## Out of scope
-Changing write-route CORS behavior (no CORS headers on writes stays).
+Any change to CORS behaviour.

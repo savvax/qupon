@@ -21,6 +21,7 @@
 - **No OpenAPI edits in feature tasks** — task 1204 documents every new route in both `openapi.yaml` copies.
 - **Web feature layout:** strings in `apps/web/messages/{en,ru}/<ns>.json` (namespaces pre-created by task 600: `admin, account, kyc, notify, org, reports, kase, assets, network`); mock-mode handlers in `apps/web/src/mocks/features/<ns>.ts` (pre-created, consulted by `mockGet` / the `/api/bo` mock branch); e2e in `apps/web/e2e/<feature>.spec.ts` running in mock mode. Server reads with `boFetch`, writes with `boPost` + `useRunWrite`; UI only from `components/ui/*` and `components/shell/*`.
 - Browser writes go through `/api/bo/<path>`; task 600 widens the allowlist to `^(issuer|registrar|demo|admin|me|org)/…`. File uploads use `/api/bo-upload/<path>` (task 803).
+- **Do not touch `corsReadOnly` in `internal/api/api.go`** (decided 2026-10-06, task 9601): public GET/HEAD reads echo the request Origin and never send `Access-Control-Allow-Credentials`; writes get no CORS headers. If a scanner flags it, leave it — the lead owns this decision.
 - Tests use the brief's numbers (10/25/65 units, 1,000 KZT face, 10% semi-annual → 500/1,250/3,250).
 
 ## Review Focus
