@@ -128,6 +128,7 @@
     "updated": "Updated {time}",
     "loading": "Probing the registrar…",
     "unavailable": "System stats unavailable",
+    "stale": "The last refresh failed — the values below may be stale.",
     "retry": "Retry",
     "network": "Network",
     "rpc": {

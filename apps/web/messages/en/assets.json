@@ -34,6 +34,7 @@
       "mintHint": "The token's on-chain address, not its ticker.",
       "mintError": "Enter a valid base58 Solana address",
       "verify": "Verify on-chain",
+      "verified": "Verified on-chain",
       "mintPlaceholder": "e.g. 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
       "decimals": "Decimals",
       "tokenProgram": "Token program",
