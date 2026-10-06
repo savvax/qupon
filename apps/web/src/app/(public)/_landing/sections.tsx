@@ -85,7 +85,11 @@ export function HowItWorks() {
             key={s}
             className="qp-reveal qp-lift rounded-card border border-n200 bg-n0 p-5 hover:border-g200"
           >
-            <span className="flex size-8 items-center justify-center rounded-full bg-g600 text-sm font-bold text-white">
+            {/* lights up in sequence as the section scrolls in (CSS scroll timeline; static without support) */}
+            <span
+              className="qp-step-num flex size-8 items-center justify-center rounded-full bg-g600 text-sm font-bold text-white"
+              style={{ "--i": i } as React.CSSProperties}
+            >
               {i + 1}
             </span>
             <h3 className="mt-4 font-bold">
@@ -97,6 +101,13 @@ export function HowItWorks() {
           </li>
         ))}
       </ol>
+      {/* desktop: a rail under the five steps fills as you read through them */}
+      <div
+        aria-hidden
+        className="mt-6 hidden h-1 overflow-hidden rounded-full bg-n200 lg:block"
+      >
+        <div className="qp-rail h-full origin-left rounded-full bg-[linear-gradient(90deg,var(--color-g600),var(--color-p500))]" />
+      </div>
     </Section>
   );
 }

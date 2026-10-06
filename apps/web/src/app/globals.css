@@ -366,6 +366,30 @@
       animation-timeline: view();
       animation-range: entry 0% cover 28%;
     }
+    /* landing "How it works" (task 1110): numbers light up one after another, the rail fills with the scroll */
+    .qp-step-num {
+      animation: qp-step-on linear both;
+      animation-timeline: view();
+      animation-range: entry calc(20% + var(--i, 0) * 7%) cover
+        calc(38% + var(--i, 0) * 7%);
+    }
+    @keyframes qp-step-on {
+      from {
+        scale: 0.6;
+        background-color: var(--color-n200);
+        color: var(--color-n500);
+      }
+    }
+    .qp-rail {
+      animation: qp-rail linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 55%;
+    }
+    @keyframes qp-rail {
+      from {
+        scale: 0 1;
+      }
+    }
     @keyframes qp-reveal {
       from {
         opacity: 0;
