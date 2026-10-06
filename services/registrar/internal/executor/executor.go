@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -96,6 +97,7 @@ type Executor struct {
 	timeout time.Duration // per-invocation cap (Timeout)
 	log     *slog.Logger
 	slots   chan struct{} // at most cap(slots) CLI processes at once (1 vCPU box); others queue on their context
+	waiting atomic.Int64  // runs blocked on a free slot — Stats reports them as queued (/admin/system)
 }
 
 // MaxConcurrent bounds parallel CLI runs: each is a node process, and a burst of writes must not exhaust the host.
@@ -131,14 +133,22 @@ func (f *flexUint64) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// Stats reports how many CLI runs are executing and how many are queued for a free slot (GET /admin/system).
+func (e *Executor) Stats() (running, queued int) {
+	return len(e.slots), int(e.waiting.Load())
+}
+
 // Run execs `bin --json args…`. A CLI failure (non-zero exit) is a normal
 // Result{OK:false, Error:…}; only spawn/timeout/contract failures return a
 // Go error.
 func (e *Executor) Run(ctx context.Context, args ...string) (Result, error) {
+	e.waiting.Add(1)
 	select {
 	case e.slots <- struct{}{}:
+		e.waiting.Add(-1)
 		defer func() { <-e.slots }()
 	case <-ctx.Done():
+		e.waiting.Add(-1)
 		return Result{}, fmt.Errorf("cli %s: waiting for a free executor slot: %w", strings.Join(args, " "), ctx.Err())
 	}
 	res, err := e.run(ctx, args...)

@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	solana "github.com/solana-foundation/solana-go/v2"
@@ -122,6 +123,8 @@ type Scheduler struct {
 	Store *store.Store
 	Log   *slog.Logger
 	Now   func() time.Time // injectable clock (tests)
+
+	lastTick atomic.Int64 // unix nanos of the last decision pass; read by GET /admin/system
 }
 
 // Run loops until ctx is cancelled (one decision pass per Tick).
@@ -147,6 +150,7 @@ func (s *Scheduler) Run(ctx context.Context) {
 
 // Tick is one decision pass over every series.
 func (s *Scheduler) Tick(ctx context.Context) {
+	s.lastTick.Store(s.now().UnixNano())
 	recs, err := s.Read.AllSeries(ctx)
 	if err != nil {
 		s.Log.Error("scheduler: list series", "err", err)
@@ -162,7 +166,7 @@ func (s *Scheduler) Tick(ctx context.Context) {
 
 func (s *Scheduler) handleSeries(ctx context.Context, rec chain.SeriesRecord) {
 	series := rec.Series
-	now := s.Now()
+	now := s.now()
 	var open *chain.CorporateAction
 	var supply uint64
 	if series.OpenAction != nil {
@@ -258,6 +262,22 @@ func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args [
 		s.Log.Error("scheduler: record activity", "err", err)
 	}
 	s.Log.Info("scheduler step", "series", mint, "step", d.Action, "sig", res.Signature, "slot", res.Slot)
+}
+
+// now returns the injectable clock (Run sets it), falling back to wall time for direct Tick calls in tests.
+func (s *Scheduler) now() time.Time {
+	if s.Now != nil {
+		return s.Now()
+	}
+	return time.Now()
+}
+
+// LastTick reports when the last decision pass started (zero before the first tick) — GET /admin/system.
+func (s *Scheduler) LastTick() time.Time {
+	if n := s.lastTick.Load(); n > 0 {
+		return time.Unix(0, n)
+	}
+	return time.Time{}
 }
 
 func sigOr(d Decision, res executor.Result, now time.Time) string {

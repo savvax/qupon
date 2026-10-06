@@ -98,6 +98,7 @@ func run() error {
 	// reconcile endpoint and the ISO 20022 exports (nil when unconfigured).
 	var chainClient *chain.Client
 	var chainReader reconcile.Reader
+	var poller *ingest.Poller // exposed to /admin/system (task 702): ingest lag
 	if cfg.ProgramID != "" {
 		program, err := solana.PublicKeyFromBase58(cfg.ProgramID)
 		if err != nil {
@@ -105,7 +106,7 @@ func run() error {
 		}
 		chainClient = chain.NewClient(cfg.RPCURL, program, logger)
 		chainReader = chainClient
-		poller := ingest.NewPoller(cfg.RPCURL, program, st, logger)
+		poller = ingest.NewPoller(cfg.RPCURL, program, st, logger)
 		go poller.Run(ctx)
 	} else {
 		logger.Warn("PROGRAM_ID empty: activity poller disabled")
@@ -143,36 +144,10 @@ func run() error {
 		return fmt.Errorf("seed platform: %w", err)
 	}
 
-	srv := &http.Server{
-		Addr: ":" + cfg.Port,
-		Handler: api.New(logger, st, api.Deps{
-			Read:         readModel(chainClient),
-			Notice:       noticeReader(chainClient, st),
-			Reconcile:    chainReader,
-			Chain:        chainClient,
-			Executor:     exec,
-			BaseConfig:   cfg.QuponConfig,
-			Network:      profile,
-			DataDir:      cfg.DataDir,
-			ReadCacheTTL: 10 * time.Second,
-			SignInLimit:  auth.NewLimiter(20, time.Minute),
-			// demo accounts are public: bound what they can spend of the operator keys
-			DemoLimit:       auth.NewLimiter(60, time.Hour),
-			DemoSeriesLimit: auth.NewLimiter(10, 24*time.Hour),
-			Auth: &auth.Service{Store: st, Now: time.Now, TTL: 12 * time.Hour, DemoLogin: cfg.DemoLogin,
-				Limit: auth.NewLimiter(5, time.Minute)},
-			// kase.kz market data (task 1001): public, cached, stale-if-error
-			Kase: kase.NewService(st),
-		}),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		IdleTimeout:       120 * time.Second,
-		// a write may wait for an executor slot, then run the CLI (≤ executor.Timeout)
-		WriteTimeout: 3*executor.Timeout + 30*time.Second,
-	}
-
 	// Autopilot (task 024): --demo-speed implies the scheduler with a cadence
-	// that runs a full coupon cycle unattended.
+	// that runs a full coupon cycle unattended. Built before the server so
+	// /admin/system (task 702) can report its state.
+	var sched *scheduler.Scheduler
 	if cfg.Scheduler || cfg.DemoSpeed {
 		if chainClient == nil {
 			logger.Warn("scheduler enabled but PROGRAM_ID is empty: not started")
@@ -193,8 +168,49 @@ func run() error {
 			sc.AutoFund = cfg.AutoFund || sc.AutoFund
 			sc.ApprovalRequired = cfg.ApprovalRequired
 			sc.DryRun = cfg.DryRun
-			go (&scheduler.Scheduler{Cfg: sc, Read: chainClient, Exec: exec, Store: st, Log: logger}).Run(ctx)
+			sched = &scheduler.Scheduler{Cfg: sc, Read: chainClient, Exec: exec, Store: st, Log: logger}
+			go sched.Run(ctx)
 		}
+	}
+
+	deps := api.Deps{
+		Read:         readModel(chainClient),
+		Notice:       noticeReader(chainClient, st),
+		Reconcile:    chainReader,
+		Chain:        chainClient,
+		Executor:     exec,
+		BaseConfig:   cfg.QuponConfig,
+		Network:      profile,
+		DataDir:      cfg.DataDir,
+		ReadCacheTTL: 10 * time.Second,
+		SignInLimit:  auth.NewLimiter(20, time.Minute),
+		// demo accounts are public: bound what they can spend of the operator keys
+		DemoLimit:       auth.NewLimiter(60, time.Hour),
+		DemoSeriesLimit: auth.NewLimiter(10, 24*time.Hour),
+		Auth: &auth.Service{Store: st, Now: time.Now, TTL: 12 * time.Hour, DemoLogin: cfg.DemoLogin,
+			Limit: auth.NewLimiter(5, time.Minute)},
+		// kase.kz market data (task 1001): public, cached, stale-if-error
+		Kase: kase.NewService(st),
+	}
+	// /admin/system probes (task 702): nil-checked so an unconfigured backend reports not running.
+	if chainClient != nil {
+		deps.SystemChain = chainClient
+	}
+	if sched != nil {
+		deps.SystemScheduler = sched
+	}
+	if poller != nil {
+		deps.SystemIngest = poller
+	}
+
+	srv := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           api.New(logger, st, deps),
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		// a write may wait for an executor slot, then run the CLI (≤ executor.Timeout)
+		WriteTimeout: 3*executor.Timeout + 30*time.Second,
 	}
 
 	errCh := make(chan error, 1)

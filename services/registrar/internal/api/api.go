@@ -51,6 +51,10 @@ type Deps struct {
 	Network network.Profile
 	// DataDir holds uploaded documents (platform v2 §5.3); empty = documents disabled.
 	DataDir string
+	// System-health backends for GET /admin/system (task 702); nil = that section reports not running.
+	SystemChain     SystemChain     // RPC probe + operator balances; satisfied by *chain.Client
+	SystemScheduler SystemScheduler // scheduler liveness; satisfied by *scheduler.Scheduler
+	SystemIngest    SystemIngest    // ingest progress; satisfied by *ingest.Poller
 	// TestRoutes registers GET /_test/registrar (role-gated no-op) for RBAC tests; never set in production.
 	TestRoutes bool
 	// Kase serves cached kase.kz market data (task 1001); nil → /kase/* answers 503.
@@ -244,7 +248,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	mountAdmin(r, deps, st)
 
-	// mount: system
+	mountSystem(r, deps, st)
 
 	mountWallets(r, deps, st)
 

@@ -257,3 +257,18 @@ func TestRedactKeys(t *testing.T) {
 		t.Fatalf("unexpected redaction: %s", out)
 	}
 }
+
+func TestStatsReportsRunningAndQueued(t *testing.T) {
+	e := New(fakeCLI(t), "testdata/devnet.json", nil)
+	if r, q := e.Stats(); r != 0 || q != 0 {
+		t.Fatalf("idle stats = (%d, %d), want (0, 0)", r, q)
+	}
+	// occupy one slot and park one waiter, as two concurrent Runs would
+	e.slots <- struct{}{}
+	e.waiting.Add(1)
+	if r, q := e.Stats(); r != 1 || q != 1 {
+		t.Fatalf("busy stats = (%d, %d), want (1, 1)", r, q)
+	}
+	<-e.slots
+	e.waiting.Add(-1)
+}

@@ -372,3 +372,15 @@ func TestRunWithoutClockDoesNotPanic(t *testing.T) {
 	defer cancel()
 	s.Run(ctx) // one tick at 1 s; a nil clock would panic here
 }
+
+func TestLastTick(t *testing.T) {
+	fc := &fakeChain{series: series(now0.Add(90*time.Second).Unix(), now0.Add(24*time.Hour).Unix())}
+	s, _, _ := newScheduler(t, fc, DemoConfig())
+	if !s.LastTick().IsZero() {
+		t.Fatal("lastTick before the first pass should be zero")
+	}
+	s.Tick(t.Context()) // the fake clock makes the tick deterministic
+	if !s.LastTick().Equal(now0) {
+		t.Fatalf("lastTick = %v, want %v", s.LastTick(), now0)
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	solana "github.com/solana-foundation/solana-go/v2"
@@ -32,6 +33,8 @@ type Poller struct {
 	interval    time.Duration
 	pageSize    int // signatures per getSignaturesForAddress call (tests shrink it)
 	backfillCap int // first-run cap only; a cursor always pages back to itself
+
+	lastSlot atomic.Uint64 // highest ingested slot; read by GET /admin/system
 }
 
 func NewPoller(rpcURL string, program solana.PublicKey, st *store.Store, log *slog.Logger) *Poller {
@@ -168,6 +171,9 @@ func (p *Poller) ingestTx(ctx context.Context, s *rpc.TransactionSignature) erro
 	if tx == nil || tx.Meta == nil {
 		return nil
 	}
+	if tx.Slot > p.lastSlot.Load() { // single writer (the poll loop); the handler reads atomically
+		p.lastSlot.Store(tx.Slot)
+	}
 	events := ParseLogs(tx.Meta.LogMessages)
 	if len(events) == 0 {
 		return nil
@@ -198,3 +204,6 @@ func (p *Poller) ingestTx(ctx context.Context, s *rpc.TransactionSignature) erro
 	}
 	return nil
 }
+
+// LastSlot reports the highest slot the poller has ingested (0 before the first event) — GET /admin/system.
+func (p *Poller) LastSlot() uint64 { return p.lastSlot.Load() }

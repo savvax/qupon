@@ -343,3 +343,17 @@ func TestPollFirstRunCapsBackfill(t *testing.T) {
 		t.Errorf("older-than-cap signatures ingested on first run: %v", seen)
 	}
 }
+
+func TestLastSlotTracksHighestIngested(t *testing.T) {
+	srv := fakeRPC(t, solana.MustPublicKeyFromBase58("QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"), fixtureLogs(t))
+	p, _ := newPoller(t, srv.URL)
+	if p.LastSlot() != 0 {
+		t.Fatalf("lastSlot before the first poll = %d, want 0", p.LastSlot())
+	}
+	if err := p.Poll(t.Context()); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	if p.LastSlot() != 312 { // the fake node's tx slot
+		t.Fatalf("lastSlot = %d, want 312", p.LastSlot())
+	}
+}
