@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@/components/shell/icons";
 import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Amount } from "@/components/ui/Amount";
@@ -141,9 +142,10 @@ export default async function PrintReportPage({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 print:hidden">
         <Link
           href={back}
-          className="text-sm font-semibold text-g700 hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-g700 hover:underline"
         >
-          ← {t("print.back")}
+          <Icon name="arrowLeft" className="size-4" />
+          {t("print.back")}
         </Link>
         <div className="flex gap-2">
           <Button asChild variant="secondary">

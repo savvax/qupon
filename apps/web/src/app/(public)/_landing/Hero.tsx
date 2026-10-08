@@ -2,6 +2,7 @@ import { StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/Button";
+import { Icon } from "@/components/shell/icons";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { HeroLifecycle } from "./HeroLifecycle";
 import { EXAMPLE_ACTION, type Live } from "./live";
@@ -32,7 +33,7 @@ export async function Hero({ live }: { live: Live }) {
             <div className="mt-8 flex flex-col gap-3 min-[480px]:flex-row">
               <Button asChild variant="primaryOnDark" size="lg">
                 <Link href="/login?choose=1">
-                  {t("hero.cta")} <span aria-hidden>→</span>
+                  {t("hero.cta")} <Icon name="arrowRight" className="size-4" />
                 </Link>
               </Button>
               <Button asChild variant="secondaryOnDark" size="lg">

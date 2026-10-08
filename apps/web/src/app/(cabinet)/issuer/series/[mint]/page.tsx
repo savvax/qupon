@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@/components/shell/icons";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Address } from "@/components/ui/Address";
@@ -211,9 +212,10 @@ export default async function IssuerSeriesPage({
     <div className="mx-auto max-w-[1200px]">
       <Link
         href="/issuer/series"
-        className="text-sm font-semibold text-g700 hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-g700 hover:underline"
       >
-        ← {t("series.title")}
+        <Icon name="arrowLeft" className="size-4" />
+        {t("series.title")}
       </Link>
       <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">

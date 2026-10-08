@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@/components/shell/icons";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Address } from "@/components/ui/Address";
@@ -252,9 +253,10 @@ export default async function BondPage({
     <div className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6 sm:py-12">
       <Link
         href="/bonds"
-        className="text-sm font-semibold text-g700 hover:underline"
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-g700 hover:underline"
       >
-        ← {t("back")}
+        <Icon name="arrowLeft" className="size-4" />
+        {t("back")}
       </Link>
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <h1 className="text-[28px] leading-tight font-extrabold tracking-tight">

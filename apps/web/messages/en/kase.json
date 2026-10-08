@@ -8,7 +8,7 @@
     "match": "Match",
     "mismatch": "Mismatch",
     "stale": "cached: kase.kz unreachable, showing the last good data ({date})",
-    "noTicker": "No KASE ticker linked to this series. Add one in Admin → Series.",
+    "noTicker": "No KASE ticker linked to this series. Add one on the Series page of the admin cabinet.",
     "noPeriod": "This action has no coupon period to compare.",
     "noSchedule": "kase.kz has no coupon schedule row covering this period.",
     "unavailable": "kase.kz is unavailable. Try again later."

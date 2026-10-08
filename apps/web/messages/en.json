@@ -323,7 +323,7 @@
       },
       "registrar": {
         "title": "Registrar",
-        "text": "Onboard investors, run record date → snapshot → payout"
+        "text": "Onboard investors, strike the record date, take the snapshot and pay out"
       },
       "investor": {
         "title": "Investor",
@@ -957,7 +957,7 @@
       "watchNote": "Read-only view: connect a wallet to subscribe. Your wallet signs the DvP transaction."
     },
     "meetings": {
-      "proposalRate": "coupon {from} → {to}",
+      "proposalRate": "coupon from {from} to {to}",
       "proposalMaturity": "new maturity {date}",
       "proposalOther": "terms change",
       "votingEnds": "voting ends {date} (Almaty time)",

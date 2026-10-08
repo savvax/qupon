@@ -38,7 +38,7 @@
       "go": "View",
       "invalid": "That is not a Solana address (base58, 32-44 characters)."
     },
-    "devnetHint": "Qupon runs on Solana devnet: switch your wallet to Devnet (Phantom: Settings → Developer settings → Testnet mode).",
+    "devnetHint": "Qupon runs on Solana devnet: switch your wallet to Devnet (in Phantom: Settings, Developer settings, Testnet mode).",
     "errors": {
       "rejected": "The connection was cancelled in the wallet. Try again when you are ready.",
       "notReady": "This wallet is not ready. Unlock it or reload the page.",

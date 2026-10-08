@@ -1,4 +1,6 @@
 "use client";
+
+import { Icon } from "@/components/shell/icons";
 import { StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -197,12 +199,12 @@ export function DemoPanel({ next }: { next?: string }) {
               </span>
               <span
                 aria-hidden
-                className="flex size-9 shrink-0 items-center justify-center rounded-full bg-g600 text-white transition group-hover:translate-x-0.5"
+                className="flex size-9 shrink-0 items-center justify-center text-n400 transition group-hover:translate-x-0.5 group-hover:text-g600"
               >
                 {pending === d.role ? (
-                  <span className="size-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 ) : (
-                  "→"
+                  <Icon name="chevronRight" className="size-5" />
                 )}
               </span>
             </button>

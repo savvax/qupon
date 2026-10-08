@@ -83,7 +83,7 @@
   "onboarding": {
     "none": {
       "title": "Welcome! Two steps to your first bond",
-      "text": "Link a wallet → apply for KYC. Verification registers your wallet in the issues you choose.",
+      "text": "Link a wallet, then apply for KYC. Verification registers your wallet in the issues you choose.",
       "cta": "Start verification"
     },
     "submitted": {
