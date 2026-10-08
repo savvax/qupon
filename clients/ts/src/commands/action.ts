@@ -115,6 +115,12 @@ export function announcePlan(
 }
 
 async function runAnnounce(opts: AnnounceOpts, cmd: Command): Promise<void> {
+	// PCAL is blocked off-chain until the program supports pool factors (task 1402):
+	// complete_action + retire_batch retire 100% of every holder's units while only factor of face is paid.
+	if (opts.kind.toUpperCase() === "PCAL") {
+		out({ ok: false, error: "partial calls are not supported yet" });
+		process.exit(1);
+	}
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
 	const registrar = await signer(cmd, "registrar");
@@ -342,11 +348,11 @@ async function runComplete(opts: ActionOpts, cmd: Command): Promise<void> {
 const indexOpt = "--index <n>" as const;
 
 export function registerActionCommands(program: Command): void {
-	withGlobals(program.command("action:announce").description("announce a cash action: INTR coupon, REDM at maturity, MCAL/PCAL early call"))
+	withGlobals(program.command("action:announce").description("announce a cash action: INTR coupon, REDM at maturity, MCAL early call (PCAL refused until pool factors, task 1402)"))
 		.requiredOption("--series <name>", "series name in config/devnet.json")
 		.requiredOption("--record-at <ts>", "record date: unix ts or +seconds from now")
 		.requiredOption("--payment-at <ts>", "payment date: unix ts or +seconds from now")
-		.option("--kind <kind>", "INTR | REDM | MCAL | PCAL", "INTR")
+		.option("--kind <kind>", "INTR | REDM | MCAL (PCAL refused)", "INTR")
 		.option("--call-date <ymd>", "MCAL/PCAL: call date YYYY-MM-DD (accrued coupon ends here)")
 		.option("--factor-bps <n>", "PCAL: share of face redeemed, bps")
 		.option("--corp-id <id>", "CORP id, ≤ 16 bytes (default: <series>-<KIND>-####)")
