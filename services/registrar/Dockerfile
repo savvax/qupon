@@ -32,7 +32,7 @@ WORKDIR /app
 COPY --from=go-build /out/registrar /app/registrar
 COPY --from=cli-build /cli /app/cli
 # Public series/mint config (in git) for the executor's --series names; redeploy after adding a series.
-COPY config/devnet.json /app/config/devnet.json
+COPY --chmod=644 config/devnet.json /app/config/devnet.json
 COPY services/registrar/entrypoint.sh /app/entrypoint.sh
 # `qupon` shim so QUPON_CLI can stay at its default path.
 RUN printf '#!/bin/sh\nexec node /app/cli/dist/cli.js "$@"\n' \
