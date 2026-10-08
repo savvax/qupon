@@ -343,7 +343,7 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
               onValueChange={set("cash")}
               options={assets.map((a) => ({
                 value: a.key,
-                label: `${a.symbol} — ${a.name}${a.kind === "wrapped_cbdc" ? " (SIMULATED)" : ""}`,
+                label: `${a.symbol} · ${a.name}${a.kind === "wrapped_cbdc" ? " (SIMULATED)" : ""}`,
               }))}
             />
             <TextField

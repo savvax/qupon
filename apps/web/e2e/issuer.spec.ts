@@ -14,7 +14,7 @@ test("new-series wizard: validation, schedule preview, one request on double cli
   await page.goto("/issuer/series/new");
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(
-    page.getByText("Use 1–16 letters, digits or dashes."),
+    page.getByText("Use 1-16 letters, digits or dashes."),
   ).toBeVisible();
 
   await page.getByLabel("Series name").fill("E2E-1");
@@ -60,7 +60,7 @@ test("wizard pays in any enabled cash asset: KZTE-dev goes out as cashMint", asy
   await page.getByLabel("Series name").fill("E2E-KZTE");
   await page.getByLabel("ISIN").fill("KZ2C00012345");
   await page.getByRole("combobox", { name: "Paid in" }).click();
-  await page.getByRole("option", { name: /KZTE-dev\s— Evo tenge/ }).click();
+  await page.getByRole("option", { name: /KZTE-dev · Evo tenge/ }).click();
   await expect(page.getByText("₸").first()).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: "Continue" }).click();

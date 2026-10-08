@@ -6,13 +6,13 @@
   "seeAll": "See all notifications",
   "empty": "You're all caught up",
   "emptyBody": "New corporate actions, payouts and decisions will appear here.",
-  "unavailable": "Notifications are unavailable — the registrar API did not answer.",
+  "unavailable": "Notifications are unavailable. The registrar API did not answer.",
   "unreadOnly": "Unread only ({count})",
   "new": "New",
   "kinds": {
     "action_announced": {
       "title": "{ticker}: new corporate action",
-      "body": "{actionKind} announced on a bond you hold — check its record and payment dates."
+      "body": "{actionKind} announced on a bond you hold. Check its record and payment dates."
     },
     "meeting_opened": {
       "title": "{ticker}: bondholder meeting opened",
@@ -20,7 +20,7 @@
     },
     "meeting_finalized": {
       "title": "{ticker}: meeting result",
-      "body": "The votes are counted — see the outcome."
+      "body": "The votes are counted. See the outcome."
     },
     "entitlement_paid": {
       "title": "{ticker}: payment received",

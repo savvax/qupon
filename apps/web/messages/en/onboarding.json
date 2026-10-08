@@ -12,11 +12,11 @@
     },
     "kycApproved": {
       "label": "KYC approved",
-      "hint": "Identity review by the registrar (SIMULATED — decided by hand)."
+      "hint": "Identity review by the registrar (SIMULATED, decided by hand)."
     },
     "testCashReceived": {
       "label": "Test cash received",
-      "hint": "Get test assets from the devnet faucet — 100,000 units per asset."
+      "hint": "Get test assets from the devnet faucet: 100,000 units per asset."
     },
     "subscribed": {
       "label": "First subscription",
@@ -29,11 +29,11 @@
     "success": "Test {symbol} is on its way to your wallet",
     "note": "Devnet faucet: one request per asset per hour."
   },
-  "allDone": "All steps complete — you are ready to invest.",
+  "allDone": "All steps complete. You are ready to invest.",
   "progress": "{done} of {total} done",
   "kyc": {
-    "submitted": "Your application is under review — you will be notified.",
-    "rejected": "Your application was rejected — see the reason and apply again."
+    "submitted": "Your application is under review. You will be notified.",
+    "rejected": "Your application was rejected. See the reason and apply again."
   },
   "actions": {
     "wallet": "Link a wallet",

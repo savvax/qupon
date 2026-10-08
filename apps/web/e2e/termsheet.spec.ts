@@ -58,7 +58,7 @@ test("pasted term sheet is parsed, reviewed and applied to the wizard", async ({
   await expect(page.getByLabel("Issue date")).toHaveValue("2026-07-03");
   await expect(page.getByLabel("Maturity date")).toHaveValue("2031-07-03");
   await expect(
-    page.getByText(/Term-sheet values applied — review every field/),
+    page.getByText(/Term-sheet values applied\. Review every field/),
   ).toBeVisible();
 
   // Proceeds to issuance: 5 years semi-annual → 10 coupons in the schedule step.

@@ -23,7 +23,7 @@
   },
   "wallets": {
     "title": "Wallets",
-    "lead": "Coupons and redemptions are paid to the wallet you register with the registrar. Link it here by signing a one-time message — no transaction, no fee.",
+    "lead": "Coupons and redemptions are paid to the wallet you register with the registrar. Link it here by signing a one-time message: no transaction, no fee.",
     "none": "No wallet linked yet.",
     "primary": "Primary",
     "verifiedAt": "Verified {date}",
@@ -53,11 +53,11 @@
     "haveAccount": "Already have an account?",
     "signIn": "Sign in",
     "errors": {
-      "email_taken": "An account with this email already exists — sign in instead.",
+      "email_taken": "An account with this email already exists. Sign in instead.",
       "weak_password": "Use at least 10 characters that are not a common password.",
       "invalid_params": "Check the name and the email address.",
-      "rate_limited": "Too many attempts — wait a minute and try again.",
-      "generic": "Could not create the account — try again in a moment."
+      "rate_limited": "Too many attempts. Wait a minute and try again.",
+      "generic": "Could not create the account. Try again in a moment."
     },
     "steps": {
       "title": "From sign-up to your first coupon",
@@ -67,7 +67,7 @@
       },
       "wallet": {
         "title": "Link your Solana wallet",
-        "text": "Sign a message to prove it is yours — no transaction, no fee."
+        "text": "Sign a message to prove it is yours: no transaction, no fee."
       },
       "kyc": {
         "title": "Get verified",

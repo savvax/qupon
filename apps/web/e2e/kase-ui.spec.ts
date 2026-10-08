@@ -17,7 +17,7 @@ test("wizard imports a KASE ticker and highlights schedule mismatches", async ({
   await page.goto("/issuer/series/new");
   await page.getByRole("button", { name: "Import", exact: true }).click(); // empty ticker → inline error
   await expect(
-    page.getByText("Ticker must be 2–12 letters or digits."),
+    page.getByText("Ticker must be 2-12 letters or digits."),
   ).toBeVisible();
 
   await page.getByLabel("KASE ticker").fill("TEBNb10");

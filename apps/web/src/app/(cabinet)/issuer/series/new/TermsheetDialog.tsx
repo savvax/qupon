@@ -79,10 +79,14 @@ export function TermsheetDialog({
     setBusy(true);
     setError("");
     try {
-      setParse(await boPost<TermsheetParse>("issuer/import/termsheet", { text }));
+      setParse(
+        await boPost<TermsheetParse>("issuer/import/termsheet", { text }),
+      );
     } catch (e) {
       const code = (e as BoError).code;
-      setError(t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.default"));
+      setError(
+        t.has(`errors.${code}`) ? t(`errors.${code}`) : t("errors.default"),
+      );
       setParse(undefined);
     } finally {
       setBusy(false);

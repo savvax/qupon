@@ -70,7 +70,7 @@
   "landing": {
     "hero": {
       "badge": "Live on Solana devnet",
-      "title": "Every coupon, redemption and bondholder vote — executed on-chain",
+      "title": "Every coupon, redemption and bondholder vote, executed on-chain",
       "lead": "Record date, per-holder entitlements, escrowed settlement and ISO 20022 reporting for tokenized bonds, under Kazakhstan market rules.",
       "cta": "Open the demo",
       "overview": "Technical overview"
@@ -145,7 +145,7 @@
       "issuers": {
         "title": "For issuers",
         "b1": "Issue a series from its terms in minutes",
-        "b2": "Fund each coupon into escrow — the registrar does the rest",
+        "b2": "Fund each coupon into escrow, the registrar does the rest",
         "b3": "Call bondholder meetings and change terms with a full audit trail",
         "cta": "Try as issuer"
       },
@@ -176,7 +176,7 @@
         "kyc": {
           "element": "KYC",
           "badge": "Review simulated",
-          "text": "Investors upload documents and a registrar decides by hand — no licensed KYC vendor. Approval is real: a Solana Attestation Service attestation and the on-chain registration."
+          "text": "Investors upload documents and a registrar decides by hand, with no licensed KYC vendor. Approval is real: a Solana Attestation Service attestation and the on-chain registration."
         },
         "iso": {
           "element": "ISO 20022 seev.031 / seev.036",
@@ -191,7 +191,7 @@
         "notice": {
           "element": "KASE",
           "badge": "Read only",
-          "text": "Bond data is read from kase.kz and cached; the disclosure notice and package are generated automatically — submission to KASE is simulated."
+          "text": "Bond data is read from kase.kz and cached; the disclosure notice and package are generated automatically. Submission to KASE is simulated."
         },
         "trades": {
           "element": "Secondary settlement",
@@ -223,7 +223,7 @@
       },
       "tenge": {
         "title": "Tenge on Solana",
-        "text": "Settle in any registered token — test tenge stand-ins on devnet, Evo's KZTE ready for mainnet, USDC — each mint verified on-chain."
+        "text": "Settle in any registered token: test tenge stand-ins on devnet, Evo's KZTE ready for mainnet, or USDC. Each mint is verified on-chain."
       },
       "notify": {
         "title": "Notifications",
@@ -241,7 +241,7 @@
   },
   "bonds": {
     "title": "Bonds",
-    "lead": "Tokenized bonds serviced by Qupon on Solana devnet — terms, coupon schedule and every corporate action, straight from the chain.",
+    "lead": "Tokenized bonds serviced by Qupon on Solana devnet: terms, coupon schedule and every corporate action, straight from the chain.",
     "colBond": "Bond",
     "colFace": "Face value",
     "colCoupon": "Coupon",
@@ -307,11 +307,11 @@
     "email": "Email",
     "password": "Password",
     "submit": "Sign in",
-    "accountsNote": "No account? Use a demo identity — every action still runs on Solana devnet.",
+    "accountsNote": "No account? Use a demo identity. Every action still runs on Solana devnet.",
     "errors": {
       "bad_credentials": "Wrong email or password.",
-      "rate_limited": "Too many attempts — wait a minute and try again.",
-      "generic": "Sign-in failed — try again in a moment."
+      "rate_limited": "Too many attempts. Wait a minute and try again.",
+      "generic": "Sign-in failed. Try again in a moment."
     },
     "demo": {
       "badge": "Demo",
@@ -330,7 +330,7 @@
         "text": "Portfolio, payouts, placement and voting"
       },
       "disabled": "Demo sign-in is turned off on this deployment.",
-      "failed": "Could not start the demo — try again.",
+      "failed": "Could not start the demo. Try again.",
       "note": "Demo data is shared by every visitor and may be reset."
     },
     "newInvestor": "New investor?",
@@ -339,7 +339,7 @@
     "continue": "Continue to my cabinet"
   },
   "footer": {
-    "devnet": "Runs on Solana devnet with test tokens — no real money moves.",
+    "devnet": "Runs on Solana devnet with test tokens. No real money moves.",
     "source": "Source code",
     "overview": "Technical overview",
     "built": "Built for KASE × Superteam Kazakhstan"
@@ -425,10 +425,10 @@
     "failed": "Something went wrong",
     "sessionExpiredTitle": "Session expired",
     "signIn": "Sign in again",
-    "sessionExpired": "Your session expired — sign in again.",
+    "sessionExpired": "Your session expired. Sign in again.",
     "forbidden": "Your role can't do this.",
-    "throttled": "Demo limit reached — try again in a few minutes.",
-    "unreachable": "The registrar service is unreachable — try again in a moment.",
+    "throttled": "Demo limit reached. Try again in a few minutes.",
+    "unreachable": "The registrar service is unreachable. Try again in a moment.",
     "notFound": {
       "title": "Page not found",
       "body": "The page you are looking for does not exist or was moved.",
@@ -437,41 +437,41 @@
     },
     "crash": {
       "title": "Something broke",
-      "body": "An unexpected error occurred while rendering this page — try again.",
+      "body": "An unexpected error occurred while rendering this page. Try again.",
       "retry": "Retry"
     },
     "onchain": {
-      "Unauthorized": "this step needs the registrar or paying-agent key — the configured operator wallet does not match",
-      "InvalidAuthority": "authority mismatch — the step must be signed by the authority stored on-chain",
+      "Unauthorized": "this step needs the registrar or paying-agent key: the configured operator wallet does not match",
+      "InvalidAuthority": "authority mismatch: the step must be signed by the authority stored on-chain",
       "InvestorNotActive": "the investor record is not Active (never registered or suspended)",
-      "InvestorSuspended": "the investor is suspended — reinstate before snapshotting or paying",
+      "InvestorSuspended": "the investor is suspended: reinstate before snapshotting or paying",
       "SeriesNotActive": "the series is not Active (matured or closed) for this operation",
-      "ActionAlreadyOpen": "another corporate action is still open — complete or cancel it first",
+      "ActionAlreadyOpen": "another corporate action is still open: complete or cancel it first",
       "InvalidDates": "dates violate the Almaty-midnight / period rules (record ≤ payment, period = schedule period)",
-      "TooEarly": "the on-chain clock has not reached the scheduled time yet — wait and retry",
+      "TooEarly": "the on-chain clock has not reached the scheduled time yet: wait and retry",
       "WrongStatus": "the action is not in the status this instruction requires",
-      "MintNotPaused": "record date was not struck — the mint must be paused while snapshotting",
-      "MintPaused": "the mint is paused for the record window — complete or cancel the action to resume",
+      "MintNotPaused": "record date was not struck: the mint must be paused while snapshotting",
+      "MintPaused": "the mint is paused for the record window: complete or cancel the action to resume",
       "AccountMintMismatch": "token account belongs to a different mint than expected",
       "AccountOwnerMismatch": "token account belongs to a different owner than expected",
-      "SupplyMismatch": "snapshot units ≠ mint supply — a holder is missing, run the snapshot step again",
-      "Underfunded": "escrow holds less than Σ net + tax + principal — fund the escrow first",
-      "AlreadyProcessed": "already processed — the step is idempotent, nothing to redo",
+      "SupplyMismatch": "snapshot units ≠ mint supply: a holder is missing, run the snapshot step again",
+      "Underfunded": "escrow holds less than Σ net + tax + principal: fund the escrow first",
+      "AlreadyProcessed": "already processed: the step is idempotent, nothing to redo",
       "NothingToDo": "nothing to do (e.g. empty snapshot or already-final action)",
-      "MathOverflow": "amounts exceed u64 in the integer math — split the batch",
-      "RoundingDrift": "per-holder rounding drifted from half-up — snapshot again",
+      "MathOverflow": "amounts exceed u64 in the integer math: split the batch",
+      "RoundingDrift": "per-holder rounding drifted from half-up: snapshot again",
       "EntitlementCalcMismatch": "accrual days do not match the crate day count for the period",
-      "VotingClosed": "the voting window has ended — votes are no longer accepted",
-      "VotingOpen": "voting is still open — finalize after the deadline or full turnout",
+      "VotingClosed": "the voting window has ended: votes are no longer accepted",
+      "VotingOpen": "voting is still open: finalize after the deadline or full turnout",
       "AlreadyVoted": "this wallet already voted (one vote per snapshot entitlement)",
-      "NoQuorum": "turnout below the quorum threshold — the meeting fails for lack of participation",
-      "NotApproved": "meeting result is not Approved — there is nothing to apply",
-      "SupplyNotZero": "bond mint supply is not zero — retire every holder before closing the series",
-      "BatchTooLarge": "too many holders for one transaction — the CLI batches automatically, retry",
+      "NoQuorum": "turnout below the quorum threshold: the meeting fails for lack of participation",
+      "NotApproved": "meeting result is not Approved: there is nothing to apply",
+      "SupplyNotZero": "bond mint supply is not zero: retire every holder before closing the series",
+      "BatchTooLarge": "too many holders for one transaction: the CLI batches automatically, retry",
       "InvalidParams": "invalid instruction parameters (e.g. price ≠ face value, or a CHAN announce)",
       "KycAttestationInvalid": "no live KYC attestation (Solana Attestation Service) matching this wallet and its attributes",
-      "TradesInFlight": "the series has open secondary trades — settle or cancel them before the record date",
-      "TradeStillOpen": "the trade's bond escrow still holds bonds — settle or cancel the trade first, or return the bonds to the seller",
+      "TradesInFlight": "the series has open secondary trades: settle or cancel them before the record date",
+      "TradeStillOpen": "the trade's bond escrow still holds bonds: settle or cancel the trade first, or return the bonds to the seller",
       "InvalidTrade": "not a trade of this series: bond against the series' cash asset, between two active investors, with the registrar or paying agent as settlement authority"
     }
   },
@@ -494,7 +494,7 @@
       "signatures": "Signatures",
       "emptyEvents": "No on-chain events yet.",
       "emptyAudit": "No operator writes recorded yet.",
-      "unreachable": "The audit trail is unavailable — try again in a moment."
+      "unreachable": "The audit trail is unavailable. Try again in a moment."
     },
     "autopilot": {
       "title": "Autopilot approvals",
@@ -510,7 +510,7 @@
       "approve": "Approve",
       "approving": "Executing the approved step…",
       "approved": "Step executed",
-      "emptyPending": "Nothing waits for approval — the autopilot is idle.",
+      "emptyPending": "Nothing waits for approval. The autopilot is idle.",
       "emptyExecuted": "No steps executed through approvals yet.",
       "showCommand": "Show command"
     },
@@ -566,8 +566,8 @@
       "onboardTitle": "Onboard investor",
       "onboardLead": "The KYC provider (SIMULATED) attests the wallet on the Solana Attestation Service, then the investor is registered on-chain.",
       "wallet": "Wallet address",
-      "walletHint": "Base58 Solana pubkey — the investor's own wallet",
-      "walletError": "Enter a valid base58 Solana address (32–44 characters).",
+      "walletHint": "Base58 Solana pubkey of the investor's own wallet",
+      "walletError": "Enter a valid base58 Solana address (32-44 characters).",
       "typeLabel": "Investor type",
       "residencyLabel": "Residency",
       "taxLabel": "Withholding tax",
@@ -575,7 +575,7 @@
       "expiryLabel": "Attestation validity",
       "expiryHint": "Days the KYC attestation stays valid (0 = no expiry)",
       "onboardPending": "Attesting and registering…",
-      "onboardSuccess": "Investor onboarded — 2 transactions sent",
+      "onboardSuccess": "Investor onboarded: 2 transactions sent",
       "suspendPending": "Suspending…",
       "suspendSuccess": "Investor suspended",
       "reinstatePending": "Reinstating…",
@@ -590,12 +590,12 @@
   "action": {
     "breadcrumb": "Corporate actions",
     "sending": "{step}: sending the transaction…",
-    "stepDone": "{step} — confirmed",
+    "stepDone": "{step}: confirmed",
     "readOnly": "This series was created outside Qupon's registry, so its steps can't be run from here.",
-    "simulatedArdfm": "ARDFM registration — simulated",
+    "simulatedArdfm": "ARDFM registration (simulated)",
     "wait": {
       "voting": "Voting is open",
-      "notApproved": "Meeting not approved — nothing to apply",
+      "notApproved": "Meeting not approved: nothing to apply",
       "completed": "Action completed",
       "cancelled": "Action cancelled"
     },
@@ -673,14 +673,14 @@
       "title": "ISO 20022",
       "seev031": "agent notification (XML)",
       "seev036": "payment confirmation for every holder",
-      "simulated": "Swift delivery — simulated"
+      "simulated": "Swift delivery (simulated)"
     },
     "notice": {
       "title": "KASE notice",
       "language": "Notice language",
       "copy": "Copy",
       "copied": "Copied",
-      "simulated": "Publication on kase.kz — simulated"
+      "simulated": "Publication on kase.kz (simulated)"
     },
     "list": {
       "title": "Corporate actions",
@@ -744,9 +744,9 @@
       "todo": "Needs your action",
       "todoEmpty": "Nothing needs you right now",
       "todoEmptyBody": "When a snapshot is taken, the coupon escrow to fund shows up here.",
-      "fundTitle": "Fund the {kind} escrow — {ticker}",
+      "fundTitle": "Fund the {kind} escrow: {ticker}",
       "fundBody": "Holders are paid on {date}. Missing:",
-      "meetingApproved": "Meeting approved — {ticker}",
+      "meetingApproved": "Meeting approved: {ticker}",
       "meetingApprovedBody": "The registrar applies the terms change on-chain.",
       "latest": "Latest corporate actions",
       "noActions": "No corporate actions yet.",
@@ -758,7 +758,7 @@
     "series": {
       "title": "Series",
       "lead": "Every bond series you issued on Solana devnet.",
-      "empty": "No series yet — issue your first one."
+      "empty": "No series yet. Issue your first one."
     },
     "detail": {
       "total": "Total",
@@ -766,7 +766,7 @@
       "units": "Bonds",
       "holders": "Holders",
       "holdersTab": "Holders",
-      "noHolders": "No holders yet — the registrar onboards investors.",
+      "noHolders": "No holders yet. The registrar onboards investors.",
       "issued": "{units} bonds issued",
       "openAction": "Open corporate action: {kind} ({status}). The next one can be announced after it completes."
     },
@@ -779,7 +779,7 @@
         "review": "Review"
       },
       "name": "Series name",
-      "nameHint": "1–16 characters: letters, digits, dash",
+      "nameHint": "1-16 characters: letters, digits, dash",
       "isinHint": "12 characters, e.g. KZ2C00012345",
       "cash": "Paid in",
       "cashTkzt": "Tenge (test tKZT)",
@@ -798,7 +798,7 @@
       },
       "meetingDefaults": "Bondholder meetings use the defaults: quorum 50% of bonds, approval ⅔ of votes cast.",
       "errors": {
-        "name": "Use 1–16 letters, digits or dashes.",
+        "name": "Use 1-16 letters, digits or dashes.",
         "isin": "ISIN is 2 letters, 9 letters or digits and a check digit.",
         "face": "Enter a positive amount with at most {decimals} decimals.",
         "rate": "Enter a rate between 0.01% and 100%.",
@@ -850,7 +850,7 @@
       "callDate": "Call date",
       "timing": "Timing",
       "fast": "Fast demo",
-      "fastHint": "Record date in 2 minutes, payment in 3 — the whole flow fits in a demo.",
+      "fastHint": "Record date in 2 minutes, payment in 3. The whole flow fits in a demo.",
       "fastMeetingHint": "Record date in 2 minutes, voting closes in 15.",
       "custom": "Custom dates",
       "customHint": "Almaty time (UTC+5).",
@@ -880,16 +880,16 @@
   "investor": {
     "chooser": {
       "title": "Investor cabinet",
-      "body": "Connect a self-custody wallet (Phantom, Backpack, Solflare) to see your holdings, payouts and votes — or try the demo investor.",
+      "body": "Connect a self-custody wallet (Phantom, Backpack, Solflare) to see your holdings, payouts and votes, or try the demo investor.",
       "bodyAccount": "Connect a self-custody wallet (Phantom, Backpack, Solflare) to see this account's holdings, payouts and votes.",
       "connectWallet": "Connect wallet",
       "tryDemo": "Try the demo investor",
       "note": "Demo data is shared by every visitor and may be reset · Solana devnet.",
-      "failed": "Could not start the demo — try again.",
-      "invalidAddress": "That is not a Solana address (base58, 32–44 characters).",
-      "detectedMany": "{count} Solana wallets found in this browser — you'll choose one.",
+      "failed": "Could not start the demo. Try again.",
+      "invalidAddress": "That is not a Solana address (base58, 32-44 characters).",
+      "detectedMany": "{count} Solana wallets found in this browser. You'll choose one.",
       "detectedOne": "{name} found in this browser.",
-      "detectedNone": "No Solana wallet found in this browser — we'll show how to get one.",
+      "detectedNone": "No Solana wallet found in this browser. We'll show how to get one.",
       "watchOpen": "View by address (read-only)",
       "watchLabel": "Solana address",
       "watchHint": "See holdings, payouts and meetings without connecting. Signing needs a wallet.",
@@ -901,7 +901,7 @@
       "demoBadge": "DEMO",
       "watchWallet": "Wallet (view only)",
       "watchBadge": "Read-only",
-      "bodyAccount": "Connect the wallet you linked to your account to see positions, payouts and votes — or view any address read-only."
+      "bodyAccount": "Connect the wallet you linked to your account to see positions, payouts and votes, or view any address read-only."
     },
     "portfolio": {
       "title": "Portfolio",
@@ -913,7 +913,7 @@
       "kycNone": "Not registered",
       "holdings": "Holdings",
       "holdingsEmpty": "No holdings yet",
-      "holdingsEmptyBody": "This wallet is not registered in any series — the registrar registers investors after a KYC attestation (SIMULATED).",
+      "holdingsEmptyBody": "This wallet is not registered in any series. The registrar registers investors after a KYC attestation (SIMULATED).",
       "units": "Units",
       "coupon": "Coupon",
       "maturity": "Maturity",
@@ -947,14 +947,14 @@
       "empty": "Nothing to subscribe to",
       "emptyBody": "Placement is open to registered investors in active series only.",
       "demoNote": "Demo mode: the demo investor's custodial wallet signs (SIMULATED).",
-      "walletNote": "Your wallet signs the transaction — make sure the cash account holds enough funds.",
+      "walletNote": "Your wallet signs the transaction. Make sure the cash account holds enough funds.",
       "loadFailed": "Could not load series",
       "toasts": {
         "subscribing": "Subscribing to {units} × {ticker}…",
         "subscribed": "Subscribed: {units} × {ticker}"
       },
       "connectToSign": "Connect a wallet to subscribe",
-      "watchNote": "Read-only view: connect a wallet to subscribe — your wallet signs the DvP transaction."
+      "watchNote": "Read-only view: connect a wallet to subscribe. Your wallet signs the DvP transaction."
     },
     "meetings": {
       "proposalRate": "coupon {from} → {to}",
@@ -986,7 +986,7 @@
     },
     "statements": {
       "seev036": "seev.036",
-      "note": "Statements are ISO 20022 seev.036 files (SIMULATED — delivery via KASE is not integrated).",
+      "note": "Statements are ISO 20022 seev.036 files (SIMULATED: delivery via KASE is not integrated).",
       "empty": "No payouts yet",
       "emptyBody": "A statement appears here after every settled payment.",
       "loadFailed": "Could not load statements",

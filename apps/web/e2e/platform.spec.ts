@@ -111,7 +111,7 @@ test("registrar approves; the investor is notified and downloads the statement C
   ).toBeVisible();
   await page.getByRole("button", { name: "Approve" }).click();
   await expect(
-    page.getByText("Approved — the investor is registered"),
+    page.getByText("Approved: the investor is registered"),
   ).toBeVisible({ timeout: 15_000 });
   await expect(page.locator("[data-ok=true]")).toHaveCount(1); // one series (QPNb1)
 

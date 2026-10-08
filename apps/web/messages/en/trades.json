@@ -33,7 +33,7 @@
     "seller": "Seller",
     "buyer": "Buyer",
     "party": "{owner} · {units, plural, one {# bond} other {# bonds}}",
-    "units": "Bonds",
+    "units": "Number of bonds",
     "unitsHint": "The seller holds {max}",
     "unitsInvalid": "Enter a whole number from 1 to {max}",
     "cashAtPar": "Cash amount at par",
@@ -57,7 +57,7 @@
     "confirmForceTitle": "Return the bonds to the seller?",
     "confirmForceBody": "Use this when a normal cancel fails. The escrowed bonds go back to the seller's registered account and the trade is released. The cash leg is not moved: the buyer takes the cash back themselves with the DvP program's reclaim.",
     "forcePending": "Returning the bonds to the seller…",
-    "forceSuccess": "Trade released — bonds returned to the seller: {units}",
+    "forceSuccess": "Trade released. Bonds returned to the seller: {units}",
     "fundDemo": "Fund both legs (demo)",
     "fundPending": "Funding the {side, select, seller {bond} other {cash}} leg (demo)…",
     "fundSuccess": "{side, select, seller {Bond} other {Cash}} leg funded",
@@ -74,7 +74,7 @@
     "connect": "Connect wallet to sign",
     "funded": "Your leg is in escrow",
     "waitingOther": "Waiting for the other party",
-    "ready": "Both legs funded — waiting for the registrar to settle",
+    "ready": "Both legs funded, waiting for the registrar to settle",
     "pending": "Sending your leg to the escrow…",
     "success": "Your leg is in escrow"
   },
@@ -83,8 +83,8 @@
     "link": "Go to Trades"
   },
   "errors": {
-    "trade_not_found": "This trade is no longer open — it was settled or cancelled. Refresh the page.",
+    "trade_not_found": "This trade is no longer open. It was settled or cancelled. Refresh the page.",
     "invalid_body": "The trade was not accepted: {message}",
-    "not_demo_investor": "Demo funding works only for the demo investors whose keys the server holds — this party funds the leg from their own wallet."
+    "not_demo_investor": "Demo funding works only for the demo investors whose keys the server holds. This party funds the leg from their own wallet."
   }
 }

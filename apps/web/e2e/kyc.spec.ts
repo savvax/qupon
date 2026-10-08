@@ -54,7 +54,7 @@ test("registrar: queue → application → approve registers the wallet in each 
   );
   await page.getByRole("button", { name: "Approve" }).click();
   await expect(
-    page.getByText("Approved — the investor is registered"),
+    page.getByText("Approved: the investor is registered"),
   ).toBeVisible({ timeout: 15_000 });
   await expect(page.locator("[data-ok=true]")).toHaveCount(2);
 });

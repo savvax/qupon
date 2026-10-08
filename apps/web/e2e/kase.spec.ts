@@ -75,7 +75,7 @@ test("the disclosure package downloads and submits to KASE — SIMULATED", async
   expect(zip.suggestedFilename()).toBe("disclosure.demo.zip");
 
   await page
-    .getByRole("button", { name: /Submit to KASE\s— SIMULATED/ })
+    .getByRole("button", { name: /Submit to KASE \(SIMULATED\)/ })
     .click();
   await expect(page.getByText("Submitted (audit row recorded)")).toBeVisible();
   // the simulated note is always on the card

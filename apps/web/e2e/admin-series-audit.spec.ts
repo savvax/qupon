@@ -57,7 +57,7 @@ test("admin series: hide a series, KASE ticker and organisation controls", async
   const ticker = page.getByLabel("KASE ticker").first();
   await ticker.fill("not!a@ticker");
   await page.getByRole("button", { name: "Save" }).first().click();
-  await expect(page.getByText("Use 2–12 letters or digits.")).toBeVisible();
+  await expect(page.getByText("Use 2-12 letters or digits.")).toBeVisible();
 
   // Ticker + organisation save through the Radix select.
   await ticker.fill("QPNB");

@@ -30,7 +30,7 @@
     "removed": "Member removed",
     "invite": "Invite a member",
     "inviteTitle": "Invite an issuer",
-    "inviteLead": "The link works once and expires in 7 days. Email delivery is not integrated — copy it and send it yourself.",
+    "inviteLead": "The link works once and expires in 7 days. Email delivery is not integrated. Copy it and send it yourself.",
     "inviteEmail": "Colleague's email",
     "create": "Create invite link",
     "creating": "Creating the invite…",
@@ -44,7 +44,7 @@
   },
   "documents": {
     "title": "Documents",
-    "lead": "Upload prospectuses and decisions, then attach them to your series — attached documents are public on the bond page.",
+    "lead": "Upload prospectuses and decisions, then attach them to your series. Attached documents are public on the bond page.",
     "upload": "Upload a document",
     "file": "File",
     "fileHint": "PDF, PNG or JPEG, at most 10 MB.",
@@ -62,15 +62,16 @@
     "colSize": "Size",
     "colDate": "Uploaded",
     "colSeries": "Series",
-    "empty": "No documents yet — upload a prospectus to attach it to a series.",
-    "attached": "attached"
+    "empty": "No documents yet. Upload a prospectus to attach it to a series.",
+    "attached": "attached",
+    "emptyDemo": "No documents yet. Uploads are off for demo accounts: sign in with an organisation account to add a prospectus."
   },
   "series": {
     "title": "Documents",
     "lead": "Documents attached to this series are published on its public bond page.",
     "attach": "Attach a document",
     "pick": "Document",
-    "pickNone": "No unattached document — upload one under Documents first",
+    "pickNone": "No unattached document. Upload one under Documents first",
     "kind": "Kind",
     "attachBtn": "Attach",
     "attaching": "Attaching…",
@@ -94,12 +95,12 @@
     "signIn": "Sign in",
     "haveAccount": "Already have an account?",
     "errors": {
-      "invalid_token": "This invite is unknown, already used or expired — ask for a new one.",
-      "email_taken": "An account with this email already exists — sign in instead.",
+      "invalid_token": "This invite is unknown, already used or expired. Ask for a new one.",
+      "email_taken": "An account with this email already exists. Sign in instead.",
       "weak_password": "Use at least 10 characters that are not a common password.",
       "invalid_params": "Check the name and the password.",
-      "rate_limited": "Too many attempts — wait a minute and try again.",
-      "generic": "Could not accept the invite — try again in a moment."
+      "rate_limited": "Too many attempts. Wait a minute and try again.",
+      "generic": "Could not accept the invite. Try again in a moment."
     }
   }
 }

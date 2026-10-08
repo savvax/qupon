@@ -1,11 +1,11 @@
 {
   "admin": {
     "title": "Cash assets",
-    "lead": "Assets are identified by mint address — tickers can be faked. A new asset is verified on-chain and stays disabled until you enable it.",
+    "lead": "Assets are identified by mint address. Tickers can be faked. A new asset is verified on-chain and stays disabled until you enable it.",
     "add": "Add asset",
-    "empty": "No assets yet — add the first mint address.",
+    "empty": "No assets yet. Add the first mint address.",
     "unreachable": "Cash assets are unavailable",
-    "unreachableBody": "The registrar API is not answering right now — try again in a moment.",
+    "unreachableBody": "The registrar API is not answering right now. Try again in a moment.",
     "table": {
       "symbol": "Ticker",
       "name": "Name",
@@ -29,7 +29,7 @@
     },
     "addDialog": {
       "title": "Add asset by mint address",
-      "lead": "Paste the mint address — Qupon reads the account on-chain and fills the verified fields.",
+      "lead": "Paste the mint address. Qupon reads the account on-chain and fills the verified fields.",
       "mint": "Mint address",
       "mintHint": "The token's on-chain address, not its ticker.",
       "mintError": "Enter a valid base58 Solana address",
@@ -41,7 +41,7 @@
       "mintAuthority": "Mint authority",
       "freezeAuthority": "Freeze authority",
       "symbol": "Ticker",
-      "symbolHint": "Display only — holders always see the mint address.",
+      "symbolHint": "Display only. Holders always see the mint address.",
       "symbolPlaceholder": "e.g. KZTE-dev",
       "name": "Name",
       "namePlaceholder": "e.g. Evo tenge (devnet stand-in)",
@@ -79,7 +79,7 @@
     "assetDecimals": "Decimals: {decimals}",
     "empty": "No custodian movements yet.",
     "unreachable": "Custodian is unavailable",
-    "unreachableBody": "The registrar API is not answering right now — try again in a moment.",
+    "unreachableBody": "The registrar API is not answering right now. Try again in a moment.",
     "failed": "failed",
     "kinds": {
       "deposit": "Deposit",
@@ -120,7 +120,7 @@
       "deposited": "{symbol} minted (SIMULATED)",
       "withdrawn": "{symbol} burned (SIMULATED)",
       "close": "Close",
-      "simulatedNote": "SIMULATED: no real CBDC moves — the reference is only recorded in the transaction memo and the audit ledger."
+      "simulatedNote": "SIMULATED: no real CBDC moves. The reference is only recorded in the transaction memo and the audit ledger."
     }
   }
 }

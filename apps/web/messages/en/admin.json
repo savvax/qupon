@@ -8,6 +8,7 @@
     "colStatus": "Status",
     "colActions": "Actions",
     "demoBadge": "Demo",
+    "demoReadOnly": "Demo, read-only",
     "search": "Search",
     "searchPlaceholder": "name or email",
     "allRoles": "All roles",
@@ -27,7 +28,7 @@
     "noOrg": "No organisation",
     "empty": "No users match these filters.",
     "unreachable": "The user directory is unavailable",
-    "unreachableBody": "The registrar API is not answering right now — try again in a moment.",
+    "unreachableBody": "The registrar API is not answering right now. Try again in a moment.",
     "create": {
       "title": "Create user",
       "lead": "An account with a role and, for staff, an organisation.",
@@ -50,11 +51,11 @@
     "resetLink": {
       "title": "Reset link",
       "lead": "One-time password reset link for {name}",
-      "body": "The link is shown only once and works for 24 hours. Email delivery is not connected — copy it and send it to the user yourself.",
+      "body": "The link is shown only once and works for 24 hours. Email delivery is not connected. Copy it and send it to the user yourself.",
       "issue": "Generate link",
       "pending": "Generating the link…",
       "success": "Reset link generated",
-      "once": "Copy it now — it will not be shown again",
+      "once": "Copy it now: it will not be shown again",
       "copy": "Copy",
       "copied": "Copied ✓",
       "urlLabel": "Reset link URL",
@@ -77,7 +78,7 @@
     "binHint": "Kazakh business identification number, optional",
     "empty": "No organisations yet",
     "unreachable": "Organisations are unavailable",
-    "unreachableBody": "The registrar API is not answering right now — try again in a moment.",
+    "unreachableBody": "The registrar API is not answering right now. Try again in a moment.",
     "create": {
       "title": "Create organisation",
       "lead": "A company whose issuers or registrars act within it.",
@@ -100,8 +101,8 @@
     "hint": "At least 10 characters",
     "tooShort": "The password must be at least 10 characters.",
     "mismatch": "The passwords do not match.",
-    "invalidToken": "This link is unknown, already used or expired — ask an administrator for a new one.",
-    "generic": "The registrar service is unreachable — try again in a moment.",
+    "invalidToken": "This link is unknown, already used or expired. Ask an administrator for a new one.",
+    "generic": "The registrar service is unreachable. Try again in a moment.",
     "submit": "Set password",
     "done": "Password set. Sign in with the new password.",
     "signIn": "Sign in"
@@ -123,12 +124,12 @@
   },
   "system": {
     "title": "System health",
-    "lead": "Live probe of the registrar: RPC, operator wallets, executor and ingest. Refreshes every 15 s.",
+    "lead": "Live probe of the registrar: RPC, operator wallets, executor and ingest. Refreshes every 15 seconds.",
     "refresh": "Refresh",
     "updated": "Updated {time}",
     "loading": "Probing the registrar…",
     "unavailable": "System stats unavailable",
-    "stale": "The last refresh failed — the values below may be stale.",
+    "stale": "The last refresh failed. The values below may be stale.",
     "retry": "Retry",
     "network": "Network",
     "rpc": {
@@ -203,7 +204,7 @@
     "featured": "Featured",
     "notFeatured": "Not featured",
     "kaseTicker": "KASE ticker",
-    "kaseTickerError": "Use 2–12 letters or digits.",
+    "kaseTickerError": "Use 2-12 letters or digits.",
     "organisation": "Organisation",
     "noOrg": "No organisation",
     "save": "Save",
@@ -216,7 +217,7 @@
     "empty": "No series yet",
     "emptyBody": "Series appear here once they are issued on-chain.",
     "unreachable": "Series settings are unavailable",
-    "unreachableBody": "The registrar API is not answering right now — try again in a moment."
+    "unreachableBody": "The registrar API is not answering right now. Try again in a moment."
   },
   "audit": {
     "title": "Audit log",
@@ -243,7 +244,7 @@
     "ok": "OK",
     "failed": "Failed",
     "empty": "No audit entries for these filters.",
-    "unreachable": "The audit trail is unavailable — try again in a moment.",
+    "unreachable": "The audit trail is unavailable. Try again in a moment.",
     "roles": {
       "admin": "Administrator",
       "registrar": "Registrar",

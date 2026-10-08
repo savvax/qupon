@@ -7,33 +7,33 @@
     "fixation": "KASE fixation",
     "match": "Match",
     "mismatch": "Mismatch",
-    "stale": "cached — kase.kz unreachable, showing the last good data ({date})",
-    "noTicker": "No KASE ticker linked to this series — add one in Admin → Series.",
+    "stale": "cached: kase.kz unreachable, showing the last good data ({date})",
+    "noTicker": "No KASE ticker linked to this series. Add one in Admin → Series.",
     "noPeriod": "This action has no coupon period to compare.",
     "noSchedule": "kase.kz has no coupon schedule row covering this period.",
-    "unavailable": "kase.kz is unavailable — try again later."
+    "unavailable": "kase.kz is unavailable. Try again later."
   },
   "disclosure": {
     "title": "Disclosure package",
     "lead": "Notices RU/EN, seev.031 and one seev.036 per holder in one ZIP.",
     "download": "Download ZIP",
-    "submit": "Submit to KASE — SIMULATED",
+    "submit": "Submit to KASE (SIMULATED)",
     "submitPending": "Submitting…",
     "submitted": "Submitted (audit row recorded)",
-    "note": "SIMULATED: submission records an audit row only — nothing is sent to kase.kz."
+    "note": "SIMULATED: submission records an audit row only. Nothing is sent to kase.kz."
   },
   "import": {
     "title": "Import from KASE",
     "ticker": "KASE ticker",
-    "tickerHint": "e.g. TEBNb10 — listed bond on kase.kz",
+    "tickerHint": "e.g. TEBNb10, a listed bond on kase.kz",
     "button": "Import",
-    "done": "Imported {ticker} ({issuer}) — review every term before issuing.",
+    "done": "Imported {ticker} ({issuer}). Review every term before issuing.",
     "note": "Public kase.kz reference data, cached by the platform. Always verify against the prospectus.",
     "errors": {
-      "invalid_ticker": "Ticker must be 2–12 letters or digits.",
+      "invalid_ticker": "Ticker must be 2-12 letters or digits.",
       "kase_not_found": "kase.kz has no bond with this ticker.",
-      "kase_unavailable": "kase.kz is unavailable right now — enter the terms manually.",
-      "default": "Import failed — enter the terms manually."
+      "kase_unavailable": "kase.kz is unavailable right now. Enter the terms manually.",
+      "default": "Import failed. Enter the terms manually."
     }
   },
   "compare": {
@@ -44,7 +44,7 @@
     "status": "Check",
     "match": "Matches",
     "mismatch": "Mismatch",
-    "legend": "A row matches when KASE's coupon fixation falls inside the preview's period and the rate equals the annual coupon. Historical KASE fixings (older rates, partial periods) surface as mismatches — check the prospectus."
+    "legend": "A row matches when KASE's coupon fixation falls inside the preview's period and the rate equals the annual coupon. Historical KASE fixings (older rates, partial periods) surface as mismatches. Check the prospectus."
   },
   "panel": {
     "title": "KASE · {ticker}",
