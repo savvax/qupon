@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -348,6 +349,91 @@ func TestTickApprovalGate(t *testing.T) {
 		"--payment-at", fmt.Sprint(now0.Add(150 * time.Second).Unix())}
 	if strings.Join(rows[0].Args, " ") != strings.Join(wantArgs, " ") {
 		t.Fatalf("approval args = %v, want %v", rows[0].Args, wantArgs)
+	}
+}
+
+// TestTickStaleExpiredAnnounce: an announce approval nobody approved before
+// its record date is staled on the next tick and a fresh proposal with new
+// dates takes its place — the pending-dedup index would otherwise block
+// re-proposal forever (task 1405).
+func TestTickStaleExpiredAnnounce(t *testing.T) {
+	fc := &fakeChain{series: series(now0.Add(90*time.Second).Unix(), now0.Add(24*time.Hour).Unix())}
+	c := cfg
+	c.ApprovalRequired = true
+	s, st, _ := newScheduler(t, fc, c)
+	clock := now0
+	s.Now = func() time.Time { return clock }
+
+	s.Tick(t.Context()) // propose announce:INTR with record-at now0+90s
+	before, err := st.ListApprovals(t.Context(), "pending")
+	if err != nil || len(before) != 1 {
+		t.Fatalf("pending after first tick = %d (%v), want 1", len(before), err)
+	}
+
+	// Nobody approves; the record date passes; the next tick re-proposes.
+	clock = now0.Add(2 * time.Minute)
+	s.Tick(t.Context())
+
+	all, err := st.ListApprovals(t.Context(), "")
+	if err != nil {
+		t.Fatalf("list approvals: %v", err)
+	}
+	var stale, fresh []store.Approval
+	for _, a := range all {
+		switch a.Status {
+		case "stale":
+			stale = append(stale, a)
+		case "pending":
+			fresh = append(fresh, a)
+		}
+	}
+	if len(stale) != 1 || stale[0].ID != before[0].ID {
+		t.Fatalf("stale = %+v, want the original announce row %d", stale, before[0].ID)
+	}
+	if len(fresh) != 1 {
+		t.Fatalf("pending = %+v, want one fresh proposal", fresh)
+	}
+	// The fresh announce is floored to now+MinRecordDelay (30 s).
+	ra, ok := flagValue(fresh[0].Args, "--record-at")
+	want := strconv.FormatInt(now0.Add(2*time.Minute+30*time.Second).Unix(), 10)
+	if !ok || ra != want {
+		t.Fatalf("fresh record-at = %q (%v), want %q", ra, ok, want)
+	}
+}
+
+// TestTickStaleSupersededStep: a pending proposal for a step the chain has
+// already moved past (dedup key differs from the current decision) is sta'd
+// when the scheduler proposes the next step.
+func TestTickStaleSupersededStep(t *testing.T) {
+	fc := &fakeChain{series: func() *chain.Series {
+		s := series(now0.Unix(), now0.Add(24*time.Hour).Unix())
+		s.OpenAction = &kAction
+		return s
+	}(), action: action(3)} // Funded, payment date passed → pay_batch
+	c := cfg
+	c.ApprovalRequired = true
+	s, st, _ := newScheduler(t, fc, c)
+	clock := now0.Add(2 * time.Minute)
+	s.Now = func() time.Time { return clock }
+
+	// An orphaned proposal from before the chain moved on.
+	if err := st.InsertApproval(t.Context(), store.Approval{
+		Ts: now0.Unix(), DedupKey: fmt.Sprintf("%s|3|step:fund_action", kMint),
+		SeriesMint: kMint.String(), ActionPDA: kAction.String(), Step: "step:fund_action",
+		Args: []string{"action:fund", "--series", "QPNb1", "--index", "3"},
+	}); err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+
+	s.Tick(t.Context())
+
+	orphan, err := st.ApprovalByID(t.Context(), 1)
+	if err != nil || orphan.Status != "stale" {
+		t.Fatalf("orphan = %s (%v), want stale", orphan.Status, err)
+	}
+	fresh, err := st.ListApprovals(t.Context(), "pending")
+	if err != nil || len(fresh) != 1 || fresh[0].Step != "step:pay_batch" {
+		t.Fatalf("pending = %+v (%v), want one step:pay_batch", fresh, err)
 	}
 }
 

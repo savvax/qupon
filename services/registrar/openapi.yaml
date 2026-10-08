@@ -420,7 +420,10 @@ paths:
             type: string
             enum:
               - pending
+              - running
               - executed
+              - rejected
+              - stale
               - all
             default: pending
       responses:
@@ -459,8 +462,34 @@ paths:
         "403":
           description: role is not registrar or admin
         "409":
-          description: already executed, or the chain refused the step (stays
-            pending)
+          description: not pending anymore (already claimed, executed or
+            rejected), or the chain refused the step (stays pending)
+        "404":
+          description: no such approval
+  /registrar/approvals/{id}/reject:
+    post:
+      summary: Reject a pending scheduler proposal (nothing executes; the row
+        leaves the pending queue).
+      operationId: rejectApproval
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: rejected; body is {id, status:"rejected"}
+        "401":
+          description: no valid back-office session
+        "403":
+          description: role is not registrar or admin
+        "409":
+          description: approval is not pending (already executed, rejected,
+            claimed or stale)
         "404":
           description: no such approval
   /auth/login:
@@ -3935,7 +3964,10 @@ components:
           type: string
           enum:
             - pending
+            - running
             - executed
+            - rejected
+            - stale
         detail:
           type:
             - object

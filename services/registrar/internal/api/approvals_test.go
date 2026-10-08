@@ -11,7 +11,9 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -123,6 +125,103 @@ func TestApproveCliRefusedStaysPending(t *testing.T) {
 	row, _ := st.ApprovalByID(t.Context(), 1)
 	if row.Status != "pending" {
 		t.Fatalf("status after refusal = %s, want pending (retryable)", row.Status)
+	}
+}
+
+// TestApproveConcurrentRunsCliOnce: the claim (pending→running) runs before
+// the CLI, so two parallel approve clicks execute the argv exactly once;
+// the loser gets a 409.
+func TestApproveConcurrentRunsCliOnce(t *testing.T) {
+	fc := &fakeChain{action: (&fakeRead{}).action()}
+	srv, st, log := advanceServer(t, fc)
+	t.Setenv("FAKE_CLI_SLEEP", "1") // hold the winner so the loser overlaps it
+	if err := st.InsertApproval(t.Context(), store.Approval{
+		Ts: 1, DedupKey: "m|0|step:strike_record", SeriesMint: "m", Step: "step:strike_record",
+		Args: []string{"action:strike", "--series", "QPNb1", "--index", "0"},
+	}); err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+
+	codeCh := make(chan int, 2)
+	for range 2 {
+		go func() {
+			resp, err := http.Post(srv.URL+"/approvals/1/approve", "application/json", strings.NewReader("{}"))
+			if err != nil {
+				codeCh <- 0
+				return
+			}
+			_ = resp.Body.Close()
+			codeCh <- resp.StatusCode
+		}()
+	}
+	a, b := <-codeCh, <-codeCh
+	if (a == http.StatusOK) == (b == http.StatusOK) {
+		t.Fatalf("parallel approves = %d/%d, want exactly one 200", a, b)
+	}
+	if got := cliLines(t, log); len(got) != 1 {
+		t.Fatalf("cli ran %d times, want 1 (%v)", len(got), got)
+	}
+	row, err := st.ApprovalByID(t.Context(), 1)
+	if err != nil || row.Status != "executed" {
+		t.Fatalf("approval = %s (%v), want executed", row.Status, err)
+	}
+}
+
+// TestRejectApproval: registrar role rejects a pending proposal (nothing
+// executes); other roles 403; double reject and non-pending 409; 404/400 ids.
+func TestRejectApproval(t *testing.T) {
+	fc := &fakeChain{action: (&fakeRead{}).action()}
+	srv, st, log := advanceServer(t, fc)
+	// A second auth service over the same store mints a wrong-role token.
+	issuer := roleToken(t, st, &auth.Service{Store: st, Now: time.Now, TTL: time.Hour, Limit: auth.NewLimiter(5, time.Minute)}, "issuer")
+	if err := st.InsertApproval(t.Context(), store.Approval{
+		Ts: 1, DedupKey: "m|0|step:pay_batch", SeriesMint: "m", Step: "step:pay_batch",
+		Args: []string{"action:pay", "--series", "QPNb1", "--index", "0"},
+	}); err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+
+	// Wrong role → 403, row untouched.
+	if code, _ := postJSON(t, srv.URL, "/registrar/approvals/1/reject", "{}", issuer); code != http.StatusForbidden {
+		t.Fatalf("issuer reject = %d, want 403", code)
+	}
+	row, _ := st.ApprovalByID(t.Context(), 1)
+	if row.Status != "pending" {
+		t.Fatalf("status after forbidden reject = %s, want pending", row.Status)
+	}
+
+	// Registrar rejects → 200, status rejected, nothing executed.
+	code, out := postJSON(t, srv.URL, "/registrar/approvals/1/reject", "{}", "")
+	if code != http.StatusOK || out["status"] != "rejected" {
+		t.Fatalf("reject = %d %v, want 200 rejected", code, out)
+	}
+	row, _ = st.ApprovalByID(t.Context(), 1)
+	if row.Status != "rejected" {
+		t.Fatalf("status after reject = %s, want rejected", row.Status)
+	}
+	if got := cliLines(t, log); len(got) != 0 {
+		t.Fatalf("cli log = %q, want no execution on reject", got)
+	}
+
+	for _, tc := range []struct {
+		path string
+		want int
+	}{
+		{"/registrar/approvals/1/reject", http.StatusConflict}, // already rejected
+		{"/registrar/approvals/99/reject", http.StatusNotFound},
+		{"/registrar/approvals/nope/reject", http.StatusBadRequest},
+	} {
+		if code, _ := postJSON(t, srv.URL, tc.path, "{}", ""); code != tc.want {
+			t.Fatalf("post %s = %d, want %d", tc.path, code, tc.want)
+		}
+	}
+	// Rejected rows are visible through the status filter.
+	var list struct {
+		Approvals []store.Approval `json:"approvals"`
+	}
+	getJSON(t, srv.URL+"/approvals?status=rejected", http.StatusOK, &list)
+	if len(list.Approvals) != 1 || list.Approvals[0].Status != "rejected" {
+		t.Fatalf("rejected list = %+v, want the one rejected row", list.Approvals)
 	}
 }
 

@@ -68,6 +68,18 @@ export function Approvals({
     if (r) router.refresh(); // executed rows only appear after the API moved the row
   }
 
+  async function reject(row: Approval) {
+    setBusy(row.id);
+    const r = await runWrite<{ status: string }>({
+      pending: t("rejecting"),
+      success: () => t("rejected"),
+      call: () => boPost(`registrar/approvals/${row.id}/reject`),
+      txs: () => [],
+    });
+    setBusy(null);
+    if (r) router.refresh(); // the row leaves the pending queue
+  }
+
   // "step:strike_record" → "Strike record date"; "announce:INTR" → "Announce · Coupon"
   const stepLabel = (row: Approval) => {
     const [kind, id = ""] = row.step.split(":");
@@ -123,17 +135,27 @@ export function Approvals({
     },
     { key: "argv", header: t("argv"), render: argv, hideBelow: "lg" },
     {
-      key: "approve",
+      key: "decide",
       header: "",
       render: (r) => (
-        <Button
-          size="sm"
-          loading={busy === r.id}
-          disabled={busy !== null}
-          onClick={() => void approve(r)}
-        >
-          {t("approve")}
-        </Button>
+        <span className="flex gap-2">
+          <Button
+            size="sm"
+            loading={busy === r.id}
+            disabled={busy !== null}
+            onClick={() => void approve(r)}
+          >
+            {t("approve")}
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={busy !== null}
+            onClick={() => void reject(r)}
+          >
+            {t("reject")}
+          </Button>
+        </span>
       ),
     },
   ];

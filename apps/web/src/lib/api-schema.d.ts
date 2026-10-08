@@ -4,2354 +4,6242 @@
  */
 
 export interface paths {
-  "/healthz": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/healthz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liveness + database check */
+        get: operations["healthz"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Liveness + database check */
-    get: operations["healthz"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/openapi.yaml": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/openapi.yaml": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** This document */
+        get: operations["getOpenapi"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** This document */
-    get: operations["getOpenapi"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/series": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List series */
+        get: operations["listSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List series */
-    get: operations["listSeries"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/series/{mint}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/series/{mint}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Series terms */
+        get: operations["getSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Series terms */
-    get: operations["getSeries"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/series/{mint}/investors": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/series/{mint}/investors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Holders of a series */
+        get: operations["listInvestors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Holders of a series */
-    get: operations["listInvestors"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/series/{mint}/schedule": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/series/{mint}/trades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admitted secondary trades of a series (settled by the Solana DvP program), oldest first, with the funding of both legs */
+        get: operations["listTrades"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Coupon schedule (computed from issue_date, frequency, day_count) */
-    get: operations["getSchedule"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/series/{mint}/actions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/series/{mint}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Coupon schedule (computed from issue_date, frequency, day_count) */
+        get: operations["getSchedule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Corporate actions of a series */
-    get: operations["listActions"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/actions/{pda}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/series/{mint}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Corporate actions of a series */
+        get: operations["listActions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Action detail */
-    get: operations["getAction"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/actions/{pda}/entitlements": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/actions/{pda}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Action detail */
+        get: operations["getAction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Entitlements of an action */
-    get: operations["listEntitlements"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/actions/{pda}/reconcile": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/actions/{pda}/entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Entitlements of an action */
+        get: operations["listEntitlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Reconciliation report (chain totals vs recomputed math) */
-    get: operations["reconcileAction"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/actions/{pda}/advance": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/actions/{pda}/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reconciliation report (chain totals vs recomputed math) */
+        get: operations["reconcileAction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Run the next action step through the executor (qupon CLI). Same handler as /registrar/actions/{pda}/advance. */
-    post: operations["advanceAction"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/actions/{pda}/iso/seev031.xml": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/actions/{pda}/advance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run the next action step through the executor (qupon CLI). Same handler as /registrar/actions/{pda}/advance. */
+        post: operations["advanceAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** ISO 20022 seev.031 agent notification (announcement) */
-    get: operations["getSeev031"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/entitlements/{pda}/iso/seev036.xml": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/actions/{pda}/iso/seev031.xml": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ISO 20022 seev.031 agent notification (announcement) */
+        get: operations["getSeev031"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** ISO 20022 seev.036 instruction (per entitlement) */
-    get: operations["getSeev036"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/actions/{pda}/iso/seev036.zip": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/entitlements/{pda}/iso/seev036.xml": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ISO 20022 seev.036 instruction (per entitlement) */
+        get: operations["getSeev036"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** ISO 20022 seev.036 confirmations, ZIP for all holders */
-    get: operations["getSeev036Zip"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/actions/{pda}/notice": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/actions/{pda}/iso/seev036.zip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ISO 20022 seev.036 confirmations, ZIP for all holders */
+        get: operations["getSeev036Zip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** KASE-style notice text */
-    get: operations["getNotice"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/activity": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/actions/{pda}/notice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** KASE-style notice text */
+        get: operations["getNotice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Live activity feed (on-chain program events, ingested by polling) */
-    get: operations["listActivity"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/schedule": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live activity feed (on-chain program events, ingested by polling) */
+        get: operations["listActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Planned coupon actions for every series (autopilot plan view) */
-    get: operations["listSchedule"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/approvals": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Planned coupon actions for every series (autopilot plan view) */
+        get: operations["listSchedule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Scheduler proposals awaiting a human decision (approval gate) */
-    get: operations["listApprovals"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/approvals/{id}/approve": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Scheduler proposals awaiting a human decision (approval gate) */
+        get: operations["listApprovals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Approve a pending scheduler proposal (executes the stored argv). Also served at /registrar/approvals/{id}/approve. */
-    post: operations["approveApproval"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/auth/login": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/approvals/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a pending scheduler proposal (executes the stored argv). Also served at /registrar/approvals/{id}/approve. */
+        post: operations["approveApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Sign in to the back office with email and password */
-    post: operations["authLogin"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/auth/demo": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign in to the back office with email and password */
+        post: operations["authLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** One-click demo sign-in (only when DEMO_LOGIN=1) */
-    post: operations["authDemo"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/auth/logout": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** One-click demo sign-in (only when DEMO_LOGIN=1) */
+        post: operations["authDemo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** End the session */
-    post: operations["authLogout"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/issuer/series": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** End the session */
+        post: operations["authLogout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Create a bond series: validate the terms, reserve the name, then run `qupon series:create` (Token-2022 bond mint + init_series) through the executor. Rolls the registry row back and returns 409 on a CLI failure. */
-    post: operations["createSeries"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/issuer/series/{mint}/actions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/issuer/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a bond series: validate the terms, reserve the name, then run `qupon series:create` (Token-2022 bond mint + init_series) through the executor. Rolls the registry row back and returns 409 on a CLI failure. */
+        post: operations["createSeries"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Announce a cash corporate action (INTR coupon, REDM at maturity, MCAL early call) on the series — runs `qupon action:announce` through the executor. */
-    post: operations["issuerAnnounce"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/issuer/series/{mint}/meetings": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/issuer/series/{mint}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Announce a cash corporate action (INTR coupon, REDM at maturity, MCAL early call) on the series — runs `qupon action:announce` through the executor. */
+        post: operations["issuerAnnounce"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Announce a bondholder meeting (BMET) proposing a new coupon rate — runs `qupon meeting:announce` through the executor. */
-    post: operations["issuerMeeting"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/issuer/actions/{pda}/fund": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/issuer/series/{mint}/meetings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Announce a bondholder meeting (BMET) proposing a new coupon rate — runs `qupon meeting:announce` through the executor. */
+        post: operations["issuerMeeting"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Fund the action escrow — runs `qupon action:fund` (idempotent: fills only the shortfall, so a second call returns skipped true and moves no funds). */
-    post: operations["issuerFund"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/me": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/issuer/actions/{pda}/fund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fund the action escrow — runs `qupon action:fund` (idempotent: fills only the shortfall, so a second call returns skipped true and moves no funds). */
+        post: operations["issuerFund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** The signed-in back-office user */
-    get: operations["me"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/registrar/investors": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in back-office user */
+        get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Onboard an investor: the KYC provider (SIMULATED) attests the wallet on the Solana Attestation Service, then the registrar registers the investor on-chain */
-    post: operations["registrarOnboard"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/registrar/investors/{mint}/{owner}/suspend": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/registrar/investors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Onboard an investor: the KYC provider (SIMULATED) attests the wallet on the Solana Attestation Service, then the registrar registers the investor on-chain */
+        post: operations["registrarOnboard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Suspend an investor (freezes the bond ATA) */
-    post: operations["registrarSuspend"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/registrar/investors/{mint}/{owner}/reinstate": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/registrar/investors/{mint}/{owner}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suspend an investor (freezes the bond ATA) */
+        post: operations["registrarSuspend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Reinstate a suspended investor */
-    post: operations["registrarReinstate"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/registrar/audit": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/registrar/investors/{mint}/{owner}/reinstate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reinstate a suspended investor */
+        post: operations["registrarReinstate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** The back-office audit feed (who ran which write, and what it did) */
-    get: operations["registrarAudit"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/demo/investor/subscribe": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/registrar/series/{mint}/trades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a secondary trade on the Solana DvP program and admit its bond escrow (trade:create, one transaction) */
+        post: operations["registrarTradeCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Subscribe at par with the demo investor's custodial keypair (judges without a wallet); labelled demo custodial wallet in the UI. */
-    post: operations["demoSubscribe"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/demo/investor/vote": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/registrar/series/{mint}/trades/{swapDvp}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Settle an admitted trade — SettleDvp (both legs atomically) + release_trade, one transaction */
+        post: operations["registrarTradeSettle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Cast a snapshot-weighted vote with the demo investor's keypair */
-    post: operations["demoVote"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/registrar/series/{mint}/trades/{swapDvp}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel an admitted trade — CancelDvp + release_trade in one transaction; with force, return the escrowed bonds to the seller without the DvP program */
+        post: operations["registrarTradeCancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registrar/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The back-office audit feed (who ran which write, and what it did) */
+        get: operations["registrarAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/demo/investor/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subscribe at par with the demo investor's custodial keypair (judges without a wallet); labelled demo custodial wallet in the UI. */
+        post: operations["demoSubscribe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/demo/investor/series/{mint}/trades/{swapDvp}/fund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fund one leg of an admitted trade with a server-held demo investor keypair (trade:fund); the demo investor and the registrar may call it */
+        post: operations["demoTradeFund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/demo/investor/vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cast a snapshot-weighted vote with the demo investor's keypair */
+        post: operations["demoVote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/network": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Network profile of this instance (devnet/mainnet) and demo-login availability */
+        get: operations["getNetwork"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Enabled cash assets of this network (verified facts only) */
+        get: operations["listCashAssets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/faucet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mint test cash (100,000 major units) to the user's first verified wallet through the qupon CLI executor; once per user per asset per hour. Test networks only — 403 on mainnet. */
+        post: operations["meFaucet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/wallets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's linked wallets */
+        get: operations["listWallets"];
+        put?: never;
+        /** Link a wallet by a signed challenge message (ed25519, base58 signature). Demo accounts cannot link wallets. */
+        post: operations["linkWallet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/wallets/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request a nonce challenge message to sign for wallet linking (10-minute TTL) */
+        post: operations["walletChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/wallets/{address}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink a wallet */
+        delete: operations["unlinkWallet"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/kyc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in investor's latest KYC application with its documents */
+        get: operations["getMyKyc"];
+        put?: never;
+        /** Submit a KYC application (review by a registrar is SIMULATED — no KYC vendor). Requires a linked wallet and at least one uploaded identity document. Only self-registered investors apply. */
+        post: operations["submitKyc"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Investor onboarding checklist (wallet, KYC, test cash, subscription) and faucet-eligible assets */
+        get: operations["getOnboarding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's uploaded documents (metadata only) */
+        get: operations["listMyDocuments"];
+        put?: never;
+        /** Upload a document (multipart, PDF/PNG/JPEG by magic bytes, at most 10 MB) */
+        post: operations["uploadDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's in-app notifications */
+        get: operations["listNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/notifications/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unread notification count */
+        get: operations["unreadNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/notifications/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark notifications read (specific ids or all) */
+        post: operations["markNotificationsRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the signed-in user's name and/or locale */
+        patch: operations["patchProfile"];
+        trace?: never;
+    };
+    "/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change the password; other sessions are signed out */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/reports/statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in investor's payout statement (JSON, or CSV with format=csv) */
+        get: operations["statementReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/reports/tax": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in investor's tax-year payout report (JSON, or CSV with format=csv) */
+        get: operations["taxReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/org": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's organisation */
+        get: operations["getOrg"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the organisation profile (name, BIN, website) */
+        patch: operations["patchOrg"];
+        trace?: never;
+    };
+    "/org/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Members of the signed-in user's organisation */
+        get: operations["listOrgMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/org/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite an issuer to the organisation (one-time link, 7 days) */
+        post: operations["createInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/org/members/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a member from the organisation (not yourself, not demo identities) */
+        delete: operations["removeOrgMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Investor self sign-up (open on every network); signs the user in on success */
+        post: operations["authSignup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume a one-time reset token and set a new password (revokes sessions) */
+        post: operations["authReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/invite/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume a one-time invite token and create the account in the organisation */
+        post: operations["acceptInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download a document; series-attached documents are public, personal ones need the owner/org/registrar */
+        get: operations["getDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/series/{mint}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public documents attached to a series (metadata only) */
+        get: operations["listSeriesDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issuer/series/{mint}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attach or upload a public series document (prospectus, decision, other). Accepts multipart/form-data (direct upload) or JSON {documentId, kind}. The issuer must own the series (organisation check). */
+        post: operations["issuerSeriesDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registrar/kyc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The registrar's KYC review queue */
+        get: operations["listKyc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registrar/kyc/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One KYC application with its documents' metadata */
+        get: operations["getKyc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registrar/kyc/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a KYC application: attest the wallet (SIMULATED SAS attestation) and register the investor in every requested series. A series failure keeps the application under review with per-series results for retry. */
+        post: operations["approveKyc"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registrar/kyc/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a KYC application with a reason (1-500 characters) */
+        post: operations["rejectKyc"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/registrar/reports/holders/{mint}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Holder register of a series (JSON, or CSV with format=csv) — registrar/admin only */
+        get: operations["holdersReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/issuer/reports/payouts/{pda}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payout report of one action (JSON, or CSV with format=csv) — issuer/registrar */
+        get: operations["payoutsReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kase/bonds/{ticker}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cached kase.kz bond profile (SIMULATED upstream data source; never blocks a page) */
+        get: operations["kaseBond"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kase/news/{issuer}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cached kase.kz issuer news (SIMULATED upstream data source) */
+        get: operations["kaseNews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kase/series/{mint}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The KASE ticker linked to a series (series_settings), 404 when unlinked */
+        get: operations["kaseSeriesTicker"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actions/{pda}/kase-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compare the kase.kz fixation date with the on-chain record date of the action's period */
+        get: operations["kaseCheck"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actions/{pda}/disclosure.zip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Disclosure package ZIP: notices EN/RU, seev.031, one seev.036 per holder and a manifest.json (simulated: true — devnet artefact) */
+        get: operations["disclosureZip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actions/{pda}/disclosure/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** SIMULATED "Submit to KASE": records an audit row only, nothing is sent anywhere. Also served at /registrar/actions/{pda}/disclosure/submit. */
+        post: operations["disclosureSubmit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/system": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** System health (admin): RPC liveness, operator SOL, executor, scheduler, ingest, kase cache, demo usage */
+        get: operations["adminSystem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/network/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Readiness checklist (admin): RPC, program deployment/authority, cash assets, demo-login safety */
+        get: operations["adminNetworkReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List users (admin), searchable */
+        get: operations["adminListUsers"];
+        put?: never;
+        /** Create a back-office user (admin) */
+        post: operations["adminCreateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a user's role, organisation, status or name (demo identities are read-only) */
+        patch: operations["adminPatchUser"];
+        trace?: never;
+    };
+    "/admin/users/{id}/reset-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue a one-time password reset link for a user (admin) */
+        post: operations["adminResetLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List organisations (admin) */
+        get: operations["adminListOrgs"];
+        put?: never;
+        /** Create an organisation (admin) */
+        post: operations["adminCreateOrg"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/organizations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update an organisation (admin) */
+        patch: operations["adminPatchOrg"];
+        trace?: never;
+    };
+    "/admin/series": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All series with their admin settings (hidden, featured, KASE ticker, organisation) */
+        get: operations["adminListSeries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/series/{mint}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a series' admin settings (hidden, featured, KASE ticker, owning organisation) */
+        patch: operations["adminPatchSeries"];
+        trace?: never;
+    };
+    "/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The admin audit feed with filters (JSON, or CSV with format=csv) */
+        get: operations["adminAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All cash assets of this network including disabled ones (admin) */
+        get: operations["adminListAssets"];
+        put?: never;
+        /** Add a cash asset by mint address (admin): verified on-chain and stored disabled — an admin must confirm metadata and enable it separately. */
+        post: operations["adminAddAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/assets/{mint}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update an asset's metadata and/or enable it (admin) */
+        patch: operations["adminPatchAsset"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    User: {
-      id: number;
-      email: string;
-      name: string;
-      /** @enum {string} */
-      role: "issuer" | "registrar" | "investor_demo" | "admin";
-      isDemo: boolean;
+    schemas: {
+        User: {
+            id: number;
+            email: string;
+            name: string;
+            /** @enum {string} */
+            role: "issuer" | "registrar" | "investor_demo" | "admin";
+            isDemo: boolean;
+        };
+        Session: {
+            token: string;
+            user: components["schemas"]["User"];
+        };
+        AuditEntry: {
+            id: number;
+            /** @description unix seconds */
+            ts: number;
+            userId: number;
+            role: string;
+            /** @example POST /registrar/investors */
+            route: string;
+            /** @description request params JSON */
+            params: Record<string, never>;
+            ok: boolean;
+            detail: string;
+            signatures: string[];
+        };
+        DemoSubscribeRequest: {
+            /** @description bond mint (base58) */
+            series: string;
+            units: number;
+        };
+        DemoVoteRequest: {
+            /** @description CorporateAction PDA (base58) */
+            action: string;
+            /** @enum {string} */
+            choice: "for" | "against" | "abstain";
+        };
+        /** @description Demo custodial-wallet action result (always demo:true). */
+        DemoResponse: {
+            demo: boolean;
+            ok: boolean;
+            signature: string;
+            explorerUrl?: string;
+        };
+        /** @description Money amount in minor units plus a human display string. */
+        Amount: {
+            /**
+             * @description Integer amount in minor units, decimal string
+             * @example 1250
+             */
+            minor: string;
+            /** @example 12.50 KZT */
+            display: string;
+            /** @example tKZT */
+            currency: string;
+        };
+        Error: {
+            /**
+             * @description machine-readable code (http_404, executor_failed, or the Anchor program error name)
+             * @example EntitlementCalcMismatch
+             */
+            code: string;
+            /** @example accrual days do not match crate day count */
+            message: string;
+            /** @description raw Anchor/program error when the failure came from-chain */
+            onchainError?: string;
+        };
+        Health: {
+            ok: boolean;
+            /** @example ok */
+            db?: string;
+        };
+        SeriesDTO: {
+            /** @description Series account (PDA); activity events name their series by it */
+            pda?: string;
+            mint: string;
+            cashMint: string;
+            registrar?: string;
+            issuer?: string;
+            payingAgent?: string;
+            /** @example KZ1234567890 */
+            isin: string;
+            /** @example tKZBOND */
+            ticker: string;
+            faceValue: components["schemas"]["Amount"];
+            /** @example 1000 */
+            couponRateBps: number;
+            /**
+             * @description coupons per year
+             * @enum {integer}
+             */
+            frequency: 1 | 2 | 4 | 12;
+            /** @enum {string} */
+            dayCount: "THIRTY_360" | "ACT_ACT" | "ACT_365";
+            /**
+             * Format: date
+             * @example 2026-09-01
+             */
+            issueDate: string;
+            /**
+             * Format: date
+             * @example 2027-09-01
+             */
+            maturityDate: string;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with +05:00
+             * @example 2026-12-01T00:00:00+05:00
+             */
+            nextCouponDate: string;
+            /** @enum {string} */
+            status: "Active" | "Matured" | "Retiring" | "Closed";
+            /** @description units in circulation, decimal string */
+            totalIssued: string;
+            quorumBps: number;
+            approvalBps: number;
+            openAction?: string | null;
+            /** @description admitted secondary trades (Solana DvP) not yet released; the record date is refused while above 0 */
+            openTrades?: number;
+            /** @description devnet explorer link for the mint */
+            explorerUrl: string;
+        };
+        /** @description One admitted secondary trade with the funding of both legs (same field names as the CLI's trade:list). */
+        TradeDTO: {
+            /** @description the Solana DvP program's trade record (base58) */
+            swapDvp: string;
+            /** @description bond-leg escrow, the SwapDvp's associated token account for the bond mint */
+            escrow: string;
+            seller: string;
+            buyer: string;
+            /** @description bonds traded, decimal string */
+            units: string;
+            cashAmount: components["schemas"]["Amount"];
+            /** @description RFC 3339 in Asia/Almaty, like the other date-time fields */
+            admittedAt: string;
+            /** @description bonds in the escrow, decimal string; null once the DvP program closed the escrow */
+            fundedUnits: string | null;
+            /** @description cash in the escrow; null once the DvP program closed the escrow */
+            fundedCash: components["schemas"]["Amount"] | null;
+            /** @enum {string} */
+            status: "awaiting_funding" | "ready" | "closed";
+        };
+        TradeCreateRequest: {
+            /** @description registered investor delivering the bonds (wallet, base58) */
+            seller: string;
+            /** @description registered investor paying the cash (wallet, base58) */
+            buyer: string;
+            /** @description bonds to trade, priced at par (face value) */
+            units: number;
+        };
+        TradeCancelRequest: {
+            /** @description skip the DvP program and return the escrowed bonds to the seller as permanent delegate */
+            force?: boolean;
+        };
+        TradeFundRequest: {
+            /** @enum {string} */
+            side: "seller" | "buyer";
+        };
+        InvestorDTO: {
+            owner: string;
+            bondAta: string;
+            cashAta: string;
+            /** @description bond units held, decimal string */
+            units: string;
+            /**
+             * @description from the on-chain investor record
+             * @enum {string}
+             */
+            investorType?: "individual" | "legal_entity";
+            /** @enum {string} */
+            residency?: "resident" | "nonresident";
+            /** @description withholding tax rate, basis points (1000 = 10%) */
+            taxRateBps?: number;
+            /** @description Solana Attestation Service attestation PDA (base58); empty when the record has none */
+            kycRef?: string;
+            /** @enum {string} */
+            status: "Active" | "Suspended";
+            /** @description devnet explorer link for the owner */
+            explorerUrl?: string;
+        };
+        ActionDTO: {
+            pda: string;
+            seriesMint: string;
+            /**
+             * @description ISO 20022 corp action event type (INTE/REDM/MCAL/PCAL/METG/CHAN mapped)
+             * @enum {string}
+             */
+            kind: "INTR" | "REDM" | "MCAL" | "PCAL" | "BMET" | "CHAN";
+            /** @enum {string} */
+            mandatory: "MAND" | "VOLU" | "CHOS";
+            /** @example QPNb1-INTR-0001 */
+            corpId: string;
+            /** @description COAF id, may be empty */
+            officialId?: string | null;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with +05:00
+             */
+            announcedAt?: string;
+            /** Format: date-time */
+            recordAt: string;
+            /** Format: date-time */
+            paymentAt: string;
+            /** Format: date */
+            periodStart?: string | null;
+            /** Format: date */
+            periodEnd?: string | null;
+            accrualDays?: number | null;
+            rateBps?: number | null;
+            perUnitGross: components["schemas"]["Amount"];
+            perUnitPrincipal: components["schemas"]["Amount"];
+            cashMint: string;
+            escrow?: string;
+            /** @description live escrow token balance (0 before funding) */
+            escrowBalance?: components["schemas"]["Amount"];
+            /** @enum {string} */
+            status: "Announced" | "RecordStruck" | "SnapshotComplete" | "Funded" | "Settling" | "Completed" | "Retiring" | "Cancelled" | "VotingOpen" | "Finalized";
+            snapshotSlot?: number | null;
+            /** @description hex sha256 */
+            snapshotHash?: string | null;
+            unitsSnapshotted?: string | null;
+            holdersSnapshotted?: number | null;
+            holdersPaid?: number | null;
+            totalGross?: components["schemas"]["Amount"];
+            totalTax?: components["schemas"]["Amount"];
+            totalNet?: components["schemas"]["Amount"];
+            totalPaid?: components["schemas"]["Amount"];
+            totalRetired?: string | null;
+            holdersRetired?: number | null;
+            proposalNewRateBps?: number | null;
+            /** Format: date */
+            proposalNewMaturity?: string | null;
+            /** Format: date-time */
+            votingEndsAt?: string | null;
+            votesFor?: string | null;
+            votesAgainst?: string | null;
+            votesAbstain?: string | null;
+            /** @enum {string|null} */
+            result?: "Pending" | "Approved" | "Rejected" | "NoQuorum" | null;
+            /** Format: date-time */
+            completedAt?: string | null;
+            factorBps?: number | null;
+            /** @description devnet explorer link for the action PDA */
+            explorerUrl: string;
+        };
+        EntitlementDTO: {
+            pda: string;
+            actionPda: string;
+            owner: string;
+            units: string;
+            gross?: components["schemas"]["Amount"];
+            tax?: components["schemas"]["Amount"];
+            net?: components["schemas"]["Amount"];
+            principal?: components["schemas"]["Amount"];
+            /** @enum {string} */
+            status: "Snapshotted" | "Paid" | "Retired";
+            /** Format: date-time */
+            paidAt?: string | null;
+            /** @enum {string} */
+            vote?: "None" | "For" | "Against" | "Abstain";
+            /** Format: date-time */
+            votedAt?: string | null;
+            /** @description devnet explorer link for the entitlement PDA */
+            explorerUrl?: string;
+        };
+        /** @description One projected coupon (or redemption) on the series schedule. */
+        ScheduleItem: {
+            /** @example 2 */
+            couponNumber: number;
+            /** Format: date */
+            periodStart?: string;
+            /** Format: date */
+            periodEnd?: string;
+            /**
+             * Format: date-time
+             * @description ISO 8601 with +05:00
+             */
+            recordDate: string;
+            /** Format: date-time */
+            paymentDate: string;
+            amountPerUnit?: components["schemas"]["Amount"];
+            totalAmount?: components["schemas"]["Amount"];
+            /** @description set once announced */
+            actionPda?: string | null;
+            /** @enum {string} */
+            status: "Projected" | "Announced" | "InProgress" | "Completed";
+        };
+        /** @description One scheduler proposal awaiting a human decision (task 024). */
+        Approval: {
+            id: number;
+            /** @description unix seconds */
+            ts: number;
+            dedupKey: string;
+            seriesMint: string;
+            /** @description empty for announce decisions */
+            actionPda?: string;
+            /** @example step:strike_record */
+            step: string;
+            /** @description the exact qupon CLI argv approve runs */
+            args: string[];
+            /** @enum {string} */
+            status: "pending" | "executed";
+            /** @description CLI result JSON once executed */
+            detail?: Record<string, never> | null;
+        };
+        /** @description Registrar recomputation vs chain: entitlements recomputed from bond ATA balances (minContextSlot = snapshot_slot), snapshot hash chained sha256(prev ‖ owner ‖ units_le) over investors owner-ascending, and action totals (docs/03-domain.md §4). */
+        ReconcileReport: {
+            actionPda: string;
+            /** @example Completed */
+            actionStatus?: string;
+            ok: boolean;
+            /** @description investors with a non-zero balance at read time */
+            holders: number;
+            mismatches: {
+                owner: string;
+                /** @enum {string} */
+                reason: "missing_entitlement" | "unexpected_entitlement" | "entitlement_mismatch" | "ata_mismatch";
+                /** @description differing fields among units/gross/tax/net/principal */
+                fields?: string[];
+                expected?: components["schemas"]["ReconcileEntry"];
+                onchain?: components["schemas"]["ReconcileEntry"];
+            }[];
+            /** @description base58 sha256 chain recomputed owner-ascending */
+            expectedHash: string;
+            onchainHash: string;
+            hashMatches: boolean;
+            /** @description bond mint supply at read time */
+            supply: number;
+            unitsSnapshotted: number;
+            expectedTotals?: components["schemas"]["ReconcileTotals"];
+            onchainTotals?: components["schemas"]["ReconcileTotals"];
+            totalsMatch: boolean;
+            /** @description unix seconds */
+            checkedAt?: number;
+        };
+        ReconcileEntry: {
+            units: number;
+            gross: number;
+            tax: number;
+            net: number;
+            principal: number;
+        };
+        ReconcileTotals: {
+            units: number;
+            holders: number;
+            gross: number;
+            tax: number;
+            net: number;
+            principal: number;
+        };
+        AdvanceRequest: {
+            /** @description must be true; refuses without explicit confirmation */
+            confirm: boolean;
+            /**
+             * @description fund the escrow from the paying agent (demo mode) when the action waits for funding
+             * @default false
+             */
+            autofund: boolean;
+        };
+        AdvanceResponse: {
+            /** @description executed step, e.g. strike_record, snapshot_batch, pay_batch */
+            step: string;
+            ok: boolean;
+            /** @description tx signature */
+            signature?: string | null;
+            /** @description confirmation slot */
+            slot?: number | null;
+            /** @description https://explorer.solana.com/tx/<sig>?cluster=devnet */
+            explorerUrl?: string | null;
+            /** @description action status re-read from the chain after the step */
+            status: string;
+            nextStep?: string | null;
+            /** @description true when the step was not executed (dry run) */
+            preview?: boolean;
+            error?: components["schemas"]["Error"];
+        };
+        SeriesCreateRequest: {
+            /** @description 1-16 characters of A-Z a-z 0-9 - */
+            name: string;
+            /** @description 12 characters — 2 letters, 9 alphanumerics, 1 check digit */
+            isin: string;
+            /**
+             * Format: int64
+             * @description face value in minor units (> 0)
+             */
+            faceValue: number;
+            /** @description coupon rate in bps, 1..10000 (1000 = 10%) */
+            couponRateBps: number;
+            /**
+             * @description coupons per year
+             * @enum {integer}
+             */
+            frequency: 1 | 2 | 4 | 12;
+            /** @enum {string} */
+            dayCount: "THIRTY_360" | "ACT_365";
+            /** @description YYYY-MM-DD */
+            issueDate: string;
+            /** @description YYYY-MM-DD, after the issue date */
+            maturityDate: string;
+            /**
+             * @description cash leg mint alias
+             * @enum {string}
+             */
+            cash: "tkzt" | "usdc";
+        };
+        SeriesCreateResponse: {
+            series: string;
+            mint: string;
+            /** @description tx signatures (mint create, metadata, init_series) */
+            signatures: string[];
+        };
+        ActivityItem: {
+            id: number;
+            /** @description unix seconds */
+            ts: number;
+            seriesMint?: string | null;
+            actionPda?: string | null;
+            /** @example ActionAnnounced */
+            kind: string;
+            payload?: Record<string, never>;
+            sig: string;
+            slot: number;
+            /** @description ingest order within slot */
+            seq: number;
+            /** @description https://explorer.solana.com/tx/<sig>?cluster=devnet */
+            explorerUrl?: string;
+        };
+        /** @description A cash asset of this network (public view carries verified facts only). */
+        CashAsset: {
+            mint: string;
+            symbol: string;
+            name: string;
+            decimals: number;
+            /** @enum {string} */
+            kind: "test" | "stablecoin" | "wrapped_cbdc" | "spl";
+            tokenProgram: string;
+            freezeAuthority?: string | null;
+            mintAuthority?: string | null;
+            issuerNote?: string;
+            enabled: boolean;
+            /** @description unix seconds of the on-chain verification */
+            verifiedAt?: number | null;
+        };
+        Wallet: {
+            address: string;
+            label?: string;
+            /** @description unix seconds */
+            verifiedAt: number;
+        };
+        /** @description Uploaded document metadata (never the bytes — fetch those from /documents/{id}). */
+        Document: {
+            id: number;
+            /** @enum {string} */
+            kind: "id_document" | "proof_of_address" | "prospectus" | "decision" | "other";
+            filename: string;
+            /** @example application/pdf */
+            mime: string;
+            size: number;
+            sha256: string;
+            /** @description set when the document is published on a series (public) */
+            seriesMint?: string | null;
+        };
+        Notification: {
+            id: number;
+            userId: number;
+            /** @example kyc_decision */
+            kind: string;
+            payload?: Record<string, never>;
+            dedupKey?: string;
+            /** @description unix seconds */
+            createdAt: number;
+            readAt: number | null;
+        };
+        /** @description One investor KYC application (review is SIMULATED — a registrar decides). */
+        KycApplication: {
+            id: number;
+            userId: number;
+            wallet?: string;
+            /** @enum {string} */
+            investorType: "individual" | "legal_entity";
+            /** @enum {string} */
+            residency: "resident" | "nonresident";
+            taxBps: number;
+            fullName: string;
+            /** @enum {string} */
+            status: "submitted" | "approved" | "rejected";
+            docIds?: number[];
+            seriesMints?: string[];
+            /** @description attached documents' metadata (never their bytes) */
+            documents?: components["schemas"]["Document"][];
+            /** @description per-series onboarding results after an approve attempt */
+            result?: Record<string, never> | null;
+            reason?: string;
+            reviewerId?: number | null;
+            /** @description unix seconds */
+            decidedAt?: number | null;
+            createdAt?: number;
+        };
+        Organization: {
+            id: number;
+            name: string;
+            /** @enum {string} */
+            kind: "issuer" | "registrar";
+            /** @description business identification number */
+            bin?: string;
+            website?: string;
+            createdAt?: number;
+        };
+        AdminSeries: {
+            mint: string;
+            pda?: string;
+            ticker?: string;
+            isin?: string;
+            hidden: boolean;
+            featured: boolean;
+            kaseTicker?: string;
+            /** @description owning organisation (issuer writes are scoped to it) */
+            orgId?: number | null;
+            updatedAt?: number;
+        };
+        /** @description Schedule check — status ok carries the comparison, the others say why there is nothing to compare. */
+        KaseCheck: {
+            /** @enum {string} */
+            status: "ok" | "no_ticker" | "no_period" | "no_schedule";
+            actionPda: string;
+            ticker?: string;
+            /** Format: date */
+            recordDate?: string;
+            /** Format: date */
+            kaseFixation?: string;
+            period?: {
+                /** Format: date */
+                start?: string;
+                /** Format: date */
+                end?: string;
+            } | null;
+            /** @description the matched kase.kz schedule row */
+            kasePeriod?: Record<string, never> | null;
+            match: boolean;
+            stale: boolean;
+            /** Format: date-time */
+            fetchedAt?: string;
+        };
+        /** @description Report body shared by the statement/payout reports (JSON variant). */
+        ReportEnvelope: {
+            payouts: {
+                series?: string;
+                isin?: string;
+                kind?: string;
+                corpId?: string;
+                action?: string;
+                owner?: string;
+                /** Format: date */
+                recordDate?: string;
+                /** Format: date */
+                paymentDate?: string;
+                units?: number;
+                gross?: number;
+                tax?: number;
+                net?: number;
+                principal?: number;
+                status?: string;
+                currency?: string;
+                decimals?: number;
+                /** Format: date-time */
+                paidAt?: string;
+                paidYear?: number | null;
+            }[];
+            totals: {
+                gross?: number;
+                tax?: number;
+                net?: number;
+                principal?: number;
+                count?: number;
+            };
+            network?: string;
+            /** Format: date-time */
+            generatedAt?: string;
+            /** @description the wallet addresses (or chain keys) the data came from */
+            sources?: string[];
+        };
+        /** @description Admin system health view (read-only, nothing audited). */
+        SystemHealth: {
+            network: string;
+            rpc: {
+                ok: boolean;
+                latencyMs: number;
+                slot: number;
+            };
+            operators: {
+                name: string;
+                address: string;
+                sol: number;
+                /** @description below the 0.5 SOL threshold */
+                low: boolean;
+            }[];
+            executor: {
+                running?: number;
+                queued?: number;
+                maxConcurrent?: number;
+            };
+            scheduler: {
+                enabled?: boolean;
+                /** Format: date-time */
+                lastTick?: string;
+            };
+            ingest: {
+                lastSlot?: number;
+                lagSlots?: number;
+            };
+            kase: {
+                entries?: number;
+                /** Format: date-time */
+                lastFetch?: string;
+                lastError?: string;
+            };
+            /** @description demo throttle usage (writes today, series today) */
+            demo: Record<string, never>;
+        };
     };
-    Session: {
-      token: string;
-      user: components["schemas"]["User"];
+    responses: never;
+    parameters: {
+        /** @description Bond mint pubkey (base58) */
+        Mint: string;
+        /** @description The trade's SwapDvp record on the Solana DvP program (base58) */
+        SwapDvp: string;
+        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+        Pda: string;
     };
-    AuditEntry: {
-      id: number;
-      /** @description unix seconds */
-      ts: number;
-      userId: number;
-      role: string;
-      /** @example POST /registrar/investors */
-      route: string;
-      /** @description request params JSON */
-      params: Record<string, never>;
-      ok: boolean;
-      detail: string;
-      signatures: string[];
-    };
-    DemoSubscribeRequest: {
-      /** @description bond mint (base58) */
-      series: string;
-      units: number;
-    };
-    DemoVoteRequest: {
-      /** @description CorporateAction PDA (base58) */
-      action: string;
-      /** @enum {string} */
-      choice: "for" | "against" | "abstain";
-    };
-    /** @description Demo custodial-wallet action result (always demo:true). */
-    DemoResponse: {
-      demo: boolean;
-      ok: boolean;
-      signature: string;
-      explorerUrl?: string;
-    };
-    /** @description Money amount in minor units plus a human display string. */
-    Amount: {
-      /**
-       * @description Integer amount in minor units, decimal string
-       * @example 1250
-       */
-      minor: string;
-      /** @example 12.50 KZT */
-      display: string;
-      /** @example tKZT */
-      currency: string;
-    };
-    Error: {
-      /**
-       * @description machine-readable code (http_404, executor_failed, or the Anchor program error name)
-       * @example EntitlementCalcMismatch
-       */
-      code: string;
-      /** @example accrual days do not match crate day count */
-      message: string;
-      /** @description raw Anchor/program error when the failure came from-chain */
-      onchainError?: string;
-    };
-    Health: {
-      ok: boolean;
-      /** @example ok */
-      db?: string;
-    };
-    SeriesDTO: {
-      /** @description Series account (PDA); activity events name their series by it */
-      pda?: string;
-      mint: string;
-      cashMint: string;
-      registrar?: string;
-      issuer?: string;
-      payingAgent?: string;
-      /** @example KZ1234567890 */
-      isin: string;
-      /** @example tKZBOND */
-      ticker: string;
-      faceValue: components["schemas"]["Amount"];
-      /** @example 1000 */
-      couponRateBps: number;
-      /**
-       * @description coupons per year
-       * @enum {integer}
-       */
-      frequency: 1 | 2 | 4 | 12;
-      /** @enum {string} */
-      dayCount: "THIRTY_360" | "ACT_ACT" | "ACT_365";
-      /**
-       * Format: date
-       * @example 2026-09-01
-       */
-      issueDate: string;
-      /**
-       * Format: date
-       * @example 2027-09-01
-       */
-      maturityDate: string;
-      /**
-       * Format: date-time
-       * @description ISO 8601 with +05:00
-       * @example 2026-12-01T00:00:00+05:00
-       */
-      nextCouponDate: string;
-      /** @enum {string} */
-      status: "Active" | "Matured" | "Retiring" | "Closed";
-      /** @description units in circulation, decimal string */
-      totalIssued: string;
-      quorumBps: number;
-      approvalBps: number;
-      openAction?: string | null;
-      /** @description devnet explorer link for the mint */
-      explorerUrl: string;
-    };
-    InvestorDTO: {
-      owner: string;
-      bondAta: string;
-      cashAta: string;
-      /** @description bond units held, decimal string */
-      units: string;
-      /**
-       * @description from the on-chain investor record
-       * @enum {string}
-       */
-      investorType?: "individual" | "legal_entity";
-      /** @enum {string} */
-      residency?: "resident" | "nonresident";
-      /** @description withholding tax rate, basis points (1000 = 10%) */
-      taxRateBps?: number;
-      /** @description Solana Attestation Service attestation PDA (base58); empty when the record has none */
-      kycRef?: string;
-      /** @enum {string} */
-      status: "Active" | "Suspended";
-      /** @description devnet explorer link for the owner */
-      explorerUrl?: string;
-    };
-    ActionDTO: {
-      pda: string;
-      seriesMint: string;
-      /**
-       * @description ISO 20022 corp action event type (INTE/REDM/MCAL/PCAL/METG/CHAN mapped)
-       * @enum {string}
-       */
-      kind: "INTR" | "REDM" | "MCAL" | "PCAL" | "BMET" | "CHAN";
-      /** @enum {string} */
-      mandatory: "MAND" | "VOLU" | "CHOS";
-      /** @example QPNb1-INTR-0001 */
-      corpId: string;
-      /** @description COAF id, may be empty */
-      officialId?: string | null;
-      /**
-       * Format: date-time
-       * @description ISO 8601 with +05:00
-       */
-      announcedAt?: string;
-      /** Format: date-time */
-      recordAt: string;
-      /** Format: date-time */
-      paymentAt: string;
-      /** Format: date */
-      periodStart?: string | null;
-      /** Format: date */
-      periodEnd?: string | null;
-      accrualDays?: number | null;
-      rateBps?: number | null;
-      perUnitGross: components["schemas"]["Amount"];
-      perUnitPrincipal: components["schemas"]["Amount"];
-      cashMint: string;
-      escrow?: string;
-      /** @description live escrow token balance (0 before funding) */
-      escrowBalance?: components["schemas"]["Amount"];
-      /** @enum {string} */
-      status:
-        | "Announced"
-        | "RecordStruck"
-        | "SnapshotComplete"
-        | "Funded"
-        | "Settling"
-        | "Completed"
-        | "Retiring"
-        | "Cancelled"
-        | "VotingOpen"
-        | "Finalized";
-      snapshotSlot?: number | null;
-      /** @description hex sha256 */
-      snapshotHash?: string | null;
-      unitsSnapshotted?: string | null;
-      holdersSnapshotted?: number | null;
-      holdersPaid?: number | null;
-      totalGross?: components["schemas"]["Amount"];
-      totalTax?: components["schemas"]["Amount"];
-      totalNet?: components["schemas"]["Amount"];
-      totalPaid?: components["schemas"]["Amount"];
-      totalRetired?: string | null;
-      holdersRetired?: number | null;
-      proposalNewRateBps?: number | null;
-      /** Format: date */
-      proposalNewMaturity?: string | null;
-      /** Format: date-time */
-      votingEndsAt?: string | null;
-      votesFor?: string | null;
-      votesAgainst?: string | null;
-      votesAbstain?: string | null;
-      /** @enum {string|null} */
-      result?: "Pending" | "Approved" | "Rejected" | "NoQuorum" | null;
-      /** Format: date-time */
-      completedAt?: string | null;
-      factorBps?: number | null;
-      /** @description devnet explorer link for the action PDA */
-      explorerUrl: string;
-    };
-    EntitlementDTO: {
-      pda: string;
-      actionPda: string;
-      owner: string;
-      units: string;
-      gross?: components["schemas"]["Amount"];
-      tax?: components["schemas"]["Amount"];
-      net?: components["schemas"]["Amount"];
-      principal?: components["schemas"]["Amount"];
-      /** @enum {string} */
-      status: "Snapshotted" | "Paid" | "Retired";
-      /** Format: date-time */
-      paidAt?: string | null;
-      /** @enum {string} */
-      vote?: "None" | "For" | "Against" | "Abstain";
-      /** Format: date-time */
-      votedAt?: string | null;
-      /** @description devnet explorer link for the entitlement PDA */
-      explorerUrl?: string;
-    };
-    /** @description One projected coupon (or redemption) on the series schedule. */
-    ScheduleItem: {
-      /** @example 2 */
-      couponNumber: number;
-      /** Format: date */
-      periodStart?: string;
-      /** Format: date */
-      periodEnd?: string;
-      /**
-       * Format: date-time
-       * @description ISO 8601 with +05:00
-       */
-      recordDate: string;
-      /** Format: date-time */
-      paymentDate: string;
-      amountPerUnit?: components["schemas"]["Amount"];
-      totalAmount?: components["schemas"]["Amount"];
-      /** @description set once announced */
-      actionPda?: string | null;
-      /** @enum {string} */
-      status: "Projected" | "Announced" | "InProgress" | "Completed";
-    };
-    /** @description One scheduler proposal awaiting a human decision (task 024). */
-    Approval: {
-      id: number;
-      /** @description unix seconds */
-      ts: number;
-      dedupKey: string;
-      seriesMint: string;
-      /** @description empty for announce decisions */
-      actionPda?: string;
-      /** @example step:strike_record */
-      step: string;
-      /** @description the exact qupon CLI argv approve runs */
-      args: string[];
-      /** @enum {string} */
-      status: "pending" | "executed";
-      /** @description CLI result JSON once executed */
-      detail?: Record<string, never> | null;
-    };
-    /** @description Registrar recomputation vs chain: entitlements recomputed from bond ATA balances (minContextSlot = snapshot_slot), snapshot hash chained sha256(prev ‖ owner ‖ units_le) over investors owner-ascending, and action totals (docs/03-domain.md §4). */
-    ReconcileReport: {
-      actionPda: string;
-      /** @example Completed */
-      actionStatus?: string;
-      ok: boolean;
-      /** @description investors with a non-zero balance at read time */
-      holders: number;
-      mismatches: {
-        owner: string;
-        /** @enum {string} */
-        reason:
-          | "missing_entitlement"
-          | "unexpected_entitlement"
-          | "entitlement_mismatch"
-          | "ata_mismatch";
-        /** @description differing fields among units/gross/tax/net/principal */
-        fields?: string[];
-        expected?: components["schemas"]["ReconcileEntry"];
-        onchain?: components["schemas"]["ReconcileEntry"];
-      }[];
-      /** @description base58 sha256 chain recomputed owner-ascending */
-      expectedHash: string;
-      onchainHash: string;
-      hashMatches: boolean;
-      /** @description bond mint supply at read time */
-      supply: number;
-      unitsSnapshotted: number;
-      expectedTotals?: components["schemas"]["ReconcileTotals"];
-      onchainTotals?: components["schemas"]["ReconcileTotals"];
-      totalsMatch: boolean;
-      /** @description unix seconds */
-      checkedAt?: number;
-    };
-    ReconcileEntry: {
-      units: number;
-      gross: number;
-      tax: number;
-      net: number;
-      principal: number;
-    };
-    ReconcileTotals: {
-      units: number;
-      holders: number;
-      gross: number;
-      tax: number;
-      net: number;
-      principal: number;
-    };
-    AdvanceRequest: {
-      /** @description must be true; refuses without explicit confirmation */
-      confirm: boolean;
-      /**
-       * @description fund the escrow from the paying agent (demo mode) when the action waits for funding
-       * @default false
-       */
-      autofund: boolean;
-    };
-    AdvanceResponse: {
-      /** @description executed step, e.g. strike_record, snapshot_batch, pay_batch */
-      step: string;
-      ok: boolean;
-      /** @description tx signature */
-      signature?: string | null;
-      /** @description confirmation slot */
-      slot?: number | null;
-      /** @description https://explorer.solana.com/tx/<sig>?cluster=devnet */
-      explorerUrl?: string | null;
-      /** @description action status re-read from the chain after the step */
-      status: string;
-      nextStep?: string | null;
-      /** @description true when the step was not executed (dry run) */
-      preview?: boolean;
-      error?: components["schemas"]["Error"];
-    };
-    SeriesCreateRequest: {
-      /** @description 1-16 characters of A-Z a-z 0-9 - */
-      name: string;
-      /** @description 12 characters — 2 letters, 9 alphanumerics, 1 check digit */
-      isin: string;
-      /**
-       * Format: int64
-       * @description face value in minor units (> 0)
-       */
-      faceValue: number;
-      /** @description coupon rate in bps, 1..10000 (1000 = 10%) */
-      couponRateBps: number;
-      /**
-       * @description coupons per year
-       * @enum {integer}
-       */
-      frequency: 1 | 2 | 4 | 12;
-      /** @enum {string} */
-      dayCount: "THIRTY_360" | "ACT_365";
-      /** @description YYYY-MM-DD */
-      issueDate: string;
-      /** @description YYYY-MM-DD, after the issue date */
-      maturityDate: string;
-      /**
-       * @description cash leg mint alias
-       * @enum {string}
-       */
-      cash: "tkzt" | "usdc";
-    };
-    SeriesCreateResponse: {
-      series: string;
-      mint: string;
-      /** @description tx signatures (mint create, metadata, init_series) */
-      signatures: string[];
-    };
-    ActivityItem: {
-      id: number;
-      /** @description unix seconds */
-      ts: number;
-      seriesMint?: string | null;
-      actionPda?: string | null;
-      /** @example ActionAnnounced */
-      kind: string;
-      payload?: Record<string, never>;
-      sig: string;
-      slot: number;
-      /** @description ingest order within slot */
-      seq: number;
-      /** @description https://explorer.solana.com/tx/<sig>?cluster=devnet */
-      explorerUrl?: string;
-    };
-  };
-  responses: never;
-  parameters: {
-    /** @description Bond mint pubkey (base58) */
-    Mint: string;
-    /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-    Pda: string;
-  };
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  healthz: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description service healthy */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Health"];
-        };
-      };
-      /** @description database unreachable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  getOpenapi: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OpenAPI YAML */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/yaml": string;
-        };
-      };
-    };
-  };
-  listSeries: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description series list */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SeriesDTO"][];
-        };
-      };
-    };
-  };
-  getSeries: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Bond mint pubkey (base58) */
-        mint: components["parameters"]["Mint"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description series */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SeriesDTO"];
-        };
-      };
-      /** @description not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  listInvestors: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Bond mint pubkey (base58) */
-        mint: components["parameters"]["Mint"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description investors */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["InvestorDTO"][];
-        };
-      };
-    };
-  };
-  getSchedule: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Bond mint pubkey (base58) */
-        mint: components["parameters"]["Mint"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description schedule items */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ScheduleItem"][];
-        };
-      };
-    };
-  };
-  listActions: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Bond mint pubkey (base58) */
-        mint: components["parameters"]["Mint"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description actions, newest first */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ActionDTO"][];
-        };
-      };
-    };
-  };
-  getAction: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-        pda: components["parameters"]["Pda"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description action */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ActionDTO"];
-        };
-      };
-      /** @description not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  listEntitlements: {
-    parameters: {
-      query?: {
-        offset?: number;
-        limit?: number;
-      };
-      header?: never;
-      path: {
-        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-        pda: components["parameters"]["Pda"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description entitlements sorted by owner pubkey ascending (snapshot order) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["EntitlementDTO"][];
-        };
-      };
-    };
-  };
-  reconcileAction: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-        pda: components["parameters"]["Pda"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description report */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ReconcileReport"];
-        };
-      };
-      /** @description not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  advanceAction: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-        pda: components["parameters"]["Pda"];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AdvanceRequest"];
-      };
-    };
-    responses: {
-      /** @description step result */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdvanceResponse"];
-        };
-      };
-      /** @description no runnable step or validation failure */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description no valid back-office session (bearer token) */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description the session's role is not registrar or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  getSeev031: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-        pda: components["parameters"]["Pda"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description XML document */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/xml": string;
-        };
-      };
-      /** @description not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  getSeev036: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-        pda: components["parameters"]["Pda"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description XML document */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/xml": string;
-        };
-      };
-      /** @description not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  getSeev036Zip: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-        pda: components["parameters"]["Pda"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description ZIP archive, one seev.036 XML per holder */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/zip": string;
-        };
-      };
-      /** @description not found or no entitlements snapshotted */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  getNotice: {
-    parameters: {
-      query?: {
-        lang?: "en" | "ru";
-      };
-      header?: never;
-      path: {
-        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-        pda: components["parameters"]["Pda"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description plain-text notice */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/plain": string;
-        };
-      };
-      /** @description not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  listActivity: {
-    parameters: {
-      query?: {
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description events in chain order, oldest first */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            events: components["schemas"]["ActivityItem"][];
-          };
-        };
-      };
-    };
-  };
-  listSchedule: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description per-series coupon calendar with matched on-chain actions */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            series: {
-              mint?: string;
-              ticker?: string;
-              status?: string;
-              nextCouponDate?: string;
-              items?: components["schemas"]["ScheduleItem"][];
-            }[];
-          };
-        };
-      };
-    };
-  };
-  listApprovals: {
-    parameters: {
-      query?: {
-        status?: "pending" | "executed" | "all";
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description approval rows (pending by default) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            approvals: components["schemas"]["Approval"][];
-          };
-        };
-      };
-    };
-  };
-  approveApproval: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: number;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description executed; body carries the tx signature and explorer URL */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid back-office session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description role is not registrar or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no such approval */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description already executed, or the chain refused the step (stays pending) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  authLogin: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          email: string;
-          password: string;
-        };
-      };
-    };
-    responses: {
-      /** @description session token (the web keeps it in an httpOnly cookie) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Session"];
-        };
-      };
-      /** @description missing email or password */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description bad_credentials */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description rate_limited (5 attempts per email per minute) */
-      429: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  authDemo: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          /** @enum {string} */
-          role: "issuer" | "registrar" | "investor";
-        };
-      };
-    };
-    responses: {
-      /** @description session for the demo user of that role */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Session"];
-        };
-      };
-      /** @description unknown role */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description demo_disabled */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  authLogout: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description signed out (also when the token was unknown) */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  createSeries: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SeriesCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description series created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SeriesCreateResponse"];
-        };
-      };
-      /** @description invalid_params — rejected before any CLI run */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid back-office session (bearer token) */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the session's role is not issuer or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description series_exists (name taken) or onchain (CLI failure, onchainError carries the CLI message) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description executor or base config not configured */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  issuerAnnounce: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Bond mint pubkey (base58) */
-        mint: components["parameters"]["Mint"];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          /** @enum {string} */
-          kind: "INTR" | "REDM" | "MCAL";
-          /** @description record date, unix seconds */
-          recordAt: number;
-          /** @description payment date, unix seconds */
-          paymentAt: number;
-          /** @description MCAL only — call date YYYY-MM-DD (required for MCAL, rejected otherwise) */
-          callDate?: string;
-          /** @description CORP id, at most 16 bytes (default: <series>-<KIND>-####) */
-          corpId?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description announced */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            /** @description CorporateAction PDA */
-            action: string;
-            signatures: string[];
-          };
-        };
-      };
-      /** @description invalid_params — kind, callDate, dates or corpId rejected before any CLI run */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid back-office session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the session's role is not issuer or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description unknown_series — mint is not a registered series */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the chain refused the announcement (onchainError carries the CLI message) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description executor not configured */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  issuerMeeting: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Bond mint pubkey (base58) */
-        mint: components["parameters"]["Mint"];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          newRateBps: number;
-          /** @description record date, unix seconds */
-          recordAt: number;
-          /** @description voting deadline, unix seconds */
-          votingEndsAt: number;
-        };
-      };
-    };
-    responses: {
-      /** @description meeting announced */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            /** @description CorporateAction PDA */
-            action: string;
-            signatures: string[];
-          };
-        };
-      };
-      /** @description invalid_params — rate out of range or voting ends before the record date */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid back-office session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the session's role is not issuer or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description unknown_series */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the chain refused the announcement (onchainError) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description executor not configured */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  issuerFund: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
-        pda: components["parameters"]["Pda"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description funded (or skipped — the escrow was already full) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            signatures: string[];
-            skipped: boolean;
-          };
-        };
-      };
-      /** @description pda is not base58 */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid back-office session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the session's role is not issuer or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no corporate action at the pda, or unknown_series */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the chain refused the funding (onchainError) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description chain reader or executor not configured */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  me: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description current user */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            user: components["schemas"]["User"];
-          };
-        };
-      };
-      /** @description no valid session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  registrarOnboard: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          /** @description bond mint (base58) */
-          series: string;
-          /** @description investor wallet (base58) */
-          owner: string;
-          /** @enum {string} */
-          investorType: "individual" | "legal_entity";
-          /** @enum {string} */
-          residency: "resident" | "nonresident";
-          taxBps: number;
-          /** @description KYC validity in days (default 365, 0 = no expiry) */
-          expiryDays?: number;
-        };
-      };
-    };
-    responses: {
-      /** @description attested and registered */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            /** @description Investor PDA */
-            investor: string;
-            /** @description SAS attestation PDA */
-            attestation: string;
-            signatures: string[];
-          };
-        };
-      };
-      /** @description malformed input (non-base58 owner/mint, taxBps > 10000, unknown investorType or residency) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid back-office session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description role is not registrar or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description unknown_series — mint is not a registered series */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the chain refused a step (onchainError carries the raw message) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description executor not configured */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  registrarSuspend: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Bond mint pubkey (base58) */
-        mint: components["parameters"]["Mint"];
-        /** @description investor wallet (base58) */
-        owner: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description executed; body carries the transaction signatures */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description mint or owner is not base58 */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid back-office session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description role is not registrar or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description unknown_series */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the chain refused the step (onchainError) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  registrarReinstate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Bond mint pubkey (base58) */
-        mint: components["parameters"]["Mint"];
-        /** @description investor wallet (base58) */
-        owner: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description executed; body carries the transaction signatures */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description mint or owner is not base58 */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid back-office session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description role is not registrar or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description unknown_series */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the chain refused the step (onchainError) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  registrarAudit: {
-    parameters: {
-      query?: {
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description audit rows, newest first */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            items: components["schemas"]["AuditEntry"][];
-          };
-        };
-      };
-      /** @description limit out of range */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid back-office session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description role is not registrar or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  demoSubscribe: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["DemoSubscribeRequest"];
-      };
-    };
-    responses: {
-      /** @description subscribed; tx signature and explorer URL in the body */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DemoResponse"];
-        };
-      };
-      /** @description units < 1 or not a base58 mint */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description role is not investor_demo or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description unknown_series */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the chain refused the subscribe (onchainError) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  demoVote: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["DemoVoteRequest"];
-      };
-    };
-    responses: {
-      /** @description vote cast; body carries the tx signature and explorer URL */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DemoResponse"];
-        };
-      };
-      /** @description unknown choice or not a base58 action */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no valid session */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description role is not investor_demo or admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description no corporate action at the PDA */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description the chain refused the vote (onchainError) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
+    healthz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description service healthy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
+            /** @description database unreachable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getOpenapi: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OpenAPI YAML */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/yaml": string;
+                };
+            };
+        };
+    };
+    listSeries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description series list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeriesDTO"][];
+                };
+            };
+        };
+    };
+    getSeries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description series */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeriesDTO"];
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listInvestors: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description investors */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestorDTO"][];
+                };
+            };
+        };
+    };
+    listTrades: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description the count of admitted trades and the trades themselves */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description admitted trades not yet released; strike_record is refused while this is above 0 */
+                        openTrades: number;
+                        items: components["schemas"]["TradeDTO"][];
+                    };
+                };
+            };
+            /** @description unknown_series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain reader not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description schedule items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleItem"][];
+                };
+            };
+        };
+    };
+    listActions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description actions, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionDTO"][];
+                };
+            };
+        };
+    };
+    getAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description action */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionDTO"];
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEntitlements: {
+        parameters: {
+            query?: {
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description entitlements sorted by owner pubkey ascending (snapshot order) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntitlementDTO"][];
+                };
+            };
+        };
+    };
+    reconcileAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconcileReport"];
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    advanceAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdvanceRequest"];
+            };
+        };
+        responses: {
+            /** @description step result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceResponse"];
+                };
+            };
+            /** @description no runnable step or validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description no valid back-office session (bearer token) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the session's role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getSeev031: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XML document */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/xml": string;
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getSeev036: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XML document */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/xml": string;
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getSeev036Zip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ZIP archive, one seev.036 XML per holder */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            /** @description not found or no entitlements snapshotted */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getNotice: {
+        parameters: {
+            query?: {
+                lang?: "en" | "ru";
+            };
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description plain-text notice */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listActivity: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description events in chain order, oldest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        events: components["schemas"]["ActivityItem"][];
+                    };
+                };
+            };
+        };
+    };
+    listSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description per-series coupon calendar with matched on-chain actions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        series: {
+                            mint?: string;
+                            ticker?: string;
+                            status?: string;
+                            nextCouponDate?: string;
+                            items?: components["schemas"]["ScheduleItem"][];
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    listApprovals: {
+        parameters: {
+            query?: {
+                status?: "pending" | "executed" | "all";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description approval rows (pending by default) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        approvals: components["schemas"]["Approval"][];
+                    };
+                };
+            };
+        };
+    };
+    approveApproval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description executed; body carries the tx signature and explorer URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no such approval */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description already executed, or the chain refused the step (stays pending) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    authLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    email: string;
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description session token (the web keeps it in an httpOnly cookie) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            /** @description missing email or password */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description bad_credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description rate_limited (5 attempts per email per minute) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    authDemo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    role: "issuer" | "registrar" | "investor";
+                };
+            };
+        };
+        responses: {
+            /** @description session for the demo user of that role */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            /** @description unknown role */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description demo_disabled */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    authLogout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description signed out (also when the token was unknown) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createSeries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeriesCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description series created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeriesCreateResponse"];
+                };
+            };
+            /** @description invalid_params — rejected before any CLI run */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session (bearer token) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the session's role is not issuer or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description series_exists (name taken) or onchain (CLI failure, onchainError carries the CLI message) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description executor or base config not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    issuerAnnounce: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    kind: "INTR" | "REDM" | "MCAL";
+                    /** @description record date, unix seconds */
+                    recordAt: number;
+                    /** @description payment date, unix seconds */
+                    paymentAt: number;
+                    /** @description MCAL only — call date YYYY-MM-DD (required for MCAL, rejected otherwise) */
+                    callDate?: string;
+                    /** @description CORP id, at most 16 bytes (default: <series>-<KIND>-####) */
+                    corpId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description announced */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description CorporateAction PDA */
+                        action: string;
+                        signatures: string[];
+                    };
+                };
+            };
+            /** @description invalid_params — kind, callDate, dates or corpId rejected before any CLI run */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the session's role is not issuer or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown_series — mint is not a registered series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the announcement (onchainError carries the CLI message) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description executor not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    issuerMeeting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    newRateBps: number;
+                    /** @description record date, unix seconds */
+                    recordAt: number;
+                    /** @description voting deadline, unix seconds */
+                    votingEndsAt: number;
+                };
+            };
+        };
+        responses: {
+            /** @description meeting announced */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description CorporateAction PDA */
+                        action: string;
+                        signatures: string[];
+                    };
+                };
+            };
+            /** @description invalid_params — rate out of range or voting ends before the record date */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the session's role is not issuer or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown_series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the announcement (onchainError) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description executor not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    issuerFund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description funded (or skipped — the escrow was already full) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        signatures: string[];
+                        skipped: boolean;
+                    };
+                };
+            };
+            /** @description pda is not base58 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the session's role is not issuer or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no corporate action at the pda, or unknown_series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the funding (onchainError) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain reader or executor not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description current user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user: components["schemas"]["User"];
+                    };
+                };
+            };
+            /** @description no valid session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    registrarOnboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description bond mint (base58) */
+                    series: string;
+                    /** @description investor wallet (base58) */
+                    owner: string;
+                    /** @enum {string} */
+                    investorType: "individual" | "legal_entity";
+                    /** @enum {string} */
+                    residency: "resident" | "nonresident";
+                    taxBps: number;
+                    /** @description KYC validity in days (default 365, 0 = no expiry) */
+                    expiryDays?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description attested and registered */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Investor PDA */
+                        investor: string;
+                        /** @description SAS attestation PDA */
+                        attestation: string;
+                        signatures: string[];
+                    };
+                };
+            };
+            /** @description malformed input (non-base58 owner/mint, taxBps > 10000, unknown investorType or residency) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown_series — mint is not a registered series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused a step (onchainError carries the raw message) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description executor not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    registrarSuspend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+                /** @description investor wallet (base58) */
+                owner: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description executed; body carries the transaction signatures */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description mint or owner is not base58 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown_series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the step (onchainError) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    registrarReinstate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+                /** @description investor wallet (base58) */
+                owner: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description executed; body carries the transaction signatures */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description mint or owner is not base58 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown_series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the step (onchainError) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    registrarTradeCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TradeCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description created and admitted; the trade's SwapDvp address and the transaction signature */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        signatures: string[];
+                        swapDvp: string;
+                    };
+                };
+            };
+            /** @description invalid_body — seller or buyer not base58, seller equals buyer, or units below 1 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown_series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the trade (onchainError), e.g. InvalidTrade or a suspended party */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    registrarTradeSettle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+                /** @description The trade's SwapDvp record on the Solana DvP program (base58) */
+                swapDvp: components["parameters"]["SwapDvp"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description settled; body carries the transaction signatures */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        signatures: string[];
+                    };
+                };
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown_series or trade_not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the settlement (onchainError), e.g. a leg not funded or the trade expired */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    registrarTradeCancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+                /** @description The trade's SwapDvp record on the Solana DvP program (base58) */
+                swapDvp: components["parameters"]["SwapDvp"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TradeCancelRequest"];
+            };
+        };
+        responses: {
+            /** @description cancelled; signatures and the units a forced release moved back to the seller (0 otherwise) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        signatures: string[];
+                        /** @description decimal string */
+                        returnedUnits: string;
+                    };
+                };
+            };
+            /** @description invalid_body */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown_series or trade_not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the cancel (onchainError), e.g. a refund account is closed — retry with force */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    registrarAudit: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description audit rows, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["AuditEntry"][];
+                    };
+                };
+            };
+            /** @description limit out of range */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    demoSubscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoSubscribeRequest"];
+            };
+        };
+        responses: {
+            /** @description subscribed; tx signature and explorer URL in the body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoResponse"];
+                };
+            };
+            /** @description units < 1 or not a base58 mint */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not investor_demo or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown_series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the subscribe (onchainError) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    demoTradeFund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+                /** @description The trade's SwapDvp record on the Solana DvP program (base58) */
+                swapDvp: components["parameters"]["SwapDvp"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TradeFundRequest"];
+            };
+        };
+        responses: {
+            /** @description leg funded; tx signature and explorer URL in the body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoResponse"];
+                };
+            };
+            /** @description invalid_body — side is not seller or buyer */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not investor_demo, registrar or admin; or not_demo_investor when the server holds no keypair for that party */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown_series or trade_not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the transfer (onchainError) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    demoVote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoVoteRequest"];
+            };
+        };
+        responses: {
+            /** @description vote cast; body carries the tx signature and explorer URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoResponse"];
+                };
+            };
+            /** @description unknown choice or not a base58 action */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not investor_demo or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no corporate action at the PDA */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the vote (onchainError) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getNetwork: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description network profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @example devnet */
+                        network: string;
+                        programId: string;
+                        /** @example devnet */
+                        explorerCluster: string;
+                        mainnet: boolean;
+                        demoLogin: boolean;
+                    };
+                };
+            };
+        };
+    };
+    listCashAssets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description cash assets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashAsset"][];
+                };
+            };
+        };
+    };
+    meFaucet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description test-asset mint (base58) */
+                    mint: string;
+                };
+            };
+        };
+        responses: {
+            /** @description minted; signature and explorer URL in the body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        /** @example tKZT */
+                        symbol: string;
+                        /** @description minor units minted */
+                        amount: number;
+                        signature: string;
+                        ata?: string;
+                        explorerUrl?: string;
+                    };
+                };
+            };
+            /** @description not a base58 mint, no linked wallet, or kind not faucet-mintable */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description mainnet */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description mint is not a test asset of this network */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the faucet mint failed on-chain */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description rate_limited — one request per asset per hour */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description executor not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listWallets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description wallets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        wallets: components["schemas"]["Wallet"][];
+                    };
+                };
+            };
+        };
+    };
+    linkWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    address: string;
+                    /** @description base58 ed25519 signature over the challenge message */
+                    signature: string;
+                    /** @description at most 40 characters */
+                    label?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description linked */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        wallet?: components["schemas"]["Wallet"];
+                    };
+                };
+            };
+            /** @description invalid address/label, no live challenge, or bad signature */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description demo_account */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description wallet linked to another account */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    walletChallenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    address: string;
+                };
+            };
+        };
+        responses: {
+            /** @description message to sign */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                    };
+                };
+            };
+            /** @description address is not a base58 public key */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description demo_account */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    unlinkWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                address: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description unlinked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no such wallet on the account */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getMyKyc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description application or null when none */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        application?: components["schemas"]["KycApplication"];
+                    };
+                };
+            };
+        };
+    };
+    submitKyc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    wallet: string;
+                    /** @enum {string} */
+                    investorType: "individual" | "legal_entity";
+                    /** @enum {string} */
+                    residency: "resident" | "nonresident";
+                    taxBps: number;
+                    /** @description 2-120 characters */
+                    fullName: string;
+                    /** @description 1-10 own uploads, at least one id_document */
+                    documentIds: number[];
+                    /** @description 1-10 series to join on approval */
+                    seriesMints: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description submitted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        application?: components["schemas"]["KycApplication"];
+                    };
+                };
+            };
+            /** @description invalid_params or wallet_not_linked */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description only self-registered investors apply */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description kyc_pending — an application is already under review */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getOnboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description checklist and faucet assets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        checklist: {
+                            account: boolean;
+                            walletLinked: boolean;
+                            kycApproved: boolean;
+                            testCashReceived: boolean;
+                            subscribed: boolean;
+                        };
+                        faucetAssets: {
+                            mint?: string;
+                            symbol?: string;
+                            name?: string;
+                            decimals?: number;
+                            kind?: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    listMyDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description documents */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        documents: components["schemas"]["Document"][];
+                    };
+                };
+            };
+        };
+    };
+    uploadDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** @enum {string} */
+                    kind: "id_document" | "proof_of_address" | "prospectus" | "decision" | "other";
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description uploaded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        document?: components["schemas"]["Document"];
+                    };
+                };
+            };
+            /** @description invalid kind/missing file/unsupported type */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description demo accounts cannot upload personal documents */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description too_large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description documents_unavailable (DATA_DIR unset) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listNotifications: {
+        parameters: {
+            query?: {
+                unread?: "1";
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description notifications, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        notifications: components["schemas"]["Notification"][];
+                    };
+                };
+            };
+        };
+    };
+    unreadNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        unread: number;
+                    };
+                };
+            };
+        };
+    };
+    markNotificationsRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ids?: number[];
+                    all?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description marked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        marked: number;
+                    };
+                };
+            };
+            /** @description pass ids or all: true */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    patchProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description 1-80 characters */
+                    name?: string;
+                    /** @enum {string} */
+                    locale?: "en" | "ru";
+                };
+            };
+        };
+        responses: {
+            /** @description updated user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user?: components["schemas"]["User"];
+                    };
+                };
+            };
+            /** @description invalid_params */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description demo_account */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    current: string;
+                    /** @description at least 10 characters, different from the current one */
+                    new: string;
+                };
+            };
+        };
+        responses: {
+            /** @description changed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description wrong current password or weak new password */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description demo_account */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    statementReport: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                format?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description payout rows and totals (or a CSV attachment) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportEnvelope"];
+                    "text/csv": string;
+                };
+            };
+            /** @description invalid from/to */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain_unavailable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no chain reader configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    taxReport: {
+        parameters: {
+            query: {
+                year: number;
+                format?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description payouts of the calendar year and totals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        year: number;
+                    } & components["schemas"]["ReportEnvelope"];
+                    "text/csv": string;
+                };
+            };
+            /** @description year must be a calendar year */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain_unavailable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no chain reader configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getOrg: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description organization */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        organization?: components["schemas"]["Organization"];
+                    };
+                };
+            };
+            /** @description no_org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    patchOrg: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description 2-120 characters */
+                    name?: string;
+                    /** @description at most 12 characters */
+                    bin?: string;
+                    /** @description at most 200 characters */
+                    website?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        organization?: components["schemas"]["Organization"];
+                    };
+                };
+            };
+            /** @description invalid_params */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description demo_account */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no_org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listOrgMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description members */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        members: components["schemas"]["User"][];
+                    };
+                };
+            };
+            /** @description no_org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    email: string;
+                    /** @enum {string} */
+                    role: "issuer";
+                };
+            };
+        };
+        responses: {
+            /** @description invite created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                    };
+                };
+            };
+            /** @description invalid email or role */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description demo_account */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no_org */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    removeOrgMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description removed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description self_removal or demo identity */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no such member */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    authSignup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    email: string;
+                    /** @description 1-100 characters */
+                    name: string;
+                    /** @description at least 10 characters, deny-listed ones rejected */
+                    password: string;
+                    /**
+                     * @default en
+                     * @enum {string}
+                     */
+                    locale?: "en" | "ru";
+                };
+            };
+        };
+        responses: {
+            /** @description session created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            /** @description invalid_params or weak_password */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description email_taken */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description rate_limited (shared per-IP sign-in limiter) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    authReset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                    /** @description at least 10 characters */
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description password reset */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description invalid_params or invalid_token */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    acceptInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                    name: string;
+                    /** @description at least 10 characters */
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description account created and signed in */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            /** @description invalid_params or invalid_token */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description email_taken */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description rate_limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description file bytes (PDF, PNG or JPEG) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                    "image/png": string;
+                    "image/jpeg": string;
+                };
+            };
+            /** @description missing or not readable (indistinguishable) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listSeriesDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description documents */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        documents: components["schemas"]["Document"][];
+                    };
+                };
+            };
+        };
+    };
+    issuerSeriesDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    documentId: number;
+                    /** @enum {string} */
+                    kind: "prospectus" | "decision" | "other";
+                };
+                "multipart/form-data": {
+                    /** @enum {string} */
+                    kind: "prospectus" | "decision" | "other";
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description attached/uploaded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        document?: components["schemas"]["Document"];
+                    };
+                };
+            };
+            /** @description invalid_params or not your organisation's upload */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not_your_series */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown document */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listKyc: {
+        parameters: {
+            query?: {
+                status?: "submitted" | "approved" | "rejected";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description applications */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        applications: components["schemas"]["KycApplication"][];
+                    };
+                };
+            };
+            /** @description unknown status */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getKyc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description application */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        application?: components["schemas"]["KycApplication"];
+                    };
+                };
+            };
+            /** @description no such application */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    approveKyc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ok true (approved) or ok false (some series failed, status stays submitted) with per-series results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        /** @enum {string} */
+                        status: "approved" | "submitted";
+                        results: {
+                            series?: string;
+                            investor?: string;
+                            signatures?: string[];
+                            error?: string;
+                        }[];
+                        signatures?: string[];
+                    };
+                };
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no such application */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description kyc_decided — already decided */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description executor not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    rejectKyc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description rejected */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        /** @enum {string} */
+                        status: "rejected";
+                    };
+                };
+            };
+            /** @description reason must be 1-500 characters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no such application */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description kyc_decided */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    holdersReport: {
+        parameters: {
+            query?: {
+                format?: "csv";
+            };
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description holding rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        holders: {
+                            series?: string;
+                            isin?: string;
+                            owner?: string;
+                            units?: number;
+                            investorType?: string;
+                            residency?: string;
+                            taxBps?: number;
+                            status?: string;
+                            kycRef?: string;
+                        }[];
+                    };
+                    "text/csv": string;
+                };
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain_unavailable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    payoutsReport: {
+        parameters: {
+            query?: {
+                format?: "csv";
+            };
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description payout rows and totals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportEnvelope"];
+                    "text/csv": string;
+                };
+            };
+            /** @description role is not issuer, registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description unknown action or series */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain_unavailable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kaseBond: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 2-12 alphanumeric characters */
+                ticker: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description bond profile with schedule (may be marked stale after a successful load) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ticker: string;
+                        /** @description true when the cached copy is past its freshness TTL */
+                        stale: boolean;
+                        /** Format: date-time */
+                        fetchedAt?: string;
+                        schedule?: {
+                            /** Format: date */
+                            start?: string;
+                            /** Format: date */
+                            end?: string;
+                            /** Format: date */
+                            recordDate?: string;
+                            rate?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description invalid_ticker */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description kase_not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description kase_unavailable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description kase client not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kaseNews: {
+        parameters: {
+            query?: {
+                lang?: "en" | "ru";
+            };
+            header?: never;
+            path: {
+                issuer: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description news items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            title?: string;
+                            url?: string;
+                            publishedAt?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description invalid issuer code or lang */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description kase_not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description kase_unavailable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description kase client not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kaseSeriesTicker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ticker */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ticker: string;
+                    };
+                };
+            };
+            /** @description invalid_mint */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no_kase_ticker */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kaseCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description comparison result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KaseCheck"];
+                };
+            };
+            /** @description invalid action pda */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description action_not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain or kase.kz unavailable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain reader or kase client not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    disclosureZip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ZIP archive */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            /** @description action not found or no entitlements snapshotted */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the action is not settled yet */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain reader not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    disclosureSubmit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description recorded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        /** @example true */
+                        simulated: boolean;
+                    };
+                };
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description action_not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain reader not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description health view */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemHealth"];
+                };
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminNetworkReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description checks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        network: string;
+                        programId: string;
+                        mainnet: boolean;
+                        program?: Record<string, never> | null;
+                        checks: {
+                            key: string;
+                            ok: boolean;
+                            detail?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminListUsers: {
+        parameters: {
+            query?: {
+                q?: string;
+                role?: string;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description users */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        users: components["schemas"]["User"][];
+                    };
+                };
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminCreateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    email: string;
+                    name: string;
+                    /** @enum {string} */
+                    role: "issuer" | "registrar" | "investor" | "admin";
+                    /** @description optional organisation */
+                    orgId?: number;
+                    /** @description at least 10 characters */
+                    password: string;
+                };
+            };
+        };
+        responses: {
+            /** @description created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user?: components["schemas"]["User"];
+                    };
+                };
+            };
+            /** @description invalid_params */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description email_taken */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminPatchUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    role?: "issuer" | "registrar" | "investor" | "admin";
+                    /** @description 0 clears the organisation */
+                    orgId?: number;
+                    /** @enum {string} */
+                    status?: "active" | "pending" | "disabled";
+                    name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        user?: components["schemas"]["User"];
+                    };
+                };
+            };
+            /** @description invalid role/status or self_lockout */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not admin, or demo_account */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no such user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminResetLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description link and expiry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                    };
+                };
+            };
+            /** @description role is not admin, or demo_account */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no such user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminListOrgs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description organisations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        organizations: components["schemas"]["Organization"][];
+                    };
+                };
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminCreateOrg: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    /** @enum {string} */
+                    kind: "issuer" | "registrar";
+                    bin?: string;
+                    website?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        organization?: components["schemas"]["Organization"];
+                    };
+                };
+            };
+            /** @description need a name and kind issuer or registrar */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminPatchOrg: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    /** @enum {string} */
+                    kind?: "issuer" | "registrar";
+                    bin?: string;
+                    website?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        organization?: components["schemas"]["Organization"];
+                    };
+                };
+            };
+            /** @description invalid kind or empty name */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no such organization */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminListSeries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description series rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        series: components["schemas"]["AdminSeries"][];
+                    };
+                };
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminPatchSeries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Bond mint pubkey (base58) */
+                mint: components["parameters"]["Mint"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    hidden?: boolean;
+                    featured?: boolean;
+                    /** @description empty clears; 2-12 alphanumeric */
+                    kaseTicker?: string;
+                    /** @description 0 clears the owning organisation */
+                    orgId?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description updated settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSeries"];
+                };
+            };
+            /** @description invalid ticker or orgId */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminAudit: {
+        parameters: {
+            query?: {
+                user?: string;
+                role?: string;
+                route?: string;
+                ok?: "true" | "false";
+                limit?: number;
+                format?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description audit rows, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        entries: {
+                            id: number;
+                            ts: number;
+                            email: string;
+                            role: string;
+                            route: string;
+                            ok?: boolean;
+                            detail?: string;
+                        }[];
+                    };
+                    "text/csv": string;
+                };
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminListAssets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description assets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CashAsset"][];
+                };
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminAddAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    mint: string;
+                };
+            };
+        };
+        responses: {
+            /** @description stored disabled; warnings list what to double-check */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        asset: components["schemas"]["CashAsset"];
+                        warnings: ("freeze_authority" | "mint_authority" | "symbol_collision")[];
+                    };
+                };
+            };
+            /** @description not_a_mint or unknown_token_program */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description asset_exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain read failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain reader not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminPatchAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mint: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description 1-12 characters */
+                    symbol?: string;
+                    /** @description 1-60 characters */
+                    name?: string;
+                    /** @enum {string} */
+                    kind?: "test" | "stablecoin" | "wrapped_cbdc" | "spl";
+                    issuerNote?: string;
+                    enabled?: boolean;
+                    /** @description required to enable a mint whose freeze authority is set */
+                    acceptFreezeAuthority?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        asset: components["schemas"]["CashAsset"];
+                        warnings: string[];
+                    };
+                };
+            };
+            /** @description invalid_params or freeze_authority_unconfirmed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no asset with that mint */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
 }

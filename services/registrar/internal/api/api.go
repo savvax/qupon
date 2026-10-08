@@ -222,6 +222,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	// Scheduler surface (task 024): planned actions + approval gate (approve executes the CLI → registrar only).
 	r.Get("/approvals", listApprovals(st))
 	r.With(registrar, write).Post("/registrar/approvals/{id}/approve", approveApproval(deps, st))
+	r.With(registrar, write).Post("/registrar/approvals/{id}/reject", rejectApproval(st))
 	r.With(registrar, write).Post("/approvals/{id}/approve", approveApproval(deps, st))
 
 	// Registrar back-office: investor onboarding (SIMULATED SAS attestation + registration), suspend/reinstate, audit feed.

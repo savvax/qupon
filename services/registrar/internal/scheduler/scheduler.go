@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -223,6 +224,10 @@ func (s *Scheduler) argv(series *chain.Series, open *chain.CorporateAction, d De
 }
 
 // propose records the decision as a pending approval (deduped per action+step).
+// First it stales the series' pending rows the new decision supersedes: a
+// different dedup key means the chain moved on (the old argv can never run),
+// and an announce nobody approved before its record date must be re-proposed
+// with fresh dates — otherwise the pending-dedup index blocks it forever.
 func (s *Scheduler) propose(ctx context.Context, series *chain.Series, open *chain.CorporateAction, d Decision, index uint32, args []string) {
 	row := store.Approval{
 		Ts: s.Now().Unix(), SeriesMint: series.Mint.String(),
@@ -232,12 +237,53 @@ func (s *Scheduler) propose(ctx context.Context, series *chain.Series, open *cha
 	if open != nil {
 		row.ActionPDA = series.OpenAction.String()
 	}
+	if err := s.staleSuperseded(ctx, row); err != nil {
+		s.Log.Error("scheduler: stale approvals", "err", err) // insert may then dedup-drop; safe
+	}
 	if err := s.Store.InsertApproval(ctx, row); err != nil {
 		s.Log.Error("scheduler: insert approval", "err", err)
 		return
 	}
 	s.Log.Info("scheduler proposed (awaiting approval)",
 		"series", series.Mint.String(), "step", row.Step, "args", args)
+}
+
+// staleSuperseded retires the series' pending rows that the incoming proposal
+// replaces: dedup key differs, or it is the same announce but its --record-at
+// has passed unapproved (approving it now would fail on-chain anyway).
+func (s *Scheduler) staleSuperseded(ctx context.Context, row store.Approval) error {
+	now := s.now().Unix()
+	pending, err := s.Store.PendingSeriesApprovals(ctx, row.SeriesMint)
+	if err != nil {
+		return err
+	}
+	for _, p := range pending {
+		stale := p.DedupKey != row.DedupKey
+		if !stale && strings.HasPrefix(p.Step, "announce:") {
+			if ra, ok := flagValue(p.Args, "--record-at"); ok {
+				if t, err := strconv.ParseInt(ra, 10, 64); err == nil && t < now {
+					stale = true
+				}
+			}
+		}
+		if stale {
+			if err := s.Store.StaleApproval(ctx, p.ID); err != nil {
+				return err
+			}
+			s.Log.Info("scheduler staled approval", "id", p.ID, "step", p.Step)
+		}
+	}
+	return nil
+}
+
+// flagValue returns the token after a --flag in a stored CLI argv.
+func flagValue(args []string, flag string) (string, bool) {
+	for i := 0; i+1 < len(args); i++ {
+		if args[i] == flag {
+			return args[i+1], true
+		}
+	}
+	return "", false
 }
 
 // execute runs one CLI step and records the outcome in the activity feed.

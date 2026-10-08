@@ -510,6 +510,9 @@
       "approve": "Approve",
       "approving": "Executing the approved step…",
       "approved": "Step executed",
+      "reject": "Reject",
+      "rejecting": "Rejecting the proposal…",
+      "rejected": "Proposal rejected",
       "emptyPending": "Nothing waits for approval. The autopilot is idle.",
       "emptyExecuted": "No steps executed through approvals yet.",
       "showCommand": "Show command"

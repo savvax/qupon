@@ -12,7 +12,8 @@ import (
 var ErrNoApproval = errors.New("no approval row")
 
 // Approval is one scheduler proposal awaiting a human decision (task 024):
-// the exact qupon CLI argv to run on approve. Status: pending | executed.
+// the exact qupon CLI argv to run on approve.
+// Status: pending | running | executed | rejected | stale.
 type Approval struct {
 	ID         int64           `json:"id"`
 	Ts         int64           `json:"ts"`
@@ -111,4 +112,82 @@ func (s *Store) FinishApproval(ctx context.Context, id int64, detail string) err
 		return fmt.Errorf("finish approval %d: %w", id, err)
 	}
 	return nil
+}
+
+// ClaimApproval atomically moves a pending row to running so two concurrent
+// approve clicks cannot both execute the CLI. false = the row is missing or
+// not pending (the caller answers 404/409).
+func (s *Store) ClaimApproval(ctx context.Context, id int64) (bool, error) {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE approvals SET status = 'running' WHERE id = ? AND status = 'pending'`, id)
+	if err != nil {
+		return false, fmt.Errorf("claim approval %d: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("claim approval %d rows: %w", id, err)
+	}
+	return n == 1, nil
+}
+
+// RevertApproval puts a failed run back to pending so the human can retry.
+// If the scheduler re-proposed the same dedup key while the CLI was running,
+// the pending-unique index (migration 004) rejects the revert; a fresh
+// pending row already exists then, so this row is superseded → stale.
+func (s *Store) RevertApproval(ctx context.Context, id int64) error {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE OR IGNORE approvals SET status = 'pending' WHERE id = ? AND status = 'running'`, id)
+	if err != nil {
+		return fmt.Errorf("revert approval %d: %w", id, err)
+	}
+	if n, _ := res.RowsAffected(); n == 1 {
+		return nil
+	}
+	_, err = s.db.ExecContext(ctx,
+		`UPDATE approvals SET status = 'stale' WHERE id = ? AND status = 'running'`, id)
+	if err != nil {
+		return fmt.Errorf("stale superseded approval %d: %w", id, err)
+	}
+	return nil
+}
+
+// RejectApproval moves a pending row to rejected (registrar decision;
+// nothing executes). false = not pending (or missing) → 404/409.
+func (s *Store) RejectApproval(ctx context.Context, id int64) (bool, error) {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE approvals SET status = 'rejected' WHERE id = ? AND status = 'pending'`, id)
+	if err != nil {
+		return false, fmt.Errorf("reject approval %d: %w", id, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("reject approval %d rows: %w", id, err)
+	}
+	return n == 1, nil
+}
+
+// StaleApproval retires a pending proposal the scheduler no longer wants
+// (superseded decision, or an announce whose record date passed unapproved).
+func (s *Store) StaleApproval(ctx context.Context, id int64) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE approvals SET status = 'stale' WHERE id = ? AND status = 'pending'`, id)
+	if err != nil {
+		return fmt.Errorf("stale approval %d: %w", id, err)
+	}
+	return nil
+}
+
+// PendingSeriesApprovals lists the pending rows of one series (scheduler stale sweep).
+func (s *Store) PendingSeriesApprovals(ctx context.Context, seriesMint string) ([]Approval, error) {
+	rows, err := s.ListApprovals(ctx, "pending")
+	if err != nil {
+		return nil, err
+	}
+	var out []Approval
+	for _, a := range rows {
+		if a.SeriesMint == seriesMint {
+			out = append(out, a)
+		}
+	}
+	return out, nil
 }
