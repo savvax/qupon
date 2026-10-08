@@ -104,7 +104,9 @@ add_blocked() { # add_blocked <file> <reason>
 }
 
 # usage-limit / rate-limit detection in agent output
-hit_limit() { grep -qiE "hit your (session|weekly|opus|sonnet|5-hour)[a-z ]*limit|usage limit|rate_limit|rate limit|\b429\b|quota exceeded|insufficient_quota|Too Many Requests" "$1"; }
+# Only the tail: a provider error is the last thing a run prints, while an agent working on rate limiting or HTTP 429
+# (tasks 1406/1407) mentions those words all through its transcript and was requeued as "limited" forever.
+hit_limit() { [ -f "$1" ] && ! grep -qE "^(DONE|BLOCKED):" "$1" && tail -n 15 "$1" | grep -qiE "hit your (session|weekly|opus|sonnet|5-hour)[a-z ]*limit|usage limit|rate_limit|rate limit|\b429\b|quota exceeded|insufficient_quota|Too Many Requests"; }
 
 # role prompt for pi workers, chosen from the task filename (prompts/roles/*.md)
 task_role_file() {
