@@ -60,10 +60,17 @@ export async function startSession(
     return res;
   }
   let up: Response;
+  // Forward the visitor's address (set by Caddy) so the registrar's per-IP sign-in
+  // limit buckets each visitor, not the whole console as one address (task 1406).
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) headers["X-Forwarded-For"] = xff;
   try {
     up = await fetch(`${apiBase()}${upstream}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body,
     });
   } catch {

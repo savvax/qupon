@@ -180,7 +180,13 @@ func (e *Executor) run(ctx context.Context, args ...string) (Result, error) {
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	err := cmd.Run()
 	if runCtx.Err() != nil {
-		return Result{}, fmt.Errorf("cli %s timed out after %s: %w", strings.Join(args, " "), e.timeout, runCtx.Err())
+		// Only the per-run cap is a timeout. A parent cancellation (client disconnect,
+		// shutdown) is a different failure: handlers detach the CLI from the request
+		// context, but the scheduler passes its own — report what actually happened.
+		if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
+			return Result{}, fmt.Errorf("cli %s timed out after %s: %w", strings.Join(args, " "), e.timeout, runCtx.Err())
+		}
+		return Result{}, fmt.Errorf("cli %s cancelled: %w", strings.Join(args, " "), runCtx.Err())
 	}
 	if err != nil {
 		// Contract violation on the happy path is fatal; a failed step is data.

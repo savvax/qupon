@@ -7,6 +7,7 @@ package api
 // with the CLI message).
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/qupon-kz/qupon/services/registrar/internal/network"
@@ -114,8 +115,10 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 		}
 
 		// One step may send several transactions (batch commands); the CLI
-		// cap (120 s) dominates the request budget.
-		res, err := deps.Executor.Run(r.Context(), args...)
+		// cap (120 s) dominates the request budget. Detached from the client
+		// connection: a disconnect must not kill a mid-batch step (idempotent,
+		// but the operator would lose the response).
+		res, err := deps.Executor.Run(context.WithoutCancel(r.Context()), args...)
 		if err != nil {
 			writeError(w, http.StatusGatewayTimeout, err.Error())
 			return

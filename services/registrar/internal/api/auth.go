@@ -133,7 +133,9 @@ func authMe(svc *auth.Service) http.HandlerFunc {
 	}
 }
 
-// clientIP is the last X-Forwarded-For hop (appended by Caddy, so a client cannot forge it), else the TCP peer.
+// clientIP is the last X-Forwarded-For hop — appended by the closest proxy (Caddy),
+// so a client cannot forge it; the web session proxy forwards the header verbatim
+// over the internal network. No XFF (direct/internal caller) → the TCP peer.
 func clientIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		parts := strings.Split(xff, ",")

@@ -170,3 +170,40 @@ func TestDemoWritesAreThrottled(t *testing.T) {
 		}
 	}
 }
+
+// The web session proxy forwards X-Forwarded-For, so every visitor gets its own
+// sign-in bucket (task 1406): the 21st click from one address is a 429, a second
+// address is untouched. Demo sign-in stays disabled (403) — the bucket is what is tested.
+func TestSignInRateLimitPerForwardedIP(t *testing.T) {
+	h := New(slog.New(slog.DiscardHandler), nil, Deps{
+		Auth:        &auth.Service{DemoLogin: false},
+		SignInLimit: auth.NewLimiter(20, time.Minute),
+	})
+	post := func(xff string) int {
+		req := httptest.NewRequest(http.MethodPost, "/auth/demo", strings.NewReader(`{"role":"issuer"}`))
+		if xff != "" {
+			req.Header.Set("X-Forwarded-For", xff)
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	for i := 1; i <= 20; i++ {
+		if code := post("203.0.113.7"); code != http.StatusForbidden {
+			t.Fatalf("sign-in %d from 203.0.113.7 = %d, want 403 (allowed, demo disabled)", i, code)
+		}
+	}
+	if code := post("203.0.113.7"); code != http.StatusTooManyRequests {
+		t.Fatalf("21st sign-in from 203.0.113.7 = %d, want 429", code)
+	}
+	if code := post("198.51.100.9"); code != http.StatusForbidden {
+		t.Fatalf("first sign-in from 198.51.100.9 = %d, want 403 (separate bucket)", code)
+	}
+	// Only the last XFF hop (the one the closest proxy appended) counts.
+	if code := post("9.9.9.9, 203.0.113.7"); code != http.StatusTooManyRequests {
+		t.Fatalf("XFF list ending in the blocked IP = %d, want 429", code)
+	}
+	if code := post("203.0.113.7, 9.9.9.9"); code != http.StatusForbidden {
+		t.Fatalf("XFF list ending in a fresh IP = %d, want 403", code)
+	}
+}

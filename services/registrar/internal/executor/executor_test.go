@@ -1,6 +1,8 @@
 package executor
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -118,6 +120,31 @@ func TestRunTimeout(t *testing.T) {
 	}
 	if elapsed := time.Since(start); elapsed > time.Second {
 		t.Fatalf("run took %s, the per-executor cap must apply", elapsed)
+	}
+}
+
+// A cancelled parent (client disconnect, shutdown) must not be reported as a
+// timeout: only DeadlineExceeded is "timed out" (task 1406).
+func TestRunParentCancelIsNotATimeout(t *testing.T) {
+	dir := t.TempDir()
+	slow := writeFile(t, dir, "slow.sh", "#!/bin/sh\nsleep 5\necho '{}'\n")
+	if err := os.Chmod(slow, 0o755); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	e := New(slow, "testdata/devnet.json", nil)
+	e.timeout = 10 * time.Second
+
+	ctx, cancel := context.WithCancel(t.Context())
+	time.AfterFunc(50*time.Millisecond, cancel)
+	_, err := e.Run(ctx, "action:pay")
+	if err == nil {
+		return // the run survived the cancellation and completed — also fine
+	}
+	if strings.Contains(err.Error(), "timed out") {
+		t.Fatalf("err = %v, a cancelled parent is not a timeout", err)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, want context.Canceled", err)
 	}
 }
 

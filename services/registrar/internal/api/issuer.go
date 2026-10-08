@@ -8,6 +8,7 @@ package api
 // as 409 with the Anchor/CLI message in onchainError.
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -420,7 +421,9 @@ func issuerFund(deps Deps, st *store.Store) http.HandlerFunc {
 		if !ok {
 			return
 		}
-		res, err := deps.Executor.Run(r.Context(),
+		// Detached from the client connection (a disconnect must not kill the funding
+		// transfer); the executor's 120 s cap stays the only deadline.
+		res, err := deps.Executor.Run(context.WithoutCancel(r.Context()),
 			"action:fund", "--series", name,
 			"--index", strconv.FormatUint(uint64(action.Index), 10))
 		if err != nil {
