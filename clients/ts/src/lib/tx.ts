@@ -37,59 +37,105 @@ export function getRpcUrl(): string {
 /** Transient transport failures worth retrying: network errors, HTTP 429 and 5xx. */
 export function isTransient(e: unknown): boolean {
   const text = `${(e as Error)?.message ?? ""} ${JSON.stringify((e as { context?: unknown })?.context ?? {})}`;
-  return /fetch failed|ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|"statusCode":(429|5\d\d)|HTTP error \((429|5\d\d)\)/i.test(text);
+  return /fetch failed|ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|"statusCode":(429|5\d\d)|HTTP error \((429|5\d\d)\)/i.test(
+    text,
+  );
 }
 
 /**
  * RPC client whose transport retries transient failures (≤ 4 retries, backoff). Safe for every call: reads are
  * idempotent and re-sending an already-signed transaction is a no-op on Solana (same signature).
  */
-export function createRpc(): QuponRpc {
-  const transport = createDefaultRpcTransport({ url: getRpcUrl() });
+export function createRpc(url: string = getRpcUrl()): QuponRpc {
+  const transport = createDefaultRpcTransport({ url });
   const retrying = (async (config: Parameters<typeof transport>[0]) => {
     for (let attempt = 1; ; attempt++) {
       try {
         return await transport(config);
       } catch (e) {
         if (attempt > 4 || !isTransient(e)) throw e;
-        console.error(`[rpc] transient error (${(e as Error).message}); retry ${attempt}/4`);
-        await new Promise(r => setTimeout(r, 750 * 2 ** attempt));
+        console.error(
+          `[rpc] transient error (${(e as Error).message}); retry ${attempt}/4`,
+        );
+        await new Promise((r) => setTimeout(r, 750 * 2 ** attempt));
       }
     }
   }) as typeof transport;
   return createSolanaRpcFromTransport(retrying);
 }
+type StatusRpc = Pick<QuponRpc, "getSignatureStatuses" | "getBlockHeight">;
+let fallbackRpc: StatusRpc | undefined;
 
-type StatusRpc = Pick<QuponRpc, "getSignatureStatuses">;
-let publicDevnet: StatusRpc | undefined;
-const publicDevnetRpc = (): StatusRpc => (publicDevnet ??= createSolanaRpc("https://api.devnet.solana.com"));
+/**
+ * Status-check fallback endpoint: RPC_FALLBACK_URL if set, else the public devnet endpoint — but only when the
+ * primary RPC itself points at devnet (never send a mainnet signature to a devnet node).
+ */
+export function statusFallbackUrl(): string | undefined {
+  const explicit = process.env.RPC_FALLBACK_URL;
+  if (explicit !== undefined && explicit !== "") return explicit;
+  return /devnet/i.test(getRpcUrl())
+    ? "https://api.devnet.solana.com"
+    : undefined;
+}
+
+const statusFallbackRpc = (): StatusRpc | undefined => {
+  const url = statusFallbackUrl();
+  return url === undefined ? undefined : (fallbackRpc ??= createSolanaRpc(url));
+};
 
 /**
  * Status of one signature. If the primary RPC fails the status call itself (Helius devnet answered
- * getSignatureStatuses with -32603 "Internal error" on 2026-10-05 while sends worked), ask public devnet.
+ * getSignatureStatuses with -32603 "Internal error" on 2026-10-05 while sends worked), ask the fallback —
+ * which may be undefined (no fallback configured); then the primary error propagates.
  */
-export async function signatureStatus(rpc: StatusRpc, signature: Signature, fallback: () => StatusRpc = publicDevnetRpc) {
+export async function signatureStatus(
+  rpc: StatusRpc,
+  signature: Signature,
+  fallback: () => StatusRpc | undefined = statusFallbackRpc,
+) {
   try {
     return (await rpc.getSignatureStatuses([signature]).send()).value[0];
-  } catch {
-    return (await fallback().getSignatureStatuses([signature]).send()).value[0];
+  } catch (e) {
+    const alt = fallback();
+    if (alt === undefined) throw e;
+    return (await alt.getSignatureStatuses([signature]).send()).value[0];
   }
 }
 
-/** Wait until a signature reaches at least `confirmed` (no websocket needed; status via {@link signatureStatus}). */
+/**
+ * Wait until a signature reaches at least `confirmed` (no websocket needed; status via {@link signatureStatus}).
+ * When `lastValidBlockHeight` is known, give up as soon as the chain passes it — the blockhash-retry branch in
+ * {@link sendInstructions} then re-signs, and only once the old blockhash can no longer land anywhere.
+ */
 export async function waitForConfirmation(
   rpc: StatusRpc,
   signature: Signature,
   timeoutMs = 60_000,
-  fallback: () => StatusRpc = publicDevnetRpc,
+  fallback: () => StatusRpc | undefined = statusFallbackRpc,
+  lastValidBlockHeight?: bigint,
 ): Promise<Signature> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const status = await signatureStatus(rpc, signature, fallback);
-    if (status?.err) throw new Error(`transaction failed: ${JSON.stringify(status.err)}`);
-    if (status?.confirmationStatus === "confirmed" || status?.confirmationStatus === "finalized") return signature;
-    if (Date.now() > deadline) throw new Error(`timeout waiting for confirmation of ${signature}`);
-    await new Promise(resolve => setTimeout(resolve, 1_500));
+    if (status?.err)
+      throw new Error(`transaction failed: ${JSON.stringify(status.err)}`);
+    if (
+      status?.confirmationStatus === "confirmed" ||
+      status?.confirmationStatus === "finalized"
+    )
+      return signature;
+    if (
+      lastValidBlockHeight !== undefined &&
+      (await rpc.getBlockHeight({ commitment: "confirmed" }).send()) >
+        lastValidBlockHeight
+    ) {
+      throw new Error(
+        `block height exceeded ${lastValidBlockHeight} waiting for confirmation of ${signature}`,
+      );
+    }
+    if (Date.now() > deadline)
+      throw new Error(`timeout waiting for confirmation of ${signature}`);
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
   }
 }
 
@@ -116,24 +162,39 @@ export async function sendInstructions(
   let lastError: unknown;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      const { value: blockhash } = await rpc.getLatestBlockhash({ commitment: "confirmed" }).send();
+      const { value: blockhash } = await rpc
+        .getLatestBlockhash({ commitment: "confirmed" })
+        .send();
       const message = pipe(
         createTransactionMessage({ version: 0 }),
-        m => setTransactionMessageFeePayerSigner(payer, m),
-        m => setTransactionMessageLifetimeUsingBlockhash(blockhash, m),
-        m => appendTransactionMessageInstructions([computeUnitLimit(600_000), ...instructions], m),
+        (m) => setTransactionMessageFeePayerSigner(payer, m),
+        (m) => setTransactionMessageLifetimeUsingBlockhash(blockhash, m),
+        (m) =>
+          appendTransactionMessageInstructions(
+            [computeUnitLimit(600_000), ...instructions],
+            m,
+          ),
       );
       const transaction = await signTransactionMessageWithSigners(message);
       const signature = getSignatureFromTransaction(transaction);
       await send(transaction, { commitment: "confirmed" });
-      return await waitForConfirmation(rpc, signature);
+      return await waitForConfirmation(
+        rpc,
+        signature,
+        60_000,
+        undefined,
+        blockhash.lastValidBlockHeight,
+      );
     } catch (e) {
       lastError = e;
-      const retryable = String((e as Error).message).match(/blockhash|block height/i) !== null;
+      const retryable =
+        String((e as Error).message).match(/blockhash|block height/i) !== null;
       const logs = logsOf(e);
       const detail = (e as { cause?: { message?: string } })?.cause;
-      if (logs?.length) console.error(`[${label}] simulation logs:\n  ${logs.join("\n  ")}`);
-      else if (detail?.message) console.error(`[${label}] cause: ${detail.message}`);
+      if (logs?.length)
+        console.error(`[${label}] simulation logs:\n  ${logs.join("\n  ")}`);
+      else if (detail?.message)
+        console.error(`[${label}] cause: ${detail.message}`);
       console.error(`[${label}] full error:`, inspect(e, { depth: 5 }));
       if (!retryable || attempt === 2) break;
       console.error(`[${label}] blockhash expired, retrying…`);
@@ -141,17 +202,31 @@ export async function sendInstructions(
   }
   const anchor = anchorErrorFromLogs(logsOf(lastError));
   const reason = anchor === undefined ? "" : `${anchor} — `;
-  throw new Error(`[${label}] transaction failed: ${reason}${(lastError as Error).message}`, { cause: lastError });
+  throw new Error(
+    `[${label}] transaction failed: ${reason}${(lastError as Error).message}`,
+    { cause: lastError },
+  );
 }
 
 /** Program logs of a failed send: Kit's preflight error carries them in `context.logs` (older shapes in `cause`). */
 function logsOf(e: unknown): string[] | undefined {
-  const x = e as { context?: { logs?: string[] }; cause?: { logs?: string[]; context?: { logs?: string[] } } };
+  const x = e as {
+    context?: { logs?: string[] };
+    cause?: { logs?: string[]; context?: { logs?: string[] } };
+  };
   return x?.context?.logs ?? x?.cause?.logs ?? x?.cause?.context?.logs;
 }
 
 /** "TooEarly (6006): <message>" from Anchor's program log, so the API and console show the on-chain error name. */
-export function anchorErrorFromLogs(logs: readonly string[] | undefined): string | undefined {
-  const m = logs?.join("\n").match(/Error Code: (\w+)\. Error Number: (\d+)\. Error Message: ([^\n]*?)\.?$/m);
-  return m === null || m === undefined ? undefined : `${m[1]} (${m[2]}): ${m[3]}`;
+export function anchorErrorFromLogs(
+  logs: readonly string[] | undefined,
+): string | undefined {
+  const m = logs
+    ?.join("\n")
+    .match(
+      /Error Code: (\w+)\. Error Number: (\d+)\. Error Message: ([^\n]*?)\.?$/m,
+    );
+  return m === null || m === undefined
+    ? undefined
+    : `${m[1]} (${m[2]}): ${m[3]}`;
 }

@@ -7,7 +7,6 @@ import {
 	address,
 	type Address,
 	type Base64EncodedBytes,
-	createSolanaRpc,
 	type Decoder,
 	getAddressEncoder,
 	getBase64Encoder,
@@ -71,7 +70,7 @@ export interface Ctx {
 export async function initCtx(cmd: Command): Promise<Ctx> {
 	loadEnvFile();
 	const o = cmd.optsWithGlobals() as GlobalOptions;
-	return { rpc: o.rpc !== undefined ? createSolanaRpc(o.rpc) : createRpc(), cfg: loadConfig() };
+	return { rpc: createRpc(o.rpc), cfg: loadConfig() };
 }
 
 /** Signing keypair: --keypair > QUPON_KEYPAIR > role-specific env var. */
