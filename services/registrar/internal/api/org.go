@@ -265,8 +265,10 @@ func mountOrg(r chi.Router, deps Deps, st *store.Store) {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		if d.OwnerUserID != u.ID && !(d.OrgID != nil && u.OrgID != nil && *d.OrgID == *u.OrgID) {
-			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "documents must be your organisation's uploads")
+		// Publishing rewrites the kind and makes the file public (task 1404): only the owner may
+		// attach their own upload, and personal KYC documents are never publishable.
+		if kycKinds[d.Kind] || d.OwnerUserID != u.ID {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "only your own non-personal documents can be attached")
 			return
 		}
 		if err := st.AttachSeriesDocument(r.Context(), d.ID, mint.String(), req.Kind); err != nil {
@@ -350,6 +352,7 @@ func issuerOwnsSeries(deps Deps, st *store.Store) func(http.Handler) http.Handle
 
 // seriesMintOf resolves the series mint of a route's {mint} or action {pda} parameter; for a pda
 // it reads the action and its series from the chain reader (when configured).
+// Chain read errors fail closed with 502 — an unreadable chain must never satisfy the check.
 func seriesMintOf(w http.ResponseWriter, r *http.Request, deps Deps) (string, bool) {
 	if mint := chi.URLParam(r, "mint"); mint != "" {
 		pk, err := solana.PublicKeyFromBase58(mint)
@@ -368,12 +371,20 @@ func seriesMintOf(w http.ResponseWriter, r *http.Request, deps Deps) (string, bo
 		return "", true // no chain reader: the handler answers 503 itself
 	}
 	action, err := deps.Read.FetchCorporateAction(r.Context(), pda)
-	if err != nil || action == nil {
-		return "", true // unknown action: the handler answers 404/502 itself
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "read corporate action "+pda.String()+": "+err.Error())
+		return "", false // fail closed (task 1404)
+	}
+	if action == nil {
+		return "", true // unknown action: the handler answers 404 itself
 	}
 	series, err := deps.Read.FetchSeries(r.Context(), action.Series)
-	if err != nil || series == nil {
-		return "", true
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "read series "+action.Series.String()+": "+err.Error())
+		return "", false // fail closed (task 1404)
+	}
+	if series == nil {
+		return "", true // the handler answers 502 itself
 	}
 	return series.Mint.String(), true
 }

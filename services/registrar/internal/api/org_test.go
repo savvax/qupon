@@ -6,7 +6,9 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"mime/multipart"
@@ -17,6 +19,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	solana "github.com/solana-foundation/solana-go/v2"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
@@ -324,6 +328,85 @@ func TestSeriesDocuments(t *testing.T) {
 		t.Fatalf("private download: %v", dres2)
 	}
 	_ = dres2.Body.Close()
+}
+
+// Task 1404: attaching rewrites the kind and publishes the file, so a colleague's KYC document
+// must not be attachable — not even by a member of the same organisation, not even its owner.
+func TestPersonalDocumentsNotPublishable(t *testing.T) {
+	e := newOrgEnv(t)
+
+	// A second issuer in organisation A (a colleague of issuerA).
+	hash, _ := auth.HashPassword("pw-mate@kaziron.kz")
+	if _, err := e.st.UpsertUser(t.Context(), store.User{Email: "mate@kaziron.kz", Name: "Mate", Role: "issuer"}, hash); err != nil {
+		t.Fatal(err)
+	}
+	mate, _, err := e.st.UserByEmail(t.Context(), "mate@kaziron.kz")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.st.SetUserOrg(t.Context(), mate.ID, &e.orgA); err != nil {
+		t.Fatal(err)
+	}
+	_, out := postJSON(t, e.srv.URL, "/auth/login", `{"email":"mate@kaziron.kz","password":"pw-mate@kaziron.kz"}`, "")
+	mateTok := out["token"].(string)
+
+	docID, out := e.upload(e.issuerA, "id_document")
+	if docID == 0 {
+		t.Fatalf("upload: %v", out)
+	}
+	attach := "/issuer/series/" + fMint.String() + "/documents"
+	body := fmt.Sprintf(`{"documentId":%d,"kind":"prospectus"}`, docID)
+	if code, out := postJSON(t, e.srv.URL, attach, body, mateTok); code != http.StatusBadRequest {
+		t.Fatalf("colleague attaches id_document: %d %v, want 400", code, out)
+	}
+	if code, out := postJSON(t, e.srv.URL, attach, body, e.issuerA); code != http.StatusBadRequest {
+		t.Fatalf("owner attaches id_document: %d %v, want 400", code, out)
+	}
+	// The document stays private: an anonymous download answers 404.
+	dl, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/documents/%d", e.srv.URL, docID), nil)
+	res, err := http.DefaultClient.Do(dl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = res.Body.Close()
+	if res.StatusCode != http.StatusNotFound {
+		t.Fatalf("anonymous download: %d, want 404", res.StatusCode)
+	}
+}
+
+// flakyChain errors on the first FetchCorporateAction calls, then delegates (task 1404).
+type flakyChain struct {
+	*fakeChain
+	fails int
+}
+
+func (f *flakyChain) FetchCorporateAction(ctx context.Context, pda solana.PublicKey) (*chain.CorporateAction, error) {
+	if f.fails > 0 {
+		f.fails--
+		return nil, errors.New("rpc unavailable")
+	}
+	return f.fakeChain.FetchCorporateAction(ctx, pda)
+}
+
+// Task 1404: a chain read error inside issuerOwnsSeries must fail closed — a foreign issuer's
+// fund call gets 502 (or 403), never a silently-passed 200.
+func TestIssuerScopingFailsClosedOnChainReadError(t *testing.T) {
+	e := newOrgEnv(t)
+	if err := e.st.SetSeriesOrg(t.Context(), fMint.String(), &e.orgA); err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(New(slog.New(slog.DiscardHandler), e.st, Deps{
+		Read:     &flakyChain{fakeChain: &fakeChain{action: &chain.CorporateAction{Series: fSeries, Index: 3, Status: 2}}, fails: 1},
+		Executor: executor.New(filepath.Join(e.dir, "fake-cli.sh"), filepath.Join(e.dir, "exec.json"), nil),
+		Auth:     e.svc,
+	}))
+	t.Cleanup(srv.Close)
+
+	fund := "/issuer/actions/" + fAction.String() + "/fund"
+	code, out := postJSON(t, srv.URL, fund, "{}", e.issuerB)
+	if code != http.StatusBadGateway && code != http.StatusForbidden {
+		t.Fatalf("foreign issuer, read error: %d %v, want 502 or 403 (never 200)", code, out)
+	}
 }
 
 func patchJSON(t *testing.T, url, path, body, token string) (int, map[string]any) {
