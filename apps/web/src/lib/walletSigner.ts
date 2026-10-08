@@ -101,16 +101,22 @@ export function walletTransactionMessage(
   );
 }
 
+/** Result of a wallet send: `pending` means still valid but unconfirmed after our wait budget. */
+export type WalletSendResult = { signature: Signature; pending: boolean };
+
 /**
  * Build one transaction from `instructions`, sign it with the connected wallet
  * and wait for `confirmed` (poll, mirrors clients/ts lib/tx.ts — that file is
- * node-only). Returns the signature.
+ * node-only). Returns the signature once confirmed; `pending: true` if the
+ * wait budget ran out while the blockhash was still valid (check the explorer).
+ * Throws if the transaction failed on-chain or expired unexecuted.
  */
 export async function signAndSendWithWallet(
   signer: TransactionModifyingSigner,
   rpc: PortalRpc,
   instructions: Instruction[],
-): Promise<Signature> {
+  { confirmTimeoutMs = 60_000, pollMs = 1_500 } = {},
+): Promise<WalletSendResult> {
   const { value: blockhash } = await rpc
     .getLatestBlockhash({ commitment: "confirmed" })
     .send();
@@ -121,7 +127,7 @@ export async function signAndSendWithWallet(
   await sendTransactionWithoutConfirmingFactory({ rpc })(transaction, {
     commitment: "confirmed",
   });
-  const deadline = Date.now() + 60_000;
+  const deadline = Date.now() + confirmTimeoutMs;
   for (;;) {
     const { value } = await rpc.getSignatureStatuses([signature]).send();
     const status = value[0];
@@ -132,12 +138,22 @@ export async function signAndSendWithWallet(
       status?.confirmationStatus === "confirmed" ||
       status?.confirmationStatus === "finalized"
     ) {
-      return signature;
+      return { signature, pending: false };
+    }
+    // A dropped tx reports null forever, but the chain moves on: past
+    // lastValidBlockHeight it can never execute — that is a failure, not success.
+    const blockHeight = await rpc
+      .getBlockHeight({ commitment: "confirmed" })
+      .send();
+    if (blockHeight > blockhash.lastValidBlockHeight) {
+      throw new Error(
+        `transaction expired before confirmation (block height ${blockHeight} > last valid ${blockhash.lastValidBlockHeight}) — not executed`,
+      );
     }
     if (Date.now() > deadline) {
-      return signature; // sent fine, confirmation lagging — don't fail the UI
+      return { signature, pending: true }; // still valid, confirmation lagging
     }
-    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
   }
 }
 

@@ -12,6 +12,8 @@ import { Keypair, type VersionedTransaction } from "@solana/web3.js";
 import { describe, expect, it } from "vitest";
 import { buildVoteIx } from "./portal";
 import {
+  type PortalRpc,
+  signAndSendWithWallet,
   walletTransactionMessage,
   walletTransactionSigner,
 } from "./walletSigner";
@@ -87,5 +89,65 @@ describe("wallet transaction signing", () => {
         walletTransactionMessage(signer, lifetime, [ix]),
       ),
     ).rejects.toThrow(/did not sign/);
+  });
+});
+
+/** Fake rpc for signAndSendWithWallet: fixed latest blockhash, scripted statuses and block height. */
+function fakeRpc(
+  status: () => { err?: object; confirmationStatus?: string } | null,
+  blockHeight: () => bigint,
+): PortalRpc {
+  return {
+    getLatestBlockhash: () => ({
+      send: async () => ({
+        value: {
+          blockhash: lifetime.blockhash,
+          lastValidBlockHeight: lifetime.lastValidBlockHeight,
+        },
+      }),
+    }),
+    sendTransaction: () => ({ send: async () => "sig" }),
+    getSignatureStatuses: () => ({ send: async () => ({ value: [status()] }) }),
+    getBlockHeight: () => ({ send: async () => blockHeight() }),
+  } as unknown as PortalRpc;
+}
+
+describe("signAndSendWithWallet confirmation", () => {
+  async function send(rpc: PortalRpc) {
+    const kp = Keypair.generate();
+    const owner = address(kp.publicKey.toBase58());
+    const signer = walletTransactionSigner(fakeWallet(kp), owner);
+    const ix = await buildVoteIx(MINT, ACTION, signer, 3);
+    return signAndSendWithWallet(signer, rpc, [ix], {
+      confirmTimeoutMs: 40,
+      pollMs: 5,
+    });
+  }
+
+  it("rejects when statuses stay null and the block height passes lastValidBlockHeight (dropped, not executed)", async () => {
+    const rpc = fakeRpc(
+      () => null,
+      () => lifetime.lastValidBlockHeight + 1n,
+    );
+    await expect(send(rpc)).rejects.toThrow(/expired.*not executed/);
+  });
+
+  it("returns pending when the wait budget runs out while the blockhash is still valid", async () => {
+    const rpc = fakeRpc(
+      () => null,
+      () => lifetime.lastValidBlockHeight - 10n,
+    );
+    const res = await send(rpc);
+    expect(res.pending).toBe(true);
+    expect(res.signature).toBeTruthy();
+  });
+
+  it("returns confirmed when the status reaches confirmed", async () => {
+    const rpc = fakeRpc(
+      () => ({ confirmationStatus: "confirmed" }),
+      () => 0n,
+    );
+    const res = await send(rpc);
+    expect(res.pending).toBe(false);
   });
 });

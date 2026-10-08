@@ -24,12 +24,42 @@ export async function POST(
   const type = req.headers.get("content-type") ?? "";
   if (!type.startsWith("multipart/form-data"))
     return err(415, "bad_content_type", "multipart/form-data only");
-  if (Number(req.headers.get("content-length") ?? "0") > MAX_BYTES)
+  const declared = req.headers.get("content-length");
+  if (declared === null)
+    return err(411, "length_required", "Content-Length header is required");
+  if (Number(declared) > MAX_BYTES)
     return err(413, "too_large", "documents are at most 10 MB");
   const token = await sessionToken();
   if (!token) return err(401, "unauthenticated", "sign in required");
+  // Stream the body through a byte counter: a lying Content-Length must not
+  // buffer an unbounded chunked body — abort past the cap.
+  const parts: Uint8Array[] = [];
+  let size = 0;
+  const reader = req.body?.getReader();
+  if (reader) {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_BYTES) {
+        void reader.cancel().catch(() => {});
+        return err(413, "too_large", "documents are at most 10 MB");
+      }
+      parts.push(value);
+    }
+  }
+  const body = new Uint8Array(size);
+  let off = 0;
+  for (const part of parts) {
+    body.set(part, off);
+    off += part.byteLength;
+  }
   if (MOCK_SESSIONS) {
-    const form = await req.formData();
+    const form = await new Request("http://upload", {
+      method: "POST",
+      headers: { "content-type": type },
+      body,
+    }).formData();
     const file = form.get("file");
     return NextResponse.json(
       {
@@ -51,7 +81,7 @@ export async function POST(
     res = await fetch(`${apiBase()}/${path}`, {
       method: "POST",
       headers: { "Content-Type": type, Authorization: `Bearer ${token}` },
-      body: await req.arrayBuffer(),
+      body,
     });
   } catch {
     return err(502, "upstream", "registrar API unreachable");

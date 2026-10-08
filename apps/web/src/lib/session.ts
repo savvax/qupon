@@ -82,7 +82,11 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
     cache: "no-store",
   }).catch(() => null);
   if (!res?.ok) return null;
-  return ((await res.json()) as { user: SessionUser }).user;
+  // A 200 HTML error page (proxy/SPA fallback) is not a session — treat as signed out.
+  const data = (await res.json().catch(() => null)) as {
+    user?: SessionUser;
+  } | null;
+  return data?.user ?? null;
 });
 
 /** Gate a cabinet page: signed out → /login?next=path; another role → /forbidden. Admins pass. */

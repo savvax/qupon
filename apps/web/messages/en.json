@@ -1004,7 +1004,8 @@
       "download": "Download"
     },
     "toasts": {
-      "failed": "Something went wrong"
+      "failed": "Something went wrong",
+      "txPending": "Sent, not confirmed yet — check the explorer"
     }
   }
 }

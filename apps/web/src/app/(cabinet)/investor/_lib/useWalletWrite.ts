@@ -3,12 +3,13 @@
 import { useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "@/components/ui/toastStore";
-import { explainError } from "@/lib/walletSigner";
+import { explainError, type WalletSendResult } from "@/lib/walletSigner";
 
 /**
  * Wallet-mode writes (subscribe, vote): pending toast → success with the tx
- * link, or the on-chain error explained (demo-mode writes go through
- * `useRunWrite` + the session proxy instead).
+ * link, "still pending — check the explorer" if the wait budget ran out, or
+ * the on-chain error explained (demo-mode writes go through `useRunWrite` +
+ * the session proxy instead).
  */
 export function useWalletWrite() {
   const t = useTranslations("investor.toasts");
@@ -16,13 +17,18 @@ export function useWalletWrite() {
     async (o: {
       pending: string;
       success: (sig: string) => string;
-      call: () => Promise<string>;
+      call: () => Promise<WalletSendResult>;
     }): Promise<string | null> => {
       const id = toast({ kind: "pending", title: o.pending });
       try {
-        const sig = await o.call();
-        toast.update(id, { kind: "success", title: o.success(sig), tx: sig });
-        return sig;
+        const { signature, pending } = await o.call();
+        toast.update(
+          id,
+          pending
+            ? { kind: "info", title: t("txPending"), tx: signature }
+            : { kind: "success", title: o.success(signature), tx: signature },
+        );
+        return signature;
       } catch (e) {
         toast.update(id, {
           kind: "error",
