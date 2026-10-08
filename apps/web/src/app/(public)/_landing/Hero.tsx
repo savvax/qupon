@@ -20,14 +20,10 @@ export async function Hero({ live }: { live: Live }) {
         <HeroBackdrop />
         <div className="relative grid h-full grid-cols-[minmax(0,1fr)] content-center gap-8 p-5 sm:p-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-center lg:gap-12 lg:p-14">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold ring-1 ring-white/15">
-              <span className="relative flex size-1.5">
-                <span className="absolute inset-0 animate-ping rounded-full bg-g400 opacity-60" />
-                <span className="size-1.5 rounded-full bg-g400" />
-              </span>
+            <span className="text-sm font-bold tracking-wider text-g300 uppercase">
               {t("hero.badge")}
             </span>
-            <h1 className="mt-5 text-[clamp(1.85rem,1.1rem+2.6vw,2.9rem)] leading-[1.08] font-extrabold tracking-tight text-balance">
+            <h1 className="mt-4 text-[clamp(1.85rem,1.1rem+2.6vw,2.9rem)] leading-[1.08] font-extrabold tracking-tight text-balance">
               <StableText>{t("hero.title")}</StableText>
             </h1>
             <p className="mt-5 max-w-xl text-base text-p100 sm:text-lg">

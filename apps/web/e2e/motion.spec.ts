@@ -76,22 +76,6 @@ test("tabs and the cabinet nav move one shared highlight (tasks 1105/1108)", asy
   await expect(tabs.nth(0).locator("span.absolute")).toHaveCount(0);
 });
 
-test("hero card: pearl surface drifts and follows the pointer", async ({
-  page,
-}) => {
-  await page.goto("/");
-  const card = page.locator(".qp-pearl");
-  await expect(card).toBeVisible();
-  expect(await card.evaluate((el) => getComputedStyle(el).animationName)).toBe(
-    "qp-pearl",
-  );
-  const box = (await card.boundingBox())!;
-  await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.5);
-  await expect
-    .poll(() => card.evaluate((el) => el.style.getPropertyValue("--qp-px")))
-    .toMatch(/^2\d(\.\d+)?%$/);
-});
-
 test.describe("reduced motion", () => {
   test.use({ reducedMotion: "reduce" });
 
@@ -108,19 +92,5 @@ test.describe("reduced motion", () => {
       .first()
       .evaluate((el) => getComputedStyle(el).opacity);
     expect(opacity).toBe("1");
-  });
-
-  test("ambient loops are frozen (hero pearl, iris, sweep)", async ({
-    page,
-  }) => {
-    await page.goto("/");
-    const durations = await page.evaluate(() =>
-      [".qp-pearl", ".animate-qp-iris-a", ".animate-qp-sweep"].map((sel) => {
-        const el = document.querySelector(sel);
-        return el ? parseFloat(getComputedStyle(el).animationDuration) : -1;
-      }),
-    );
-    for (const d of durations) expect(d).toBeGreaterThanOrEqual(0);
-    for (const d of durations) expect(d).toBeLessThan(0.01);
   });
 });

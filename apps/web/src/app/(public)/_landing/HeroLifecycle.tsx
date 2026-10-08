@@ -80,31 +80,18 @@ export function HeroLifecycle({
   const status = STEPS[step] ?? "Completed";
 
   return (
-    // Float on the outer box, the iridescent 1.5 px rim (a turning conic gradient) on the inner one:
-    // two animations, two elements.
-    <div ref={ref} className="sm:animate-qp-hero-float">
-      <div className="qp-iris-rim rounded-[calc(var(--radius-card)+1.5px)] p-[1.5px] shadow-[0_24px_64px_-24px_rgba(0,0,0,.55)]">
-        <div
-          className="qp-pearl rounded-card p-5 text-n900 sm:p-6"
-          onPointerMove={(e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            e.currentTarget.style.setProperty(
-              "--qp-px",
-              `${((e.clientX - r.left) / r.width) * 100}%`,
-            );
-            e.currentTarget.style.setProperty(
-              "--qp-py",
-              `${((e.clientY - r.top) / r.height) * 100}%`,
-            );
-          }}
-        >
+    // A plain off-white card with a brand-tinted shadow: the replaying lifecycle inside is the motion.
+    <div ref={ref}>
+      <div className="rounded-card shadow-[0_24px_64px_-24px_rgba(4,30,22,.7)] ring-1 ring-white/10">
+        <div className="rounded-card bg-n50 p-5 text-n900 sm:p-6">
           <div className="truncate text-sm font-semibold text-n600">
             {t("last.title")}
           </div>
           <div className="mt-3 flex h-7 items-center gap-2">
             <span className="text-xl font-extrabold">{last.ticker}</span>
             <span className="min-w-0 flex-1 truncate text-sm text-n500">
-              {last.kind} · {t(`kinds.${last.kind}`)}
+              <span className="max-sm:hidden">{last.kind} · </span>
+              {t(`kinds.${last.kind}`)}
             </span>
             <m.span
               key={status}

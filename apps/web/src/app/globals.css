@@ -83,23 +83,14 @@
   --animate-qp-sheet-left: qp-sheet-left 300ms var(--ease-qp-out);
   --animate-qp-toast-in: qp-toast-in 320ms var(--ease-qp-spring);
   --animate-qp-ring: qp-ring 900ms var(--ease-qp-out);
-  /* Task 1102 ambient landing-hero loops; killed by the reduced-motion block below. */
-  --animate-qp-hero-drift: qp-hero-drift 24s linear infinite;
-  --animate-qp-hero-float: qp-hero-float 5s ease-in-out infinite alternate;
-  /* Task 1103: hero v2 — aurora fields, light sweep, lifecycle segment fill. */
-  --animate-qp-aurora-a: qp-aurora-a 22s ease-in-out infinite alternate;
-  --animate-qp-aurora-b: qp-aurora-b 28s ease-in-out infinite alternate;
-  --animate-qp-aurora-c: qp-aurora-c 18s ease-in-out infinite alternate;
-  --animate-qp-sweep: qp-sweep 9s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  /* Task 1103: lifecycle segment fill. */
   --animate-qp-segment: qp-segment 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  --animate-qp-iris-a: qp-spin 38s linear infinite;
   /* Motion v3 (task 1108): shimmer, check draw, pop, toast timer. */
   --animate-qp-shimmer: qp-shimmer 1.6s ease-in-out infinite;
   --animate-qp-pop: qp-pop 320ms cubic-bezier(0.2, 0.9, 0.25, 1.3);
   --animate-qp-draw: qp-draw 420ms 120ms cubic-bezier(0.65, 0, 0.35, 1) both;
   --animate-qp-timer: qp-timer linear forwards;
   --animate-qp-ripple: qp-ripple 900ms 80ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  --animate-qp-iris-b: qp-spin-reverse 26s linear infinite;
 
   @keyframes qp-fade-in {
     from {
@@ -152,47 +143,6 @@
       box-shadow: 0 0 0 10px transparent;
     }
   }
-  @keyframes qp-hero-drift {
-    to {
-      background-position: 28px 28px; /* one grid cell of the hero pattern → seamless loop */
-    }
-  }
-  @keyframes qp-aurora-a {
-    to {
-      translate: -12% 10%;
-      scale: 1.15;
-    }
-  }
-  @keyframes qp-aurora-b {
-    to {
-      translate: 14% -8%;
-      scale: 0.9;
-    }
-  }
-  @keyframes qp-aurora-c {
-    from {
-      translate: -10% 6%;
-      opacity: 0.35;
-    }
-    to {
-      translate: 18% -10%;
-      opacity: 0.7;
-    }
-  }
-  @keyframes qp-sweep {
-    0%,
-    55% {
-      translate: 0 0;
-      opacity: 0;
-    }
-    60% {
-      opacity: 1;
-    }
-    100% {
-      translate: 450% 0;
-      opacity: 0;
-    }
-  }
   @keyframes qp-shimmer {
     from {
       background-position: 150% 0;
@@ -240,30 +190,12 @@
       scale: 0 1;
     }
   }
-  @keyframes qp-spin {
-    to {
-      rotate: 360deg;
-    }
-  }
-  @keyframes qp-spin-reverse {
-    to {
-      rotate: -360deg;
-    }
-  }
   @keyframes qp-segment {
     from {
       scale: 0 1;
     }
     to {
       scale: 1 1;
-    }
-  }
-  @keyframes qp-hero-float {
-    from {
-      translate: 0 2px;
-    }
-    to {
-      translate: 0 -4px;
     }
   }
 }
@@ -318,29 +250,6 @@
   user-select: none;
 }
 
-/* Iridescent rim (hero card): a conic gradient whose start angle turns; @property makes the angle animatable. */
-@property --qp-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-.qp-iris-rim {
-  background: conic-gradient(
-    from var(--qp-angle),
-    #16b46a,
-    #2ad2c9,
-    #1e6fd0,
-    #7be3a5,
-    #0b7a43,
-    #16b46a
-  );
-  animation: qp-rim 7s linear infinite;
-}
-@keyframes qp-rim {
-  to {
-    --qp-angle: 360deg;
-  }
-}
 
 /* Hover lift for clickable cards (task 1108): 2 px rise and a soft shadow, 180 ms. */
 .qp-lift {
@@ -411,71 +320,6 @@
   }
 }
 
-/* Pearl: the hero card's own iridescent surface (task 1108) — a slow drift through pale mint, aqua and lilac,
-   a light that follows the pointer, and a holographic band crossing every few seconds. */
-.qp-pearl {
-  position: relative;
-  isolation: isolate;
-  background:
-    radial-gradient(
-      55% 70% at var(--qp-px, 85%) var(--qp-py, 0%),
-      rgba(255, 255, 255, 0.95),
-      transparent 70%
-    ),
-    linear-gradient(
-      120deg,
-      #effcf5 0%,
-      #e3f6f8 20%,
-      #eceffd 40%,
-      #e7fbef 60%,
-      #e0f4f4 80%,
-      #effcf5 100%
-    );
-  background-size:
-    100% 100%,
-    320% 320%;
-  animation: qp-pearl 16s ease-in-out infinite alternate;
-}
-.qp-pearl::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: linear-gradient(
-    105deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.75) 46%,
-    rgba(186, 240, 222, 0.5) 50%,
-    rgba(255, 255, 255, 0.75) 54%,
-    transparent 65%
-  );
-  background-size: 250% 100%;
-  background-position: 160% 0; /* parked off-card when motion is reduced */
-  animation: qp-holo 7s cubic-bezier(0.45, 0, 0.25, 1) infinite;
-  pointer-events: none;
-}
-@keyframes qp-pearl {
-  from {
-    background-position:
-      0 0,
-      0% 30%;
-  }
-  to {
-    background-position:
-      0 0,
-      100% 70%;
-  }
-}
-@keyframes qp-holo {
-  0% {
-    background-position: 160% 0;
-  }
-  45%,
-  100% {
-    background-position: -60% 0;
-  }
-}
 
 /* Printable reports (task 902): a clean A4 sheet — the browser's "Save as PDF" is the PDF engine. */
 @media print {
