@@ -153,3 +153,69 @@ fn only_issuer_or_paying_agent_funds() {
     ix2.accounts[0].pubkey = mallory.pubkey();
     assert_err(env.send(&[ix2], &[&mallory]), QuponError::Unauthorized);
 }
+
+#[test]
+fn pay_batch_rejects_substituted_accounts() {
+    let (mut env, b, holders) = snapshotted(&[(10, 0), (25, 0), (65, 0)], 500_000);
+    let issuer = env.issuer.insecure_clone();
+    let ix = env.fund_ix(&b, &issuer.pubkey(), 0, 500_000);
+    env.send(&[ix], &[&issuer]).expect("fund");
+    let owners = owners(&holders);
+
+    // A second bond with a snapshotted entitlement of its own: action 0 of B ≠ action 0 of A.
+    let b2 = env.setup_bond();
+    let y = Keypair::new();
+    env.register(&b2, &y.pubkey()).expect("register in B");
+    let ix = env.issue_ix(&b2, &issuer.pubkey(), &y.pubkey(), 10);
+    env.send(&[ix], &[&issuer]).expect("issue in B");
+    let now = env.now();
+    let ix = env.announce_ix(&b2, &env.registrar.pubkey(), intr_args(now));
+    env.send(&[ix], &[]).expect("announce in B");
+    env.set_clock(now + 60);
+    for ix in [
+        env.strike_ix(&b2, &env.registrar.pubkey(), 0),
+        env.snapshot_ix(&b2, 0, &[y.pubkey()]),
+    ] {
+        env.send(&[ix], &[]).expect("record date in B");
+    }
+    let foreign_ent = entitlement_pda(&action_pda(&b2.series, 0), &y.pubkey());
+
+    // Entitlement from another action: [Entitlement, Investor, cash ATA] triples start at meta 7.
+    let mut ix = env.pay_ix(&b, 0, &owners);
+    ix.accounts[7].pubkey = foreign_ent;
+    assert_err(env.send(&[ix], &[]), QuponError::InvalidParams);
+
+    // Investor from another series.
+    let mut ix = env.pay_ix(&b, 0, &owners);
+    ix.accounts[8].pubkey = investor_pda(&b2.series, &y.pubkey());
+    assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
+
+    // Cash ATA of an attacker instead of the holder's registered one.
+    let attacker = Keypair::new();
+    let create = anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent(
+        &env.registrar.pubkey(), &attacker.pubkey(), &b.cash, &b.cash_tp,
+    );
+    env.send(&[create], &[]).expect("attacker cash ATA");
+    let mut ix = env.pay_ix(&b, 0, &owners);
+    ix.accounts[9].pubkey = ata(&attacker.pubkey(), &b.cash, &b.cash_tp);
+    assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
+
+    // Nobody was paid while the substitutions were refused.
+    assert_eq!(
+        env.balance(&ata(&action_pda(&b.series, 0), &b.cash, &b.cash_tp)),
+        500_000,
+        "escrow untouched"
+    );
+}
+
+#[test]
+fn complete_action_while_funded_is_refused() {
+    let (mut env, b, _) = snapshotted(&[(10, 0)], 50_000);
+    let issuer = env.issuer.insecure_clone();
+    let ix = env.fund_ix(&b, &issuer.pubkey(), 0, 50_000);
+    env.send(&[ix], &[&issuer]).expect("fund");
+    let a: CorporateAction = env.account(&action_pda(&b.series, 0));
+    assert_eq!(a.status, ActionStatus::Funded as u8);
+    let ix = env.complete_ix(&b, 0);
+    assert_err(env.send(&[ix], &[]), QuponError::WrongStatus);
+}

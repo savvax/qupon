@@ -159,3 +159,17 @@ fn only_the_holder_votes_with_their_weight() {
     env.send(&[ix], &[&issuer])
         .expect("mint not paused during voting");
 }
+
+#[test]
+fn non_holder_cannot_vote() {
+    let (mut env, b, _, _) = meeting();
+    let mallory = Keypair::new();
+    env.svm.airdrop(&mallory.pubkey(), 1_000_000_000).unwrap();
+    // Mallory was never snapshotted, so his entitlement PDA does not exist:
+    // the CastVote seeds constraint fails before any handler code runs.
+    let ix = env.vote_ix(&b, 0, &mallory.pubkey(), FOR);
+    assert!(
+        env.send(&[ix], &[&mallory]).is_err(),
+        "a wallet without an entitlement cannot vote"
+    );
+}

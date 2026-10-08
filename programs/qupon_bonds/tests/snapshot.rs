@@ -248,3 +248,53 @@ fn finalize_requires_holders_and_meeting_opens_voting() {
         (ActionStatus::VotingOpen as u8, 35, 0)
     );
 }
+
+/// Flip the bond mint's Pausable flag off directly in the SVM. On-chain only the series PDA can
+/// resume the mint, and it never does while an action is RecordStruck, so this is the only
+/// reachable path to exercise the `MintNotPaused` guard.
+fn force_resume(env: &mut Env, mint: &anchor_lang::prelude::Pubkey) {
+    use anchor_spl::token_2022::spl_token_2022::{
+        extension::{pausable::PausableConfig, BaseStateWithExtensionsMut, StateWithExtensionsMut},
+        state::Mint as MintState,
+    };
+    let mut acc = env.svm.get_account(mint).expect("mint");
+    let mut data = acc.data.clone();
+    let mut state = StateWithExtensionsMut::<MintState>::unpack(&mut data).unwrap();
+    state.get_extension_mut::<PausableConfig>().unwrap().paused = false.into();
+    state.pack_base();
+    acc.data = data;
+    env.svm.set_account(*mint, acc).expect("force resume");
+}
+
+#[test]
+fn snapshot_rejects_substituted_accounts_and_unpaused_mint() {
+    let (mut env, b, holders) = struck();
+    let owners: Vec<_> = holders.iter().map(|(o, _)| *o).collect();
+    let a0 = action_pda(&b.series, 0);
+
+    // A second bond whose Investor PDA belongs to another series.
+    let b2 = env.setup_bond();
+    let y = Keypair::new();
+    env.register(&b2, &y.pubkey()).expect("register in B");
+
+    // Non-registered ATA in place of the holder's own: [Investor, bond ATA, Entitlement] triples start at meta 5.
+    let stranger = Keypair::new();
+    let mut ix = env.snapshot_ix(&b, 0, &owners);
+    ix.accounts[6].pubkey = ata(&stranger.pubkey(), &b.mint, &spl_token_2022::ID);
+    assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
+
+    // Investor from another series.
+    let mut ix = env.snapshot_ix(&b, 0, &owners);
+    ix.accounts[5].pubkey = investor_pda(&b2.series, &y.pubkey());
+    assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
+
+    // Entitlement PDA of an owner who is not the one in this triple.
+    let mut ix = env.snapshot_ix(&b, 0, &owners);
+    ix.accounts[7].pubkey = entitlement_pda(&a0, &y.pubkey());
+    assert_err(env.send(&[ix], &[]), QuponError::InvalidParams);
+
+    // Mint not paused: the test resumes it directly; on-chain this pair of states is unreachable.
+    force_resume(&mut env, &b.mint);
+    let ix = env.snapshot_ix(&b, 0, &owners);
+    assert_err(env.send(&[ix], &[]), QuponError::MintNotPaused);
+}

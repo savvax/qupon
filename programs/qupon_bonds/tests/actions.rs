@@ -215,3 +215,29 @@ fn meeting_and_cash_fields_do_not_mix() {
     let issuer = env.issuer.insecure_clone();
     assert_err(env.send(&[ix], &[&issuer]), QuponError::InvalidParams);
 }
+
+#[test]
+fn cancel_after_strike_and_fund_before_snapshot_are_refused() {
+    // Once the record is struck, cancelling is no longer possible.
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let now = env.now();
+    let ix = env.announce_ix(&b, &env.registrar.pubkey(), intr_args(now));
+    env.send(&[ix], &[]).expect("announce");
+    env.set_clock(now + 60);
+    let ix = env.strike_ix(&b, &env.registrar.pubkey(), 0);
+    env.send(&[ix], &[]).expect("strike");
+    let ix = env.cancel_ix(&b, 0);
+    assert_err(env.send(&[ix], &[]), QuponError::WrongStatus);
+
+    // Funding is possible only once the snapshot is complete.
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let now = env.now();
+    let ix = env.announce_ix(&b, &env.registrar.pubkey(), intr_args(now));
+    env.send(&[ix], &[]).expect("announce");
+    env.issuer_cash(&b);
+    let issuer = env.issuer.insecure_clone();
+    let ix = env.fund_ix(&b, &issuer.pubkey(), 0, 1);
+    assert_err(env.send(&[ix], &[&issuer]), QuponError::WrongStatus);
+}

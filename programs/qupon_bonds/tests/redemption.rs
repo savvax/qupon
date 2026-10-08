@@ -164,3 +164,45 @@ fn only_operators_retire_and_only_registrar_closes() {
     ix.accounts[0].pubkey = mallory.pubkey();
     assert_err(env.send(&[ix], &[&mallory]), QuponError::Unauthorized);
 }
+
+#[test]
+fn retire_rejects_substituted_accounts_and_is_idempotent() {
+    let mut env = Env::new();
+    let b = env.setup_bond_with(|p| p.maturity_date = NEXT_COUPON);
+    let holders = env.holders(&b, &[10, 25]);
+    let owners: Vec<_> = holders.iter().map(|(k, _)| k.pubkey()).collect();
+    let now = env.now();
+    env.settle_action(&b, redm_args(now), &owners);
+
+    // A second bond whose Investor PDA belongs to another series.
+    let b2 = env.setup_bond();
+    let y = solana_keypair::Keypair::new();
+    env.register(&b2, &y.pubkey()).expect("register in B");
+
+    // Foreign-series Investor paired with this series' bond ATA: [Entitlement, bond ATA] pairs start at meta 5.
+    let mut ix = env.retire_ix(&b, 0, &owners);
+    ix.accounts[5].pubkey = investor_pda(&b2.series, &y.pubkey());
+    assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
+
+    // Someone else's bond ATA.
+    let mut ix = env.retire_ix(&b, 0, &owners);
+    ix.accounts[6].pubkey = ata(&owners[1], &b.mint, &spl_token_2022::ID);
+    assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
+
+    // A cash ATA (a token account of another mint).
+    let mut ix = env.retire_ix(&b, 0, &owners);
+    ix.accounts[6].pubkey = ata(&owners[0], &b.cash, &b.cash_tp);
+    assert_err(env.send(&[ix], &[]), QuponError::AccountMintMismatch);
+
+    let pda = action_pda(&b.series, 0);
+    let ix = env.retire_ix(&b, 0, &owners);
+    env.send(&[ix], &[]).expect("retire");
+    let a: CorporateAction = env.account(&pda);
+    assert_eq!((a.holders_retired, a.total_retired), (2, 35));
+
+    // A second identical batch burns nothing and counts nobody again.
+    let ix = env.retire_ix(&b, 0, &owners);
+    env.send(&[ix], &[]).expect("idempotent re-run");
+    let a: CorporateAction = env.account(&pda);
+    assert_eq!((a.holders_retired, a.total_retired), (2, 35));
+}
