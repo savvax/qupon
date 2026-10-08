@@ -5,9 +5,11 @@ package api
 // exactly once and mark the row executed.
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -252,5 +254,52 @@ func TestScheduleEndpoint(t *testing.T) {
 	}
 	if announced < 0 || out.Series[0].Items[announced].Status != "Announced" {
 		t.Fatalf("no announced item found in %+v", out.Series[0].Items)
+	}
+}
+
+// TestApproveClientDisconnectNeverStuckRunning (task 1411): a client
+// disconnect cancels the request context mid-run; the claim's follow-ups
+// (revert/finish) run detached, so the row ends executed here — or pending
+// when the CLI fails — but never stranded in running.
+func TestApproveClientDisconnectNeverStuckRunning(t *testing.T) {
+	fc := &fakeChain{action: (&fakeRead{}).action()}
+	srv, st, _ := advanceServer(t, fc)
+	t.Setenv("FAKE_CLI_SLEEP", "3") // hold the CLI so the cancel lands mid-run
+	if err := st.InsertApproval(t.Context(), store.Approval{
+		Ts: 1, DedupKey: "m|0|step:strike_record", SeriesMint: "m", Step: "step:strike_record",
+		Args: []string{"action:strike", "--series", "QPNb1", "--index", "0"},
+	}); err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	req := httptest.NewRequest(http.MethodPost, "/approvals/1/approve", strings.NewReader("{}"))
+	req = req.WithContext(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		srv.Config.Handler.ServeHTTP(httptest.NewRecorder(), req)
+	}()
+
+	// Cancel only once the claim has flipped the row to running.
+	for deadline := time.Now().Add(10 * time.Second); ; {
+		row, err := st.ApprovalByID(t.Context(), 1)
+		if err != nil {
+			t.Fatalf("approval: %v", err)
+		}
+		if row.Status == "running" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("row never reached running (status %s)", row.Status)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	cancel()
+	<-done
+
+	row, err := st.ApprovalByID(t.Context(), 1)
+	if err != nil || row.Status != "executed" {
+		t.Fatalf("status after disconnect = %s (%v), want executed", row.Status, err)
 	}
 }

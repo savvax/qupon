@@ -151,6 +151,22 @@ func (s *Store) RevertApproval(ctx context.Context, id int64) error {
 	return nil
 }
 
+// ResetRunningApprovals is the startup sweep (task 1411): a crash mid-approve
+// strands rows in running — nothing else moves them — so at boot they go back
+// to pending (or stale when a newer pending proposal superseded them).
+func (s *Store) ResetRunningApprovals(ctx context.Context) (int, error) {
+	rows, err := s.ListApprovals(ctx, "running")
+	if err != nil {
+		return 0, err
+	}
+	for _, a := range rows {
+		if err := s.RevertApproval(ctx, a.ID); err != nil {
+			return 0, err
+		}
+	}
+	return len(rows), nil
+}
+
 // RejectApproval moves a pending row to rejected (registrar decision;
 // nothing executes). false = not pending (or missing) → 404/409.
 func (s *Store) RejectApproval(ctx context.Context, id int64) (bool, error) {

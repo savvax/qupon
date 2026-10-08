@@ -184,3 +184,44 @@ func TestApprovalDedupOnlyWhilePending(t *testing.T) {
 		t.Fatalf("pending after re-propose = %d, want 1", len(pending))
 	}
 }
+
+// TestResetRunningApprovals (task 1411): the startup sweep puts stranded
+// running rows back to pending; one superseded by a newer pending proposal
+// with the same dedup key goes stale; a second sweep is a no-op.
+func TestResetRunningApprovals(t *testing.T) {
+	st, err := Open(t.Context(), filepath.Join(t.TempDir(), "sweep.db"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+
+	insert := func(id int64, dedup string) {
+		t.Helper()
+		if err := st.InsertApproval(t.Context(), Approval{Ts: id, DedupKey: dedup, SeriesMint: "m", Step: "pay_batch"}); err != nil {
+			t.Fatalf("insert %s: %v", dedup, err)
+		}
+	}
+	insert(1, "m|0|step:pay_batch")
+	insert(2, "m|1|step:pay_batch")
+	for _, id := range []int64{1, 2} {
+		if ok, err := st.ClaimApproval(t.Context(), id); err != nil || !ok {
+			t.Fatalf("claim %d = %v (%v), want true", id, ok, err)
+		}
+	}
+	// While row 1 ran, the scheduler re-proposed the same dedup key.
+	insert(3, "m|0|step:pay_batch")
+
+	n, err := st.ResetRunningApprovals(t.Context())
+	if err != nil || n != 2 {
+		t.Fatalf("sweep = %d (%v), want 2", n, err)
+	}
+	for id, want := range map[int64]string{1: "stale", 2: "pending", 3: "pending"} {
+		row, err := st.ApprovalByID(t.Context(), id)
+		if err != nil || row.Status != want {
+			t.Fatalf("row %d = %s (%v), want %s", id, row.Status, err, want)
+		}
+	}
+	if n, err := st.ResetRunningApprovals(t.Context()); err != nil || n != 0 {
+		t.Fatalf("second sweep = %d (%v), want 0", n, err)
+	}
+}

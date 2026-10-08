@@ -95,6 +95,14 @@ func run() error {
 	}
 	defer func() { _ = st.Close() }()
 
+	// Startup sweep (task 1411): a crash mid-approve leaves rows in running;
+	// put them back in the human's queue so nothing stays stuck.
+	if n, err := st.ResetRunningApprovals(ctx); err != nil {
+		logger.Warn("approval sweep failed", "err", err)
+	} else if n > 0 {
+		logger.Info("reset running approvals to pending", "count", n)
+	}
+
 	// One chain client feeds the poller, the startup series index, the
 	// reconcile endpoint and the ISO 20022 exports (nil when unconfigured).
 	var chainClient *chain.Client
