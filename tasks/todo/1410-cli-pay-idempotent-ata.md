@@ -2,7 +2,7 @@
 id: 1410
 title: CLI pay_batch recreates closed holder cash ATAs idempotently
 agent: glm
-tier: T2
+tier: T1
 depends_on: [1408]
 verify: make verify
 timeout_min: 45
