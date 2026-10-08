@@ -4,8 +4,11 @@
  * complete. Batching is deterministic: holders sorted by owner pubkey ascending
  * (the snapshot-hash order), then fixed-size chunks sent sequentially.
  */
-import { isSome, type Address } from "@solana/kit";
-import { findAssociatedTokenPda } from "@solana-program/token-2022";
+import { fetchEncodedAccounts, isSome, type Address, type Instruction, type TransactionSigner } from "@solana/kit";
+import {
+	findAssociatedTokenPda,
+	getCreateAssociatedTokenIdempotentInstruction,
+} from "@solana-program/token-2022";
 import type { Command } from "commander";
 import {
 	fetchCorporateAction,
@@ -62,6 +65,56 @@ export const PAY_BATCH_MAX = 8;
  */
 export function sortedBatches<T>(items: readonly T[], ownerOf: (item: T) => string, size: number): T[][] {
 	return chunk(sortByOwner([...items], ownerOf), size);
+}
+
+/**
+ * Wire-size estimate of one pay-batch tx (single signature, no lookup table):
+ * 384 B fixed (header, blockhash, 8 base keys, compute-budget + pay instruction overhead)
+ * + 99 B per pay triple (3 keys + 3 indices) + 42 B per create (+64 B shared ATA/system program keys).
+ * Pure — unit-tested against the documented 8-fits/10-doesn't limits.
+ */
+export function payBatchBytes(holders: number, creates: number): number {
+	return 384 + 99 * holders + 42 * creates + (creates > 0 ? 64 : 0);
+}
+
+/** Max wire size minus a safety margin for varints and rounding in the estimate above. */
+export const PAY_TX_BYTE_LIMIT = 1232 - 52;
+
+/**
+ * Split a pay batch (recursively, order-preserving) until every tx — the pay triples plus
+ * the prepended ATA creates for closed accounts — fits {@link PAY_TX_BYTE_LIMIT}.
+ * Pure — unit-tested for all-open, mixed and all-closed batches.
+ */
+export function splitPayBatch<T>(batch: readonly T[], closedOf: (item: T) => boolean, limit: number = PAY_TX_BYTE_LIMIT): (readonly T[])[] {
+	const size = (b: readonly T[]): number => payBatchBytes(b.length, b.filter(closedOf).length);
+	if (size(batch) <= limit || batch.length <= 1) return [batch];
+	const mid = Math.ceil(batch.length / 2);
+	return [...splitPayBatch(batch.slice(0, mid), closedOf, limit), ...splitPayBatch(batch.slice(mid), closedOf, limit)];
+}
+
+/**
+ * Task 1410: a holder may close their empty cash ATA during Funded. pay_batch pays the
+ * stored investor.cash_ata, so prepend an idempotent create for each missing ATA to the
+ * batch tx (the ATA program is universal — works for classic SPL and Token-2022 cash mints).
+ */
+export function ensureCashAtas(args: {
+	batch: readonly { owner: Address; cashAta: Address }[];
+	missing: ReadonlySet<string>;
+	payer: TransactionSigner;
+	cashMint: Address;
+	cashTokenProgram: Address;
+}): Instruction[] {
+	return args.batch
+		.filter(h => args.missing.has(h.cashAta as string))
+		.map(h =>
+			getCreateAssociatedTokenIdempotentInstruction({
+				payer: args.payer,
+				ata: h.cashAta,
+				owner: h.owner,
+				mint: args.cashMint,
+				tokenProgram: args.cashTokenProgram,
+			}),
+		);
 }
 
 /**
@@ -321,7 +374,13 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 			if (investor === undefined) throw new Error(`no Investor PDA for entitlement owner ${e.owner}`);
 			return { owner: e.owner, entitlement: e.address, investor: investor.address, cashAta: investor.cashAta };
 		});
-	const batches = sortedBatches(payable, h => h.owner, PAY_BATCH_MAX);
+	// Task 1410: a holder may close their empty cash ATA during Funded — pay_batch pays the stored
+	// investor.cash_ata, so recreate the missing ones idempotently in the same tx; batches whose
+	// tx would overflow the 1232-byte limit split (deterministic order preserved).
+	const atStatus = await fetchEncodedAccounts(rpc, payable.map(h => h.cashAta));
+	const missingAta = new Set(atStatus.filter(a => !a.exists).map(a => a.address as string));
+	if (missingAta.size > 0) log(`recreating ${missingAta.size} closed cash ATA(s) idempotently`);
+	const batches = sortedBatches(payable, h => h.owner, PAY_BATCH_MAX).flatMap(b => splitPayBatch(b, h => missingAta.has(h.cashAta)));
 	log(`paying ${payable.length} holder(s) in ${batches.length} batch(es) of ≤ ${PAY_BATCH_MAX}`);
 	const results = await runBatches(batches, async (batch, i) => {
 		const metas = [];
@@ -339,7 +398,9 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 			cashTokenProgram,
 		});
 		const instruction = { ...base, accounts: [...base.accounts, ...metas] };
-		const report = await sendQuiet(rpc, authority, [instruction], `action:pay batch ${i + 1}/${batches.length}`);
+		// Prepended before pay_batch so the closed-ATA holder is payable in the same tx (task 1410).
+		const instructions = [...ensureCashAtas({ batch, missing: missingAta, payer: authority, cashMint, cashTokenProgram }), instruction];
+		const report = await sendQuiet(rpc, authority, instructions, `action:pay batch ${i + 1}/${batches.length}`);
 		log(`  batch ${i + 1}/${batches.length}: ${report.signature} (${txLink(report.signature)})`);
 		return report;
 	});

@@ -1,8 +1,21 @@
-/** Batching logic of `action:snapshot` / `action:pay` (pure `sortedBatches`) + partial-failure reporting. */
+/**
+ * Batching logic of `action:snapshot` / `action:pay` (pure `sortedBatches`), partial-failure
+ * reporting, and pay-batch tx sizing + idempotent cash-ATA recreation (task 1410).
+ */
 import { describe, expect, it, vi } from "vitest";
-import { getBase58Encoder } from "@solana/kit";
+import { AccountRole, generateKeyPairSigner, getBase58Encoder } from "@solana/kit";
 import { address } from "@solana/kit";
-import { PAY_BATCH_MAX, SNAPSHOT_BATCH_MAX, runBatches, sortedBatches } from "./action.js";
+import { ASSOCIATED_TOKEN_PROGRAM_ADDRESS, findAssociatedTokenPda } from "@solana-program/token-2022";
+import {
+	PAY_BATCH_MAX,
+	PAY_TX_BYTE_LIMIT,
+	SNAPSHOT_BATCH_MAX,
+	ensureCashAtas,
+	payBatchBytes,
+	runBatches,
+	sortedBatches,
+	splitPayBatch,
+} from "./action.js";
 
 // Deterministic distinct addresses for ordering checks.
 const OWNERS = [
@@ -76,5 +89,79 @@ describe("runBatches partial failure", () => {
 			printed.mockRestore();
 			process.exitCode = 0; // don't poison vitest's own exit code
 		}
+	});
+});
+
+describe("pay tx sizing with prepended ATA creates (task 1410)", () => {
+	it("estimates the documented limits: 8 open triples fit, 10 do not", () => {
+		expect(payBatchBytes(PAY_BATCH_MAX, 0)).toBeLessThanOrEqual(1232); // why PAY_BATCH_MAX is 8
+		expect(payBatchBytes(10, 0)).toBeGreaterThan(1232);
+	});
+
+	it("keeps an all-open batch of 8 in one tx", () => {
+		const batch = Array.from({ length: 8 }, (_, i) => ({ owner: `o${i}` }));
+		expect(splitPayBatch(batch, () => false)).toEqual([batch]);
+	});
+
+	it("splits order-preservingly when closed-ATA creates would overflow the tx", () => {
+		const holders = Array.from({ length: 8 }, (_, i) => ({ owner: `o${i}`, closed: i < 2 }));
+		const batches = splitPayBatch(holders, h => h.closed);
+		expect(batches.flat()).toEqual(holders); // order preserved, no holder lost
+		for (const b of batches) {
+			expect(payBatchBytes(b.length, b.filter(h => h.closed).length)).toBeLessThanOrEqual(PAY_TX_BYTE_LIMIT);
+		}
+	});
+
+	it("an all-closed batch of 8 splits into tx-fitting chunks", () => {
+		const holders = Array.from({ length: 8 }, (_, i) => ({ owner: `o${i}` }));
+		expect(splitPayBatch(holders, () => true).map(b => b.length)).toEqual([4, 4]);
+	});
+});
+
+describe("ensureCashAtas — closed cash ATA during Funded (task 1410)", () => {
+	const cashMint = address("So11111111111111111111111111111111111111112");
+	const cashTokenProgram = address("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
+
+	/** Three holders with deterministic Token-2022 cash ATAs (pay_batch pays the stored investor.cash_ata). */
+	async function batchOf3() {
+		return Promise.all(
+			OWNERS.slice(0, 3).map(async owner => ({
+				owner,
+				cashAta: (await findAssociatedTokenPda({ owner, mint: cashMint, tokenProgram: cashTokenProgram }))[0],
+			})),
+		);
+	}
+
+	it("prepends exactly one idempotent create for the closed holder's stored ATA", async () => {
+		const payer = await generateKeyPairSigner();
+		const batch = await batchOf3();
+		const missing = new Set([batch[1]!.cashAta as string]); // holder 2 closed their empty ATA
+		const ixs = ensureCashAtas({ batch, missing, payer, cashMint, cashTokenProgram });
+		expect(ixs).toHaveLength(1);
+		const ix = ixs[0]!;
+		expect(ix.programAddress).toBe(ASSOCIATED_TOKEN_PROGRAM_ADDRESS);
+		expect(Array.from(ix.data as Uint8Array)).toEqual([1]); // idempotent discriminator, not the failing create
+		const roleOf = new Map(ix.accounts.map(a => [a.address as string, a.role]));
+		expect(roleOf.get(batch[1]!.cashAta as string)).toBe(AccountRole.WRITABLE); // recreated at the stored cash_ata
+		expect(roleOf.get(OWNERS[1] as string)).toBe(AccountRole.READONLY);
+		expect(roleOf.get(payer.address as string)).toBe(AccountRole.WRITABLE_SIGNER); // registrar pays rent
+		expect(roleOf.get(cashMint as string)).toBe(AccountRole.READONLY);
+		expect(roleOf.get(cashTokenProgram as string)).toBe(AccountRole.READONLY);
+		expect(roleOf.get(address("11111111111111111111111111111111") as string)).toBe(AccountRole.READONLY); // system program
+	});
+
+	it("creates none when every ATA exists, all when every ATA is closed", async () => {
+		const payer = await generateKeyPairSigner();
+		const batch = await batchOf3();
+		const none = ensureCashAtas({ batch, missing: new Set(), payer, cashMint, cashTokenProgram });
+		expect(none).toHaveLength(0); // the normal path adds no instructions
+		const all = ensureCashAtas({
+			batch,
+			missing: new Set(batch.map(h => h.cashAta as string)),
+			payer,
+			cashMint,
+			cashTokenProgram,
+		});
+		expect(all).toHaveLength(3);
 	});
 });
