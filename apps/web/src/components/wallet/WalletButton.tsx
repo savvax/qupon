@@ -66,12 +66,13 @@ export function WalletButton({
         disabled={busy}
         aria-label={compact ? label : undefined}
         className={cx(
-          "inline-flex h-9 shrink-0 items-center gap-2 rounded-btn bg-p900 px-3 text-sm font-bold whitespace-nowrap text-white shadow-sm transition",
-          "hover:bg-p800 active:scale-[.98] disabled:opacity-70",
+          // Outline, not filled: Sign in is the header's one primary action (visual hierarchy, Hick's law).
+          "inline-flex h-9 shrink-0 items-center gap-2 rounded-btn border border-n300 bg-n0 px-3 text-sm font-bold whitespace-nowrap text-n900 transition",
+          "hover:border-n400 hover:bg-n50 active:scale-[.98] disabled:opacity-70",
         )}
       >
         {busy ? (
-          <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          <span className="size-4 animate-spin rounded-full border-2 border-n700 border-t-transparent" />
         ) : only?.icon ? (
           // biome-ignore lint/performance/noImgElement: data-URI icon from the wallet extension
           // eslint-disable-next-line @next/next/no-img-element

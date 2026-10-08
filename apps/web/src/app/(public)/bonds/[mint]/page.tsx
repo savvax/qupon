@@ -267,12 +267,13 @@ export default async function BondPage({
         <Address value={series.mint} />
       </div>
 
-      <Stagger className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <Stagger className="mt-6 grid grid-cols-2 overflow-hidden rounded-card border border-n200 bg-n0 [&>*]:border-n100 max-lg:[&>*:nth-child(-n+2)]:border-b [&>*:nth-child(odd)]:border-r lg:grid-cols-4 lg:[&>*:not(:last-child)]:border-r">
         <StaggerItem className="min-w-0">
-          <Kpi label={t("kpi.face")} value={money(series.faceValue)} />
+          <Kpi plain label={t("kpi.face")} value={money(series.faceValue)} />
         </StaggerItem>
         <StaggerItem className="min-w-0">
           <Kpi
+            plain
             label={t("kpi.coupon")}
             value={
               <span className="num">
@@ -284,6 +285,7 @@ export default async function BondPage({
         </StaggerItem>
         <StaggerItem className="min-w-0">
           <Kpi
+            plain
             label={t("kpi.next")}
             value={
               <span className="num">
@@ -294,6 +296,7 @@ export default async function BondPage({
         </StaggerItem>
         <StaggerItem className="min-w-0">
           <Kpi
+            plain
             label={t("kpi.issued")}
             value={
               <span className="num">
@@ -305,41 +308,7 @@ export default async function BondPage({
           />
         </StaggerItem>
       </Stagger>
-      {kaseTicker && (
-        <div className="mt-6">
-          <KasePanel ticker={kaseTicker} locale={locale} />
-        </div>
-      )}
-
-      {documents.length > 0 && (
-        <section className="mt-6">
-          <h2 className="text-lg font-bold">{tDoc("title")}</h2>
-          <ul className="mt-3 divide-y divide-n100 rounded-card border border-n200 bg-n0">
-            {documents.map((d) => (
-              <li
-                key={d.id}
-                className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
-              >
-                <span className="min-w-0">
-                  <span className="font-medium text-n900">{d.filename}</span>
-                  <span className="ml-2 text-xs text-n500">
-                    {d.kind} · {(d.size / 1024).toFixed(0)} KB
-                  </span>
-                </span>
-                <a
-                  href={seriesDocumentUrl(d.id)}
-                  className="font-semibold text-g700 underline"
-                  download
-                >
-                  {tDoc("download")}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <div className="mt-8">
+      <div className="mt-10">
         <Tabs
           defaultValue={tab === "actions" || tab === "terms" ? tab : "schedule"}
           items={[
@@ -387,6 +356,39 @@ export default async function BondPage({
           ]}
         />
       </div>
+      {kaseTicker && (
+        <div className="mt-10">
+          <KasePanel ticker={kaseTicker} locale={locale} />
+        </div>
+      )}
+
+      {documents.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-lg font-bold">{tDoc("title")}</h2>
+          <ul className="mt-3 divide-y divide-n100 rounded-card border border-n200 bg-n0">
+            {documents.map((d) => (
+              <li
+                key={d.id}
+                className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
+              >
+                <span className="min-w-0">
+                  <span className="font-medium text-n900">{d.filename}</span>
+                  <span className="ml-2 text-xs text-n500">
+                    {d.kind} · {(d.size / 1024).toFixed(0)} KB
+                  </span>
+                </span>
+                <a
+                  href={seriesDocumentUrl(d.id)}
+                  className="font-semibold text-g700 underline"
+                  download
+                >
+                  {tDoc("download")}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

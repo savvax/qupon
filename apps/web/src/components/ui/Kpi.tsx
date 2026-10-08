@@ -6,13 +6,18 @@ export function Kpi({
   label,
   value,
   hint,
+  plain,
 }: {
   label: ReactNode;
   value: ReactNode;
   hint?: ReactNode;
+  /** No card: for a strip of metrics inside one shared container. */
+  plain?: boolean;
 }) {
   return (
-    <div className="flex h-full min-w-0 flex-col rounded-card border border-n200 bg-n0 px-5 py-4">
+    <div
+      className={`flex h-full min-w-0 flex-col px-5 py-4 ${plain ? "" : "rounded-card border border-n200 bg-n0"}`}
+    >
       {/* Two label lines reserved: values line up across a row whatever the language (§5.8). */}
       <div className="min-h-[2lh] text-xs font-semibold text-n500">
         {typeof label === "string" ? <StableText>{label}</StableText> : label}
