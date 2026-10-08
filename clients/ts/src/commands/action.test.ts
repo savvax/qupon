@@ -1,8 +1,8 @@
-/** Batching logic of `action:snapshot` / `action:pay` (pure `sortedBatches`). */
-import { describe, expect, it } from "vitest";
+/** Batching logic of `action:snapshot` / `action:pay` (pure `sortedBatches`) + partial-failure reporting. */
+import { describe, expect, it, vi } from "vitest";
 import { getBase58Encoder } from "@solana/kit";
 import { address } from "@solana/kit";
-import { PAY_BATCH_MAX, SNAPSHOT_BATCH_MAX, sortedBatches } from "./action.js";
+import { PAY_BATCH_MAX, SNAPSHOT_BATCH_MAX, runBatches, sortedBatches } from "./action.js";
 
 // Deterministic distinct addresses for ordering checks.
 const OWNERS = [
@@ -50,5 +50,31 @@ describe("sortedBatches ordering", () => {
 		const got = batches.flat().map(o => Array.from(enc.encode(o)));
 		const want = [...got].sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
 		expect(got).toEqual(want);
+	});
+});
+
+describe("runBatches partial failure", () => {
+	// task 1408: batch 2 of 3 throws → the completed batches still reach stdout
+	// ({ok:false, error, results}) and the process exits 1.
+	it("reports completed batches on stdout and exits 1", async () => {
+		const batches = [[1], [2], [3]];
+		const send = vi
+			.fn()
+			.mockResolvedValueOnce({ signature: "sig1", slot: 10n })
+			.mockRejectedValueOnce(new Error("batch 2/3 failed on chain"));
+		const printed = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			await expect(runBatches(batches, send)).rejects.toThrow("batch 2/3 failed on chain");
+			expect(process.exitCode).toBe(1);
+			const json = JSON.parse(printed.mock.calls[0]![0] as string) as Record<string, unknown>;
+			expect(json["ok"]).toBe(false);
+			expect(json["error"]).toBe("batch 2/3 failed on chain");
+			expect(json["batches"]).toBe(1);
+			expect(json["results"]).toEqual([{ signature: "sig1", slot: "10", holders: 1 }]); // bigint slot → string
+			expect(send).toHaveBeenCalledTimes(2); // batch 3 never attempted
+		} finally {
+			printed.mockRestore();
+			process.exitCode = 0; // don't poison vitest's own exit code
+		}
 	});
 });

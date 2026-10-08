@@ -125,7 +125,10 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 		}
 		if !res.OK {
 			// The chain refused the step (WrongStatus, TooEarly, …): the
-			// client retries; the message is the CLI's own.
+			// client retries; the message is the CLI's own. A failed batch step
+			// may already have moved money — keep its completed batch signatures
+			// in the activity feed first (task 1408).
+			recordPartialBatches(r, st, logger, pda, action.Index, step, res)
 			writeError(w, http.StatusConflict, res.Error)
 			return
 		}
@@ -180,5 +183,26 @@ func recordAdvance(r *http.Request, st *store.Store, logger *slog.Logger, pda so
 	}); err != nil {
 		// The advance succeeded; only the audit trail is degraded.
 		logger.Error("record advance activity", "pda", pda.String(), "step", step, "err", err)
+	}
+}
+
+// recordPartialBatches writes one activity row per completed batch of a failed
+// batch step (ok:false + partial results): those transactions already moved
+// money on chain and must not vanish from the audit trail (task 1408).
+func recordPartialBatches(r *http.Request, st *store.Store, logger *slog.Logger, pda solana.PublicKey, index uint32, step string, res executor.Result) {
+	if len(res.Results) == 0 {
+		return
+	}
+	apda := pda.String()
+	for _, b := range res.Results {
+		payload, _ := json.Marshal(map[string]any{
+			"step": step, "ok": false, "action": apda, "index": index, "error": res.Error,
+		})
+		if _, err := st.InsertActivity(r.Context(), store.Activity{
+			Ts: time.Now().Unix(), ActionPDA: &apda, Kind: "advance:" + step,
+			Payload: payload, Sig: b.Signature, Slot: uint64(b.Slot),
+		}); err != nil {
+			logger.Error("record partial advance activity", "pda", apda, "step", step, "err", err)
+		}
 	}
 }

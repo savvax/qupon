@@ -64,6 +64,29 @@ export function sortedBatches<T>(items: readonly T[], ownerOf: (item: T) => stri
 	return chunk(sortByOwner([...items], ownerOf), size);
 }
 
+/**
+ * Send fixed batches sequentially. On a mid-run failure, print the completed
+ * batches on stdout ({ok:false, error, results}) and rethrow with exit code 1:
+ * those transactions already moved money and must survive for the registrar's
+ * activity log (task 1408).
+ */
+export async function runBatches<T>(
+	batches: readonly (readonly T[])[],
+	sendBatch: (batch: readonly T[], index: number) => Promise<TxReport>,
+): Promise<(TxReport & { holders: number })[]> {
+	const results: (TxReport & { holders: number })[] = [];
+	for (const [i, batch] of batches.entries()) {
+		try {
+			results.push({ ...(await sendBatch(batch, i)), holders: batch.length });
+		} catch (e) {
+			process.exitCode = 1;
+			out({ ok: false, error: (e as Error).message, batches: results.length, results });
+			throw e;
+		}
+	}
+	return results;
+}
+
 /** Resolve the working action: --index, else the series' open action. */
 export async function loadAction(
 	rpc: QuponRpc,
@@ -204,8 +227,7 @@ async function runSnapshot(opts: ActionOpts, cmd: Command): Promise<void> {
 	const investors = await listInvestors(rpc, info.pda);
 	const batches = sortedBatches(investors, h => h.owner, SNAPSHOT_BATCH_MAX);
 	log(`snapshotting ${investors.length} holders in ${batches.length} batch(es) of ≤ ${SNAPSHOT_BATCH_MAX}`);
-	const results: (TxReport & { holders: number })[] = [];
-	for (const [i, batch] of batches.entries()) {
+	const results = await runBatches(batches, async (batch, i) => {
 		const metas = [];
 		for (const holder of batch) {
 			// remaining_accounts order: [Investor, bond ATA, Entitlement (writable)]
@@ -220,8 +242,8 @@ async function runSnapshot(opts: ActionOpts, cmd: Command): Promise<void> {
 		const instruction = { ...base, accounts: [...base.accounts, ...metas] };
 		const report = await sendQuiet(rpc, authority, [instruction], `action:snapshot batch ${i + 1}/${batches.length}`);
 		log(`  batch ${i + 1}/${batches.length}: ${report.signature} (${txLink(report.signature)})`);
-		results.push({ ...report, holders: batch.length });
-	}
+		return report;
+	});
 	out({
 		ok: true,
 		action,
@@ -301,8 +323,7 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 		});
 	const batches = sortedBatches(payable, h => h.owner, PAY_BATCH_MAX);
 	log(`paying ${payable.length} holder(s) in ${batches.length} batch(es) of ≤ ${PAY_BATCH_MAX}`);
-	const results: (TxReport & { holders: number })[] = [];
-	for (const [i, batch] of batches.entries()) {
+	const results = await runBatches(batches, async (batch, i) => {
 		const metas = [];
 		for (const holder of batch) {
 			// remaining_accounts order: [Entitlement (writable), Investor, cash ATA (writable)]
@@ -320,8 +341,8 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 		const instruction = { ...base, accounts: [...base.accounts, ...metas] };
 		const report = await sendQuiet(rpc, authority, [instruction], `action:pay batch ${i + 1}/${batches.length}`);
 		log(`  batch ${i + 1}/${batches.length}: ${report.signature} (${txLink(report.signature)})`);
-		results.push({ ...report, holders: batch.length });
-	}
+		return report;
+	});
 	out({ ok: true, action, batches: results.length, holders: payable.length, results });
 }
 

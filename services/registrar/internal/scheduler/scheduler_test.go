@@ -324,6 +324,35 @@ func TestTickAnnounceExecutes(t *testing.T) {
 	}
 }
 
+// TestTickPayFailureRecordsPartialBatches (task 1408): a pay step whose 2nd
+// batch fails exits 1 with the completed batches in stdout JSON — the scheduler
+// records those signatures in the activity feed, or the money-moving
+// transactions vanish when the step is retried.
+func TestTickPayFailureRecordsPartialBatches(t *testing.T) {
+	fc := &fakeChain{series: func() *chain.Series {
+		s := series(now0.Unix(), now0.Add(24*time.Hour).Unix())
+		s.OpenAction = &kAction
+		return s
+	}(), action: action(4)} // Settling, one holder unpaid → pay_batch
+	s, st, _ := newScheduler(t, fc, cfg)
+	t.Setenv("FAKE_CLI_STDOUT", writeJSON(t, t.TempDir(),
+		`{"ok":false,"error":"batch 2/2 failed","results":[{"signature":"pay1","slot":"10","holders":8}]}`))
+	t.Setenv("FAKE_CLI_EXIT", "1")
+
+	s.Tick(t.Context())
+
+	events, err := st.ListActivity(t.Context(), 10)
+	if err != nil || len(events) != 1 {
+		t.Fatalf("activity rows = %d (%v), want the completed batch", len(events), err)
+	}
+	if events[0].Kind != "scheduler:"+executor.StepPay || events[0].Sig != "pay1" || events[0].Slot != 10 {
+		t.Fatalf("row = %+v, want scheduler:pay_batch pay1@10", events[0])
+	}
+	if !strings.Contains(string(events[0].Payload), "batch 2/2 failed") {
+		t.Fatalf("payload = %s, want the CLI error recorded", events[0].Payload)
+	}
+}
+
 // TestTickApprovalGate: with ApprovalRequired nothing is executed; the pending
 // approval holds the exact argv and is deduped across ticks.
 func TestTickApprovalGate(t *testing.T) {

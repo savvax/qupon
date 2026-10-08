@@ -2,8 +2,10 @@
 // §Go registrar service): the service never re-implements program logic, it
 // calls the CLI and verifies the chain afterwards. JSON contract on stdout:
 // {ok, signature, slot} on success; non-zero exit with the message on stderr
-// on failure. Every run is capped at 120 s; batch instructions are idempotent
-// on-chain, so re-running a step is safe.
+// on failure — except a failed batch command, which exits non-zero with
+// {ok:false, error, results:[completed batches]} on stdout so the completed
+// signatures are not lost (task 1408). Every run is capped at 120 s; batch
+// instructions are idempotent on-chain, so re-running a step is safe.
 package executor
 
 import (

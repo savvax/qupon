@@ -226,6 +226,39 @@ func TestAdvanceCliErrorIs409(t *testing.T) {
 	}
 }
 
+// TestAdvanceCliFailureRecordsPartialBatches (task 1408): a failed batch step
+// exits 1 with the completed batches in stdout JSON — the API records those
+// signatures in the activity feed before surfacing the 409, or money-moving
+// transactions vanish from the audit trail.
+func TestAdvanceCliFailureRecordsPartialBatches(t *testing.T) {
+	fc := &fakeChain{action: &chain.CorporateAction{Series: fSeries, Status: 3}} // Funded → pay_batch
+	srv, st, _ := advanceServer(t, fc)                                           // sets FAKE_CLI_STDOUT itself — override after
+	t.Setenv("FAKE_CLI_EXIT", "1")
+	t.Setenv("FAKE_CLI_STDOUT", writeT(t, t.TempDir(), "partial.json",
+		`{"ok":false,"error":"batch 2/2 failed","results":[{"signature":"pay1","slot":"10","holders":8},{"signature":"pay2","slot":"11","holders":2}]}`))
+
+	code, body := postAdvance(t, srv.URL, `{"confirm":true}`)
+	if code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409 (body %v)", code, body)
+	}
+	if !strings.Contains(fmt.Sprint(body["error"]), "batch 2/2 failed") {
+		t.Fatalf("error = %v, want the CLI message", body["error"])
+	}
+	events, err := st.ListActivity(t.Context(), 10)
+	if err != nil || len(events) != 2 {
+		t.Fatalf("activity rows = %d (%v), want one per completed batch", len(events), err)
+	}
+	// ListActivity is oldest first: pay1@10 then pay2@11, both advance:pay_batch.
+	for i, want := range []string{"pay1", "pay2"} {
+		if events[i].Kind != "advance:"+executor.StepPay || events[i].Sig != want {
+			t.Fatalf("row %d = %s/%s, want advance:pay_batch/%s", i, events[i].Kind, events[i].Sig, want)
+		}
+	}
+	if events[1].Slot != 11 {
+		t.Fatalf("slot = %d, want 11", events[1].Slot)
+	}
+}
+
 func TestAdvanceValidation(t *testing.T) {
 	fc := &fakeChain{action: &chain.CorporateAction{Series: fSeries, Status: 0}}
 	srv, _, _ := advanceServer(t, fc)

@@ -296,6 +296,9 @@ func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args [
 		return
 	}
 	if !res.OK {
+		// A failed batch step may already have moved money: keep its completed
+		// batch signatures in the activity feed before the retry (task 1408).
+		s.recordPartialBatches(ctx, mint, d, res)
 		s.Log.Warn("scheduler step refused by chain (will retry)", "series", mint, "step", d.Action, "err", res.Error)
 		return
 	}
@@ -308,6 +311,26 @@ func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args [
 		s.Log.Error("scheduler: record activity", "err", err)
 	}
 	s.Log.Info("scheduler step", "series", mint, "step", d.Action, "sig", res.Signature, "slot", res.Slot)
+}
+
+// recordPartialBatches writes one activity row per completed batch of a failed
+// batch step (ok:false + partial results): those transactions already moved
+// money on chain and must not vanish from the audit trail when the step is
+// retried (task 1408).
+func (s *Scheduler) recordPartialBatches(ctx context.Context, mint string, d Decision, res executor.Result) {
+	if len(res.Results) == 0 {
+		return
+	}
+	mintArg := mint
+	for _, r := range res.Results {
+		payload, _ := json.Marshal(map[string]any{"step": d.Action, "ok": false, "error": res.Error})
+		if _, err := s.Store.InsertActivity(ctx, store.Activity{
+			Ts: s.Now().Unix(), SeriesMint: &mintArg, Kind: "scheduler:" + d.Action,
+			Payload: payload, Sig: r.Signature, Slot: uint64(r.Slot),
+		}); err != nil {
+			s.Log.Error("scheduler: record partial activity", "err", err)
+		}
+	}
 }
 
 // now returns the injectable clock (Run sets it), falling back to wall time for direct Tick calls in tests.
