@@ -146,6 +146,19 @@ export async function signAndSendWithWallet(
       .getBlockHeight({ commitment: "confirmed" })
       .send();
     if (blockHeight > blockhash.lastValidBlockHeight) {
+      // The tx may have landed in the last valid block while we polled: one more
+      // status check before declaring it expired (task 1412).
+      const landed = (await rpc.getSignatureStatuses([signature]).send())
+        .value[0];
+      if (
+        landed?.confirmationStatus === "confirmed" ||
+        landed?.confirmationStatus === "finalized"
+      ) {
+        return { signature, pending: false };
+      }
+      if (landed?.err) {
+        throw new Error(`transaction failed: ${JSON.stringify(landed.err)}`);
+      }
       throw new Error(
         `transaction expired before confirmation (block height ${blockHeight} > last valid ${blockhash.lastValidBlockHeight}) — not executed`,
       );

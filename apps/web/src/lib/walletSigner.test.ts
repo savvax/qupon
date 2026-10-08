@@ -132,6 +132,29 @@ describe("signAndSendWithWallet confirmation", () => {
     await expect(send(rpc)).rejects.toThrow(/expired.*not executed/);
   });
 
+  it("confirms a tx that landed in the last valid block: status appears only after the height check (no false expiry)", async () => {
+    let polls = 0;
+    const rpc = fakeRpc(
+      () => (++polls === 1 ? null : { confirmationStatus: "confirmed" }),
+      () => lifetime.lastValidBlockHeight + 1n,
+    );
+    const res = await send(rpc);
+    expect(polls).toBe(2); // the pre-expiry re-check is what saw it land
+    expect(res.pending).toBe(false);
+  });
+
+  it("still reports failure when the re-check sees an on-chain error", async () => {
+    let polls = 0;
+    const rpc = fakeRpc(
+      () =>
+        ++polls === 1
+          ? null
+          : { err: { InstructionError: [0, { Custom: 612 }] } },
+      () => lifetime.lastValidBlockHeight + 1n,
+    );
+    await expect(send(rpc)).rejects.toThrow(/transaction failed/);
+  });
+
   it("returns pending when the wait budget runs out while the blockhash is still valid", async () => {
     const rpc = fakeRpc(
       () => null,

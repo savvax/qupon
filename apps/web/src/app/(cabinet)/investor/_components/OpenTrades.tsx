@@ -39,7 +39,7 @@ import {
   signAndSendWithWallet,
   walletTransactionSigner,
 } from "@/lib/walletSigner";
-import { useWalletWrite } from "../_lib/useWalletWrite";
+import { useWalletWrite, walletLegSent } from "../_lib/useWalletWrite";
 import { useInvestor } from "./InvestorIdentity";
 
 type Item = { series: SeriesDTO; trade: TradeDTO };
@@ -90,9 +90,10 @@ export function OpenTrades({ rows }: { rows: SeriesRow[] }) {
       success: () => t("open.success"),
     };
     setBusy(trade.swapDvp);
-    let ok: unknown = null;
+    // a pending wallet tx is not a sent leg: only a confirmed result marks it sent (task 1412)
+    let sent = false;
     if (mode === "demo") {
-      ok = await runWrite<DemoFunded>({
+      sent = !!(await runWrite<DemoFunded>({
         ...toasts,
         call: () =>
           withTradeErrors(
@@ -104,33 +105,35 @@ export function OpenTrades({ rows }: { rows: SeriesRow[] }) {
             t,
           ),
         txs: (r) => (r.signature ? [r.signature] : []),
-      });
+      }));
     } else if (wallet && "signTransaction" in wallet.adapter) {
       // One signer object for fee payer and transfer authority (Kit rejects two signers with one address).
       const signer = walletTransactionSigner(wallet.adapter, address(owner));
-      ok = await runWalletWrite({
-        ...toasts,
-        call: async () => {
-          const ix = await buildFundTradeIx(
-            portalRpc(),
-            {
-              swapDvp: trade.swapDvp,
-              seller: trade.seller,
-              buyer: trade.buyer,
-              bondMint: series.mint,
-              cashMint: series.cashMint,
-              units: BigInt(trade.units),
-              cash: BigInt(trade.cashAmount.minor),
-            },
-            side,
-            signer,
-          );
-          return signAndSendWithWallet(signer, portalRpc(), [ix]);
-        },
-      });
+      sent = walletLegSent(
+        await runWalletWrite({
+          ...toasts,
+          call: async () => {
+            const ix = await buildFundTradeIx(
+              portalRpc(),
+              {
+                swapDvp: trade.swapDvp,
+                seller: trade.seller,
+                buyer: trade.buyer,
+                bondMint: series.mint,
+                cashMint: series.cashMint,
+                units: BigInt(trade.units),
+                cash: BigInt(trade.cashAmount.minor),
+              },
+              side,
+              signer,
+            );
+            return signAndSendWithWallet(signer, portalRpc(), [ix]);
+          },
+        }),
+      );
     }
     setBusy(null);
-    if (ok) {
+    if (sent) {
       setSent((s) => new Set(s).add(trade.swapDvp));
       setNonce((n) => n + 1);
     }
