@@ -62,6 +62,7 @@ var layouts = map[string][]field{
 	"ActionCompleted": {pk("series"), pk("action"), u32("index"), u8("kind"), u8("status"), u32("holders_paid"),
 		u64("total_paid"), i64("next_coupon_date"), u64("slot"), i64("timestamp")},
 	"UnitsRetired": {pk("series"), pk("action"), u32("index"), pk("owner"), u64("units"), u64("total_retired"), u64("slot"), i64("timestamp")},
+	"EscrowSwept":  {pk("series"), pk("action"), u32("index"), u64("amount"), pk("to"), u64("slot"), i64("timestamp")},
 	"SeriesClosed": {pk("series"), pk("mint"), pk("action"), u32("index"), u64("total_retired"), u64("slot"), i64("timestamp")},
 	"VoteCast":     {pk("series"), pk("action"), u32("index"), pk("owner"), u8("choice"), u64("weight"), u64("slot"), i64("timestamp")},
 	"MeetingFinalized": {pk("series"), pk("action"), u32("index"), u64("votes_for"), u64("votes_against"),

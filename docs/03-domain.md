@@ -63,11 +63,10 @@ Alternative when Pausable CPI misbehaves on devnet (fallback, do not implement u
 
 ```
 Announced ─cancel→ Cancelled
+Completed | Retiring | Cancelled ─sweep_escrow→ escrow closed, leftover cash → issuer
 Announced ─strike_record→ RecordStruck ─snapshot_batch*→ RecordStruck ─finalize_snapshot→ SnapshotComplete
-SnapshotComplete ─fund_action*→ Funded ─pay_batch*→ Settling ─complete_action→ Completed            (INTR)
-                                                                   └complete_action→ Retiring ─retire_batch*→ Retiring ─close_series→ Completed (REDM/MCAL/PCAL; Series → Closed)
-PCAL is disabled off-chain (registrar API, CLI, web) pending pool-factor support (task 1402):
-until then complete_action + retire_batch retire 100% of units while pay_batch pays only factor of face.
+SnapshotComplete ─fund_action*→ Funded ─pay_batch*→ Settling ─complete_action→ Completed            (INTR; PCAL: units kept, face_value reduced)
+                                                                   └complete_action→ Retiring ─retire_batch*→ Retiring ─close_series→ Completed (REDM/MCAL; Series → Closed)
 BMET: Announced → RecordStruck → (finalize_snapshot) VotingOpen ─cast_vote*→ VotingOpen ─finalize_meeting→ Finalized ─apply_terms_change→ Completed
 ```
 One open action per series at a time (statuses other than Completed/Cancelled block a new `announce_action`).

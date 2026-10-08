@@ -11,6 +11,7 @@ export * from './actionCancelled.js';
 export * from './actionCompleted.js';
 export * from './actionFunded.js';
 export * from './entitlementPaid.js';
+export * from './escrowSwept.js';
 export * from './holderSnapshotted.js';
 export * from './investorRegistered.js';
 export * from './investorStatusChanged.js';

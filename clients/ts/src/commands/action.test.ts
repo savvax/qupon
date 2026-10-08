@@ -1,13 +1,8 @@
 /** Batching logic of `action:snapshot` / `action:pay` (pure `sortedBatches`). */
-import { execFile } from "node:child_process";
-import { join } from "node:path";
-import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 import { getBase58Encoder } from "@solana/kit";
 import { address } from "@solana/kit";
 import { PAY_BATCH_MAX, SNAPSHOT_BATCH_MAX, sortedBatches } from "./action.js";
-
-const run = promisify(execFile);
 
 // Deterministic distinct addresses for ordering checks.
 const OWNERS = [
@@ -44,21 +39,6 @@ describe("sortedBatches batch shape", () => {
 	it("batch limits match the on-chain program (8 snapshot / 10 pay)", () => {
 		expect(SNAPSHOT_BATCH_MAX).toBe(8);
 		expect(PAY_BATCH_MAX).toBe(8); // tx-size bound, see action.ts
-	});
-});
-
-describe("action:announce refuses PCAL (task 1401)", () => {
-	// PCAL would pay factor of face but retire 100% of units; refused with JSON on stdout and exit 1
-	// until the program supports pool factors (task 1402). Runs before any config/RPC load.
-	it("exits 1 with ok:false JSON on stdout", async () => {
-		const root = join(import.meta.dirname, "..", "..");
-		const failure = (await run(
-			join(root, "node_modules", ".bin", "tsx"),
-			["src/cli.ts", "action:announce", "--series", "x", "--kind", "PCAL", "--record-at", "+60", "--payment-at", "+120"],
-			{ cwd: root },
-		).catch(e => e)) as { code?: number | string; stdout?: string };
-		expect(failure.code).toBe(1);
-		expect(JSON.parse(failure.stdout ?? "")).toMatchObject({ ok: false });
 	});
 });
 

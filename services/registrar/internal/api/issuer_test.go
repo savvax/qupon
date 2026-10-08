@@ -201,15 +201,11 @@ func TestIssuerAnnounce(t *testing.T) {
 		t.Fatalf("cli argv = %q, want %q", lines, want)
 	}
 
-	// PCAL gets its own refusal: it must not be announcable anywhere until pool factors exist (task 1402).
-	if code, out := postJSON(t, srv.URL, actions, `{"kind":"PCAL","recordAt":100,"paymentAt":200,"callDate":"2026-08-20","corpId":"QPN2-PCAL-0001"}`, issuer); code != http.StatusBadRequest || out["error"] != "partial calls are not supported yet" {
-		t.Fatalf("pcal: %d %v, want 400 'partial calls are not supported yet'", code, out)
-	}
-
 	// Rejected bodies never reach the CLI.
 	for _, bad := range []string{
 		`{"kind":"MCAL","recordAt":100,"paymentAt":200}`,                              // MCAL without callDate
 		`{"kind":"INTR","recordAt":100,"paymentAt":200,"callDate":"2026-08-20"}`,      // callDate on INTR
+		`{"kind":"PCAL","recordAt":100,"paymentAt":200,"callDate":"2026-08-20"}`,      // PCAL not offered here
 		`{"kind":"INTR","recordAt":200,"paymentAt":100}`,                              // record ≥ payment
 		`{"kind":"INTR","recordAt":100,"paymentAt":200,"corpId":"0123456789abcdef0"}`, // corpId > 16 bytes
 	} {

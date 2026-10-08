@@ -1,6 +1,6 @@
 mod common;
 
-use anchor_spl::token_2022::spl_token_2022;
+use anchor_spl::{token::spl_token, token_2022::spl_token_2022};
 use common::*;
 use qupon_bonds::{
     error::QuponError, ActionStatus, CorporateAction, Entitlement, EntitlementStatus, Series,
@@ -205,4 +205,110 @@ fn retire_rejects_substituted_accounts_and_is_idempotent() {
     env.send(&[ix], &[]).expect("idempotent re-run");
     let a: CorporateAction = env.account(&pda);
     assert_eq!((a.holders_retired, a.total_retired), (2, 35));
+}
+
+/// PCAL 25% on 2026-08-20 (47 accrued days): holders keep every unit, a quarter of the face comes back with the
+/// accrued coupon, the series stays Active on a 750.00 KZT outstanding face, and nothing can be burned.
+#[test]
+fn partial_call_keeps_units_and_lowers_face() {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let holders = env.holders(&b, &[10, 25, 65]);
+    let owners: Vec<_> = holders.iter().map(|(k, _)| k.pubkey()).collect();
+    let face_before = env.account::<Series>(&b.series).face_value;
+    let now = env.now();
+    let pcal = qupon_bonds::AnnounceArgs {
+        kind: 3,
+        corp_id: corp_id("QPNb1-PCAL-0001"),
+        factor_bps: 2500,
+        period_end_ymd: 20260820,
+        period_end_ts: ISSUE_DATE + 48 * 86_400,
+        accrual_days: 47,
+        ..intr_args(now)
+    };
+    env.settle_action(&b, pcal, &owners);
+
+    let pda = action_pda(&b.series, 0);
+    let a: CorporateAction = env.account(&pda);
+    assert_eq!(a.status, ActionStatus::Completed as u8);
+    assert_eq!(a.per_unit_principal, face_before / 4);
+    for (k, units) in &holders {
+        let e: Entitlement = env.account(&entitlement_pda(&pda, &k.pubkey()));
+        assert_eq!(e.principal, units * face_before / 4, "{units} units");
+        assert_eq!(
+            env.balance(&ata(&k.pubkey(), &b.mint, &spl_token_2022::ID)),
+            *units,
+            "units are kept"
+        );
+    }
+    let s: Series = env.account(&b.series);
+    assert_eq!(
+        (s.status, s.open_action, s.face_value, s.period_start),
+        (
+            SeriesStatus::Active as u8,
+            None,
+            face_before - face_before / 4,
+            a.period_end
+        )
+    );
+    let ix = env.retire_ix(&b, 0, &owners);
+    assert_err(env.send(&[ix], &[]), QuponError::WrongStatus);
+    let ix = env.close_series_ix(&b, 0);
+    assert_err(env.send(&[ix], &[]), QuponError::WrongStatus);
+}
+
+/// fund_action takes only the shortfall; anything that still lands in the escrow is swept back to the issuer once
+/// the action is finished, by an operator only.
+#[test]
+fn fund_takes_only_the_shortfall_and_sweep_returns_strays() {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let holders = env.holders(&b, &[10, 25, 65]);
+    let owners: Vec<_> = holders.iter().map(|(k, _)| k.pubkey()).collect();
+    env.intr_snapshotted(&b, &owners);
+
+    let pda = action_pda(&b.series, 0);
+    let escrow = ata(&pda, &b.cash, &b.cash_tp);
+    let a: CorporateAction = env.account(&pda);
+    let required = a.total_net + a.total_tax + a.total_principal;
+    let issuer = env.issuer.insecure_clone();
+    let issuer_cash = env.issuer_cash(&b);
+    env.fund_cash(&b, &issuer.pubkey(), required + 500);
+    let ix = env.fund_ix(&b, &issuer.pubkey(), 0, required + 500);
+    env.send(&[ix], &[&issuer]).expect("over-fund");
+    assert_eq!(env.balance(&escrow), required, "only the shortfall moved");
+    assert_eq!(env.balance(&issuer_cash), 500);
+    let ix = env.fund_ix(&b, &issuer.pubkey(), 0, 1);
+    assert_err(env.send(&[ix], &[&issuer]), QuponError::NothingToDo);
+
+    // Not finished yet: nothing can be swept.
+    let ix = env.sweep_ix(&b, 0);
+    assert_err(env.send(&[ix], &[]), QuponError::WrongStatus);
+
+    let ix = env.pay_ix(&b, 0, &owners);
+    env.send(&[ix], &[]).expect("pay");
+    let ix = env.complete_ix(&b, 0);
+    env.send(&[ix], &[]).expect("complete");
+
+    // A stray transfer into the finished escrow.
+    let ix =
+        spl_token::instruction::mint_to(&spl_token::ID, &b.cash, &escrow, &issuer.pubkey(), &[], 7)
+            .unwrap();
+    env.send(&[ix], &[&issuer]).expect("stray");
+
+    let mallory = solana_keypair::Keypair::new();
+    env.svm.airdrop(&mallory.pubkey(), 1_000_000_000).unwrap();
+    let mut ix = env.sweep_ix(&b, 0);
+    ix.accounts[0].pubkey = mallory.pubkey();
+    assert_err(env.send(&[ix], &[&mallory]), QuponError::Unauthorized);
+
+    let ix = env.sweep_ix(&b, 0);
+    env.send(&[ix], &[]).expect("sweep");
+    assert_eq!(env.balance(&issuer_cash), 507);
+    assert!(
+        env.svm
+            .get_account(&escrow)
+            .is_none_or(|a| a.lamports == 0 && a.data.is_empty()),
+        "escrow closed"
+    );
 }

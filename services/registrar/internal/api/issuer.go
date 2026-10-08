@@ -247,8 +247,7 @@ type announceRequest struct {
 }
 
 // validate mirrors the CLI's announcePlan rules (clients/ts/src/commands/action.ts):
-// callDate is required for MCAL and rejected otherwise; PCAL is refused everywhere
-// until the program supports pool factors (task 1402).
+// callDate is required for MCAL and rejected otherwise; PCAL stays CLI-only.
 func (req *announceRequest) validate() error {
 	switch req.Kind {
 	case "INTR", "REDM":
@@ -259,9 +258,6 @@ func (req *announceRequest) validate() error {
 		if _, err := time.Parse("2006-01-02", req.CallDate); err != nil {
 			return errors.New("MCAL requires callDate YYYY-MM-DD")
 		}
-	case "PCAL":
-		// PCAL pays factor of face but complete_action + retire_batch retire 100% of units (task 1402 fixes the program).
-		return errors.New("partial calls are not supported yet")
 	default:
 		return errors.New("kind must be INTR, REDM or MCAL")
 	}

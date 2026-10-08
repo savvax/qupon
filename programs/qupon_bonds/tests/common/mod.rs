@@ -789,6 +789,23 @@ impl Env {
         self.action_ix(qupon_bonds::instruction::PayBatch {}.data(), metas)
     }
 
+    pub fn sweep_ix(&self, b: &Bond, index: u32) -> Instruction {
+        let action = action_pda(&b.series, index);
+        self.action_ix(
+            qupon_bonds::instruction::SweepEscrow {}.data(),
+            qupon_bonds::accounts::SweepEscrow {
+                authority: self.registrar.pubkey(),
+                series: b.series,
+                action,
+                cash_mint: b.cash,
+                escrow: ata(&action, &b.cash, &b.cash_tp),
+                issuer_cash: ata(&self.issuer.pubkey(), &b.cash, &b.cash_tp),
+                cash_token_program: b.cash_tp,
+            }
+            .to_account_metas(None),
+        )
+    }
+
     pub fn complete_ix(&self, b: &Bond, index: u32) -> Instruction {
         self.action_ix(
             qupon_bonds::instruction::CompleteAction {}.data(),

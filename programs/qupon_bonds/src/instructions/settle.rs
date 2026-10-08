@@ -4,14 +4,17 @@ use anchor_lang::prelude::*;
 use anchor_spl::{
     token_2022::Token2022,
     token_2022_extensions::{pausable_resume, PausableToggle},
-    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
+    token_interface::{
+        close_account, transfer_checked, CloseAccount, Mint, TokenAccount, TokenInterface,
+        TransferChecked,
+    },
 };
 use entitlement::Ymd;
 
 use crate::{
     constants::*,
     error::{math_err, QuponError},
-    events::{ActionCompleted, ActionFunded, EntitlementPaid},
+    events::{ActionCompleted, ActionFunded, EntitlementPaid, EscrowSwept},
     instructions::init_series::add_months_almaty,
     state::{
         ActionKind, ActionStatus, CorporateAction, Entitlement, EntitlementStatus, Investor,
@@ -70,6 +73,11 @@ pub fn handle_fund_action(ctx: Context<FundAction>, amount: u64) -> Result<()> {
         status == ActionStatus::SnapshotComplete as u8 || status == ActionStatus::Funded as u8,
         QuponError::WrongStatus
     );
+    require!(amount > 0, QuponError::NothingToDo);
+    // Never take more than the shortfall: a surplus would sit under the action PDA (sweep_escrow returns strays).
+    let shortfall =
+        required_funding(&ctx.accounts.action)?.saturating_sub(ctx.accounts.escrow.amount);
+    let amount = amount.min(shortfall);
     require!(amount > 0, QuponError::NothingToDo);
 
     transfer_checked(
@@ -290,6 +298,20 @@ pub fn handle_complete_action(ctx: Context<CompleteAction>) -> Result<()> {
         series.next_coupon_date = next_coupon_after(series, action.period_end)?;
         series.open_action = None;
         action.status = ActionStatus::Completed as u8;
+    } else if kind == ActionKind::PartialRedemption {
+        // Partial call: holders keep every unit, each unit's outstanding face shrinks by the principal just paid
+        // (later coupons and the final redemption accrue on the remainder). Accrued interest is paid up to the call
+        // date, so the running period restarts there. Nothing is burned.
+        series.face_value = series
+            .face_value
+            .checked_sub(action.per_unit_principal)
+            .ok_or(QuponError::MathOverflow)?;
+        series.period_start = action.period_end;
+        if action.period_end >= series.next_coupon_date {
+            series.next_coupon_date = next_coupon_after(series, action.period_end)?;
+        }
+        series.open_action = None;
+        action.status = ActionStatus::Completed as u8;
     } else {
         // Principal paid: the register is resumed only so retire_batch can burn (Pausable blocks burns).
         series.status = SeriesStatus::Retiring as u8;
@@ -330,4 +352,89 @@ fn next_coupon_after(series: &Series, period_end: i64) -> Result<i64> {
     let total = k.checked_mul(months).ok_or(QuponError::MathOverflow)?;
     let next = add_months_almaty(series.issue_date, total)?;
     Ok(next.min(series.maturity_date))
+}
+
+#[derive(Accounts)]
+pub struct SweepEscrow<'info> {
+    /// Registrar or paying agent (checked in the handler); receives the escrow account's rent.
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(has_one = cash_mint)]
+    pub series: Box<Account<'info, Series>>,
+    #[account(
+        seeds = [ACTION_SEED, series.key().as_ref(), &action.index.to_le_bytes()],
+        bump = action.bump,
+        has_one = series,
+        has_one = escrow
+    )]
+    pub action: Box<Account<'info, CorporateAction>>,
+    pub cash_mint: Box<InterfaceAccount<'info, Mint>>,
+    #[account(mut)]
+    pub escrow: Box<InterfaceAccount<'info, TokenAccount>>,
+    /// Any cash account of the issuer: the surplus goes back to whoever funded the action.
+    #[account(
+        mut,
+        token::mint = cash_mint,
+        token::authority = series.issuer,
+        token::token_program = cash_token_program
+    )]
+    pub issuer_cash: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub cash_token_program: Interface<'info, TokenInterface>,
+}
+
+/// Return what is left in a finished action's escrow (stray transfers, rounding) to the issuer and close it. Only
+/// once nobody can be owed from it: Completed, Retiring (complete_action checked every holder was paid) or Cancelled.
+pub fn handle_sweep_escrow(ctx: Context<SweepEscrow>) -> Result<()> {
+    require_operator(&ctx.accounts.series, &ctx.accounts.authority.key())?;
+    let status = ctx.accounts.action.status;
+    require!(
+        status == ActionStatus::Completed as u8
+            || status == ActionStatus::Retiring as u8
+            || status == ActionStatus::Cancelled as u8,
+        QuponError::WrongStatus
+    );
+
+    let series_key = ctx.accounts.series.key();
+    let index_le = ctx.accounts.action.index.to_le_bytes();
+    let bump = [ctx.accounts.action.bump];
+    let seeds: &[&[u8]] = &[ACTION_SEED, series_key.as_ref(), &index_le, &bump];
+    let amount = ctx.accounts.escrow.amount;
+    let program = ctx.accounts.cash_token_program.key();
+    if amount > 0 {
+        transfer_checked(
+            CpiContext::new_with_signer(
+                program,
+                TransferChecked {
+                    from: ctx.accounts.escrow.to_account_info(),
+                    mint: ctx.accounts.cash_mint.to_account_info(),
+                    to: ctx.accounts.issuer_cash.to_account_info(),
+                    authority: ctx.accounts.action.to_account_info(),
+                },
+                &[seeds],
+            ),
+            amount,
+            ctx.accounts.cash_mint.decimals,
+        )?;
+    }
+    close_account(CpiContext::new_with_signer(
+        program,
+        CloseAccount {
+            account: ctx.accounts.escrow.to_account_info(),
+            destination: ctx.accounts.authority.to_account_info(),
+            authority: ctx.accounts.action.to_account_info(),
+        },
+        &[seeds],
+    ))?;
+
+    let clock = Clock::get()?;
+    emit!(EscrowSwept {
+        series: series_key,
+        action: ctx.accounts.action.key(),
+        index: ctx.accounts.action.index,
+        amount,
+        to: ctx.accounts.issuer_cash.key(),
+        slot: clock.slot,
+        timestamp: clock.unix_timestamp,
+    });
+    Ok(())
 }

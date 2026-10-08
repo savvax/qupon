@@ -92,7 +92,13 @@ pub mod qupon_bonds {
         instructions::settle::handle_pay_batch(ctx)
     }
 
-    /// Reconcile and resume the mint; INTR completes and advances the schedule, redemptions go to Retiring.
+    /// Return a finished (Completed / Retiring / Cancelled) action's leftover escrow to the issuer and close it.
+    pub fn sweep_escrow(ctx: Context<SweepEscrow>) -> Result<()> {
+        instructions::settle::handle_sweep_escrow(ctx)
+    }
+
+    /// Reconcile and resume the mint; INTR and PCAL complete (PCAL lowers the outstanding face), full redemptions go
+    /// to Retiring.
     pub fn complete_action(ctx: Context<CompleteAction>) -> Result<()> {
         instructions::settle::handle_complete_action(ctx)
     }

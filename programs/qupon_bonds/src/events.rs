@@ -196,6 +196,17 @@ pub struct ActionCompleted {
 }
 
 #[event]
+pub struct EscrowSwept {
+    pub series: Pubkey,
+    pub action: Pubkey,
+    pub index: u32,
+    pub amount: u64,
+    pub to: Pubkey,
+    pub slot: u64,
+    pub timestamp: i64,
+}
+
+#[event]
 pub struct UnitsRetired {
     pub series: Pubkey,
     pub action: Pubkey,

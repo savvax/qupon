@@ -27,3 +27,4 @@ export * from './snapshotBatch.js';
 export * from './strikeRecord.js';
 export * from './subscribe.js';
 export * from './suspendInvestor.js';
+export * from './sweepEscrow.js';
