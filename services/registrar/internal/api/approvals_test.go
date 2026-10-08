@@ -303,3 +303,45 @@ func TestApproveClientDisconnectNeverStuckRunning(t *testing.T) {
 		t.Fatalf("status after disconnect = %s (%v), want executed", row.Status, err)
 	}
 }
+
+// TestApprovePartialBatchKeepsSignatures: an approved pay run that fails on
+// batch 2 still records batch 1's signature (money moved), and the row goes
+// back to pending so the idempotent retry can finish the rest (task 1413).
+func TestApprovePartialBatchKeepsSignatures(t *testing.T) {
+	fc := &fakeChain{action: (&fakeRead{}).action()}
+	srv, st, _ := advanceServer(t, fc)
+	t.Setenv("FAKE_CLI_EXIT", "1")
+	t.Setenv("FAKE_CLI_STDOUT", writeT(t, t.TempDir(), "partial.json",
+		`{"ok":false,"error":"batch 2/2 failed","results":[{"signature":"pay1","slot":"10","holders":8}]}`))
+	if err := st.InsertApproval(t.Context(), store.Approval{
+		Ts: 1, DedupKey: "m|0|step:pay_batch", SeriesMint: "m", ActionPDA: "pda1", Step: "step:pay_batch",
+		Args: []string{"action:pay", "--series", "QPNb1", "--index", "0"},
+	}); err != nil {
+		t.Fatalf("insert: %v", err)
+	}
+	r, err := http.Post(srv.URL+"/approvals/1/approve", "application/json", strings.NewReader("{}"))
+	if err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	_ = r.Body.Close()
+	if r.StatusCode != http.StatusConflict {
+		t.Fatalf("partial approve = %d, want 409", r.StatusCode)
+	}
+	row, _ := st.ApprovalByID(t.Context(), 1)
+	if row.Status != "pending" {
+		t.Fatalf("status = %s, want pending", row.Status)
+	}
+	acts, err := st.ListActivity(t.Context(), 50)
+	if err != nil {
+		t.Fatalf("list activity: %v", err)
+	}
+	found := false
+	for _, a := range acts {
+		if a.Sig == "pay1" && a.Kind == "approval:step:pay_batch" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("batch 1 signature not recorded: %+v", acts)
+	}
+}

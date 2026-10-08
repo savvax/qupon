@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -96,6 +97,8 @@ func approveApproval(deps Deps, st *store.Store) http.HandlerFunc {
 			return
 		}
 		if !res.OK {
+			// A failed pay/snapshot run may have moved money in earlier batches: keep their signatures.
+			recordPartialBatches(ctx, st, slog.Default(), row.ActionPDA, "approval:"+row.Step, res)
 			if rerr := st.RevertApproval(ctx, id); rerr != nil {
 				writeError(w, http.StatusInternalServerError, rerr.Error())
 				return
