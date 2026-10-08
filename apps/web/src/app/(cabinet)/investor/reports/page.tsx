@@ -276,7 +276,7 @@ export default async function InvestorReportsPage({
                   className={`mt-1 block ${inputCx}`}
                 />
               </label>
-              <Button type="submit" size="sm">
+              <Button type="submit" variant="secondary" size="sm">
                 {t("statement.apply")}
               </Button>
             </form>
@@ -301,12 +301,12 @@ export default async function InvestorReportsPage({
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-bold">{t("tax.title")}</h2>
               <div className="flex gap-2">
-                <Button asChild variant="secondary" size="sm">
+                <Button asChild variant="ghost" size="sm">
                   <a href={csvHref("me/reports/tax", { year })}>
                     {t("tax.csv")}
                   </a>
                 </Button>
-                <Button asChild variant="secondary" size="sm">
+                <Button asChild variant="ghost" size="sm">
                   <a href={printHref("tax", { year })}>{t("tax.print")}</a>
                 </Button>
               </div>
@@ -336,7 +336,7 @@ export default async function InvestorReportsPage({
                     ))}
                 </select>
               </label>
-              <Button type="submit" size="sm">
+              <Button type="submit" variant="secondary" size="sm">
                 {t("tax.apply")}
               </Button>
             </form>

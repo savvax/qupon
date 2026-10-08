@@ -75,15 +75,28 @@ export default async function AdminAuditPage({
     {
       key: "user",
       header: t("colUser"),
-      render: (e) => e.email || `#${e.userId}`,
+      render: (e) => (
+        <span className="whitespace-nowrap">{e.email || `#${e.userId}`}</span>
+      ),
     },
-    { key: "role", header: t("colRole"), render: (e) => roleLabel(e.role) },
+    {
+      key: "role",
+      header: t("colRole"),
+      render: (e) => (
+        <span className="whitespace-nowrap">{roleLabel(e.role)}</span>
+      ),
+    },
     {
       key: "route",
       header: t("colRoute"),
       hideBelow: "md",
       render: (e) => (
-        <span className="font-mono text-xs break-all">{e.route}</span>
+        <span
+          className="block max-w-[22rem] truncate font-mono text-xs"
+          title={e.route}
+        >
+          {e.route}
+        </span>
       ),
     },
     {

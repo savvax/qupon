@@ -103,7 +103,12 @@ export function SystemPanel() {
               })
             : t("loading")}
         </p>
-        <Button size="sm" loading={busy} onClick={() => void load()}>
+        <Button
+          size="sm"
+          variant="secondary"
+          loading={busy}
+          onClick={() => void load()}
+        >
           {t("refresh")}
         </Button>
       </div>

@@ -108,7 +108,9 @@ export default async function AdminOverviewPage() {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-extrabold tracking-tight">{t("title")}</h1>
-        <p className="mt-1 max-w-xl text-sm text-n600">{t("lead")}</p>
+        <p className="mt-1 max-w-2xl text-sm text-pretty text-n600">
+          {t("lead")}
+        </p>
       </header>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         {cards.map((c) => (

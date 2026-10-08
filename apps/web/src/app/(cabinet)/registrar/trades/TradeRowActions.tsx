@@ -95,19 +95,17 @@ export function TradeRowActions({
     });
 
   return (
-    <div className="ml-auto flex w-max max-w-[19rem] flex-wrap justify-end gap-2">
+    // One filled action per row (Hick's law): Fund while a leg is missing, Settle once ready; the two ways out
+    // (cancel, force-return) are quiet text buttons so they never read as the next step.
+    <div className="ml-auto flex w-max max-w-[19rem] flex-wrap items-center justify-end gap-1.5">
       {demoSides.length > 0 && (
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={busy}
-          onClick={() => void fundDemo()}
-        >
+        <Button size="sm" disabled={busy} onClick={() => void fundDemo()}>
           {t("row.fundDemo")}
         </Button>
       )}
       <Button
         size="sm"
+        variant={ready ? "primary" : "secondary"}
         disabled={!ready || busy}
         title={ready ? undefined : t("row.settleHint")}
         onClick={() => void settle()}
@@ -116,7 +114,8 @@ export function TradeRowActions({
       </Button>
       <Button
         size="sm"
-        variant="secondary"
+        variant="ghost"
+        className="!text-n600 hover:!bg-n100"
         disabled={busy}
         onClick={() => setConfirm("cancel")}
       >
@@ -124,7 +123,8 @@ export function TradeRowActions({
       </Button>
       <Button
         size="sm"
-        variant="destructive"
+        variant="ghost"
+        className="!text-err-fg hover:!bg-err-bg"
         disabled={busy}
         onClick={() => setConfirm("force")}
       >

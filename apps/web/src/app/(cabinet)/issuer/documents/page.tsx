@@ -48,7 +48,7 @@ export default async function IssuerDocumentsPage() {
         <DataTable
           rows={docs}
           rowKey={(d) => String(d.id)}
-          empty={t("empty")}
+          empty={user?.isDemo ? t("emptyDemo") : t("empty")}
           columns={[
             {
               key: "file",

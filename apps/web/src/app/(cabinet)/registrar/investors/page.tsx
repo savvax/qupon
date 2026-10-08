@@ -98,7 +98,9 @@ export default async function RegistrarInvestors({
           <h1 className="text-2xl font-extrabold tracking-tight">
             {t("title")}
           </h1>
-          <p className="mt-1 max-w-xl text-sm text-n600">{t("lead")}</p>
+          <p className="mt-1 max-w-2xl text-sm text-pretty text-n600">
+            {t("lead")}
+          </p>
         </div>
         <OnboardDialog
           series={series.map((s) => ({ mint: s.mint, ticker: s.ticker }))}

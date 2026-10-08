@@ -221,7 +221,8 @@ const actions: Record<string, ActionDTO[]> = {
       holdersRetired: null,
       proposalNewRateBps: 1200,
       proposalNewMaturity: null,
-      votingEndsAt: "2099-01-01T00:00:00+05:00",
+      // Rolling deadline: the vote stays open whenever the mock runs.
+      votingEndsAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
       votesFor: null,
       votesAgainst: null,
       votesAbstain: null,

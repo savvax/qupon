@@ -63,23 +63,21 @@ function ActionCard({
       href={`/registrar/actions/${action.pda}`}
       className="qp-lift block rounded-btn border border-n200 bg-n0 px-3 py-2.5 text-sm hover:border-g300 hover:bg-g50"
     >
-      <div className="flex items-center justify-between gap-2">
-        <span className="num min-w-0 truncate font-bold">{ticker}</span>
-        <span className="shrink-0">
-          <Badge tone="info">{kindLabel}</Badge>
-        </span>
+      {/* Stacked, not side by side: in a 1/6-wide column the badge used to squeeze the ticker down to "Q.". */}
+      <div className="num truncate font-bold">{ticker}</div>
+      <div className="num truncate text-xs text-n500">{action.corpId}</div>
+      {/* badge and date on their own lines: the card keeps one height in EN and RU */}
+      <div className="mt-2">
+        <Badge tone="info">{kindLabel}</Badge>
       </div>
-      <div className="mt-1 flex items-center justify-between gap-2 text-xs text-n500">
-        <span className="num shrink-0 whitespace-nowrap">
-          {formatDate(action.recordAt, locale)}
-        </span>
-        <span className="num min-w-0 truncate">{action.corpId}</span>
+      <div className="num mt-1 text-xs whitespace-nowrap text-n500">
+        {formatDate(action.recordAt, locale)}
       </div>
     </Link>
   );
 }
 
-/** Pipeline of action cards: stage columns (≥ 200 px, scrolling) from 640 px up; on phones a vertical list of the
+/** Pipeline of action cards: six equal columns from 1280 px, 200 px scrolling columns from 640 px; on phones a vertical list of the
  * non-empty stages. */
 export async function Pipeline({
   actions,
@@ -96,7 +94,7 @@ export async function Pipeline({
   return (
     <Card>
       <h2 className="text-base font-bold">{dash("pipeline")}</h2>
-      <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:gap-3 sm:overflow-x-auto sm:pb-1">
+      <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:gap-3 sm:overflow-x-auto sm:pb-1 xl:grid xl:grid-cols-6 xl:overflow-visible">
         {COLUMNS.map((col) => {
           const inStage = actions.filter((a) =>
             col.statuses.includes(a.status),
@@ -105,7 +103,7 @@ export async function Pipeline({
             <section
               key={col.key}
               className={cx(
-                "sm:w-[200px] sm:shrink-0",
+                "min-w-0 sm:w-[200px] sm:shrink-0 xl:w-auto",
                 inStage.length === 0 && "max-sm:hidden",
               )}
             >

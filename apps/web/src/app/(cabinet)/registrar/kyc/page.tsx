@@ -101,7 +101,7 @@ export default async function RegistrarKycPage({
       </header>
       <nav
         aria-label={t("filter")}
-        className="inline-flex gap-1 rounded-btn border border-n200 bg-n0 p-1"
+        className="inline-flex gap-1 rounded-btn bg-n100 p-1"
       >
         {STATUSES.map((s) => (
           <Link
@@ -111,8 +111,8 @@ export default async function RegistrarKycPage({
             className={cx(
               "rounded-sm px-3 py-1.5 text-sm font-semibold transition-colors",
               s === status
-                ? "bg-g600 text-white"
-                : "text-n600 hover:bg-n50 hover:text-n900",
+                ? "bg-n0 text-n900 shadow-sm"
+                : "text-n600 hover:text-n900",
             )}
           >
             <StableLabel>{t(`tabs.${s}`)}</StableLabel>

@@ -77,7 +77,12 @@ export default async function AdminUsersPage({
       key: "org",
       header: t("colOrg"),
       hideBelow: "md",
-      render: (u) => <span className="text-n600">{orgName(u.orgId)}</span>,
+      render: (u) =>
+        u.orgId == null ? (
+          <span className="text-n400">{t("noOrg")}</span>
+        ) : (
+          <span className="text-n600">{orgName(u.orgId)}</span>
+        ),
     },
     {
       key: "status",

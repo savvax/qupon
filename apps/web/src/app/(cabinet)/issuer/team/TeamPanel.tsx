@@ -123,17 +123,24 @@ export function TeamPanel({
         columns={cols}
         rows={members}
         rowKey={(m) => String(m.id)}
-        empty={t("empty")}
+        empty={
+          <div className="flex flex-col items-center gap-3">
+            <span>{t("empty")}</span>
+            <Button disabled={demo} onClick={() => setOpen(true)}>
+              {t("invite")}
+            </Button>
+            {demo && <span className="text-xs text-n500">{t("demo")}</span>}
+          </div>
+        }
       />
-      {demo ? (
-        <p className="mt-4 text-sm text-n600">
-          <StableTextLike>{t("demo")}</StableTextLike>
-        </p>
-      ) : (
-        <div className="mt-4 flex justify-end">
-          <Button onClick={() => setOpen(true)}>{t("invite")}</Button>
-        </div>
-      )}
+      {members.length > 0 &&
+        (demo ? (
+          <p className="mt-4 text-sm text-n600">{t("demo")}</p>
+        ) : (
+          <div className="mt-4 flex justify-end">
+            <Button onClick={() => setOpen(true)}>{t("invite")}</Button>
+          </div>
+        ))}
 
       <Dialog
         open={open}
@@ -197,9 +204,4 @@ export function TeamPanel({
       </Dialog>
     </div>
   );
-}
-
-/** The dialog lives in a client component; the demo note keeps the text stable across locales. */
-function StableTextLike({ children }: { children: string }) {
-  return <span>{children}</span>;
 }

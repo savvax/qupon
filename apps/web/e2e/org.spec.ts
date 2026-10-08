@@ -18,10 +18,10 @@ test("issuer: organisation and team pages render, demo is read-only", async ({
 
   await page.goto("/issuer/team");
   await expect(page.getByRole("heading", { name: "Team" })).toBeVisible();
-  // the shared demo identity cannot invite — the note says so instead of the button
+  // the shared demo identity cannot invite: the button is disabled and the note says why
   await expect(
     page.getByRole("button", { name: "Invite a member" }),
-  ).toHaveCount(0);
+  ).toBeDisabled();
   await expect(page.getByText(/the team cannot be changed/)).toBeVisible();
 });
 
