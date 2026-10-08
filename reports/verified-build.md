@@ -8,7 +8,7 @@ Date: 2026-10-06 (updated after tasks 1301 and 91301) · program id `QPN1zdVm6Pg
 solana-verify build --library-name qupon_bonds \
   --base-image solanafoundation/solana-verifiable-build:4.3.0
 solana-verify get-executable-hash target/deploy/qupon_bonds.so
-# bbe6b2bffcef1f7badda656152e4611fd1c801323bab68f298bb38c3bd4d4183
+# fbd258bbba79abf8bfb8f991a9c0b30ef6ce33c84b288acd3557bb92872865f5
 ```
 
 - solana-verify **0.5.2**. The default image (3.0.1, cargo 1.84) cannot build our
@@ -18,12 +18,13 @@ solana-verify get-executable-hash target/deploy/qupon_bonds.so
 
 ## On-chain match
 
-- Current binary (tasks 1301 + 91301: `admit_trade` / `release_trade`, the record-date guard for Solana DvP trades,
-  re-thaw of a recreated bond account): docker-built .so (619,336 bytes) deployed with the registrar upgrade
-  authority, tx `3iErTwXSjU4aNa5NxkEFnfQN2YjuoaCbnvy56PTZCZXqXxdurGspBBjcAb2SHPyDZnZryaDGtU4SGVzxzEcZH3CW`
-  (previous verified binaries: 041 `3d419567…`, 036 `804e0ca8…`).
+- Current binary (task 1402: partial calls keep units and lower the outstanding face, `fund_action` capped at the
+  shortfall, `sweep_escrow`): docker-built .so (633,000 bytes; program account extended by 20,000 bytes) deployed
+  with the registrar upgrade authority, tx
+  `51Kkq7y1BMPCjHsDCMFLBdaZj15fgaqMPjBRSoaUhtigzSZiRYP1zR5fXmE28zr8yFahVxSCbKVDf6XYktHChgQf`; IDL republished
+  (previous verified binaries: 1301 `bbe6b2bf…`, 041 `3d419567…`, 036 `804e0ca8…`).
 - `solana-verify get-program-hash QPN1zd… -u devnet` →
-  `bbe6b2bffcef1f7badda656152e4611fd1c801323bab68f298bb38c3bd4d4183` ✅ matches.
+  `fbd258bbba79abf8bfb8f991a9c0b30ef6ce33c84b288acd3557bb92872865f5` ✅ matches.
 
 ## Judges: verify from repo
 

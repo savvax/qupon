@@ -201,7 +201,7 @@ investor's custodial wallet (`~/.config/qupon/investor3.json`, powers `POST /dem
 The deployed program is a deterministic `solana-verify` docker build (solana-verify 0.5.2, image `solanafoundation/solana-verifiable-build:4.3.0`):
 
 - Program id: [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet)
-- Build hash (SHA-256, on-chain match confirmed): `bbe6b2bffcef1f7badda656152e4611fd1c801323bab68f298bb38c3bd4d4183`
+- Build hash (SHA-256, on-chain match confirmed): `fbd258bbba79abf8bfb8f991a9c0b30ef6ce33c84b288acd3557bb92872865f5`
 
 ```bash
 # reproduce the build and compare with the deployed program
