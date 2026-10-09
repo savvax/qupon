@@ -143,6 +143,7 @@ func TestAdvanceLifecycle(t *testing.T) {
 		code  int
 		step  string // "" → expect an error body
 		errIn string
+		noSig bool // the CLI skipped: no signature in the response
 	}
 	// One POST per advance; move the fake chain between calls like devnet would.
 	steps := []struct {
@@ -150,14 +151,20 @@ func TestAdvanceLifecycle(t *testing.T) {
 		want   want
 		mutate func(*chain.CorporateAction)
 	}{
-		{body: `{"confirm":true}`, want: want{200, "strike_record", ""}, mutate: func(a *chain.CorporateAction) { a.Status = 1 }},
-		{body: `{"confirm":true}`, want: want{200, "snapshot_batch", ""}, mutate: func(a *chain.CorporateAction) { a.HoldersSnapshotted = 1; a.UnitsSnapshotted = 100 }},
-		{body: `{"confirm":true}`, want: want{200, "finalize_snapshot", ""}, mutate: func(a *chain.CorporateAction) { a.Status = 2 }},
-		{body: `{"confirm":true}`, want: want{400, "", "autofund"}, mutate: nil},
-		{body: `{"confirm":true,"autofund":true}`, want: want{200, "fund_action", ""}, mutate: func(a *chain.CorporateAction) { a.Status = 3 }},
-		{body: `{"confirm":true}`, want: want{200, "pay_batch", ""}, mutate: func(a *chain.CorporateAction) { a.Status = 4; a.HoldersPaid = 1 }},
-		{body: `{"confirm":true}`, want: want{200, "complete_action", ""}, mutate: func(a *chain.CorporateAction) { a.Status = 5 }},
-		{body: `{"confirm":true}`, want: want{400, "", "completed"}, mutate: nil},
+		{body: `{"confirm":true}`, want: want{200, "strike_record", "", false}, mutate: func(a *chain.CorporateAction) { a.Status = 1 }},
+		{body: `{"confirm":true}`, want: want{200, "snapshot_batch", "", false}, mutate: func(a *chain.CorporateAction) { a.HoldersSnapshotted = 1; a.UnitsSnapshotted = 100 }},
+		{body: `{"confirm":true}`, want: want{200, "finalize_snapshot", "", false}, mutate: func(a *chain.CorporateAction) { a.Status = 2 }},
+		{body: `{"confirm":true}`, want: want{400, "", "autofund", false}, mutate: nil},
+		{body: `{"confirm":true,"autofund":true}`, want: want{200, "fund_action", "", false}, mutate: func(a *chain.CorporateAction) { a.Status = 3 }},
+		{body: `{"confirm":true}`, want: want{200, "pay_batch", "", false}, mutate: func(a *chain.CorporateAction) { a.Status = 4; a.HoldersPaid = 1 }},
+		{body: `{"confirm":true}`, want: want{200, "complete_action", "", false}, mutate: func(a *chain.CorporateAction) {
+			a.Status = 5
+			// the escrow follow-up already swept; the next advance re-sweeps → the CLI reports the skip
+			if err := os.WriteFile(os.Getenv("FAKE_CLI_STDOUT"), []byte(`{"ok":true,"skipped":"already swept"}`), 0o644); err != nil {
+				t.Fatalf("rewrite stdout: %v", err)
+			}
+		}},
+		{body: `{"confirm":true}`, want: want{200, "sweep_escrow", "", true}, mutate: nil}, // completed → sweep (task 1414)
 	}
 	for i, s := range steps {
 		code, body := postAdvance(t, srv.URL, s.body)
@@ -168,7 +175,9 @@ func TestAdvanceLifecycle(t *testing.T) {
 			if body["step"] != s.want.step || body["ok"] != true {
 				t.Fatalf("step %d: body = %v, want step %q ok", i, body, s.want.step)
 			}
-			if body["signature"] != "sig-advance" {
+			if s.want.noSig && body["signature"] != nil {
+				t.Fatalf("step %d: signature = %v, want none (skipped)", i, body["signature"])
+			} else if !s.want.noSig && body["signature"] != "sig-advance" {
 				t.Fatalf("step %d: signature = %v, want sig-advance", i, body["signature"])
 			}
 		} else if !strings.Contains(fmt.Sprint(body["error"]), s.want.errIn) {
@@ -192,6 +201,8 @@ func TestAdvanceLifecycle(t *testing.T) {
 		"--json action:fund --series QPNb1 --index 0",
 		"--json action:pay --series QPNb1 --index 0",
 		"--json action:complete --series QPNb1 --index 0",
+		"--json action:sweep --series QPNb1 --index 0", // escrow follow-up after complete (task 1414)
+		"--json action:sweep --series QPNb1 --index 0", // completed action → sweep step
 	}
 	if strings.Join(got, "\n") != strings.Join(wantArgs, "\n") {
 		t.Fatalf("cli log = %q, want %q", got, wantArgs)
@@ -207,6 +218,10 @@ func TestAdvanceLifecycle(t *testing.T) {
 	}
 	if events[0].Kind != "advance:strike_record" || events[0].Sig != "sig-advance" {
 		t.Fatalf("first activity = %s/%s, want advance:strike_record/sig-advance", events[0].Kind, events[0].Sig)
+	}
+	// the escrow follow-up after complete (task 1414): one CLI run, one audit row
+	if events[6].Kind != "advance:"+executor.StepSweep || events[6].Sig != "sig-advance" || events[6].ActionPDA == nil {
+		t.Fatalf("follow-up row = %+v, want advance:%s/sig-advance with the action pda", events[6], executor.StepSweep)
 	}
 }
 

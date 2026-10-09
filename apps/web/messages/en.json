@@ -721,6 +721,7 @@
       "complete": "Completed",
       "retire": "Retired",
       "close": "Closed",
+      "sweep": "Escrow swept",
       "votes": "Voting",
       "meet_finalize": "Result",
       "apply": "Terms applied"

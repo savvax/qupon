@@ -8,6 +8,7 @@ import type { ActionDTO, ActivityLike } from "./api";
 
 /** One row of an action timeline (stepper + timeline card on the registrar action page). */
 export type TimelineStep = {
+  id: StepId;
   label: string;
   state: "done" | "current" | "pending" | "failed";
   /** Extra detail under a timeline row: a `steps.detail.*` message key with its values. */
@@ -28,6 +29,7 @@ export type StepId =
   | "complete"
   | "retire"
   | "close"
+  | "sweep"
   | "votes"
   | "meet_finalize"
   | "apply";
@@ -43,6 +45,7 @@ export const STEP_LABELS: Record<StepId, string> = {
   complete: "Complete",
   retire: "Retire tokens",
   close: "Close series",
+  sweep: "Sweep escrow",
   votes: "Cast votes (portal)",
   meet_finalize: "Finalize meeting",
   apply: "Apply terms change (ARDFM registration — SIMULATED)",
@@ -94,6 +97,7 @@ const EVENT_TO_STEP: Record<string, StepId> = {
   ActionFunded: "fund",
   EntitlementPaid: "pay",
   ActionCompleted: "complete",
+  EscrowSwept: "sweep",
   UnitsRetired: "retire",
   SeriesClosed: "close",
   VoteCast: "votes",
@@ -105,6 +109,8 @@ const EVENT_TO_STEP: Record<string, StepId> = {
   "advance:fund_action": "fund",
   "advance:pay_batch": "pay",
   "advance:complete_action": "complete",
+  "advance:sweep_escrow": "sweep",
+  "scheduler:sweep_escrow": "sweep",
   "advance:retire_batch": "retire",
   "advance:close_series": "close",
   "advance:meeting_finalize": "meet_finalize",
@@ -154,6 +160,7 @@ const DONE_STATUSES: Record<StepId, string[]> = {
   complete: ["Completed", "Retiring"],
   retire: [], // derived from holdersRetired below
   close: [], // derived from series status / SeriesClosed event below
+  sweep: [], // derived from the sweep activity row below (task 1414)
   votes: ["Finalized"],
   meet_finalize: ["Finalized"],
   apply: [], // BMET Completed — derived below
@@ -245,6 +252,9 @@ export function buildTimeline(
   }
 
   const steps = stepsForKind(a.kind);
+  // Task 1414: "Escrow swept" joins the timeline only once a sweep activity row
+  // exists — complete/cancel leave no pending sweep step to render.
+  if (byStep.has("sweep")) steps.push("sweep");
   const cancelled = a.status === "Cancelled";
   let currentAssigned = false;
   return steps.map((step) => {
@@ -263,6 +273,7 @@ export function buildTimeline(
       state = "pending";
     }
     return {
+      id: step,
       label: STEP_LABELS[step],
       state,
       detail: stepDetail(step, a),

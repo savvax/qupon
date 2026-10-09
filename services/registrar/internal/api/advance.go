@@ -135,6 +135,13 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 
 		recordAdvance(r, st, logger, pda, action.Index, step, res)
 
+		// Task 1414: return the finished action's escrow to the issuer right after the
+		// finishing step (complete/close clear series.open_action — no later advance
+		// would find the action). Best effort: a failed sweep is logged, never fatal.
+		if step == executor.StepComplete || step == executor.StepClose {
+			sweepEscrow(context.WithoutCancel(r.Context()), deps, st, logger, pda, action.Index, name)
+		}
+
 		// Verify against the chain, not the CLI output.
 		fresh, err := deps.Read.FetchCorporateAction(r.Context(), pda)
 		if err != nil || fresh == nil {
@@ -183,6 +190,43 @@ func recordAdvance(r *http.Request, st *store.Store, logger *slog.Logger, pda so
 	}); err != nil {
 		// The advance succeeded; only the audit trail is degraded.
 		logger.Error("record advance activity", "pda", pda.String(), "step", step, "err", err)
+	}
+}
+
+// sweepEscrow runs `qupon action:sweep` for a just-finished action (task 1414).
+// A failure is logged and swallowed — the completed action stays completed — and
+// an already-swept escrow (CLI skip) records no activity row.
+func sweepEscrow(ctx context.Context, deps Deps, st *store.Store, logger *slog.Logger, pda solana.PublicKey, index uint32, series string) {
+	args, err := executor.Args(executor.StepSweep, series, index)
+	if err != nil {
+		logger.Error("sweep argv", "pda", pda.String(), "err", err)
+		return
+	}
+	res, err := deps.Executor.Run(ctx, args...)
+	if err != nil {
+		logger.Warn("escrow sweep failed (action stays finished)", "pda", pda.String(), "err", err)
+		return
+	}
+	if !res.OK {
+		logger.Warn("escrow sweep refused (action stays finished)", "pda", pda.String(), "err", res.Error)
+		return
+	}
+	if res.Skipped {
+		return // already swept (e.g. swept after complete, close re-runs the follow-up)
+	}
+	sig := res.Signature
+	if sig == "" {
+		sig = fmt.Sprintf("advance-%s-%d-%d", executor.StepSweep, index, time.Now().UnixNano())
+	}
+	payload, _ := json.Marshal(map[string]any{
+		"step": executor.StepSweep, "ok": res.OK, "action": pda.String(), "index": index, "skipped": res.Skipped,
+	})
+	apda := pda.String()
+	if _, err := st.InsertActivity(ctx, store.Activity{
+		Ts: time.Now().Unix(), ActionPDA: &apda, Kind: "advance:" + executor.StepSweep,
+		Payload: payload, Sig: sig, Slot: uint64(res.Slot),
+	}); err != nil {
+		logger.Error("record sweep activity", "pda", pda.String(), "err", err)
 	}
 }
 

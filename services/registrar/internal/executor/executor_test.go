@@ -86,6 +86,20 @@ func TestRunCliFailure(t *testing.T) {
 	}
 }
 
+// The sweep CLI reports an already-swept escrow as a skip-reason string, not a bool.
+func TestRunSkipReasonString(t *testing.T) {
+	dir := t.TempDir()
+	stdout := writeFile(t, dir, "out.json", `{"ok":true,"skipped":"already swept"}`)
+	t.Setenv("FAKE_CLI_STDOUT", stdout)
+	res, err := New(fakeCLI(t), "testdata/devnet.json", nil).Run(t.Context(), "action:sweep", "--series", "QPNb1", "--index", "1")
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if !res.OK || !bool(res.Skipped) {
+		t.Fatalf("res = %+v, want ok with skipped=true (reason string)", res)
+	}
+}
+
 func TestRunCliFailureJsonError(t *testing.T) {
 	dir := t.TempDir()
 	stdout := writeFile(t, dir, "out.json", `{"ok":false,"error":"TooEarly: record date not reached"}`)
@@ -226,14 +240,14 @@ func TestNextStep(t *testing.T) {
 			wantStep: StepPay},
 		{name: "settling with all paid completes", action: chain.CorporateAction{Status: 4, HoldersPaid: 3, HoldersSnapshotted: 3},
 			wantStep: StepComplete},
-		{name: "completed is done", action: chain.CorporateAction{Status: 5},
-			wantWaitIn: "completed"},
+		{name: "completed sweeps the escrow back to the issuer", action: chain.CorporateAction{Status: 5},
+			wantStep: StepSweep},
 		{name: "retiring with holders retires", action: chain.CorporateAction{Status: 6, HoldersRetired: 0, HoldersSnapshotted: 3},
 			wantStep: StepRetire},
 		{name: "retiring fully burnt closes", action: chain.CorporateAction{Status: 6, HoldersRetired: 3, HoldersSnapshotted: 3},
 			wantStep: StepClose},
-		{name: "cancelled is done", action: chain.CorporateAction{Status: 7},
-			wantWaitIn: "cancelled"},
+		{name: "cancelled sweeps the escrow back to the issuer", action: chain.CorporateAction{Status: 7},
+			wantStep: StepSweep},
 		{name: "voting open before deadline waits", action: chain.CorporateAction{Status: 8, VotingEndsAt: later.Unix(), UnitsSnapshotted: 100},
 			now: now, wantWaitIn: "voting"},
 		{name: "voting open at deadline finalizes", action: chain.CorporateAction{Status: 8, VotingEndsAt: now.Unix(), UnitsSnapshotted: 100},

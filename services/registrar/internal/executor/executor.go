@@ -43,6 +43,7 @@ const (
 	StepClose      = "close_series"
 	StepMeetFinal  = "meeting_finalize"
 	StepApplyTerms = "apply_terms_change"
+	StepSweep      = "sweep_escrow"
 )
 
 // cliCommand maps a step to its `qupon` CLI command (clients/ts/src/cli.ts).
@@ -57,6 +58,7 @@ var cliCommand = map[string]string{
 	StepClose:      "series:close",
 	StepMeetFinal:  "meeting:finalize",
 	StepApplyTerms: "meeting:apply",
+	StepSweep:      "action:sweep",
 }
 
 // Args builds the CLI argv for a step. Every lifecycle command takes
@@ -76,7 +78,9 @@ type Result struct {
 	Signature string     `json:"signature"`
 	Slot      flexUint64 `json:"slot"`
 	Error     string     `json:"error"`
-	Skipped   bool       `json:"skipped"` // e.g. action:fund with a full escrow
+	// Skipped is true for a boolean skip (action:fund with a full escrow) and for
+	// the CLI's skip-reason strings (action:sweep → "already swept").
+	Skipped flexBool `json:"skipped"`
 	// Command-specific passthrough fields the CLI merges into its JSON output.
 	Investor    string `json:"investor"`    // investor:register — the new Investor PDA
 	Attestation string `json:"attestation"` // kyc:attest — the SAS attestation PDA
@@ -136,6 +140,16 @@ func (f *flexUint64) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("slot %s: %w", string(b), err)
 	}
 	*f = flexUint64(n)
+	return nil
+}
+
+// flexBool accepts true/false and the CLI's skip-reason strings ("already
+// swept") — any non-empty, non-false string is a skip.
+type flexBool bool
+
+func (f *flexBool) UnmarshalJSON(b []byte) error {
+	s := strings.Trim(strings.TrimSpace(string(b)), `"`)
+	*f = flexBool(s == "true" || (s != "false" && s != "null" && s != ""))
 	return nil
 }
 
@@ -286,15 +300,15 @@ func NextStep(a *chain.CorporateAction, supply uint64, openTrades uint32, now ti
 			return StepPay, ""
 		}
 		return StepComplete, ""
-	case 5: // Completed
-		return "", "action completed"
+	case 5: // Completed: the escrow goes back to the issuer (idempotent — a re-run is a skip)
+		return StepSweep, ""
 	case 6: // Retiring: burn until every holder is retired, then close
 		if a.HoldersRetired < a.HoldersSnapshotted {
 			return StepRetire, ""
 		}
 		return StepClose, ""
-	case 7: // Cancelled
-		return "", "action cancelled"
+	case 7: // Cancelled: the funded escrow goes back to the issuer
+		return StepSweep, ""
 	case 8: // VotingOpen: finalize at the deadline or on full turnout
 		voted := a.VotesFor + a.VotesAgainst + a.VotesAbstain
 		if now.Before(time.Unix(a.VotingEndsAt, 0)) && voted < a.UnitsSnapshotted {

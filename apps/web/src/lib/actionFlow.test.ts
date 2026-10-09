@@ -204,6 +204,27 @@ describe("buildTimeline", () => {
       detail: { key: "paid", values: { done: 1, count: 3 } },
     });
   });
+
+  it("appends the sweep step only when a sweep activity row exists (task 1414)", () => {
+    const done = { ...base, status: "Completed" as const };
+    // no row yet: the coupon path ends at complete
+    expect(buildTimeline(done, [], false).map((s) => s.id)).not.toContain(
+      "sweep",
+    );
+    // the on-chain event row (ingest) and the Go audit rows all mark it swept
+    for (const kind of [
+      "EscrowSwept",
+      "advance:sweep_escrow",
+      "scheduler:sweep_escrow",
+    ]) {
+      const steps = buildTimeline(done, [ev(9, kind, "sig-sweep")], false);
+      expect(steps.at(-1)).toMatchObject({
+        id: "sweep",
+        state: "done",
+        signature: "sig-sweep",
+      });
+    }
+  });
 });
 
 describe("findOnchainError", () => {

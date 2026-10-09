@@ -207,7 +207,7 @@ func (s *Scheduler) handleSeries(ctx context.Context, rec chain.SeriesRecord) {
 		s.propose(ctx, series, open, d, index, args)
 		return
 	}
-	s.execute(ctx, series.Mint.String(), d, args)
+	s.execute(ctx, series.Mint.String(), d, args, series.OpenAction)
 }
 
 // argv composes the qupon CLI arguments for a decision.
@@ -293,7 +293,7 @@ func flagValue(args []string, flag string) (string, bool) {
 // execute runs one CLI step and records the outcome in the activity feed.
 // A refused step (chain said TooEarly/WrongStatus…) is a warn, not an error:
 // the next tick re-decides from the chain.
-func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args []string) {
+func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args []string, actionPda *solana.PublicKey) {
 	res, err := s.Exec.Run(ctx, args...)
 	if err != nil {
 		s.Log.Error("scheduler exec", "series", mint, "step", d.Action, "err", err)
@@ -315,6 +315,56 @@ func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args [
 		s.Log.Error("scheduler: record activity", "err", err)
 	}
 	s.Log.Info("scheduler step", "series", mint, "step", d.Action, "sig", res.Signature, "slot", res.Slot)
+	// Task 1414: a finished action's escrow goes back to the issuer right after the
+	// finishing step — complete/close clear series.open_action, so no later tick
+	// would find the action again.
+	if d.Action == executor.StepComplete || d.Action == executor.StepClose {
+		s.sweep(ctx, mint, args, actionPda)
+	}
+}
+
+// sweep runs `qupon action:sweep` for a just-finished action (task 1414). Best
+// effort: a failed sweep is logged and swallowed — the finished action stays
+// finished — and an already-swept escrow (CLI skip) records no activity row.
+func (s *Scheduler) sweep(ctx context.Context, mint string, doneArgs []string, actionPda *solana.PublicKey) {
+	name, okName := flagValue(doneArgs, "--series")
+	idx, okIdx := flagValue(doneArgs, "--index")
+	index, err := strconv.ParseUint(idx, 10, 32)
+	if !okName || !okIdx || err != nil {
+		s.Log.Error("scheduler: sweep: cannot rebuild argv from the finished step", "args", doneArgs, "err", err)
+		return
+	}
+	args, err := executor.Args(executor.StepSweep, name, uint32(index))
+	if err != nil {
+		s.Log.Error("scheduler: sweep argv", "series", mint, "err", err)
+		return
+	}
+	res, err := s.Exec.Run(ctx, args...)
+	if err != nil {
+		s.Log.Warn("scheduler: escrow sweep failed (action stays finished)", "series", mint, "err", err)
+		return
+	}
+	if !res.OK {
+		s.Log.Warn("scheduler: escrow sweep refused (action stays finished)", "series", mint, "err", res.Error)
+		return
+	}
+	if res.Skipped {
+		return // already swept (e.g. REDM: swept after complete, close re-runs the follow-up)
+	}
+	payload, _ := json.Marshal(map[string]any{"step": executor.StepSweep, "ok": true})
+	mintArg := mint
+	row := store.Activity{
+		Ts: s.Now().Unix(), SeriesMint: &mintArg, Kind: "scheduler:" + executor.StepSweep,
+		Payload: payload, Sig: sigOr(Decision{Action: executor.StepSweep}, res, s.Now()), Slot: uint64(res.Slot),
+	}
+	if actionPda != nil {
+		p := actionPda.String()
+		row.ActionPDA = &p
+	}
+	if _, err := s.Store.InsertActivity(ctx, row); err != nil {
+		s.Log.Error("scheduler: record sweep activity", "err", err)
+	}
+	s.Log.Info("scheduler step", "series", mint, "step", executor.StepSweep, "sig", res.Signature, "slot", res.Slot)
 }
 
 // recordPartialBatches writes one activity row per completed batch of a failed

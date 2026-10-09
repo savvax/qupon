@@ -21,6 +21,7 @@ import {
 	getPayBatchInstruction,
 	getSnapshotBatchInstruction,
 	getStrikeRecordInstruction,
+	getSweepEscrowInstruction,
 } from "../generated/index.js";
 import { chunk, sortByOwner } from "../lib/batch.js";
 import { accrualDays, dayCountFromCode, packYmd } from "../lib/daycount.js";
@@ -421,6 +422,45 @@ async function runComplete(opts: ActionOpts, cmd: Command): Promise<void> {
 	await sendAndReport(rpc, authority, [instruction], "action:complete", { action });
 }
 
+async function runSweep(opts: ActionOpts, cmd: Command): Promise<void> {
+	const { rpc, cfg } = await initCtx(cmd);
+	const info = await loadSeries(rpc, cfg, opts.series);
+	const registrar = await signer(cmd, "registrar");
+	const { action, account } = await loadAction(rpc, info, opts.index);
+	// A closed escrow means the sweep already ran (the instruction closes the account).
+	const { value: escrow } = await rpc.getAccountInfo(account.escrow, { commitment: "confirmed", encoding: "base64" }).send();
+	if (escrow === null) {
+		out({ ok: true, command: "action:sweep", action, skipped: "already swept" });
+		return;
+	}
+	const cashMint = info.account.cashMint;
+	const cashTokenProgram = await tokenProgramOfMint(rpc, cashMint);
+	const issuer = info.account.issuer;
+	const issuerCash = (await findAssociatedTokenPda({ owner: issuer, tokenProgram: cashTokenProgram, mint: cashMint }))[0];
+	const { value: balance } = await rpc.getTokenAccountBalance(account.escrow).send();
+	log(`sweeping ${balance.amount} minor units from the escrow back to the issuer's cash account`);
+	const instructions = [
+		// The destination is any issuer cash account — create the ATA idempotently in the same tx.
+		getCreateAssociatedTokenIdempotentInstruction({
+			payer: registrar,
+			ata: issuerCash,
+			owner: issuer,
+			mint: cashMint,
+			tokenProgram: cashTokenProgram,
+		}),
+		getSweepEscrowInstruction({
+			authority: registrar,
+			series: info.pda,
+			action,
+			cashMint,
+			escrow: account.escrow,
+			issuerCash,
+			cashTokenProgram,
+		}),
+	];
+	await sendAndReport(rpc, registrar, instructions, "action:sweep", { action, amount: BigInt(balance.amount) });
+}
+
 const indexOpt = "--index <n>" as const;
 
 export function registerActionCommands(program: Command): void {
@@ -470,4 +510,9 @@ export function registerActionCommands(program: Command): void {
 		.requiredOption("--series <name>", "series name in config/devnet.json")
 		.option(indexOpt, "action index (default: the open action)")
 		.action(runComplete);
+
+	withGlobals(program.command("action:sweep").description("return a finished action's escrow to the issuer and close it (idempotent)"))
+		.requiredOption("--series <name>", "series name in config/devnet.json")
+		.option(indexOpt, "action index (default: the open action)")
+		.action(runSweep);
 }

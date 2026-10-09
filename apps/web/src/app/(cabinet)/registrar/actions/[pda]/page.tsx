@@ -14,7 +14,6 @@ import {
   buildTimeline,
   nextStep,
   paidTxByOwner,
-  stepsForKind,
   type StepId,
 } from "@/lib/actionFlow";
 import {
@@ -109,8 +108,9 @@ export default async function RegistrarActionPage({
     getTranslations("trades"),
   ]);
 
-  const ids = stepsForKind(action.kind);
   const timeline = buildTimeline(action, activity, series?.status === "Closed");
+  // the sweep step joins the timeline only when its activity row exists (task 1414)
+  const ids = timeline.map((s) => s.id);
   const next = nextStep(
     action,
     Date.now(),

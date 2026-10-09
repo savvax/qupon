@@ -203,7 +203,15 @@ func TestDecide(t *testing.T) {
 			open:   action(5),
 			supply: 2,
 			now:    now0,
-			want:   Decision{Kind: KindWait, Reason: "action completed"},
+			want:   Decision{Kind: KindStep, Action: executor.StepSweep},
+		},
+		{
+			name:   "cancelled action → sweep the escrow",
+			series: series(now0.Unix(), maturity),
+			open:   action(7),
+			supply: 2,
+			now:    now0,
+			want:   Decision{Kind: KindStep, Action: executor.StepSweep},
 		},
 		{
 			name:   "meeting actions are issuer-driven → wait",
@@ -350,6 +358,79 @@ func TestTickPayFailureRecordsPartialBatches(t *testing.T) {
 	}
 	if !strings.Contains(string(events[0].Payload), "batch 2/2 failed") {
 		t.Fatalf("payload = %s, want the CLI error recorded", events[0].Payload)
+	}
+}
+
+// settlingChain is one series whose open action is Settling with every holder
+// paid: one Tick runs complete_action, then the escrow sweep follow-up (task 1414).
+func settlingChain() *fakeChain {
+	return &fakeChain{
+		series: func() *chain.Series {
+			s := series(now0.Unix(), now0.Add(24*time.Hour).Unix())
+			s.OpenAction = &kAction
+			return s
+		}(),
+		action: func() *chain.CorporateAction {
+			a := action(4)
+			a.HoldersPaid = 2
+			return a
+		}(),
+	}
+}
+
+// TestTickCompleteSweepsEscrow (task 1414): a successful complete step is
+// followed by `qupon action:sweep` for the same action — complete clears
+// series.open_action, so no later tick would ever find it.
+func TestTickCompleteSweepsEscrow(t *testing.T) {
+	s, st, log := newScheduler(t, settlingChain(), cfg)
+	s.Tick(t.Context())
+
+	raw, _ := os.ReadFile(log)
+	want := "--json action:complete --series QPNb1 --index 3\n--json action:sweep --series QPNb1 --index 3"
+	if strings.TrimSpace(string(raw)) != want {
+		t.Fatalf("cli log = %q, want complete then sweep", raw)
+	}
+	events, err := st.ListActivity(t.Context(), 10)
+	if err != nil || len(events) != 2 {
+		t.Fatalf("activity rows = %d (%v), want complete + sweep", len(events), err)
+	}
+	if events[1].Kind != "scheduler:"+executor.StepSweep {
+		t.Fatalf("sweep kind = %s, want scheduler:%s", events[1].Kind, executor.StepSweep)
+	}
+	// the sweep row carries the action PDA so the web timeline can match it
+	if events[1].ActionPDA == nil || *events[1].ActionPDA != kAction.String() {
+		t.Fatalf("sweep row action = %v, want %s", events[1].ActionPDA, kAction)
+	}
+}
+
+// TestTickSweepFailureDoesNotFailCompletion (task 1414): a refused sweep is
+// logged and swallowed — the completion still lands as ok in the activity feed.
+func TestTickSweepFailureDoesNotFailCompletion(t *testing.T) {
+	s, st, log := newScheduler(t, settlingChain(), cfg)
+	// a CLI that succeeds for every step but the sweep
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "sweep-fails.sh")
+	script := "#!/bin/sh\n" +
+		"[ -n \"$FAKE_CLI_LOG\" ] && printf '%s\\n' \"$*\" >>\"$FAKE_CLI_LOG\"\n" +
+		"if [ \"$2\" = action:sweep ]; then echo '{\"ok\":false,\"error\":\"boom\"}'; exit 1; fi\n" +
+		"[ -f \"$FAKE_CLI_STDOUT\" ] && cat \"$FAKE_CLI_STDOUT\"\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatalf("write cli: %v", err)
+	}
+	s.Exec = executor.New(bin, s.Exec.ConfigPath(), nil)
+
+	s.Tick(t.Context())
+
+	raw, _ := os.ReadFile(log)
+	if !strings.Contains(string(raw), "action:sweep") {
+		t.Fatal("the sweep ran even though it fails")
+	}
+	events, err := st.ListActivity(t.Context(), 10)
+	if err != nil || len(events) != 1 {
+		t.Fatalf("activity rows = %d (%v), want only the completed step", len(events), err)
+	}
+	if events[0].Kind != "scheduler:"+executor.StepComplete || !strings.Contains(string(events[0].Payload), `"ok":true`) {
+		t.Fatalf("completion row = %+v, want ok scheduler:complete_action", events[0])
 	}
 }
 
