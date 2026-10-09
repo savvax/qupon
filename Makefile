@@ -70,6 +70,9 @@ demo-ui: ## devnet: fresh series + announced coupon for clicking through the con
 demo-trade: ## devnet: fresh series, a secondary trade settled by Solana DvP, the record-date guard, a coupon — writes reports/demo-trade.md
 	cd clients/ts && DEMO_TRADE=1 pnpm tsx scripts/demo-full.ts
 
+demo-squads: ## devnet: a 2-of-3 Squads vault is the paying agent and funds a coupon (fund_action via proposal/approve/execute) — writes reports/demo-squads.md
+	cd clients/ts && pnpm tsx scripts/demo-squads.ts
+
 api: ## run the Go registrar locally (loads .env, defaults PROGRAM_ID from config/devnet.json)
 	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
 	PROGRAM_ID=$${PROGRAM_ID:-$$(jq -r .programId config/devnet.json)}; \
@@ -86,4 +89,4 @@ web: ## run the web app locally
 status: ## task board
 	@bash ops/status.sh
 
-.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-ui demo-trade api web status
+.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-ui demo-trade demo-squads api web status

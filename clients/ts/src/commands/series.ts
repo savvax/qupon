@@ -31,6 +31,7 @@ interface InitOpts extends GlobalOptions {
 	maturityDate?: string;
 	quorumBps: string;
 	approvalBps: string;
+	payingAgent?: string;
 }
 
 export interface InitSeriesOpts {
@@ -40,6 +41,8 @@ export interface InitSeriesOpts {
 	approvalBps: number;
 	/** Bond mint override (default: the config value — series:create reloads the config after ensureBondMint). */
 	mint?: Address;
+	/** Paying-agent override (default: cfg.wallets.payingAgent), e.g. a Squads vault PDA. */
+	payingAgent?: Address;
 }
 
 /** Build and send init_series; returns the tx report without printing (shared with series:create). */
@@ -60,7 +63,7 @@ export async function initSeries(
 		cashMint,
 		cashTokenProgram,
 		issuer: address(cfg.wallets.issuer),
-		payingAgent: address(cfg.wallets.payingAgent),
+		payingAgent: opts.payingAgent ?? address(cfg.wallets.payingAgent),
 		isin: padAscii(sc.isin, 12),
 		ticker: padAscii(name, 16),
 		faceValue: BigInt(sc.faceValue),
@@ -95,6 +98,7 @@ async function runInitSeries(opts: InitOpts, cmd: Command): Promise<void> {
 		quorumBps: parseIntArg(opts.quorumBps, "--quorum-bps"),
 		approvalBps: parseIntArg(opts.approvalBps, "--approval-bps"),
 		mint,
+		...(opts.payingAgent !== undefined ? { payingAgent: address(opts.payingAgent) } : {}),
 	}, registrar);
 	out({ ok: true, signature: report.signature, slot: report.slot, series: opts.series, mint, seriesPda: report.seriesPda });
 }
@@ -111,5 +115,6 @@ export function registerSeriesCommands(program: Command): void {
 		.option("--maturity-date <ymd>", "maturity date YYYY-MM-DD (default: config/demo.json)")
 		.option("--quorum-bps <n>", "bondholder-meeting quorum in bps", "5000")
 		.option("--approval-bps <n>", "bondholder-meeting approval in bps", "6667")
+		.option("--paying-agent <address>", "paying agent (default: config wallets.payingAgent), e.g. a Squads vault")
 		.action(runInitSeries);
 }
