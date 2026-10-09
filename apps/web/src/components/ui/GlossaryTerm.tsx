@@ -3,27 +3,9 @@
 import { useTranslations } from "next-intl";
 import { type CSSProperties, type ReactNode, useId } from "react";
 import { StableLabel } from "@/components/i18n/StableLabel";
+import type { GlossaryKey } from "@/lib/glossary";
 
-export const GLOSSARY = [
-  "recordDate",
-  "snapshot",
-  "escrow",
-  "entitlement",
-  "accrued",
-  "cleanDirty",
-  "ytm",
-  "permissionless",
-  "transferHook",
-  "default",
-  "cure",
-  "taxVault",
-  "payingAgent",
-  "seev031",
-  "seev036",
-  "demoClock",
-  "dayCount",
-] as const;
-export type GlossaryKey = (typeof GLOSSARY)[number];
+export type { GlossaryKey };
 
 /**
  * A term with a dotted underline; click, tap or Enter opens its plain-language definition (native popover: Esc

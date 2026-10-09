@@ -375,6 +375,9 @@
 /* GlossaryTerm: a native popover. Anchored under its term where CSS anchor positioning exists; elsewhere the
    browser centres it (still readable, still dismissable with Esc or a tap outside). */
 .qp-term {
+  /* a button inside running text, a heading or a table header: inherit its case and tracking */
+  text-transform: inherit;
+  letter-spacing: inherit;
   text-decoration: underline dotted;
   text-decoration-color: var(--color-n400);
   text-underline-offset: 3px;

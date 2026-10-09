@@ -1031,7 +1031,7 @@
       }
     },
     "placement": {
-      "lead": "Primary placement at par with atomic DvP: bonds against cash in one transaction.",
+      "lead": "Primary placement at par with atomic <term>DvP</term>: bonds against cash in one transaction.",
       "series": "Series",
       "units": "Units",
       "unitsInvalid": "Enter a whole number of at least 1",

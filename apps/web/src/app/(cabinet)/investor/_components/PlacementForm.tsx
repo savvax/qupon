@@ -14,6 +14,7 @@ import { address } from "@solana/kit";
 import { Amount } from "@/components/ui/Amount";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Select } from "@/components/ui/Select";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -134,7 +135,9 @@ export function PlacementForm() {
 
   return (
     <Card padding="lg" className="max-w-2xl">
-      <p className="text-sm text-n600">{t("lead")}</p>
+      <p className="text-sm text-n600">
+        {t.rich("lead", { term: (c) => <GlossaryTerm term="dvp">{c}</GlossaryTerm> })}
+      </p>
       <form onSubmit={subscribe} className="mt-6 grid gap-5 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <Select

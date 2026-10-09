@@ -10,6 +10,7 @@ import { Kpi } from "@/components/ui/Kpi";
 import { Stagger, StaggerItem } from "@/components/motion/Stagger";
 import { DemoAsButton } from "@/components/shell/DemoAsButton";
 import { CountdownClock } from "@/components/ui/CountdownClock";
+import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { LifecycleRail, type RailNode } from "@/components/ui/LifecycleRail";
 import { MoneyFlow } from "@/components/ui/MoneyFlow";
 import { NowBar } from "@/components/ui/NowBar";
@@ -141,7 +142,7 @@ export default async function BondPage({
     },
     {
       key: "record",
-      header: t("cols.record"),
+      header: <GlossaryTerm term="recordDate">{t("cols.record")}</GlossaryTerm>,
       render: (r) => (
         <span className="num">{formatDate(r.recordDate, locale)}</span>
       ),
@@ -213,7 +214,7 @@ export default async function BondPage({
     },
   ];
 
-  const terms: [string, React.ReactNode][] = [
+  const terms: [React.ReactNode, React.ReactNode][] = [
     [
       t("terms.isin"),
       <span key="isin" className="num">
@@ -231,7 +232,7 @@ export default async function BondPage({
     ],
     [t("terms.face"), money(series.faceValue)],
     [
-      t("terms.rate"),
+      <GlossaryTerm key="rate" term="coupon">{t("terms.rate")}</GlossaryTerm>,
       <span key="rate" className="num">
         {bpsToPercent(series.couponRateBps, locale)}
       </span>,
@@ -251,7 +252,7 @@ export default async function BondPage({
       </span>,
     ],
     [
-      t("terms.quorum"),
+      <GlossaryTerm key="quorum" term="quorum">{t("terms.quorum")}</GlossaryTerm>,
       <span key="q" className="num">
         {bpsToPercent(series.quorumBps, locale)}
       </span>,
@@ -722,7 +723,7 @@ export default async function BondPage({
                 <dl className="grid rounded-card border border-n200 bg-n0 sm:grid-cols-2">
                   {terms.map(([k, v], i) => (
                     <div
-                      key={k}
+                      key={i}
                       className={`flex flex-col gap-1 p-4 sm:px-6 ${i > 0 ? "border-t border-n200" : ""} ${i === 1 ? "sm:border-t-0" : ""} sm:odd:border-r`}
                     >
                       <dt className="text-xs font-semibold text-n500">{k}</dt>

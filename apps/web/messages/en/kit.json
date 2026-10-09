@@ -117,17 +117,13 @@
       "term": "Record date",
       "def": "The moment that decides who gets paid: whoever holds the bond then receives the coupon, even if they sell it afterwards."
     },
-    "snapshot": {
-      "term": "Snapshot",
-      "def": "An on-chain copy of every holder's balance at the record date. The sum must equal the bonds outstanding, or the action cannot continue."
+    "exDate": {
+      "term": "Ex-date",
+      "def": "The first day a bond trades without the right to the next coupon. On Qupon the record date does this job: buy after it and the seller keeps the payout."
     },
-    "escrow": {
-      "term": "Escrow",
-      "def": "A program-owned account the issuer funds before payment. Money can only leave it to the holders, the tax vault or the paying agent recorded on-chain."
-    },
-    "entitlement": {
-      "term": "Entitlement",
-      "def": "What one holder is owed for one action: units × amount per bond, gross, tax and net, rounded half-up per holder."
+    "coupon": {
+      "term": "Coupon",
+      "def": "The interest payment a bond pays on its schedule — for these bonds, 10% a year in two halves of 50.00 ₸ per 1,000 ₸ bond."
     },
     "accrued": {
       "term": "Accrued interest",
@@ -141,21 +137,21 @@
       "term": "Yield to maturity",
       "def": "The annual return if you buy at today's price and hold to maturity, with every coupon paid on time."
     },
-    "permissionless": {
-      "term": "Permissionless step",
-      "def": "Any wallet can push this step forward. The program checks every rule, so nobody — not even the issuer — can stall a funded payment."
+    "entitlement": {
+      "term": "Entitlement",
+      "def": "What one holder is owed for one action: units × amount per bond, gross, tax and net, rounded half-up per holder."
     },
-    "transferHook": {
-      "term": "Transfer hook",
-      "def": "A check the bond token runs on every transfer. After the record date a position moves only once it is snapshotted, so trading never stops."
+    "snapshot": {
+      "term": "Snapshot",
+      "def": "An on-chain copy of every holder's balance at the record date. The sum must equal the bonds outstanding, or the action cannot continue."
     },
-    "default": {
-      "term": "Default",
-      "def": "The payment date plus one grace day passed and the escrow is short. Anyone can record it on-chain; the debt stays public until cured."
+    "snapshotHash": {
+      "term": "Snapshot hash",
+      "def": "One fingerprint of the whole register: the XOR of a hash per holder. Batch order does not change it, so anyone can verify the snapshot is complete."
     },
-    "cure": {
-      "term": "Cure",
-      "def": "Late funding of a defaulted payment. Holders on the record date are still the ones paid."
+    "escrow": {
+      "term": "Escrow",
+      "def": "A program-owned account the issuer funds before payment. Money can only leave it to the holders, the tax vault or the paying agent recorded on-chain."
     },
     "taxVault": {
       "term": "Tax vault",
@@ -165,13 +161,57 @@
       "term": "Paying agent",
       "def": "The bank that receives payouts for holders who chose a bank route and confirms the transfer with a reference. Bank transfer is simulated."
     },
-    "seev031": {
-      "term": "seev.031",
-      "def": "ISO 20022 corporate-action notification: the announcement custodians and banks read."
+    "redemption": {
+      "term": "Redemption",
+      "def": "The issuer pays back the face value at maturity and the bonds are burned. On Qupon pay and burn happen in one instruction."
     },
-    "seev036": {
-      "term": "seev.036",
-      "def": "ISO 20022 movement confirmation: one per holder, stating what was paid and when."
+    "earlyCall": {
+      "term": "Early redemption (call)",
+      "def": "The issuer's right to pay back the bonds before maturity, announced as a corporate action with its own record date."
+    },
+    "partialCall": {
+      "term": "Partial call",
+      "def": "An early redemption of only part of the issue. Every holder is reduced pro rata, so nobody is picked by hand."
+    },
+    "meeting": {
+      "term": "Bondholder meeting",
+      "def": "A vote of holders on a change — for example a new coupon rate. One vote per snapshotted bond; the record date fixes who can vote."
+    },
+    "quorum": {
+      "term": "Quorum",
+      "def": "The minimum share of the snapshotted bonds that must vote for a meeting to count. Each series sets it in its terms."
+    },
+    "registrar": {
+      "term": "Registrar",
+      "def": "The operator that keeps the register: announces actions from the KASE notice, checks the snapshot reconciles, and reports back."
+    },
+    "permissionless": {
+      "term": "Permissionless step",
+      "def": "Any wallet can push this step forward. The program checks every rule, so nobody — not even the issuer — can stall a funded payment."
+    },
+    "transferHook": {
+      "term": "Transfer hook",
+      "def": "A check the bond token runs on every transfer. After the record date a position moves only once it is snapshotted, so trading never stops."
+    },
+    "tokenPause": {
+      "term": "Token-2022 pause",
+      "def": "The legacy way to freeze a mint for a record date: transfers are paused until the snapshot is final. New hooked series use the transfer hook instead."
+    },
+    "dvp": {
+      "term": "DvP (delivery versus payment)",
+      "def": "A secondary trade where bonds and cash swap in one settlement: the seller's bonds sit in escrow until the buyer's cash arrives."
+    },
+    "default": {
+      "term": "Default",
+      "def": "The payment date plus one grace day passed and the escrow is short. Anyone can record it on-chain; the debt stays public until cured."
+    },
+    "cure": {
+      "term": "Cure",
+      "def": "Late funding of a defaulted payment. Holders on the record date are still the ones paid."
+    },
+    "sas": {
+      "term": "SAS attestation",
+      "def": "A KYC proof from the Solana Attestation Service bound to the wallet. Only attested investors can hold bonds or get paid."
     },
     "demoClock": {
       "term": "Demo clock",
@@ -180,6 +220,14 @@
     "dayCount": {
       "term": "30E/360",
       "def": "Day-count convention: every month counts as 30 days and a year as 360, as in KASE coupon schedules."
+    },
+    "seev031": {
+      "term": "seev.031",
+      "def": "ISO 20022 corporate-action notification: the announcement custodians and banks read."
+    },
+    "seev036": {
+      "term": "seev.036",
+      "def": "ISO 20022 movement confirmation: one per holder, stating what was paid and when."
     }
   }
 }

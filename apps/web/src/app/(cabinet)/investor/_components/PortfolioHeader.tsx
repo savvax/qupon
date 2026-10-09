@@ -13,6 +13,7 @@ import { KIND_TONE } from "@/lib/ui/badge";
 import { Button } from "@/components/ui/Button";
 import { type Column, DataTable } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { paidTxByOwner } from "@/lib/actionFlow";
 import { listActivity } from "@/lib/api";
@@ -285,7 +286,7 @@ export function PortfolioView() {
     },
     {
       key: "record",
-      header: t("col.record"),
+      header: <GlossaryTerm term="recordDate">{t("col.record")}</GlossaryTerm>,
       hideBelow: "md",
       essential: true,
       render: ({ e, action }) => (
@@ -307,7 +308,7 @@ export function PortfolioView() {
 
       <OpenTrades rows={rows} />
 
-      <section aria-labelledby="holdings">
+      <section aria-labelledby="holdings" data-tour="holdings">
         <h2 id="holdings" className="mb-3 text-lg font-bold">
           {t("holdings")}
         </h2>
@@ -316,7 +317,7 @@ export function PortfolioView() {
 
       <section aria-labelledby="history">
         <h2 id="history" className="mb-3 text-lg font-bold">
-          {t("history")}
+          <GlossaryTerm term="entitlement">{t("history")}</GlossaryTerm>
         </h2>
         {history.length === 0 ? (
           <EmptyState title={t("historyEmpty")} body={t("historyEmptyBody")} />
