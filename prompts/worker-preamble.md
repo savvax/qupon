@@ -9,3 +9,5 @@ Hard limits: never create, switch or rename git branches — commit on the branc
 Toolchain pins (do not change): Agave 4.3.0, Anchor 1.2.0, @solana/kit 8.x, @solana-program/token-2022 0.19, Go 1.26, Node 22, pnpm 9. Versions and gotchas: `docs/04-stack.md`.
 
 --- TASK ---
+
+If the task file ends with `## Review feedback (round N …)`, your previous attempt is already applied and committed on this branch: read the feedback, fix every blocking item (and only then anything else), re-run the tests the feedback names, `make verify`, commit, print DONE.

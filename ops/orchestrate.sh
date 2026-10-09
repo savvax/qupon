@@ -65,6 +65,27 @@ while :; do
 
   CLEAN=$( cd "$WT" && git status --porcelain | wc -l | tr -d ' ' )
   if [ $rc -eq 0 ] && grep -q "DONE:$ID" "$LOGP.out" && [ "$CLEAN" = "0" ] && ( cd "$WT" && make verify >"$LOGP.verify" 2>&1 ); then
+    # ---- Opus review gate (outside the git lock): reject → feedback into the task, work kept as a resume patch ----
+    if review_gate "$AGENT"; then
+      bash "$ROOT/ops/review_task.sh" "$TASK" "$WT" "$LOGP"; rv=$?
+      if [ $rv -ne 0 ]; then
+        save_branch_patch "$WT" "$LOGP"
+        if [ $rv -eq 1 ]; then
+          r=$(review_rounds "$ID"); bump_review_rounds "$ID"
+          append_review "$TASK" "$LOGP.review.md" $((r+1))
+          if [ "$r" -ge 2 ] && [ "$AGENT" != "claude" ]; then
+            log "[$WORKER] $NAME rejected 3x by review; escalating to claude"; set_agent "$TASK" claude
+          fi
+          log "[$WORKER] $NAME REJECTED by review (round $((r+1))); requeue"
+        else
+          log "[$WORKER] $NAME review unavailable; requeue and back off ${backoff}s"
+        fi
+        requeue "$TASK"
+        lock git; git worktree remove --force "$WT" >/dev/null 2>&1 || true; git branch -D "$BR" >/dev/null 2>&1 || true; unlock git
+        [ $rv -eq 2 ] && { sleep "$backoff"; backoff=$(( backoff < 3600 ? backoff * 2 : 3600 )); }
+        continue
+      fi
+    fi
     # ---- critical section: rebase onto the current main and fast-forward, nobody else touches main meanwhile ----
     lock git
     _commit_queue_nolock "pre-merge $NAME"

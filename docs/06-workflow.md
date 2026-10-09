@@ -10,6 +10,7 @@ Three kinds of workers pull from one file queue; a bash orchestrator verifies an
 | Builder ×N (up to 8) | pi + GLM-5.3 (`--model glm-5.3:high`) | `agent: glm` | TS client/CLI, Go service, web app, tests, scripts |
 | Janitor ×N (2–3) | pi + GLM-5.3-Flash (`--thinking low`) | `agent: flash` | lint/format fixes, docs sections, CI yaml, daily reports, notice templates |
 | Reviewer | Claude Code subagent `reviewer` (Sonnet, fresh context) | run by `ops/review.sh` | diff vs acceptance criteria → JSON verdict; `fail` → fix task |
+| Review gate | `claude -p --model opus` (fresh context, ≤ `REVIEW_SLOTS` concurrent) | run by `ops/review_task.sh` before every glm/flash merge | one task branch vs its acceptance criteria (+ screenshots via `ops/shots.sh` for web) → pass merges; fail appends `## Review feedback` to the task, keeps the work as a resume patch, requeues; 3rd reject → `agent: claude` |
 | Planner | Claude Code, plan mode, `plan-next` skill | run by `ops/planner.sh` every 5 merges | reconcile `docs/05-plan.md` with `tasks/done`, append tasks, never delete |
 
 ## Parallelism
@@ -41,6 +42,7 @@ timeout_min: 60
 2. run agent with prompt = `prompts/worker-preamble.md` + task body + footer "finish with `DONE:<id>` or `BLOCKED:<id> <reason>`" (timeouts: claude 60 min, glm 45, flash 20).
 3. agent reads `AGENTS.md`, `docs/`, implements, runs `make verify`, commits on the branch.
 4. orchestrator runs `make verify` itself in the worktree; if green and `DONE:<id>` printed → `git rebase main` → `git merge --ff-only` → task → `done/` → optional `git push origin main` (`AUTO_PUSH=1`).
+4a. review gate (`REVIEW_GATE=1`, agents in `REVIEW_AGENTS`, default `glm flash`): `ops/review_task.sh` runs between the orchestrator's verify and the merge; exit 1 → feedback appended to the task and requeue; exit 2 (reviewer unavailable) → requeue with backoff. `AUTO_PASSES=0` is recommended with the gate on.
 5. failure → retry counter; after 2 failures on glm/flash the task is re-tagged `agent: claude`; after 2 failures on claude → `tasks/failed/` + line in `HUMAN_TODO.md`.
 6. `BLOCKED:` → task back to `todo/` with `blocked_reason` added, a line in `HUMAN_TODO.md`, and the orchestrator skips it until the file is edited (mtime changes).
 7. usage-limit detection (`hit your … limit`, `rate_limit`, `429`) → task back to `todo/`, sleep with doubling backoff (60 s → 1 h).

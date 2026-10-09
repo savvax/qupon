@@ -135,3 +135,33 @@ _fold_questions_nolock() {
   _commit_queue_nolock "fold questions"
 }
 fold_questions() { lock git; _fold_questions_nolock; unlock git; }
+
+# --- N concurrent slots (Opus reviews): acquire_slot <name> <n> -> prints the slot number; release_slot <name> <i> ---
+acquire_slot() {
+  local i d owner
+  while :; do
+    for ((i=1; i<=$2; i++)); do
+      d="$TASKS/.lock-$1-$i"
+      if mkdir "$d" 2>/dev/null; then echo $$ > "$d/pid"; echo "$i"; return 0; fi
+      owner=$(cat "$d/pid" 2>/dev/null || true)
+      [ -n "$owner" ] && ! kill -0 "$owner" 2>/dev/null && rm -rf "$d"
+    done
+    sleep 5
+  done
+}
+release_slot() { rm -rf "$TASKS/.lock-$1-$2"; }
+
+# --- per-task Opus review gate (ops/review_task.sh; plan 15 "Harness") ---
+review_gate() { [ "${REVIEW_GATE:-1}" = "1" ] && [[ " ${REVIEW_AGENTS:-glm flash} " == *" $1 "* ]]; }
+review_rounds() { cat "$TASKS/.review-$1" 2>/dev/null || echo 0; }
+bump_review_rounds() { echo $(( $(review_rounds "$1") + 1 )) > "$TASKS/.review-$1"; }
+# append_review <task-file> <feedback.md> <round>: the next attempt reads it as part of the task
+append_review() {
+  { printf '\n## Review feedback (round %s, %s) — fix every blocking item first; your previous work is already committed on this branch\n\n' "$3" "$(TZ=Asia/Almaty date '+%F %H:%M')"; cat "$2" 2>/dev/null || echo "(reviewer output missing; see logs)"; } >> "$1"
+}
+# save_branch_patch <worktree> <log-prefix>: keep the agent's work for the resume path of run_task.sh
+save_branch_patch() {
+  local base; base=$(git -C "$1" merge-base HEAD main 2>/dev/null) || return 0
+  git -C "$1" diff --binary "$base" HEAD -- . ':(exclude)tasks' > "$2.wip.patch" 2>/dev/null || true
+  [ -s "$2.wip.patch" ] || rm -f "$2.wip.patch"
+}
