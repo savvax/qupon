@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -136,6 +137,21 @@ var keyParam = regexp.MustCompile(`(?i)(api[-_]?key=)[^&\s"'<>]+`)
 
 func redactKeys(s string) string { return keyParam.ReplaceAllString(s, "${1}…") }
 
+// secretFlags carry bank details or transfer references (plan 15 D6): only their sha256 goes on-chain, so the clear
+// text must not reach the registrar's logs either.
+var secretFlags = map[string]bool{"--reference": true, "--bank-ref": true}
+
+// logArgs is args with the values of secretFlags masked.
+func logArgs(args []string) []string {
+	out := slices.Clone(args)
+	for i := 0; i+1 < len(out); i++ {
+		if secretFlags[out[i]] {
+			out[i+1] = "…"
+		}
+	}
+	return out
+}
+
 // New builds an Executor (bin from cfg, config for series-name resolution).
 func New(bin, cfgPath string, logger *slog.Logger) *Executor {
 	if logger == nil {
@@ -246,7 +262,7 @@ func (e *Executor) run(ctx context.Context, args ...string) (Result, error) {
 		last := res.Results[len(res.Results)-1]
 		res.Signature, res.Slot = last.Signature, last.Slot
 	}
-	e.log.Info("cli step", "cmd", strings.Join(args, " "), "ok", res.OK, "sig", res.Signature, "slot", res.Slot)
+	e.log.Info("cli step", "cmd", strings.Join(logArgs(args), " "), "ok", res.OK, "sig", res.Signature, "slot", res.Slot)
 	return res, nil
 }
 

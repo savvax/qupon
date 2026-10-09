@@ -347,3 +347,10 @@ func TestStatsReportsRunningAndQueued(t *testing.T) {
 	<-e.slots
 	e.waiting.Add(-1)
 }
+
+func TestLogArgsMasksBankDetails(t *testing.T) {
+	got := strings.Join(logArgs([]string{"payout:confirm-bank", "--owner", "X", "--reference", "SWIFT-1"}), " ")
+	if got != "payout:confirm-bank --owner X --reference …" {
+		t.Fatalf("logArgs = %q", got)
+	}
+}

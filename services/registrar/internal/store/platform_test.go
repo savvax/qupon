@@ -171,3 +171,17 @@ func TestNotifyIsIdempotent(t *testing.T) {
 		t.Fatalf("notifications = %d %v", n, err)
 	}
 }
+
+// Migration 008 (task 91522): the users table admits the paying_agent role and the kk locale — account.go accepted
+// "kk" but the 006 CHECK refused the write.
+func TestUsersAdmitPayingAgentAndKazakh(t *testing.T) {
+	st := openT(t)
+	ctx := t.Context()
+	id, err := st.UpsertUser(ctx, User{Email: "agent@test.kz", Name: "Agent", Role: "paying_agent"}, "x")
+	if err != nil {
+		t.Fatalf("paying_agent user: %v", err)
+	}
+	if err := st.UpdateProfile(ctx, id, "Агент", "kk"); err != nil {
+		t.Fatalf("kk locale: %v", err)
+	}
+}
