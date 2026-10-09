@@ -34,16 +34,9 @@ export async function loadMessages(locale: Locale) {
   return { ...base, ...Object.fromEntries(parts) } as Record<string, unknown>;
 }
 
-/** kk namespace files land in task 1505: a missing file falls back to EN so kk never shows raw keys. */
+/** A locale's namespace file. Every locale ships every file; messages.test.ts gates the key sets. */
 async function loadNamespace(locale: Locale, ns: string) {
-  if (locale === "en") {
-    return (await import(`../../messages/en/${ns}.json`)).default;
-  }
-  try {
-    return (await import(`../../messages/${locale}/${ns}.json`)).default;
-  } catch {
-    return (await import(`../../messages/en/${ns}.json`)).default;
-  }
+  return (await import(`../../messages/${locale}/${ns}.json`)).default;
 }
 
 export default getRequestConfig(async () => {

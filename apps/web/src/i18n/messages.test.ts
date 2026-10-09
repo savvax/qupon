@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import en from "../../messages/en.json";
@@ -9,7 +9,7 @@ import { LOCALES, NAMESPACES } from "./request";
 const dir = (loc: string) => join(__dirname, "../../messages", loc);
 const byNs = (loc: string): Record<string, Record<string, unknown>> =>
   Object.fromEntries(
-    (existsSync(dir(loc)) ? readdirSync(dir(loc)) : []) // messages/kk/ lands with task 1505
+    readdirSync(dir(loc))
       .filter((f) => f.endsWith(".json"))
       .map((f) => [
         f.slice(0, -5),
@@ -18,35 +18,9 @@ const byNs = (loc: string): Record<string, Record<string, unknown>> =>
   );
 const BASE: Record<string, Record<string, unknown>> = { en, ru, kk };
 
-/**
- * kk namespace files land in task 1505: namespaces still listed here fall back to the EN file
- * (same as loadMessages). An entry whose kk file already exists fails, so empty the list as 1505
- * lands files — after 1505 the list must be empty.
- */
-const KK_PENDING = new Set<string>([...NAMESPACES]);
-for (const ns of NAMESPACES) {
-  const has = existsSync(join(dir("kk"), `${ns}.json`));
-  if (KK_PENDING.has(ns) && has)
-    throw new Error(
-      `messages/kk/${ns}.json exists but is still in KK_PENDING — remove the entry`,
-    );
-  if (!KK_PENDING.has(ns) && !has)
-    throw new Error(
-      `messages/kk/${ns}.json is missing but not listed in KK_PENDING`,
-    );
-}
-
-/** A locale's effective messages: its base file + every namespace file (kk: EN for pending ones). */
+/** A locale's full messages: its base file plus every namespace file, with no fallback. */
 function full(loc: string): Record<string, unknown> {
-  const nsFiles = byNs(loc);
-  const parts = Object.fromEntries(
-    NAMESPACES.map((ns) => [
-      ns,
-      nsFiles[ns] ??
-        (loc === "kk" && KK_PENDING.has(ns) ? byNs("en")[ns] : undefined),
-    ]),
-  );
-  return { ...BASE[loc], ...parts };
+  return { ...BASE[loc], ...byNs(loc) };
 }
 
 const keys = (o: Record<string, unknown>, p = ""): string[] =>
@@ -57,18 +31,16 @@ const keys = (o: Record<string, unknown>, p = ""): string[] =>
   );
 
 describe("messages", () => {
-  it("every namespace file exists in en/ru and nothing else", () => {
-    for (const loc of ["en", "ru"] as const)
+  it("every namespace file exists in every locale and nothing else", () => {
+    for (const loc of LOCALES)
       expect(Object.keys(byNs(loc)).sort()).toEqual([...NAMESPACES].sort());
-    // kk namespace files arrive with task 1505; until then only files for done namespaces exist
-    expect(Object.keys(byNs("kk")).sort()).toEqual([]);
   });
 
   it("namespace files do not shadow base namespaces", () => {
     for (const ns of NAMESPACES) expect(Object.keys(en)).not.toContain(ns);
   });
 
-  it("all locales have identical keys", () => {
+  it("all locales have identical keys, base file included", () => {
     const ref = keys(full("en")).sort();
     for (const loc of LOCALES) expect(keys(full(loc)).sort()).toEqual(ref);
   });
