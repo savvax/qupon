@@ -1,7 +1,7 @@
 ---
 id: 1536
 title: proof page — verify every action in the browser
-agent: glm
+agent: claude
 tier: T1
 depends_on: [1530, 1521, 1502]
 verify: make verify

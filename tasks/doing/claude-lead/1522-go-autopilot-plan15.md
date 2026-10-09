@@ -1,7 +1,7 @@
 ---
 id: 1522
 title: Go executor + scheduler for plan 15
-agent: glm
+agent: claude
 tier: T0
 depends_on: [1521]
 verify: make verify
