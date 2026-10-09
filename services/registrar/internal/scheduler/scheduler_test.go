@@ -504,7 +504,7 @@ func TestTickStaleExpiredAnnounce(t *testing.T) {
 		t.Fatalf("pending = %+v, want one fresh proposal", fresh)
 	}
 	// The fresh announce is floored to now+MinRecordDelay (30 s).
-	ra, ok := flagValue(fresh[0].Args, "--record-at")
+	ra, ok := executor.FlagValue(fresh[0].Args, "--record-at")
 	want := strconv.FormatInt(now0.Add(2*time.Minute+30*time.Second).Unix(), 10)
 	if !ok || ra != want {
 		t.Fatalf("fresh record-at = %q (%v), want %q", ra, ok, want)

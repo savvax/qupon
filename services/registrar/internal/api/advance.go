@@ -48,6 +48,22 @@ func txExplorer(sig string) *string {
 	return &u
 }
 
+// nextStepAfter wraps executor.NextStep (task 1422): once a sweep is recorded
+// for a finished action — the registrar follow-up row or the ingested
+// EscrowSwept event — there is no step left, so the response carries no
+// nextStep and the console hides the button. A store error falls through to
+// the pure mapping: the sweep CLI is idempotent (a re-run is a skip).
+func nextStepAfter(ctx context.Context, st *store.Store, pda solana.PublicKey, a *chain.CorporateAction, supply uint64, openTrades uint32, autofund bool) (step, wait string) {
+	step, wait = executor.NextStep(a, supply, openTrades, time.Now(), autofund)
+	if step != executor.StepSweep {
+		return step, wait
+	}
+	if swept, err := st.ActionSwept(ctx, pda.String()); err == nil && swept {
+		return "", "escrow already swept — the action is finished"
+	}
+	return step, wait
+}
+
 // advanceAction runs one step: read the action → map the step → exec the CLI
 // (idempotent on-chain batches make retries safe) → record activity →
 // re-read the chain for the new status.
@@ -100,7 +116,7 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 			return
 		}
 
-		step, wait := executor.NextStep(action, mint.Supply, series.OpenTrades, time.Now(), req.AutoFund)
+		step, wait := nextStepAfter(r.Context(), st, pda, action, mint.Supply, series.OpenTrades, req.AutoFund)
 		if step == "" {
 			writeError(w, http.StatusBadRequest, wait)
 			return
@@ -151,7 +167,7 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 			Step: step, OK: true, Status: chain.ActionStatusName(fresh.Status),
 			Signature: sigPtr(res), Slot: slotPtr(res), ExplorerURL: txExplorer(res.Signature),
 		}
-		if next, wait := executor.NextStep(fresh, mint.Supply, series.OpenTrades, time.Now(), req.AutoFund); next != "" {
+		if next, wait := nextStepAfter(r.Context(), st, pda, fresh, mint.Supply, series.OpenTrades, req.AutoFund); next != "" {
 			resp.NextStep = &next
 		} else if wait != "" {
 			resp.NextStep = nil

@@ -264,7 +264,7 @@ func (s *Scheduler) staleSuperseded(ctx context.Context, row store.Approval) err
 	for _, p := range pending {
 		stale := p.DedupKey != row.DedupKey
 		if !stale && strings.HasPrefix(p.Step, "announce:") {
-			if ra, ok := flagValue(p.Args, "--record-at"); ok {
+			if ra, ok := executor.FlagValue(p.Args, "--record-at"); ok {
 				if t, err := strconv.ParseInt(ra, 10, 64); err == nil && t < now {
 					stale = true
 				}
@@ -280,15 +280,7 @@ func (s *Scheduler) staleSuperseded(ctx context.Context, row store.Approval) err
 	return nil
 }
 
-// flagValue returns the token after a --flag in a stored CLI argv.
-func flagValue(args []string, flag string) (string, bool) {
-	for i := 0; i+1 < len(args); i++ {
-		if args[i] == flag {
-			return args[i+1], true
-		}
-	}
-	return "", false
-}
+// FlagValue (executor) returns the token after a --flag in a stored CLI argv.
 
 // execute runs one CLI step and records the outcome in the activity feed.
 // A refused step (chain said TooEarly/WrongStatus…) is a warn, not an error:
@@ -327,8 +319,8 @@ func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args [
 // effort: a failed sweep is logged and swallowed — the finished action stays
 // finished — and an already-swept escrow (CLI skip) records no activity row.
 func (s *Scheduler) sweep(ctx context.Context, mint string, doneArgs []string, actionPda *solana.PublicKey) {
-	name, okName := flagValue(doneArgs, "--series")
-	idx, okIdx := flagValue(doneArgs, "--index")
+	name, okName := executor.FlagValue(doneArgs, "--series")
+	idx, okIdx := executor.FlagValue(doneArgs, "--index")
 	index, err := strconv.ParseUint(idx, 10, 32)
 	if !okName || !okIdx || err != nil {
 		s.Log.Error("scheduler: sweep: cannot rebuild argv from the finished step", "args", doneArgs, "err", err)

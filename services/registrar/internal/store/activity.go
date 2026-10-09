@@ -89,6 +89,23 @@ func (s *Store) ActionSignatures(ctx context.Context, pda string) ([]string, err
 	return out, rows.Err()
 }
 
+// ActionSwept reports whether an escrow sweep is already recorded for the
+// action: a registrar follow-up row (advance:/scheduler:sweep_escrow) or the
+// ingested on-chain EscrowSwept event — a manual CLI sweep counts too (task 1422).
+func (s *Store) ActionSwept(ctx context.Context, pda string) (bool, error) {
+	var one int
+	err := s.db.QueryRowContext(ctx,
+		`SELECT 1 FROM activity
+		 WHERE action_pda = ? AND (kind LIKE '%:sweep_escrow' OR kind = 'EscrowSwept')
+		 LIMIT 1`, pda).Scan(&one)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, fmt.Errorf("action swept: %w", err)
+	}
+	return true, nil
+}
+
 // IngestCursor returns the persisted newest-processed signature ("" if none).
 func (s *Store) IngestCursor(ctx context.Context) (string, error) {
 	var cur string

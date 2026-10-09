@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
+	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -99,6 +100,93 @@ func TestApprovalsListAndApprove(t *testing.T) {
 	}
 	// Bad status filter → 400.
 	getJSON(t, srv.URL+"/approvals?status=zzz", http.StatusBadRequest, nil)
+}
+
+// TestApproveCompleteRunsEscrowSweep (task 1422): approving a complete/close
+// step must run the escrow follow-up — complete clears series.open_action, so
+// no later step would ever sweep it.
+func TestApproveCompleteRunsEscrowSweep(t *testing.T) {
+	fc := &fakeChain{action: (&fakeRead{}).action()}
+	dir := t.TempDir()
+	srv, st, log := advanceServer(t, fc)
+	t.Setenv("FAKE_CLI_STDOUT", writeT(t, dir, "ok.json", `{"ok":true,"signature":"sig-appr","slot":"77"}`))
+	if err := st.InsertApproval(t.Context(), store.Approval{
+		Ts: 1, DedupKey: "m|0|step:complete_action", SeriesMint: "m", ActionPDA: fAction.String(),
+		Step: "step:complete_action", Args: []string{"action:complete", "--series", "QPNb1", "--index", "0"},
+	}); err != nil {
+		t.Fatalf("insert approval: %v", err)
+	}
+
+	r, err := http.Post(srv.URL+"/approvals/1/approve", "application/json", strings.NewReader("{}"))
+	if err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	var out map[string]any
+	_ = json.NewDecoder(r.Body).Decode(&out)
+	_ = r.Body.Close()
+	if r.StatusCode != http.StatusOK || out["ok"] != true {
+		t.Fatalf("approve = %d %v, want 200 ok", r.StatusCode, out)
+	}
+	row, _ := st.ApprovalByID(t.Context(), 1)
+	if row.Status != "executed" {
+		t.Fatalf("approval = %s, want executed", row.Status)
+	}
+	// The escrow follow-up ran right after the approved step.
+	want := "--json action:complete --series QPNb1 --index 0\n--json action:sweep --series QPNb1 --index 0"
+	if got := strings.Join(cliLines(t, log), "\n"); got != want {
+		t.Fatalf("cli log = %q, want the complete step then the sweep follow-up", got)
+	}
+	events, _ := st.ListActivity(t.Context(), 10)
+	if len(events) != 2 || events[0].Kind != "approval:step:complete_action" ||
+		events[1].Kind != "advance:"+executor.StepSweep || events[1].ActionPDA == nil {
+		t.Fatalf("activity = %+v, want the approval row then the sweep row", events)
+	}
+}
+
+// TestApproveSweepFailureStillExecuted (task 1422): a failed escrow follow-up
+// only logs — the approval itself stays executed.
+func TestApproveSweepFailureStillExecuted(t *testing.T) {
+	fc := &fakeChain{action: (&fakeRead{}).action()}
+	srv, st, log := advanceServer(t, fc)
+	t.Setenv("FAKE_CLI_FAIL", "action:sweep") // the sweep run fails, the approved step succeeds
+	if err := st.InsertApproval(t.Context(), store.Approval{
+		Ts: 1, DedupKey: "m|0|step:complete_action", SeriesMint: "m", ActionPDA: fAction.String(),
+		Step: "step:complete_action", Args: []string{"action:complete", "--series", "QPNb1", "--index", "0"},
+	}); err != nil {
+		t.Fatalf("insert approval: %v", err)
+	}
+
+	r, err := http.Post(srv.URL+"/approvals/1/approve", "application/json", strings.NewReader("{}"))
+	if err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	var out map[string]any
+	_ = json.NewDecoder(r.Body).Decode(&out)
+	_ = r.Body.Close()
+	if r.StatusCode != http.StatusOK || out["ok"] != true {
+		t.Fatalf("approve = %d %v, want 200 ok despite the sweep failure", r.StatusCode, out)
+	}
+	row, _ := st.ApprovalByID(t.Context(), 1)
+	if row.Status != "executed" {
+		t.Fatalf("approval = %s, want executed (the sweep follow-up is best effort)", row.Status)
+	}
+	if got := cliLines(t, log); len(got) != 2 || !strings.Contains(got[1], "action:sweep") {
+		t.Fatalf("cli log = %v, want the complete step and the attempted sweep", got)
+	}
+	for _, a := range mustActivity(t, st) {
+		if strings.HasSuffix(a.Kind, ":"+executor.StepSweep) {
+			t.Fatalf("sweep row recorded for a failed sweep: %+v", a)
+		}
+	}
+}
+
+func mustActivity(t *testing.T, st *store.Store) []store.Activity {
+	t.Helper()
+	events, err := st.ListActivity(t.Context(), 10)
+	if err != nil {
+		t.Fatalf("list activity: %v", err)
+	}
+	return events
 }
 
 func TestApproveCliRefusedStaysPending(t *testing.T) {

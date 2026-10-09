@@ -11,10 +11,13 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	solana "github.com/solana-foundation/solana-go/v2"
 
+	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -48,7 +51,7 @@ func listApprovals(st *store.Store) http.HandlerFunc {
 // approveApproval serves POST /approvals/{id}/approve: run the stored argv.
 // A refused step keeps the row pending (the human can retry); only success
 // marks it executed.
-func approveApproval(deps Deps, st *store.Store) http.HandlerFunc {
+func approveApproval(deps Deps, st *store.Store, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if deps.Executor == nil {
 			writeError(w, http.StatusServiceUnavailable, "executor not configured (set QUPON_CLI)")
@@ -123,6 +126,14 @@ func approveApproval(deps Deps, st *store.Store) http.HandlerFunc {
 			Ts: time.Now().Unix(), SeriesMint: &mint, ActionPDA: strPtr(row.ActionPDA), Kind: "approval:" + step,
 			Payload: payload, Sig: sig, Slot: uint64(res.Slot),
 		}) // execution succeeded; only the audit trail is degraded
+
+		// Task 1422: complete/close clear series.open_action, so the escrow
+		// follow-up must run here too — same best-effort sweep as the advance
+		// path (a sweep failure only logs; the approval is already executed).
+		if strings.HasSuffix(step, executor.StepComplete) || strings.HasSuffix(step, executor.StepClose) {
+			sweepAfterApproval(ctx, deps, st, logger, row)
+		}
+
 		resp := advanceResponse{Step: step, OK: true, Status: "executed",
 			Signature: sigPtr(res), Slot: slotPtr(res), ExplorerURL: txExplorer(res.Signature)}
 		writeJSON(w, http.StatusOK, resp)
@@ -161,4 +172,22 @@ func strPtr(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+// sweepAfterApproval rebuilds the sweep argv from the executed approval's own
+// args (executor.FlagValue) and runs the shared escrow follow-up (sweepEscrow).
+func sweepAfterApproval(ctx context.Context, deps Deps, st *store.Store, logger *slog.Logger, row store.Approval) {
+	pda, err := solana.PublicKeyFromBase58(row.ActionPDA)
+	if err != nil {
+		logger.Error("approval sweep: bad action pda", "pda", row.ActionPDA, "err", err)
+		return
+	}
+	name, okName := executor.FlagValue(row.Args, "--series")
+	idx, okIdx := executor.FlagValue(row.Args, "--index")
+	index, perr := strconv.ParseUint(idx, 10, 32)
+	if !okName || !okIdx || perr != nil {
+		logger.Error("approval sweep: cannot rebuild argv from the approved step", "args", row.Args, "err", perr)
+		return
+	}
+	sweepEscrow(ctx, deps, st, logger, pda, uint32(index), name)
 }

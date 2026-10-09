@@ -159,12 +159,10 @@ func TestAdvanceLifecycle(t *testing.T) {
 		{body: `{"confirm":true}`, want: want{200, "pay_batch", "", false}, mutate: func(a *chain.CorporateAction) { a.Status = 4; a.HoldersPaid = 1 }},
 		{body: `{"confirm":true}`, want: want{200, "complete_action", "", false}, mutate: func(a *chain.CorporateAction) {
 			a.Status = 5
-			// the escrow follow-up already swept; the next advance re-sweeps → the CLI reports the skip
-			if err := os.WriteFile(os.Getenv("FAKE_CLI_STDOUT"), []byte(`{"ok":true,"skipped":"already swept"}`), 0o644); err != nil {
-				t.Fatalf("rewrite stdout: %v", err)
-			}
 		}},
-		{body: `{"confirm":true}`, want: want{200, "sweep_escrow", "", true}, mutate: nil}, // completed → sweep (task 1414)
+		// Task 1422: the follow-up sweep ran after complete, so the action has no
+		// step left — a re-advance answers 400 instead of re-running the sweep.
+		{body: `{"confirm":true}`, want: want{400, "", "swept", false}, mutate: nil},
 	}
 	for i, s := range steps {
 		code, body := postAdvance(t, srv.URL, s.body)
@@ -201,8 +199,7 @@ func TestAdvanceLifecycle(t *testing.T) {
 		"--json action:fund --series QPNb1 --index 0",
 		"--json action:pay --series QPNb1 --index 0",
 		"--json action:complete --series QPNb1 --index 0",
-		"--json action:sweep --series QPNb1 --index 0", // escrow follow-up after complete (task 1414)
-		"--json action:sweep --series QPNb1 --index 0", // completed action → sweep step
+		"--json action:sweep --series QPNb1 --index 0", // escrow follow-up after complete (task 1414); no re-sweep after it (1422)
 	}
 	if strings.Join(got, "\n") != strings.Join(wantArgs, "\n") {
 		t.Fatalf("cli log = %q, want %q", got, wantArgs)
@@ -319,6 +316,42 @@ func TestAdvanceValidation(t *testing.T) {
 	_ = resp3.Body.Close()
 	if resp3.StatusCode != http.StatusServiceUnavailable {
 		t.Fatalf("nil executor status = %d, want 503", resp3.StatusCode)
+	}
+}
+
+// TestNextStepAfterSweepRecorded (task 1422): once a sweep row exists for a
+// finished action — the registrar follow-up or the ingested EscrowSwept event
+// — nextStepAfter returns no step, so the advance response carries no
+// nextStep and the console hides the button.
+func TestNextStepAfterSweepRecorded(t *testing.T) {
+	open := func() *store.Store {
+		st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "ns.db"))
+		if err != nil {
+			t.Fatalf("open store: %v", err)
+		}
+		t.Cleanup(func() { _ = st.Close() })
+		return st
+	}
+	apda := fAction.String()
+	insert := func(st *store.Store, kind string) {
+		t.Helper()
+		if _, err := st.InsertActivity(t.Context(), store.Activity{ActionPDA: &apda, Kind: kind}); err != nil {
+			t.Fatalf("insert %s: %v", kind, err)
+		}
+	}
+	for _, status := range []uint8{5, 7} { // Completed, Cancelled
+		a := &chain.CorporateAction{Status: status}
+		// before any sweep: the escrow follow-up is the step
+		if step, _ := nextStepAfter(t.Context(), open(), fAction, a, 0, 0, false); step != executor.StepSweep {
+			t.Fatalf("status %d: step = %q, want %s", status, step, executor.StepSweep)
+		}
+		for _, kind := range []string{"advance:" + executor.StepSweep, "scheduler:" + executor.StepSweep, "EscrowSwept"} {
+			st := open()
+			insert(st, kind)
+			if step, wait := nextStepAfter(t.Context(), st, fAction, a, 0, 0, false); step != "" || wait == "" {
+				t.Fatalf("status %d after %s: step = %q wait = %q, want no step", status, kind, step, wait)
+			}
+		}
 	}
 }
 

@@ -71,6 +71,17 @@ func Args(step, series string, index uint32) ([]string, error) {
 	return []string{cmd, "--series", series, "--index", strconv.FormatUint(uint64(index), 10)}, nil
 }
 
+// FlagValue returns the token after a --flag in a stored CLI argv — the
+// inverse of Args (approvals rebuild the series/index from the argv they ran).
+func FlagValue(args []string, flag string) (string, bool) {
+	for i := 0; i+1 < len(args); i++ {
+		if args[i] == flag {
+			return args[i+1], true
+		}
+	}
+	return "", false
+}
+
 // Result is the CLI JSON contract: {ok, signature, slot, error}. The CLI
 // serializes bigint slots as strings; both spellings are accepted.
 type Result struct {
