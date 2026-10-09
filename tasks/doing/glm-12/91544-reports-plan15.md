@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: [1521]
 verify: make verify
-timeout_min: 120
+timeout_min: 180
 ---
 ## Goal
 Investor statements and issuer reports must tell the plan-15 story: a payout that went through the bank route, the

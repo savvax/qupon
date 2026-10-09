@@ -5,7 +5,7 @@ agent: flash
 tier: T1
 depends_on: [1531]
 verify: make verify
-timeout_min: 120
+timeout_min: 180
 ---
 ## Goal
 Since task 1504 the language switch is a radio group (`role="radio"`, names "English", "Русский", "Қазақша"), but four

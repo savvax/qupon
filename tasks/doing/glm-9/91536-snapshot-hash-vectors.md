@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: []
 verify: make verify
-timeout_min: 120
+timeout_min: 180
 ---
 ## Goal
 The snapshot hash is the audit anchor of every corporate action. Pin both schemes with shared vectors and verify them in

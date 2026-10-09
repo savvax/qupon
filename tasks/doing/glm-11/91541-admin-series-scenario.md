@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: [1522]
 verify: make verify
-timeout_min: 120
+timeout_min: 180
 ---
 ## Goal
 Task 1522 added `series_settings.no_autofund` (migration 007) and the scheduler honours it, but nobody can set it.

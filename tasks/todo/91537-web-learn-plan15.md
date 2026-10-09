@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: [1532]
 verify: make verify
-timeout_min: 120
+timeout_min: 180
 ---
 ## Goal
 `/learn` (task 1531) explains a coupon's life. Add the plan-15 mechanics in plain language so a non-engineer judge
