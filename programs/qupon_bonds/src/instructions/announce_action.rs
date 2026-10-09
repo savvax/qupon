@@ -6,6 +6,7 @@ use anchor_spl::{
 use entitlement::{DayCount, Ymd};
 
 use crate::{
+    clock::SeriesClock,
     constants::*,
     error::{math_err, QuponError},
     events::{ActionAnnounced, ActionCancelled},
@@ -92,6 +93,7 @@ pub fn handle_announce_action(ctx: Context<AnnounceAction>, a: AnnounceArgs) -> 
     require!(series.open_action.is_none(), QuponError::ActionAlreadyOpen);
 
     let now = Clock::get()?.unix_timestamp;
+    let clock = SeriesClock::of(series)?;
     require!(
         now < a.record_at && a.record_at <= a.payment_at,
         QuponError::InvalidDates
@@ -130,8 +132,8 @@ pub fn handle_announce_action(ctx: Context<AnnounceAction>, a: AnnounceArgs) -> 
             QuponError::InvalidParams
         );
         let dc = DayCount::try_from(series.day_count).map_err(math_err)?;
-        let start = civil_matches(a.period_start_ymd, a.period_start_ts)?;
-        let end = civil_matches(a.period_end_ymd, a.period_end_ts)?;
+        let start = civil_matches(&clock, a.period_start_ymd, a.period_start_ts)?;
+        let end = civil_matches(&clock, a.period_end_ymd, a.period_end_ts)?;
         let days = entitlement::accrual_days(dc, start, end).map_err(math_err)?;
         require!(days == a.accrual_days, QuponError::EntitlementCalcMismatch);
         // The current coupon period always starts where the last one ended; the rate is a series term.
@@ -253,16 +255,11 @@ pub fn handle_announce_action(ctx: Context<AnnounceAction>, a: AnnounceArgs) -> 
     Ok(())
 }
 
-/// `ymd` must be the Almaty calendar date of the Almaty-midnight timestamp `ts`.
-fn civil_matches(ymd: u32, ts: i64) -> Result<Ymd> {
+/// `ymd` must be the calendar date of the midnight timestamp `ts` on the series clock (real: Almaty
+/// midnights, 03-domain §3; demo: the series' compressed days, plan 15 D7).
+fn civil_matches(clock: &SeriesClock, ymd: u32, ts: i64) -> Result<Ymd> {
     let date = Ymd::from_packed(ymd).map_err(math_err)?;
-    let local = ts
-        .checked_add(ALMATY_UTC_OFFSET_SECS)
-        .ok_or(QuponError::MathOverflow)?;
-    require!(
-        local.rem_euclid(86_400) == 0 && Ymd::from_unix_utc(local).map_err(math_err)? == date,
-        QuponError::InvalidDates
-    );
+    require!(clock.civil(ts)? == date, QuponError::InvalidDates);
     Ok(date)
 }
 

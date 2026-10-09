@@ -1,13 +1,13 @@
 {
   "kind": "series",
-  "pubkey": "FFM75BBwFniQGjQ82E6wYu4skMcPW1Jz2kBeizoeFByV",
+  "pubkey": "4agB8vWRiDmGUepf9nNSndviGJ6f2ficCoBbne7J5qKF",
   "expected": {
-  "bump": 255,
-  "mint": "Fp5jWJURAtoqYrLKYbxe6MzcydVTJsbNZ5ju137Ywpg7",
-  "cash_mint": "pTCm8LD8Jegd8gYduekimi1ekD7UFzX9oEkR78XkShq",
-  "registrar": "5pUJCtTA6jytShxN3xjh6LJ5DFrYqkZXnA9TRpAy4fDh",
-  "issuer": "7A8t7ZXmwgKo81sb7Y8F5XKj6BDNJfLXCt86dJmVvQMQ",
-  "paying_agent": "36FWmQHAkgiTF11dwqhGCzognBvRWkgqJvGWkrtfqgFE",
+  "bump": 254,
+  "mint": "7eB8cHCzTnU9EnvzxCU5mVeSZZ1pRLQ2PpV4YpyrKtiP",
+  "cash_mint": "EG5v2tEVNiJeA48oXmbJWXcEtHmARgJvTZi7YcYJhP48",
+  "registrar": "Cdg1dvdnJRMpvDjdqLMa5ZB1tcAuPRNGTsDhDqRUMgWN",
+  "issuer": "pe6iDHwFrRAF2kjjDaXSPGNtaf9YHaYBUHPiY6GTjME",
+  "paying_agent": "14ZZom9Z8QnQubHTtmwPXosZTCkdHji2j15htVMuWeYs",
   "isin": "KZ2C0QUPON01",
   "ticker": "QPNb1",
   "face_value": 100000,
@@ -23,8 +23,10 @@
   "action_count": 1,
   "quorum_bps": 5000,
   "approval_bps": 6667,
-  "tax_vault": "DBUWn5otTkESHx1uKwqBnKg5fZewppkvL45cBgTGLFM3",
-  "open_action": "Cs5Fz2JmjDu52N3GhfLmkzmRGQtP5zazfuxAGmtJPiUj",
-  "reserved": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+  "tax_vault": "8w2C9CnEpXDs37i7yesvZYyzUPjAVt4uXKAyDCB9mcje",
+  "open_action": "Apfp9czTtft5Pem38UeQSCKzYcV9UQCc3sqvuBmRcZDR",
+  "day_secs": 0,
+  "issue_ymd": 20260703,
+  "reserved": "000000000000000000000000000000000000000000000000000000000000"
 }
 }

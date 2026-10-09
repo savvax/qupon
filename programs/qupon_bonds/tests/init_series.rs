@@ -182,6 +182,27 @@ fn init_series_rejects_bad_params() {
     }
 }
 
+/// Real clock (day_secs = 0): `issue_ymd` is derived on-chain; a non-zero argument must agree with `issue_date`.
+#[test]
+fn init_series_real_mode_issue_ymd() {
+    let mut env = Env::new();
+    let cash = env.create_cash_mint(spl_token::ID);
+    let (mint, series) = env.create_bond_mint(BondMintOpts::default());
+    let mut p = env.params();
+    p.issue_ymd = 20_260_703; // 2026-07-03, the Almaty date of ISSUE_DATE
+    let ix = env.init_series_ix(mint, cash, spl_token::ID, p);
+    env.send(&[ix], &[]).expect("matching issue_ymd accepted");
+    let s: Series = env.account(&series);
+    assert_eq!(s.issue_ymd, 20_260_703);
+    assert_eq!((s.day_secs, s.next_coupon_date), (0, NEXT_COUPON));
+
+    let mut p = env.params();
+    p.issue_ymd = 20_260_704; // one day off
+    let (mint2, _) = env.create_bond_mint(BondMintOpts::default()); // fresh PDA: the first was just created
+    let ix = env.init_series_ix(mint2, cash, spl_token::ID, p);
+    assert_err(env.send(&[ix], &[]), QuponError::InvalidDates);
+}
+
 /// Exports the raw `Series` account (incl. Anchor discriminator) as base64 for the
 /// Codama decoder test in `clients/ts`. No-op unless `QUPON_EXPORT_FIXTURE` is set,
 /// so `make verify` stays fast; regenerate with:

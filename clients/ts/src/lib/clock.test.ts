@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ymd } from "./daycount.js";
-import { CivilClock } from "./clock.js";
+import { CivilClock, seriesClock, unpackYmd } from "./clock.js";
 
 interface ClockCase {
 	id: string;
@@ -60,5 +60,20 @@ describe("CivilClock validation", () => {
 	it("civil() rejects a non-midnight timestamp", () => {
 		const clock = CivilClock.real(5 * 3600);
 		expect(() => clock.civil(1_791_000_001)).toThrow(/InvalidDate/);
+	});
+});
+
+describe("seriesClock (program SeriesClock::of)", () => {
+	it("day_secs 0 is the real Almaty clock, whatever issue_ymd says", () => {
+		const c = seriesClock({ daySecs: 0, issueDate: 1_783_018_800n, issueYmd: 0 });
+		expect(c.isDemo()).toBe(false);
+		expect(c.ts({ y: 2027, m: 1, d: 3 })).toBe(1_798_916_400);
+	});
+	it("a demo series maps its calendar onto day_secs from the issue instant", () => {
+		const c = seriesClock({ daySecs: 1, issueDate: 1_791_000_000n, issueYmd: 20261009 });
+		expect(c.isDemo()).toBe(true);
+		expect(c.ts({ y: 2027, m: 10, d: 9 })).toBe(1_791_000_365);
+		expect(c.addMonths(1_791_000_000, 6)).toBe(1_791_000_182);
+		expect(unpackYmd(20260831)).toEqual({ y: 2026, m: 8, d: 31 });
 	});
 });

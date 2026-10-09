@@ -86,6 +86,7 @@ interface CreateOpts extends GlobalOptions {
 	cashMint?: string;
 	quorumBps?: string;
 	approvalBps?: string;
+	demoDaySecs?: string;
 }
 
 async function runSeriesCreate(opts: CreateOpts, cmd: Command): Promise<void> {
@@ -123,7 +124,13 @@ async function runSeriesCreate(opts: CreateOpts, cmd: Command): Promise<void> {
 		rpc,
 		loadConfig(cfgPath),
 		terms.name,
-		{ issueDate: terms.issueDate, maturityDate: terms.maturityDate, quorumBps: terms.quorumBps, approvalBps: terms.approvalBps },
+		{
+			issueDate: terms.issueDate,
+			maturityDate: terms.maturityDate,
+			quorumBps: terms.quorumBps,
+			approvalBps: terms.approvalBps,
+			...(opts.demoDaySecs !== undefined ? { demoDaySecs: parseIntArg(opts.demoDaySecs, "--demo-day-secs") } : {}),
+		},
 		registrar,
 	);
 	log(`series '${terms.name}' initialized (mint ${bond.mint}, ${init.seriesPda})`);
@@ -144,5 +151,6 @@ export function registerSeriesCreateCommand(program: Command): void {
 		.option("--cash-mint <address>", "cash leg mint address: any registered cash asset (KZTE, dKZT, …)")
 		.option("--quorum-bps <n>", "bondholder-meeting quorum in bps", "5000")
 		.option("--approval-bps <n>", "bondholder-meeting approval in bps", "6667")
+		.option("--demo-day-secs <n>", "demo clock: seconds per civil day (1..86399), labelled DEMO; omit for the real clock")
 		.action(runSeriesCreate);
 }

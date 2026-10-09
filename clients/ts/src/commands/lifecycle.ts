@@ -13,12 +13,12 @@ import {
 	getRetireBatchInstruction,
 } from "../generated/index.js";
 import { chunk, sortByOwner } from "../lib/batch.js";
+import { seriesClock } from "../lib/clock.js";
 import { txLink } from "../lib/explorer.js";
 import { actionPda } from "../lib/pda.js";
 import { loadAction } from "./action.js";
 import {
 	defaultCorpId,
-	almatyMidnight,
 	initCtx,
 	listEntitlements,
 	listInvestors,
@@ -143,7 +143,8 @@ async function runMeetingAnnounce(opts: MeetingOpts, cmd: Command): Promise<void
 	const issuer = await signer(cmd, "issuer");
 	const s = info.account;
 	const newRate = opts.newRateBps === undefined ? 0 : parseIntArg(opts.newRateBps, "--new-rate-bps");
-	const newMaturity = opts.newMaturity === undefined ? 0n : almatyMidnight(parseYmd(opts.newMaturity, "--new-maturity"));
+	// A proposed maturity is a midnight of the series clock (checked on-chain; demo series too, plan 15 D7).
+	const newMaturity = opts.newMaturity === undefined ? 0n : BigInt(seriesClock(s).ts(parseYmd(opts.newMaturity, "--new-maturity")));
 	if (newRate === 0 && newMaturity === 0n) throw new Error("propose --new-rate-bps and/or --new-maturity");
 	const recordAt = parseAt(opts.recordAt, "--record-at");
 	const votingEndsAt = parseAt(opts.votingEndsAt, "--voting-ends-at");

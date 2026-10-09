@@ -36,6 +36,10 @@ type Series struct {
 	OpenAction     *solana.PublicKey // nil = Borsh None; the one non-final action, if any
 	OpenTrades     uint32            // admitted Solana DvP trades not yet released (carved from reserved: older series read 0)
 	Reserved       [60]byte
+	// DaySecs/IssueYmd are carved from Reserved (plan 15 D7, after the hook fields): 0 = real Almaty
+	// clock, 1..86 399 s per civil day = demo clock anchored at IssueDate/IssueYmd (label the series DEMO).
+	DaySecs  uint32
+	IssueYmd uint32
 }
 
 // TradeAdmission mirrors the on-chain `TradeAdmission` account (seeds ["trade", series, swap_dvp]):
@@ -181,6 +185,7 @@ type SeriesView struct {
 	IssueDate      int64  `json:"issueDate"`
 	MaturityDate   int64  `json:"maturityDate"`
 	NextCouponDate int64  `json:"nextCouponDate"`
+	DaySecs        uint32 `json:"daySecs"` // > 0 = demo clock (plan 15 D7)
 	Status         string `json:"status"`
 	TotalIssued    uint64 `json:"totalIssued"`
 	ActionCount    uint32 `json:"actionCount"`
@@ -219,6 +224,7 @@ func (s *Series) View(pda solana.PublicKey) SeriesView {
 		IssueDate:      s.IssueDate,
 		MaturityDate:   s.MaturityDate,
 		NextCouponDate: s.NextCouponDate,
+		DaySecs:        s.DaySecs,
 		Status:         status,
 		TotalIssued:    s.TotalIssued,
 		ActionCount:    s.ActionCount,

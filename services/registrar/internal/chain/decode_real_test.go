@@ -7,7 +7,6 @@ package chain
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"os"
@@ -122,6 +121,8 @@ func TestRealSeriesFixture(t *testing.T) {
 		ApprovalBps    uint16  `json:"approval_bps"`
 		TaxVault       string  `json:"tax_vault"`
 		OpenAction     *string `json:"open_action"`
+		DaySecs        uint32  `json:"day_secs"`
+		IssueYmd       uint32  `json:"issue_ymd"`
 		Reserved       string  `json:"reserved"`
 	}
 	if err := json.Unmarshal(f.Expected, &want); err != nil {
@@ -157,8 +158,11 @@ func TestRealSeriesFixture(t *testing.T) {
 	default:
 		eqPk(t, "open_action", *got.OpenAction, *want.OpenAction)
 	}
-	// The fixture predates open_trades: its 64 reserved bytes are open_trades u32 LE + the 60 that remain.
-	eqHex(t, "open_trades+reserved", append(binary.LittleEndian.AppendUint32(nil, got.OpenTrades), got.Reserved[:]...), want.Reserved)
+	// Plan 15 carve: Go's Reserved[60] = hook/record fields (22 B) + day_secs/issue_ymd (8 B) + the raw tail;
+	// the fixture pins the clock fields and the 30-byte tail separately.
+	eq(t, "day_secs", got.DaySecs, want.DaySecs)
+	eq(t, "issue_ymd", got.IssueYmd, want.IssueYmd)
+	eqHex(t, "reserved", got.Reserved[30:], want.Reserved)
 	// Cross-check: the open action PDA is the action fixture itself.
 	if want.OpenAction != nil {
 		eqPk(t, "open_action→action fixture", *got.OpenAction, fixturePubkey(t, "action"))
@@ -250,6 +254,7 @@ func TestRealActionFixture(t *testing.T) {
 		CompletedAt         int64  `json:"completed_at"`
 		FactorBps           uint16 `json:"factor_bps"`
 		TotalPrincipal      uint64 `json:"total_principal"`
+		HashScheme          uint8  `json:"hash_scheme"`
 		Reserved            string `json:"reserved"`
 	}
 	if err := json.Unmarshal(f.Expected, &want); err != nil {
@@ -295,7 +300,9 @@ func TestRealActionFixture(t *testing.T) {
 	eq(t, "completed_at", got.CompletedAt, want.CompletedAt)
 	eq(t, "factor_bps", got.FactorBps, want.FactorBps)
 	eq(t, "total_principal", got.TotalPrincipal, want.TotalPrincipal)
-	eqHex(t, "reserved", got.Reserved[:], want.Reserved)
+	// Reserved[64] = hash_scheme (1) + positions_done (4, plan 15 D1') + the raw tail; pinned separately.
+	eq(t, "hash_scheme", got.HashScheme, want.HashScheme)
+	eqHex(t, "reserved", got.Reserved[5:], want.Reserved)
 	eq(t, "series→series fixture", got.Series.String(), fixturePubkey(t, "series"))
 }
 

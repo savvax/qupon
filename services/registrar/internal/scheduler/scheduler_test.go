@@ -589,3 +589,60 @@ func TestLastTick(t *testing.T) {
 		t.Fatalf("lastTick = %v, want %v", s.LastTick(), now0)
 	}
 }
+
+// Task 1511 (plan 15 D7): a demo series counts the announce lead and payment
+// delay in series-days, so the whole coupon cycle runs on the compressed clock.
+func TestDecideDemoSeriesRunsOnSeriesDays(t *testing.T) {
+	maturity := now0.Add(24 * time.Hour).Unix()
+	prod := DefaultConfig() // 5 d lead, 2 d payment delay
+	s := series(now0.Add(10*time.Second).Unix(), maturity)
+	s.DaySecs = 1
+
+	// 5 series-days of lead: the coupon 5 s away is exactly inside the window
+	// even though the production lead is 120 h.
+	s.NextCouponDate = now0.Add(5 * time.Second).Unix()
+	d := Decide(s, nil, 0, now0, prod)
+	want := Decision{Kind: KindAnnounce, Action: "INTR", RecordAt: s.NextCouponDate, PaymentAt: s.NextCouponDate + 2}
+	if d != want {
+		t.Fatalf("demo decision = %+v, want %+v", d, want)
+	}
+
+	// 6 s out is beyond the 5 series-day lead → wait.
+	s.NextCouponDate = now0.Add(6 * time.Second).Unix()
+	if d := Decide(s, nil, 0, now0, prod); d.Kind != KindWait {
+		t.Fatalf("outside the series-day lead = %+v, want wait", d)
+	}
+
+	// Real series are untouched by DaySecs = 0: a coupon 121 h out is beyond the 120 h lead.
+	s.DaySecs = 0
+	s.NextCouponDate = now0.Add(121 * time.Hour).Unix()
+	if d := Decide(s, nil, 0, now0, prod); d.Kind != KindWait {
+		t.Fatalf("real series keeps the 5-day lead: %+v, want wait", d)
+	}
+}
+
+// The loop shortens to 2 s while any Active demo series exists.
+func TestTickSpeedsUpForDemoSeries(t *testing.T) {
+	demo := series(now0.Add(90*time.Second).Unix(), now0.Add(24*time.Hour).Unix())
+	demo.DaySecs = 1
+	if !anyDemoSeriesOpen([]chain.SeriesRecord{{PDA: kSeries, Series: demo}}) {
+		t.Fatal("an Active demo series must be detected")
+	}
+	demo.DaySecs = 0
+	if anyDemoSeriesOpen([]chain.SeriesRecord{{PDA: kSeries, Series: demo}}) {
+		t.Fatal("a real-clock series is not a demo series")
+	}
+	demo.DaySecs, demo.Status = 1, 3
+	if anyDemoSeriesOpen([]chain.SeriesRecord{{PDA: kSeries, Series: demo}}) {
+		t.Fatal("a closed demo series does not keep the loop fast")
+	}
+	if anyDemoSeriesOpen(nil) {
+		t.Fatal("no series → no demo series")
+	}
+	// Tick on a running scheduler with no demo series leaves the ticker alone (and must not panic).
+	fc := &fakeChain{series: series(now0.Add(90*time.Second).Unix(), now0.Add(24*time.Hour).Unix())}
+	s, _, _ := newScheduler(t, fc, DefaultConfig())
+	s.tick = time.NewTicker(time.Minute)
+	defer s.tick.Stop()
+	s.Tick(t.Context())
+}

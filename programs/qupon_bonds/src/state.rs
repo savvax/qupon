@@ -102,7 +102,12 @@ pub struct Series {
     /// Hooked series: checkpoints created after the pending record's `record_at` (they start at its `record_seq`:
     /// nothing could be held in a frozen, unregistered ATA). Reset when a record is armed.
     pub ckpt_late: u32,
-    pub reserved: [u8; 38],
+    /// Seconds per civil day: 0 = real clock (Almaty midnights), 1..86 399 = demo clock (plan 15 D7). Carved from
+    /// `reserved` like the fields above, so the account size is unchanged.
+    pub day_secs: u32,
+    /// Packed `yyyymmdd` of the issue civil date — the demo clock's calendar anchor (0 = derive from `issue_date`).
+    pub issue_ymd: u32,
+    pub reserved: [u8; 30],
 }
 
 /// Seeds `["investor", series, owner]`.

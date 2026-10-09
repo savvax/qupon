@@ -29,13 +29,12 @@ import {
 } from "../generated/index.js";
 import { chunk, sortByOwner } from "../lib/batch.js";
 import { accrualDays, dayCountFromCode, packYmd } from "../lib/daycount.js";
+import { ALMATY_CLOCK, type CivilClock, seriesClock } from "../lib/clock.js";
 import { txLink } from "../lib/explorer.js";
 import { actionPda, entitlementPda, investorPda } from "../lib/pda.js";
 import type { QuponRpc } from "../lib/tx.js";
 import {
 	defaultCorpId,
-	almatyDate,
-	almatyMidnight,
 	initCtx,
 	listEntitlements,
 	listByKey,
@@ -182,6 +181,7 @@ export function announcePlan(
 	s: { nextCouponDate: bigint; maturityDate: bigint },
 	callDate: string | undefined,
 	factorBps: string | undefined,
+	clock: CivilClock = ALMATY_CLOCK,
 ): { kind: CashKind; code: number; periodEnd: bigint; factorBps: number } {
 	const k = kind.toUpperCase();
 	if (!(k in CASH_KINDS)) throw new Error(`--kind must be one of ${Object.keys(CASH_KINDS).join("|")}, got '${kind}'`);
@@ -192,7 +192,8 @@ export function announcePlan(
 	const factor = factorBps === undefined ? 0 : parseIntArg(factorBps, "--factor-bps");
 	if (k === "PCAL" && (factor <= 0 || factor >= 10_000)) throw new Error("--factor-bps must be 1..9999 for PCAL");
 	if (k !== "PCAL" && factor !== 0) throw new Error("--factor-bps only applies to PCAL");
-	const periodEnd = k === "INTR" ? s.nextCouponDate : k === "REDM" ? s.maturityDate : almatyMidnight(parseYmd(callDate ?? "", "--call-date"));
+	// A call date is a midnight of the series clock (demo series map civil dates to compressed days, plan 15 D7).
+	const periodEnd = k === "INTR" ? s.nextCouponDate : k === "REDM" ? s.maturityDate : BigInt(clock.ts(parseYmd(callDate ?? "", "--call-date")));
 	return { kind: k as CashKind, code, periodEnd, factorBps: factor };
 }
 
@@ -202,11 +203,12 @@ async function runAnnounce(opts: AnnounceOpts, cmd: Command): Promise<void> {
 	const registrar = await signer(cmd, "registrar");
 	const s = info.account;
 	// The period always starts at Series.period_start and the rate is a series term (checked on-chain).
-	const plan = announcePlan(opts.kind, s, opts.callDate, opts.factorBps);
+	const clock = seriesClock(s);
+	const plan = announcePlan(opts.kind, s, opts.callDate, opts.factorBps, clock);
 	const periodStart = s.periodStart;
 	const periodEnd = plan.periodEnd;
-	const startYmd = almatyDate(periodStart);
-	const endYmd = almatyDate(periodEnd);
+	const startYmd = clock.civil(Number(periodStart));
+	const endYmd = clock.civil(Number(periodEnd));
 	const days = accrualDays(dayCountFromCode(s.dayCount), startYmd, endYmd);
 	const recordAt = parseAt(opts.recordAt, "--record-at");
 	const paymentAt = parseAt(opts.paymentAt, "--payment-at");

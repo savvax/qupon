@@ -306,6 +306,8 @@ impl Env {
             day_count: 0,
             issue_date: ISSUE_DATE,
             maturity_date: MATURITY,
+            day_secs: 0,
+            issue_ymd: 0,
             quorum_bps: 5000,
             approval_bps: 6667,
         }

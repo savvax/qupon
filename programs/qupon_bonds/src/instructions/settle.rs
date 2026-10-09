@@ -9,13 +9,12 @@ use anchor_spl::{
         TransferChecked,
     },
 };
-use entitlement::Ymd;
 
 use crate::{
+    clock::SeriesClock,
     constants::*,
-    error::{math_err, QuponError},
+    error::QuponError,
     events::{ActionCompleted, ActionFunded, EntitlementPaid, EscrowSwept},
-    instructions::init_series::add_months_almaty,
     state::{
         ActionKind, ActionStatus, CorporateAction, Entitlement, EntitlementStatus, Investor,
         Series, SeriesStatus,
@@ -336,23 +335,19 @@ pub fn handle_complete_action(ctx: Context<CompleteAction>) -> Result<()> {
     Ok(())
 }
 
-/// Coupon k = issue_date + k × (12/frequency) months, computed from issue_date (never by stepping the previous
-/// date: end-of-month clamping would drift). Capped at maturity — the final coupon is paid with REDM.
+/// Coupon k = issue_date + k × (12/frequency) months on the series clock, computed from issue_date (never by
+/// stepping the previous date: end-of-month clamping would drift). Capped at maturity — the final coupon is
+/// paid with REDM.
 fn next_coupon_after(series: &Series, period_end: i64) -> Result<i64> {
+    let clock = SeriesClock::of(series)?;
     let months = 12 / u32::from(series.frequency);
-    let civil = |ts: i64| -> Result<Ymd> {
-        let local = ts
-            .checked_add(ALMATY_UTC_OFFSET_SECS)
-            .ok_or(QuponError::MathOverflow)?;
-        Ymd::from_unix_utc(local).map_err(math_err)
-    };
-    let (issue, end) = (civil(series.issue_date)?, civil(period_end)?);
+    let (issue, end) = (clock.civil(series.issue_date)?, clock.civil(period_end)?);
     let elapsed =
         (i64::from(end.y) * 12 + i64::from(end.m)) - (i64::from(issue.y) * 12 + i64::from(issue.m));
     let k = u32::try_from(elapsed / i64::from(months) + 1)
         .map_err(|_| error!(QuponError::InvalidDates))?;
     let total = k.checked_mul(months).ok_or(QuponError::MathOverflow)?;
-    let next = add_months_almaty(series.issue_date, total)?;
+    let next = clock.add_months(series.issue_date, total)?;
     Ok(next.min(series.maturity_date))
 }
 

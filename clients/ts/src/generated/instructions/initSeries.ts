@@ -20,18 +20,26 @@ Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWit
 
 export type InitSeriesInstructionData = { discriminator: ReadonlyUint8Array; issuer: Address; payingAgent: Address; isin: ReadonlyUint8Array; ticker: ReadonlyUint8Array; faceValue: bigint; couponRateBps: number; frequency: number; dayCount: number; 
 /** Almaty midnight of the issue date, as a unix timestamp. */
-issueDate: bigint; maturityDate: bigint; quorumBps: number; approvalBps: number;  };
+issueDate: bigint; maturityDate: bigint; 
+/** 0 = real clock (Almaty midnights); 1..86 399 s per civil day = demo clock (plan 15 D7). */
+daySecs: number; 
+/** Packed `yyyymmdd` of the issue civil date (demo clock anchor; 0 = derive from `issue_date`). */
+issueYmd: number; quorumBps: number; approvalBps: number;  };
 
 export type InitSeriesInstructionDataArgs = { issuer: Address; payingAgent: Address; isin: ReadonlyUint8Array; ticker: ReadonlyUint8Array; faceValue: number | bigint; couponRateBps: number; frequency: number; dayCount: number; 
 /** Almaty midnight of the issue date, as a unix timestamp. */
-issueDate: number | bigint; maturityDate: number | bigint; quorumBps: number; approvalBps: number;  };
+issueDate: number | bigint; maturityDate: number | bigint; 
+/** 0 = real clock (Almaty midnights); 1..86 399 s per civil day = demo clock (plan 15 D7). */
+daySecs: number; 
+/** Packed `yyyymmdd` of the issue civil date (demo clock anchor; 0 = derive from `issue_date`). */
+issueYmd: number; quorumBps: number; approvalBps: number;  };
 
 export function getInitSeriesInstructionDataEncoder(): FixedSizeEncoder<InitSeriesInstructionDataArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['issuer', getAddressEncoder()], ['payingAgent', getAddressEncoder()], ['isin', fixEncoderSize(getBytesEncoder(), 12)], ['ticker', fixEncoderSize(getBytesEncoder(), 16)], ['faceValue', getU64Encoder()], ['couponRateBps', getU32Encoder()], ['frequency', getU8Encoder()], ['dayCount', getU8Encoder()], ['issueDate', getI64Encoder()], ['maturityDate', getI64Encoder()], ['quorumBps', getU16Encoder()], ['approvalBps', getU16Encoder()]]), (value) => ({ ...value, discriminator: INIT_SERIES_DISCRIMINATOR }));
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['issuer', getAddressEncoder()], ['payingAgent', getAddressEncoder()], ['isin', fixEncoderSize(getBytesEncoder(), 12)], ['ticker', fixEncoderSize(getBytesEncoder(), 16)], ['faceValue', getU64Encoder()], ['couponRateBps', getU32Encoder()], ['frequency', getU8Encoder()], ['dayCount', getU8Encoder()], ['issueDate', getI64Encoder()], ['maturityDate', getI64Encoder()], ['daySecs', getU32Encoder()], ['issueYmd', getU32Encoder()], ['quorumBps', getU16Encoder()], ['approvalBps', getU16Encoder()]]), (value) => ({ ...value, discriminator: INIT_SERIES_DISCRIMINATOR }));
 }
 
 export function getInitSeriesInstructionDataDecoder(): FixedSizeDecoder<InitSeriesInstructionData> {
-    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['issuer', getAddressDecoder()], ['payingAgent', getAddressDecoder()], ['isin', fixDecoderSize(getBytesDecoder(), 12)], ['ticker', fixDecoderSize(getBytesDecoder(), 16)], ['faceValue', getU64Decoder()], ['couponRateBps', getU32Decoder()], ['frequency', getU8Decoder()], ['dayCount', getU8Decoder()], ['issueDate', getI64Decoder()], ['maturityDate', getI64Decoder()], ['quorumBps', getU16Decoder()], ['approvalBps', getU16Decoder()]]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['issuer', getAddressDecoder()], ['payingAgent', getAddressDecoder()], ['isin', fixDecoderSize(getBytesDecoder(), 12)], ['ticker', fixDecoderSize(getBytesDecoder(), 16)], ['faceValue', getU64Decoder()], ['couponRateBps', getU32Decoder()], ['frequency', getU8Decoder()], ['dayCount', getU8Decoder()], ['issueDate', getI64Decoder()], ['maturityDate', getI64Decoder()], ['daySecs', getU32Decoder()], ['issueYmd', getU32Decoder()], ['quorumBps', getU16Decoder()], ['approvalBps', getU16Decoder()]]);
 }
 
 export function getInitSeriesInstructionDataCodec(): FixedSizeCodec<InitSeriesInstructionDataArgs, InitSeriesInstructionData> {
@@ -61,6 +69,8 @@ frequency: InitSeriesInstructionDataArgs["frequency"];
 dayCount: InitSeriesInstructionDataArgs["dayCount"];
 issueDate: InitSeriesInstructionDataArgs["issueDate"];
 maturityDate: InitSeriesInstructionDataArgs["maturityDate"];
+daySecs: InitSeriesInstructionDataArgs["daySecs"];
+issueYmd: InitSeriesInstructionDataArgs["issueYmd"];
 quorumBps: InitSeriesInstructionDataArgs["quorumBps"];
 approvalBps: InitSeriesInstructionDataArgs["approvalBps"];
 }
@@ -124,6 +134,8 @@ frequency: InitSeriesInstructionDataArgs["frequency"];
 dayCount: InitSeriesInstructionDataArgs["dayCount"];
 issueDate: InitSeriesInstructionDataArgs["issueDate"];
 maturityDate: InitSeriesInstructionDataArgs["maturityDate"];
+daySecs: InitSeriesInstructionDataArgs["daySecs"];
+issueYmd: InitSeriesInstructionDataArgs["issueYmd"];
 quorumBps: InitSeriesInstructionDataArgs["quorumBps"];
 approvalBps: InitSeriesInstructionDataArgs["approvalBps"];
 }

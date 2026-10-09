@@ -4,6 +4,7 @@
 package chain
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/borsh"
@@ -97,6 +98,9 @@ func DecodeSeries(data []byte) (*Series, error) {
 		return nil, fmt.Errorf("series: reserved: %w", err)
 	}
 	copy(s.Reserved[:], reserved)
+	// Plan 15 D7 carve (after the hook fields): reserved[22:26] = day_secs, [26:30] = issue_ymd.
+	s.DaySecs = binary.LittleEndian.Uint32(s.Reserved[22:26])
+	s.IssueYmd = binary.LittleEndian.Uint32(s.Reserved[26:30])
 	// The account is allocated at max size (open_action Some = 33 bytes); a None leaves 32 zero bytes at the end.
 	if !r.Done() && (s.OpenAction != nil || r.Remaining() != 32 || !r.RestIsZero()) {
 		return nil, fmt.Errorf("series: %d trailing bytes", r.Remaining())

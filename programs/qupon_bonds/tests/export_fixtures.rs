@@ -72,6 +72,8 @@ fn series_json(s: &Series) -> String {
     let _ = writeln!(j, "  \"approval_bps\": {},", s.approval_bps);
     let _ = writeln!(j, "  \"tax_vault\": \"{}\",", s.tax_vault);
     let _ = writeln!(j, "  \"open_action\": {open},");
+    let _ = writeln!(j, "  \"day_secs\": {},", s.day_secs);
+    let _ = writeln!(j, "  \"issue_ymd\": {},", s.issue_ymd);
     let _ = writeln!(j, "  \"reserved\": \"{}\"", hex(&s.reserved));
     j.push('}');
     j
@@ -144,6 +146,7 @@ fn action_json(a: &CorporateAction) -> String {
     let _ = writeln!(j, "  \"completed_at\": {},", a.completed_at);
     let _ = writeln!(j, "  \"factor_bps\": {},", a.factor_bps);
     let _ = writeln!(j, "  \"total_principal\": {},", a.total_principal);
+    let _ = writeln!(j, "  \"hash_scheme\": {},", a.hash_scheme);
     let _ = writeln!(j, "  \"reserved\": \"{}\"", hex(&a.reserved));
     j.push('}');
     j

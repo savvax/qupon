@@ -1,9 +1,9 @@
 {
   "kind": "action",
-  "pubkey": "Cs5Fz2JmjDu52N3GhfLmkzmRGQtP5zazfuxAGmtJPiUj",
+  "pubkey": "Apfp9czTtft5Pem38UeQSCKzYcV9UQCc3sqvuBmRcZDR",
   "expected": {
   "bump": 252,
-  "series": "FFM75BBwFniQGjQ82E6wYu4skMcPW1Jz2kBeizoeFByV",
+  "series": "4agB8vWRiDmGUepf9nNSndviGJ6f2ficCoBbne7J5qKF",
   "index": 0,
   "kind": 0,
   "mandatory": 0,
@@ -18,11 +18,11 @@
   "rate_bps": 1000,
   "per_unit_gross": 5000,
   "per_unit_principal": 0,
-  "cash_mint": "pTCm8LD8Jegd8gYduekimi1ekD7UFzX9oEkR78XkShq",
-  "escrow": "Ezqo1nCxm2K5AXJTLhkSzG9aziT3yp2hs3uSWNN3pBQJ",
+  "cash_mint": "EG5v2tEVNiJeA48oXmbJWXcEtHmARgJvTZi7YcYJhP48",
+  "escrow": "13GbgaWRNbFVHREJrnakQdfsrTNVPSvPQWCyrFVks9rp",
   "status": 4,
   "snapshot_slot": 447552000,
-  "snapshot_hash": "1a209f697a42ec7b166fc667ee57fb5901bd93a2645a2b7a9844ab83e03a16fc",
+  "snapshot_hash": "538ed8525b641306d09f39e793a377ef84eb6d640c4551191a2dc65fb64f74a1",
   "units_snapshotted": 100,
   "holders_snapshotted": 3,
   "holders_paid": 3,
@@ -42,6 +42,7 @@
   "completed_at": 0,
   "factor_bps": 0,
   "total_principal": 0,
-  "reserved": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+  "hash_scheme": 1,
+  "reserved": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 }
 }

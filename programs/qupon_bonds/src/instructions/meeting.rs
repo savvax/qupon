@@ -11,10 +11,10 @@ use anchor_spl::{
 };
 
 use crate::{
+    clock::SeriesClock,
     constants::*,
     error::QuponError,
     events::{MeetingFinalized, TermsChanged, VoteCast},
-    instructions::init_series::is_almaty_midnight,
     state::{
         ActionKind, ActionStatus, CorporateAction, Entitlement, MeetingResult, Series, VoteChoice,
     },
@@ -193,6 +193,7 @@ pub fn handle_apply_terms_change(ctx: Context<ApplyTermsChange>) -> Result<()> {
     );
 
     let series = &ctx.accounts.series;
+    let clock = SeriesClock::of(series)?;
     let (old_rate, old_maturity) = (series.coupon_rate_bps, series.maturity_date);
     let new_rate = if action.proposal_new_rate_bps > 0 {
         action.proposal_new_rate_bps
@@ -201,7 +202,7 @@ pub fn handle_apply_terms_change(ctx: Context<ApplyTermsChange>) -> Result<()> {
     };
     let new_maturity = if action.proposal_new_maturity > 0 {
         require!(
-            is_almaty_midnight(action.proposal_new_maturity)
+            clock.is_midnight(action.proposal_new_maturity)
                 && action.proposal_new_maturity >= series.next_coupon_date,
             QuponError::InvalidDates
         );

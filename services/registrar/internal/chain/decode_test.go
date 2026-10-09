@@ -3,6 +3,7 @@ package chain
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -437,5 +438,32 @@ func TestDecodeSeriesAllocatedPadding(t *testing.T) {
 	junk[len(junk)-1] = 7
 	if _, err := DecodeSeries(junk); err == nil {
 		t.Fatal("non-zero padding must be rejected")
+	}
+}
+
+// Task 1511 (plan 15 D7): DaySecs/IssueYmd are carved from Reserved after the hook fields.
+func TestDecodeSeriesDemoClock(t *testing.T) {
+	in := Series{Mint: pk(t, "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"), Status: 0}
+	in.Reserved = [60]byte{}
+	binary.LittleEndian.PutUint32(in.Reserved[22:26], 1)          // day_secs = 1 s civil day
+	binary.LittleEndian.PutUint32(in.Reserved[26:30], 20_261_009) // issue 2026-10-09
+	in.DaySecs, in.IssueYmd = 1, 20_261_009
+	out, err := DecodeSeries(encodeSeries(&in))
+	if err != nil {
+		t.Fatalf("DecodeSeries: %v", err)
+	}
+	if out.DaySecs != 1 || out.IssueYmd != 20_261_009 {
+		t.Fatalf("demo clock fields = %d/%d, want 1/20261009", out.DaySecs, out.IssueYmd)
+	}
+	if !reflect.DeepEqual(out, &in) {
+		t.Fatalf("round trip mismatch:\n got %+v\nwant %+v", *out, in)
+	}
+	// All-zero reserved (every legacy series) reads as the real clock.
+	legacy := in
+	legacy.Reserved = [60]byte{}
+	legacy.DaySecs, legacy.IssueYmd = 0, 0
+	out, err = DecodeSeries(encodeSeries(&legacy))
+	if err != nil || out.DaySecs != 0 || out.IssueYmd != 0 {
+		t.Fatalf("legacy series = %+v (%v), want zero demo fields", out, err)
 	}
 }

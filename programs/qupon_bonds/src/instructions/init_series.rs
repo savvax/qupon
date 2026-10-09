@@ -16,9 +16,10 @@ use anchor_spl::{
     token_2022_extensions::spl_token_metadata_interface::state::TokenMetadata,
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
-use entitlement::{DayCount, Ymd};
+use entitlement::DayCount;
 
 use crate::{
+    clock::SeriesClock,
     constants::*,
     error::{math_err, QuponError},
     events::SeriesInitialized,
@@ -38,6 +39,10 @@ pub struct InitSeriesParams {
     /// Almaty midnight of the issue date, as a unix timestamp.
     pub issue_date: i64,
     pub maturity_date: i64,
+    /// 0 = real clock (Almaty midnights); 1..86 399 s per civil day = demo clock (plan 15 D7).
+    pub day_secs: u32,
+    /// Packed `yyyymmdd` of the issue civil date (demo clock anchor; 0 = derive from `issue_date`).
+    pub issue_ymd: u32,
     pub quorum_bps: u16,
     pub approval_bps: u16,
 }
@@ -111,11 +116,30 @@ pub fn handle_init_series(ctx: Context<InitSeries>, p: InitSeriesParams) -> Resu
     DayCount::try_from(p.day_count)
         .and_then(DayCount::basis)
         .map_err(math_err)?;
+    let series_clock = SeriesClock::from_params(p.day_secs, p.issue_date, p.issue_ymd)?;
+    // Real clock: `issue_date` must be an Almaty midnight; `issue_ymd` is derived from it on-chain (the
+    // argument is ignored unless non-zero, then it must agree). Demo clock: any instant anchors the
+    // calendar at `issue_ymd` (plan 15 D7), so both arguments are stored as given.
+    let issue_ymd = if p.day_secs == 0 {
+        require!(
+            series_clock.is_midnight(p.issue_date),
+            QuponError::InvalidDates
+        );
+        let derived = series_clock.civil(p.issue_date)?;
+        let packed =
+            u32::from(derived.y) * 10_000 + u32::from(derived.m) * 100 + u32::from(derived.d);
+        if p.issue_ymd != 0 {
+            require!(p.issue_ymd == packed, QuponError::InvalidDates);
+        }
+        packed
+    } else {
+        p.issue_ymd
+    };
     require!(
-        is_almaty_midnight(p.issue_date) && is_almaty_midnight(p.maturity_date),
+        series_clock.is_midnight(p.maturity_date),
         QuponError::InvalidDates
     );
-    let next_coupon_date = add_months_almaty(p.issue_date, 12 / u32::from(p.frequency))?;
+    let next_coupon_date = series_clock.add_months(p.issue_date, 12 / u32::from(p.frequency))?;
     require!(
         next_coupon_date <= p.maturity_date,
         QuponError::InvalidDates
@@ -136,6 +160,8 @@ pub fn handle_init_series(ctx: Context<InitSeries>, p: InitSeriesParams) -> Resu
     s.day_count = p.day_count;
     s.issue_date = p.issue_date;
     s.maturity_date = p.maturity_date;
+    s.day_secs = p.day_secs;
+    s.issue_ymd = issue_ymd;
     s.next_coupon_date = next_coupon_date;
     s.period_start = p.issue_date;
     s.status = SeriesStatus::Active as u8;
@@ -251,53 +277,4 @@ fn validate_bond_mint(mint: &AccountInfo, series: &Pubkey, registrar: &Pubkey) -
         QuponError::InvalidAuthority
     );
     Ok(())
-}
-
-/// Period boundaries and series dates are Almaty midnights (03-domain §1, §3).
-pub fn is_almaty_midnight(ts: i64) -> bool {
-    ts.checked_add(ALMATY_UTC_OFFSET_SECS)
-        .is_some_and(|t| t.rem_euclid(86_400) == 0)
-}
-
-/// Same Almaty-local time `months` later (end-of-month clamped). Period boundaries are Almaty midnights.
-pub fn add_months_almaty(ts: i64, months: u32) -> Result<i64> {
-    let local = ts
-        .checked_add(ALMATY_UTC_OFFSET_SECS)
-        .ok_or(QuponError::MathOverflow)?;
-    let next = Ymd::from_unix_utc(local)
-        .and_then(|d| d.add_months(months))
-        .map_err(math_err)?;
-    next.days_from_epoch()
-        .checked_mul(86_400)
-        .and_then(|x| x.checked_add(local.rem_euclid(86_400)))
-        .and_then(|x| x.checked_sub(ALMATY_UTC_OFFSET_SECS))
-        .ok_or_else(|| error!(QuponError::MathOverflow))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Almaty midnight of a civil date, built independently of `add_months_almaty`.
-    fn almaty(y: u16, m: u8, d: u8) -> i64 {
-        Ymd::new(y, m, d).unwrap().days_from_epoch() * 86_400 - ALMATY_UTC_OFFSET_SECS
-    }
-
-    #[test]
-    fn add_months_keeps_almaty_midnight_and_clamps() {
-        assert_eq!(almaty(2026, 7, 3), 1_783_018_800);
-        for ((y, m, d), months, (y2, m2, d2)) in [
-            ((2026, 7, 3), 6, (2027, 1, 3)),
-            ((2026, 8, 31), 6, (2027, 2, 28)), // UTC date is Aug 30 — offset must be applied
-            ((2027, 8, 31), 6, (2028, 2, 29)),
-            ((2026, 1, 31), 1, (2026, 2, 28)),
-            ((2026, 12, 31), 3, (2027, 3, 31)),
-            ((2026, 3, 1), 1, (2026, 4, 1)), // UTC date is Feb 28
-        ] {
-            let got = add_months_almaty(almaty(y, m, d), months).unwrap();
-            assert_eq!(got, almaty(y2, m2, d2), "{y}-{m}-{d} + {months}");
-            assert!(is_almaty_midnight(got));
-        }
-        assert!(!is_almaty_midnight(almaty(2026, 7, 3) + 3600));
-    }
 }

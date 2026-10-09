@@ -3,6 +3,8 @@ import { address, type Address, type Instruction, type KeyPairSigner, type Signa
 import { fetchMaybeMint } from "@solana-program/token-2022";
 import type { Command } from "commander";
 import { getInitHookInstructionAsync, getInitSeriesInstructionAsync } from "../generated/index.js";
+import { CivilClock } from "../lib/clock.js";
+import { packYmd } from "../lib/daycount.js";
 import { mintIsHooked } from "../lib/hook.js";
 import { seriesPda } from "../lib/pda.js";
 import type { QuponConfig } from "../lib/config.js";
@@ -34,6 +36,7 @@ interface InitOpts extends GlobalOptions {
 	quorumBps: string;
 	approvalBps: string;
 	payingAgent?: string;
+	demoDaySecs?: string;
 }
 
 export interface InitSeriesOpts {
@@ -45,6 +48,8 @@ export interface InitSeriesOpts {
 	mint?: Address;
 	/** Paying-agent override (default: cfg.wallets.payingAgent), e.g. a Squads vault PDA. */
 	payingAgent?: Address;
+	/** Demo clock: seconds per civil day, 1..86 399 (plan 15 D7); omit or 0 = the real Almaty clock. */
+	demoDaySecs?: number;
 }
 
 /** Build and send init_series; returns the tx report without printing (shared with series:create). */
@@ -59,6 +64,18 @@ export async function initSeries(
 	const mint = opts.mint ?? address(sc.mint);
 	const cashMint = resolveCashMint(cfg, sc.cashMint);
 	const cashTokenProgram = await tokenProgramOfMint(rpc, cashMint);
+	// Real clock: Almaty midnights, issue_ymd derived on-chain. Demo clock: anchored now, the calendar starts at
+	// --issue-date and the maturity comes from the same clock the program uses (plan 15 D7).
+	const daySecs = opts.demoDaySecs ?? 0;
+	const issueYmd = parseYmd(opts.issueDate, "--issue-date");
+	const maturityYmd = parseYmd(opts.maturityDate, "--maturity-date");
+	let issueDate = almatyMidnight(issueYmd);
+	let maturityDate = almatyMidnight(maturityYmd);
+	if (daySecs > 0) {
+		issueDate = BigInt(Math.floor(Date.now() / 1000));
+		maturityDate = BigInt(CivilClock.demo(daySecs, Number(issueDate), issueYmd).ts(maturityYmd));
+		log(`demo clock: 1 day = ${daySecs}s, maturity in ${maturityDate - issueDate}s`);
+	}
 	const instruction = await getInitSeriesInstructionAsync({
 		registrar,
 		mint,
@@ -72,8 +89,10 @@ export async function initSeries(
 		couponRateBps: sc.couponRateBps,
 		frequency: sc.frequency,
 		dayCount: dayCountCode(sc.dayCount),
-		issueDate: almatyMidnight(parseYmd(opts.issueDate, "--issue-date")),
-		maturityDate: almatyMidnight(parseYmd(opts.maturityDate, "--maturity-date")),
+		issueDate,
+		maturityDate,
+		daySecs,
+		issueYmd: daySecs > 0 ? packYmd(issueYmd) : 0,
 		quorumBps: opts.quorumBps,
 		approvalBps: opts.approvalBps,
 	});
@@ -108,6 +127,7 @@ async function runInitSeries(opts: InitOpts, cmd: Command): Promise<void> {
 		approvalBps: parseIntArg(opts.approvalBps, "--approval-bps"),
 		mint,
 		...(opts.payingAgent !== undefined ? { payingAgent: address(opts.payingAgent) } : {}),
+		...(opts.demoDaySecs !== undefined ? { demoDaySecs: parseIntArg(opts.demoDaySecs, "--demo-day-secs") } : {}),
 	}, registrar);
 	out({ ok: true, signature: report.signature, slot: report.slot, series: opts.series, mint, seriesPda: report.seriesPda });
 }
@@ -125,5 +145,6 @@ export function registerSeriesCommands(program: Command): void {
 		.option("--quorum-bps <n>", "bondholder-meeting quorum in bps", "5000")
 		.option("--approval-bps <n>", "bondholder-meeting approval in bps", "6667")
 		.option("--paying-agent <address>", "paying agent (default: config wallets.payingAgent), e.g. a Squads vault")
+		.option("--demo-day-secs <n>", "demo clock: seconds per civil day (1..86399), labelled DEMO; omit for the real clock")
 		.action(runInitSeries);
 }

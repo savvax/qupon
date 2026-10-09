@@ -90,3 +90,16 @@ export function civilFromDays(days: number): Ymd {
 	if (!Number.isInteger(days)) throw new MathError("InvalidDate", `${days}`);
 	return fromUnixUtc(days * 86_400);
 }
+
+/** Packed `yyyymmdd` → civil date (inverse of `packYmd`). */
+export function unpackYmd(v: number): Ymd {
+	return { y: Math.floor(v / 10_000), m: Math.floor(v / 100) % 100, d: v % 100 };
+}
+
+/** The real series clock: Almaty midnights (UTC+5, no DST). */
+export const ALMATY_CLOCK = CivilClock.real(5 * 3_600);
+
+/** The clock a series runs on — `programs/qupon_bonds/src/clock.rs` `SeriesClock::of` (day_secs 0 = real clock). */
+export function seriesClock(s: { daySecs: number; issueDate: bigint | number; issueYmd: number }): CivilClock {
+	return s.daySecs === 0 ? ALMATY_CLOCK : CivilClock.demo(s.daySecs, Number(s.issueDate), unpackYmd(s.issueYmd));
+}

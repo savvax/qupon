@@ -94,9 +94,17 @@ func Decide(s *chain.Series, open *chain.CorporateAction, supply uint64, now tim
 	if s.Status != 0 {
 		return waitf("series status %d: nothing to schedule", s.Status)
 	}
-	if now.Unix() < s.NextCouponDate-int64(cfg.Lead.Seconds()) {
+	// Demo series (plan 15 D7): the same 5-day announce lead and 2-day payment delay, counted in
+	// series-days — a day_secs = 1 series announces 5 s ahead and pays 2 s after the record date,
+	// not after two real days. The record floor shrinks to one series-day for the same reason.
+	lead, delay, floor := cfg.Lead, cfg.PaymentDelay, cfg.MinRecordDelay
+	if s.DaySecs > 0 {
+		day := time.Duration(s.DaySecs) * time.Second
+		lead, delay, floor = 5*day, 2*day, min(floor, day)
+	}
+	if now.Unix() < s.NextCouponDate-int64(lead.Seconds()) {
 		return waitf("next coupon %s; announce at -%s",
-			time.Unix(s.NextCouponDate, 0).In(almaty).Format(time.RFC3339), cfg.Lead)
+			time.Unix(s.NextCouponDate, 0).In(almaty).Format(time.RFC3339), lead)
 	}
 	// The final coupon is paid with the redemption (docs/01-product §S2).
 	kind := "INTR"
@@ -105,10 +113,10 @@ func Decide(s *chain.Series, open *chain.CorporateAction, supply uint64, now tim
 	}
 	// Record date = the coupon date itself (KZ law art. 31: the period's last
 	// day); the floor keeps announce's now < record_at even on a late tick.
-	recordAt := max(s.NextCouponDate, now.Unix()+int64(cfg.MinRecordDelay.Seconds()))
+	recordAt := max(s.NextCouponDate, now.Unix()+int64(floor.Seconds()))
 	return Decision{
 		Kind: KindAnnounce, Action: kind,
-		RecordAt: recordAt, PaymentAt: recordAt + int64(cfg.PaymentDelay.Seconds()),
+		RecordAt: recordAt, PaymentAt: recordAt + int64(delay.Seconds()),
 	}
 }
 
@@ -129,6 +137,7 @@ type Scheduler struct {
 	Log   *slog.Logger
 	Now   func() time.Time // injectable clock (tests)
 
+	tick     *time.Ticker // non-nil once Run started; shortened while a demo series is open
 	lastTick atomic.Int64 // unix nanos of the last decision pass; read by GET /admin/system
 }
 
@@ -138,6 +147,7 @@ func (s *Scheduler) Run(ctx context.Context) {
 		s.Now = time.Now // main.go leaves it unset; a nil clock panicked on the first tick
 	}
 	t := time.NewTicker(max(s.Cfg.Tick, time.Second))
+	s.tick = t
 	defer t.Stop()
 	s.Log.Info("scheduler started",
 		"tick", s.Cfg.Tick.String(), "lead", s.Cfg.Lead.String(), "autofund", s.Cfg.AutoFund,
@@ -153,6 +163,10 @@ func (s *Scheduler) Run(ctx context.Context) {
 	}
 }
 
+// demoTick is the loop period while any Active demo series exists (plan 15 D7): a civil day can be
+// one second, so a 30 s tick would sleep through whole coupon periods.
+const demoTick = 2 * time.Second
+
 // Tick is one decision pass over every series.
 func (s *Scheduler) Tick(ctx context.Context) {
 	s.lastTick.Store(s.now().UnixNano())
@@ -161,12 +175,25 @@ func (s *Scheduler) Tick(ctx context.Context) {
 		s.Log.Error("scheduler: list series", "err", err)
 		return
 	}
+	if s.tick != nil && s.Cfg.Tick > demoTick && anyDemoSeriesOpen(recs) {
+		s.tick.Reset(demoTick) // stays fast until the service restarts; harmless when no demo series remains
+	}
 	for _, rec := range recs {
 		if ctx.Err() != nil {
 			return
 		}
 		s.handleSeries(ctx, rec)
 	}
+}
+
+// anyDemoSeriesOpen: an Active series whose clock runs on compressed days.
+func anyDemoSeriesOpen(recs []chain.SeriesRecord) bool {
+	for _, r := range recs {
+		if r.Series.DaySecs > 0 && r.Series.Status == 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Scheduler) handleSeries(ctx context.Context, rec chain.SeriesRecord) {
