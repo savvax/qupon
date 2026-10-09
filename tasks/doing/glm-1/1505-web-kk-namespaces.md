@@ -27,3 +27,9 @@ Translate every `apps/web/messages/en/<ns>.json` into `messages/kk/<ns>.json` (a
 
 ## Finish
 `make verify` green, commits carry `task: 1505`, `reports/worklog/1505.md` written. Print `DONE:1505` or `BLOCKED:1505 <reason>`.
+
+## Addendum (lead, after 1504 + 1530 merged)
+- `apps/web/messages/kk.json` is missing 69 base keys that the design task 1530 added after 1504 was written (`bond.register.*`, `bond.now.*`, `bond.yield.*`, `bond.journal.*`, `bond.rail.*`, `action.now.*`, `nav.view.*`, `nav.sandbox`, `landing.flow.*`, `landing.simulated.*`, `bond.kpi.*`, `bond.money.*`). Translate all of them (list: keys of en.json not in kk.json).
+- New namespaces from 1530: `kit`, `sandbox` — translate them with the others.
+- Make `src/i18n/messages.test.ts` strict for the base file too: `keys(kk) == keys(en)` with no EN fallback, so a future en-only key fails the gate.
+- Acceptance adds: `bash ops/shots.sh <dir> / /bonds/<mock mint> /registrar/actions/<mock pda> /sandbox/demo` in kk shows no English except brand names, tickers and `SIMULATED`.
