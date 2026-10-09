@@ -378,6 +378,10 @@ func (c *warnCounter) WithGroup(string) slog.Handler      { return c }
 // oneSigRPC lists exactly one signature at blockTime and answers getTransaction
 // with the fixture tx when served, null ("not found") otherwise.
 func oneSigRPC(t *testing.T, sig string, blockTime int64, served bool) *httptest.Server {
+	var bt any = blockTime // < 0: the RPC omits blockTime (null)
+	if blockTime < 0 {
+		bt = nil
+	}
 	t.Helper()
 	logs := fixtureLogs(t)
 	mux := http.NewServeMux()
@@ -394,7 +398,7 @@ func oneSigRPC(t *testing.T, sig string, blockTime int64, served bool) *httptest
 		switch req.Method {
 		case "getSignaturesForAddress":
 			writeResult([]map[string]any{
-				{"signature": sig, "slot": 312, "err": nil, "blockTime": blockTime},
+				{"signature": sig, "slot": 312, "err": nil, "blockTime": bt},
 			})
 		case "getTransaction":
 			if !served {
@@ -402,7 +406,7 @@ func oneSigRPC(t *testing.T, sig string, blockTime int64, served bool) *httptest
 				return
 			}
 			writeResult(map[string]any{
-				"slot": 312, "blockTime": blockTime,
+				"slot": 312, "blockTime": bt,
 				"meta": map[string]any{"err": nil, "logMessages": logs},
 			})
 		default:
@@ -531,5 +535,30 @@ func TestPollFreshNotFoundUsesFallback(t *testing.T) {
 	}
 	if cur, _ := st.IngestCursor(t.Context()); cur != sig {
 		t.Errorf("cursor = %s, want %s", cur, sig)
+	}
+}
+
+// A not-found signature without a BlockTime ages out of freshWindow from the
+// moment the poller first met it, instead of blocking the cursor forever (task 1420).
+func TestPollNilBlockTimeAgesOut(t *testing.T) {
+	sig := fakeSigs(1)[0]
+	srv := oneSigRPC(t, sig, -1, false)
+	p, st := newPoller(t, srv.URL)
+
+	if err := p.Poll(t.Context()); err == nil {
+		t.Fatal("first poll: want a retry error inside the fresh window")
+	}
+	if cur, _ := st.IngestCursor(t.Context()); cur == sig {
+		t.Fatal("cursor advanced past a fresh unserved tx")
+	}
+	p.firstSeen[sig] = time.Now().Add(-2 * freshWindow)
+	if err := p.Poll(t.Context()); err != nil {
+		t.Fatalf("poll after the window: %v", err)
+	}
+	if cur, _ := st.IngestCursor(t.Context()); cur != sig {
+		t.Errorf("cursor = %q, want %s (aged-out tx skipped)", cur, sig)
+	}
+	if _, ok := p.firstSeen[sig]; ok {
+		t.Error("firstSeen entry not cleared")
 	}
 }

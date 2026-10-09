@@ -51,6 +51,10 @@ type Poller struct {
 	backfillCap int // first-run cap only; a cursor always pages back to itself
 
 	lastSlot atomic.Uint64 // highest ingested slot; read by GET /admin/system
+
+	// firstSeen: when a not-yet-served signature without a BlockTime was first met, so it ages out of
+	// freshWindow like any other (poll loop only, no lock).
+	firstSeen map[string]time.Time
 }
 
 func NewPoller(rpcURL string, program solana.PublicKey, st *store.Store, log *slog.Logger) *Poller {
@@ -187,7 +191,22 @@ func (p *Poller) ingestTx(ctx context.Context, s *rpc.TransactionSignature) erro
 		if !isNotFound(err) {
 			return fmt.Errorf("getTransaction %s: %w", s.Signature, err)
 		}
-		if s.BlockTime != nil && time.Since(time.Unix(int64(*s.BlockTime), 0)) > freshWindow {
+		key := s.Signature.String()
+		seen := time.Now()
+		if s.BlockTime != nil {
+			seen = time.Unix(int64(*s.BlockTime), 0)
+		} else {
+			if p.firstSeen == nil {
+				p.firstSeen = map[string]time.Time{}
+			}
+			if t, ok := p.firstSeen[key]; ok {
+				seen = t
+			} else {
+				p.firstSeen[key] = seen
+			}
+		}
+		if time.Since(seen) > freshWindow {
+			delete(p.firstSeen, key)
 			p.log.Warn("ingest: transaction pruned from history", "sig", s.Signature.String())
 			return nil
 		}
@@ -195,6 +214,7 @@ func (p *Poller) ingestTx(ctx context.Context, s *rpc.TransactionSignature) erro
 		p.log.Warn("ingest: transaction not served yet, will retry", "sig", s.Signature.String())
 		return fmt.Errorf("getTransaction %s: %w", s.Signature, errTxNotServed)
 	}
+	delete(p.firstSeen, s.Signature.String())
 	if tx.Meta == nil {
 		return nil
 	}
