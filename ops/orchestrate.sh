@@ -35,6 +35,10 @@ while :; do
   # fresh worktree from main (worktree add touches refs → under the git lock)
   lock git
   git worktree remove --force "$WT" >/dev/null 2>&1 || true
+  # A directory left without its git metadata (an interrupted remove) makes `worktree add` fail on every claim:
+  # move it out of the way (2026-10-10: glm-1/6/7/8/11 looped on "cannot create worktree").
+  [ -e "$WT" ] && mv "$WT" "${TMPDIR:-/tmp}/qupon-orphan-$WORKER-$(date +%s)" 2>/dev/null
+  git worktree prune >/dev/null 2>&1 || true
   git branch -D "$BR" >/dev/null 2>&1 || true
   if ! git worktree add -B "$BR" "$WT" main >/dev/null 2>&1; then
     unlock git; log "[$WORKER] cannot create worktree; requeue"; requeue "$TASK"; sleep 120; continue
