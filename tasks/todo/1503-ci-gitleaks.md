@@ -1,7 +1,7 @@
 ---
 id: 1503
 title: CI secret scan (gitleaks)
-agent: flash
+agent: glm
 tier: T1
 depends_on: []
 verify: make verify
