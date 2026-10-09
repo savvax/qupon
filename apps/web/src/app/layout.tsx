@@ -6,7 +6,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 import { AltLabelsProvider } from "@/components/i18n/StableLabel";
 import { altLabelMap } from "@/i18n/altLabels";
-import { type Locale, loadMessages } from "@/i18n/request";
+import { LOCALES, type Locale, loadMessages } from "@/i18n/request";
 import { getNetwork } from "@/lib/network";
 
 const manrope = Manrope({
@@ -47,11 +47,11 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const locale = (await getLocale()) as Locale;
   const network = await getNetwork();
-  // Controls reserve the width of the longer EN/RU label (spec §5.8): ship the other locale's short labels.
-  const altLabels = altLabelMap(
-    await loadMessages(locale),
-    await loadMessages(locale === "ru" ? "en" : "ru"),
+  // Controls reserve the width of the longest label across ALL other locales (spec §5.8).
+  const others = await Promise.all(
+    LOCALES.filter((l) => l !== locale).map((l) => loadMessages(l as Locale)),
   );
+  const altLabels = altLabelMap(await loadMessages(locale), ...others);
   return (
     <html lang={locale} className={manrope.variable}>
       <body className="min-h-screen font-sans">

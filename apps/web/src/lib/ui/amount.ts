@@ -1,15 +1,17 @@
+import { type Locale } from "@/i18n/locale";
+
 /** Exact decimal formatting from integer minor units (no float), grouped per locale. */
 export function formatAmount(
   minor: string | bigint | number,
   decimals: number,
-  locale: "en" | "ru",
+  locale: Locale,
 ): string {
   const n = BigInt(minor);
   const neg = n < 0n;
   const abs = neg ? -n : n;
   const base = 10n ** BigInt(decimals);
-  const sep = locale === "ru" ? " " : ",";
-  const dot = locale === "ru" ? "," : ".";
+  const sep = locale === "en" ? "," : " "; // kk-KZ groups like ru-RU (NBSP thousands, comma decimal)
+  const dot = locale === "en" ? "." : ",";
   const whole = (abs / base).toString().replace(/\B(?=(\d{3})+(?!\d))/g, sep);
   // Trailing zeros past the cents are noise (USDC: 1,000.000000 → 1,000.00); significant digits stay.
   const digits =

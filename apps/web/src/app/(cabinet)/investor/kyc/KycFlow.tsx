@@ -1,6 +1,7 @@
 "use client";
 
 import { formatDateTime } from "@/lib/format";
+import { toLocale, type Locale } from "@/i18n/locale";
 import { AnimatePresence, m } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -43,7 +44,7 @@ export function KycFlow({
   series: SeriesOption[];
 }) {
   const t = useTranslations("kyc.investor");
-  const locale = useLocale() === "ru" ? "ru" : "en";
+  const locale = toLocale(useLocale());
   const [app, setApp] = useState(application);
   const [docs, setDocs] = useState(initialDocs);
   const reapplying = app?.status === "rejected";
@@ -262,7 +263,7 @@ function Details({
   wallets: LinkedWallet[];
   docs: KycDocument[];
   series: SeriesOption[];
-  locale: "en" | "ru";
+  locale: Locale;
   onSubmitted: (a: KycApplication) => void;
 }) {
   const t = useTranslations("kyc.investor.details");

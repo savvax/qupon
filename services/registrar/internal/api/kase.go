@@ -82,9 +82,12 @@ func kaseNews(deps Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		issuer := chi.URLParam(r, "issuer")
 		lang := r.URL.Query().Get("lang")
-		if lang != "" && lang != "en" && lang != "ru" {
-			writeError(w, http.StatusBadRequest, "lang must be en or ru")
+		if lang != "" && lang != "en" && lang != "ru" && lang != "kk" {
+			writeError(w, http.StatusBadRequest, "lang must be en, ru or kk")
 			return
+		}
+		if lang == "kk" { // the kase.kz feed upstream has en/ru only; kk reads EN
+			lang = "en"
 		}
 		if !kase.ValidCode(issuer) {
 			writeError(w, http.StatusBadRequest, "invalid issuer code (^[A-Za-z0-9]{2,12}$)")

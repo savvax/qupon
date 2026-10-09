@@ -4,14 +4,10 @@ import { Address } from "@/components/ui/Address";
 import { formatDateTime } from "@/lib/format";
 import { cx } from "@/lib/ui/cx";
 import { type Actor, ActorChip } from "./ActorChip";
+import { type Locale } from "@/i18n/locale";
 
 export type FlowStepState =
-  | "done"
-  | "current"
-  | "pending"
-  | "failed"
-  | "defaulted"
-  | "skipped";
+  "done" | "current" | "pending" | "failed" | "defaulted" | "skipped";
 
 export type FlowStep = {
   id: string;
@@ -52,7 +48,15 @@ function Marker({ state, n }: { state: FlowStepState; n: number }) {
   if (state === "done")
     return (
       <span aria-hidden className={cx(base, "bg-g600 text-white")}>
-        <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          viewBox="0 0 16 16"
+          className="size-3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="m3.5 8.5 3 3 6-7" />
         </svg>
       </span>
@@ -65,7 +69,10 @@ function Marker({ state, n }: { state: FlowStepState; n: number }) {
     );
   if (state === "current")
     return (
-      <span aria-hidden className={cx(base, "qp-live border-2 border-g600 bg-n0 text-g700")}>
+      <span
+        aria-hidden
+        className={cx(base, "qp-live border-2 border-g600 bg-n0 text-g700")}
+      >
         {n}
       </span>
     );
@@ -94,7 +101,7 @@ export function ActionFlow({
   className,
 }: {
   steps: FlowStep[];
-  locale: "en" | "ru";
+  locale: Locale;
   className?: string;
 }) {
   const t = useTranslations("kit.flow");
@@ -167,7 +174,10 @@ export function ActionFlow({
                         <dd className="num text-n900">
                           {formatDateTime(s.record.effective, locale)}{" "}
                           {(() => {
-                            const d = delta(s.record.planned, s.record.effective);
+                            const d = delta(
+                              s.record.planned,
+                              s.record.effective,
+                            );
                             return d <= 0 ? (
                               <span className="font-bold text-g700">
                                 {t("onTime")}
@@ -189,7 +199,9 @@ export function ActionFlow({
                     <Address value={s.tx} kind="tx" />
                   </div>
                 )}
-                {((s.actor && s.state !== "done" && (s.state === "current" || s.actor === "anyone")) ||
+                {((s.actor &&
+                  s.state !== "done" &&
+                  (s.state === "current" || s.actor === "anyone")) ||
                   !!s.downloads?.length) && (
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                     {/* who may push it: on the next step, and on every permissionless one (the point worth seeing) */}
@@ -204,7 +216,16 @@ export function ActionFlow({
                         href={d.href}
                         className="inline-flex h-6 items-center gap-1 rounded-full border border-n200 bg-n0 px-2 text-micro font-bold text-g700 hover:border-g300"
                       >
-                        <svg viewBox="0 0 16 16" aria-hidden className="size-3" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          viewBox="0 0 16 16"
+                          aria-hidden
+                          className="size-3"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <path d="M8 3v7m0 0-3-3m3 3 3-3M3 13h10" />
                         </svg>
                         {d.label}

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Address } from "@/components/ui/Address";
 import { Amount } from "@/components/ui/Amount";
+import { type Locale } from "@/i18n/locale";
 import { Button } from "@/components/ui/Button";
 import { cx } from "@/lib/ui/cx";
 import { ProvenanceChip } from "./ProvenanceChip";
@@ -22,7 +23,7 @@ export type FlowRecipient = {
 
 export type MoneyFlowProps = {
   currency: string;
-  locale: "en" | "ru";
+  locale: Locale;
   issuer: { label: string; address?: string };
   escrow: {
     address?: string;
@@ -137,12 +138,19 @@ export function MoneyFlow({
   const currentRecipient = recipients.find((r) => r.id === current?.id);
 
   const legStatus = (r: FlowRecipient) =>
-    reached(r.id) ? r.status : r.status === "defaulted" ? "defaulted" : "pending";
+    reached(r.id)
+      ? r.status
+      : r.status === "defaulted"
+        ? "defaulted"
+        : "pending";
 
   return (
     <section
       aria-label={title ?? t("title")}
-      className={cx("rounded-card border border-n200 bg-n0 p-4 sm:p-5", className)}
+      className={cx(
+        "rounded-card border border-n200 bg-n0 p-4 sm:p-5",
+        className,
+      )}
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
@@ -185,7 +193,9 @@ export function MoneyFlow({
         {/* issuer (≥ 768 px) */}
         <div className="hidden self-center rounded-btn border border-n200 bg-n50 p-3 md:block">
           <div className="text-xs text-n600">{t("issuer")}</div>
-          <div className="mt-0.5 text-sm font-bold break-words">{issuer.label}</div>
+          <div className="mt-0.5 text-sm font-bold break-words">
+            {issuer.label}
+          </div>
           {issuer.address && (
             <div className="mt-1 text-micro">
               <Address value={issuer.address} />
@@ -212,7 +222,11 @@ export function MoneyFlow({
             {shortT > 0.5 && (
               <path
                 d={band(H / 2 + fundT / 2, shortT, top + fundT, shortT)}
-                fill={state === "defaulted" ? "var(--color-viz-short)" : "var(--color-viz-pending)"}
+                fill={
+                  state === "defaulted"
+                    ? "var(--color-viz-short)"
+                    : "var(--color-viz-pending)"
+                }
                 opacity={state === "defaulted" ? 0.35 : 0.5}
               />
             )}
@@ -241,12 +255,23 @@ export function MoneyFlow({
             className="mt-0.5 text-sm font-extrabold whitespace-normal md:text-base [&>span]:text-p100"
           />
           <div className="num mt-0.5 hidden text-xs text-p100 md:block">
-            / <Amount minor={escrow.required} currency={currency} locale={locale} className="[&>span]:text-p100" />
+            /{" "}
+            <Amount
+              minor={escrow.required}
+              currency={currency}
+              locale={locale}
+              className="[&>span]:text-p100"
+            />
           </div>
           {state === "defaulted" && required > funded && (
             <div className="mt-2 rounded-sm bg-default px-1.5 py-0.5 text-micro font-bold">
               {t("shortfall")}{" "}
-              <Amount minor={(required - funded).toString()} currency={currency} locale={locale} className="whitespace-normal [&>span]:text-white" />
+              <Amount
+                minor={(required - funded).toString()}
+                currency={currency}
+                locale={locale}
+                className="whitespace-normal [&>span]:text-white"
+              />
             </div>
           )}
           {state === "cured" && (
@@ -284,11 +309,7 @@ export function MoneyFlow({
                         : "var(--color-viz-pending)"
                   }
                   opacity={
-                    !moved
-                      ? 0.45
-                      : stepping && !isCurrent(r.id)
-                        ? 0.45
-                        : 0.9
+                    !moved ? 0.45 : stepping && !isCurrent(r.id) ? 0.45 : 0.9
                   }
                   className="transition-opacity duration-300"
                 />
@@ -306,7 +327,9 @@ export function MoneyFlow({
                 key={r.id}
                 className={cx(
                   "grid grid-cols-[4px_minmax(0,1fr)] items-center gap-x-2.5 rounded-btn border px-2.5",
-                  isCurrent(r.id) ? "border-g400 ring-2 ring-g400/40" : "border-n200",
+                  isCurrent(r.id)
+                    ? "border-g400 ring-2 ring-g400/40"
+                    : "border-n200",
                   r.kind === "agent" && "qp-hatch",
                 )}
                 style={{ height: ROW }}
@@ -325,8 +348,15 @@ export function MoneyFlow({
                 />
                 <div className="min-w-0 space-y-0.5">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="min-w-0 truncate text-sm font-bold text-n900" title={r.label}>
-                      {r.kind === "tax" ? t("taxVault") : r.kind === "agent" ? t("agent") : r.label}
+                    <span
+                      className="min-w-0 truncate text-sm font-bold text-n900"
+                      title={r.label}
+                    >
+                      {r.kind === "tax"
+                        ? t("taxVault")
+                        : r.kind === "agent"
+                          ? t("agent")
+                          : r.label}
                     </span>
                     <Amount
                       minor={r.amount}
@@ -334,7 +364,9 @@ export function MoneyFlow({
                       locale={locale}
                       className={cx(
                         "shrink-0 text-sm font-bold",
-                        s === "paid" || s === "agent" ? "text-n900" : "text-n500",
+                        s === "paid" || s === "agent"
+                          ? "text-n900"
+                          : "text-n500",
                       )}
                     />
                   </div>
@@ -390,7 +422,9 @@ export function MoneyFlow({
               <Button
                 size="sm"
                 disabled={cursor >= steps.length - 1}
-                onClick={() => setCursor(Math.min(steps.length - 1, cursor + 1))}
+                onClick={() =>
+                  setCursor(Math.min(steps.length - 1, cursor + 1))
+                }
               >
                 {t("next")}
               </Button>

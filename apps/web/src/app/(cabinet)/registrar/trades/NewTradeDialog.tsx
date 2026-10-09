@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { type Locale } from "@/i18n/locale";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Amount } from "@/components/ui/Amount";
@@ -32,7 +33,7 @@ export function NewTradeDialog({
   investors: { owner: string; units: string }[];
 }) {
   const t = useTranslations("trades");
-  const locale = useLocale() as "en" | "ru";
+  const locale = useLocale() as Locale;
   const runWrite = useRunWrite();
   const router = useRouter();
   const [open, setOpen] = useState(false);

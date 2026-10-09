@@ -5,8 +5,10 @@ export function shortKey(key: string, head = 4, tail = 4): string {
 }
 
 /** YYYY-MM-DD in Asia/Almaty from an ISO 8601 string (API sends +05:00). */
+import { type Locale } from "@/i18n/locale";
+
 /**
- * A user-facing date in Asia/Almaty: RU "01.03.2027", EN "Mar 1, 2027". Without a locale: "2027-03-01"
+ * A user-facing date in Asia/Almaty: RU/KK "01.03.2027", EN "Mar 1, 2027". Without a locale: "2027-03-01"
  * (machine-ish contexts and tests).
  */
 export function formatDate(iso: string, locale?: string): string {
@@ -17,11 +19,13 @@ export function formatDate(iso: string, locale?: string): string {
       month: "2-digit",
       day: "2-digit",
     }).format(new Date(iso));
-  return new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+  const intl = locale === "en" ? "en-US" : locale === "kk" ? "kk-KZ" : "ru-RU";
+  const eu = locale !== "en"; // kk-KZ uses the same 2-digit day.month shape as ru-RU
+  return new Intl.DateTimeFormat(intl, {
     timeZone: "Asia/Almaty",
     year: "numeric",
-    month: locale === "ru" ? "2-digit" : "short",
-    day: locale === "ru" ? "2-digit" : "numeric",
+    month: eu ? "2-digit" : "short",
+    day: eu ? "2-digit" : "numeric",
   }).format(new Date(iso));
 }
 
@@ -38,16 +42,16 @@ export function formatDateTime(iso: string, locale?: string): string {
     : `${formatDate(iso)} ${time}`;
 }
 
-/** 1000 bps → "10.00%" (EN) / "10,00 %" (RU). */
-export function bpsToPercent(bps: number, locale: "en" | "ru" = "en"): string {
-  const n = new Intl.NumberFormat(locale, {
+/** 1000 bps → "10.00%" (EN) / "10,00 %" (RU, KK). */
+export function bpsToPercent(bps: number, locale: Locale = "en"): string {
+  const n = new Intl.NumberFormat(locale === "en" ? "en" : "ru-RU", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(bps / 100);
-  return locale === "ru" ? `${n}\u00a0%` : `${n}%`;
+  return locale === "en" ? `${n}%` : `${n}\u00a0%`;
 }
 
-const FREQUENCIES: Record<"en" | "ru", Record<number, string>> = {
+const FREQUENCIES: Record<Locale, Record<number, string>> = {
   en: { 1: "annual", 2: "semi-annual", 4: "quarterly", 12: "monthly" },
   ru: {
     1: "раз в год",
@@ -55,15 +59,25 @@ const FREQUENCIES: Record<"en" | "ru", Record<number, string>> = {
     4: "ежеквартально",
     12: "ежемесячно",
   },
+  kk: {
+    1: "жыл сайын",
+    2: "жарты жылда бір",
+    4: "тоқсан сайын",
+    12: "ай сайын",
+  },
 };
 
 export function frequencyLabel(
   frequency: number,
-  locale: "en" | "ru" = "en",
+  locale: Locale = "en",
 ): string {
   return (
     FREQUENCIES[locale][frequency] ??
-    (locale === "ru" ? `${frequency} раз в год` : `${frequency}×/yr`)
+    (locale === "en"
+      ? `${frequency}×/yr`
+      : locale === "ru"
+        ? `${frequency} раз в год`
+        : `жылына ${frequency} рет`)
   );
 }
 

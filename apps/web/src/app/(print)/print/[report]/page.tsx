@@ -21,6 +21,7 @@ import {
 } from "@/lib/reports";
 import { getSession } from "@/lib/session";
 import { PrintButton } from "./PrintButton";
+import { toLocale } from "@/i18n/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +69,7 @@ export default async function PrintReportPage({
   )
     return <Gate kind="forbidden" />;
 
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const t = await getTranslations("reports");
 
   const year = /^\d{4}$/.test(sp.year ?? "")

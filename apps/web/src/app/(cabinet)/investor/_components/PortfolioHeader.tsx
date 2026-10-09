@@ -27,13 +27,14 @@ import {
   type CurrencyTotal,
 } from "../_lib/investorStats";
 import { usePortalRows } from "../_lib/usePortalRows";
+import { type Locale } from "@/i18n/locale";
 
 function Money({
   totals,
   locale,
 }: {
   totals: CurrencyTotal[];
-  locale: "en" | "ru";
+  locale: Locale;
 }) {
   if (totals.length === 0) return <span>—</span>;
   return (
@@ -54,7 +55,7 @@ function Money({
 /** Petrol KPI band: face value total, received to date, next payment. */
 function PortfolioHeader({ rows }: { rows: Parameters<typeof faceTotals>[0] }) {
   const t = useTranslations("investor.portfolio");
-  const locale = useLocale() as "en" | "ru";
+  const locale = useLocale() as Locale;
   const next = nextPayment(rows);
   const registered = rows.filter((r) => r.me !== undefined);
   const kyc = registered.some((r) => r.me?.status === "Suspended")
@@ -121,7 +122,7 @@ export function PortfolioView() {
   const { owner } = useInvestor();
   const t = useTranslations("investor.portfolio");
   const tc = useTranslations("common");
-  const locale = useLocale() as "en" | "ru";
+  const locale = useLocale() as Locale;
   const { rows, error, reload } = usePortalRows();
 
   // actionPda → owner → EntitlementPaid signature (last-payment tx on the cards)

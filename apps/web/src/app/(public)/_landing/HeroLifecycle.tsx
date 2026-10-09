@@ -12,6 +12,7 @@ import { explorerHref, useNetwork } from "@/components/network/NetworkContext";
 import { formatDate } from "@/lib/format";
 import { cx } from "@/lib/ui/cx";
 import type { LastAction } from "./live";
+import { type Locale } from "@/i18n/locale";
 
 /** The six on-chain steps of a coupon, in order (status.* labels). */
 const STEPS = [
@@ -36,7 +37,7 @@ export function HeroLifecycle({
   locale,
 }: {
   last: LastAction;
-  locale: "en" | "ru";
+  locale: Locale;
 }) {
   const t = useTranslations("landing");
   const network = useNetwork();

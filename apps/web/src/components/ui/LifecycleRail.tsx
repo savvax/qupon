@@ -3,14 +3,10 @@ import Link from "next/link";
 import { Amount } from "@/components/ui/Amount";
 import { formatDate } from "@/lib/format";
 import { cx } from "@/lib/ui/cx";
+import { type Locale } from "@/i18n/locale";
 
 export type RailStatus =
-  | "done"
-  | "live"
-  | "upcoming"
-  | "defaulted"
-  | "cured"
-  | "cancelled";
+  "done" | "live" | "upcoming" | "defaulted" | "cured" | "cancelled";
 
 export type RailNode = {
   id: string;
@@ -46,9 +42,21 @@ function Mark({ status }: { status: RailStatus }) {
     return (
       <span
         aria-hidden
-        className={cx(base, status === "done" ? "bg-g600" : "bg-cure-fg", "text-white")}
+        className={cx(
+          base,
+          status === "done" ? "bg-g600" : "bg-cure-fg",
+          "text-white",
+        )}
       >
-        <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          viewBox="0 0 16 16"
+          className="size-3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <path d="m3.5 8.5 3 3 6-7" />
         </svg>
       </span>
@@ -56,14 +64,24 @@ function Mark({ status }: { status: RailStatus }) {
   if (status === "defaulted")
     return (
       <span aria-hidden className={cx(base, "bg-default text-white")}>
-        <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+        <svg
+          viewBox="0 0 16 16"
+          className="size-3.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          strokeLinecap="round"
+        >
           <path d="M8 4v5M8 12h.01" />
         </svg>
       </span>
     );
   if (status === "live")
     return (
-      <span aria-hidden className={cx(base, "qp-live border-2 border-g600 bg-n0")}>
+      <span
+        aria-hidden
+        className={cx(base, "qp-live border-2 border-g600 bg-n0")}
+      >
         <span className="size-2 rounded-full bg-g600" />
       </span>
     );
@@ -87,12 +105,14 @@ export function LifecycleRail({
   className,
 }: {
   nodes: RailNode[];
-  locale: "en" | "ru";
+  locale: Locale;
   title?: string;
   className?: string;
 }) {
   const t = useTranslations("kit.rail");
-  const next = nodes.findIndex((n) => n.status === "live" || n.status === "upcoming");
+  const next = nodes.findIndex(
+    (n) => n.status === "live" || n.status === "upcoming",
+  );
   return (
     <section
       aria-label={title ?? t("title")}
@@ -141,15 +161,16 @@ export function LifecycleRail({
                 </div>
               )}
               <div
-                className={cx(
-                  "mt-2 text-xs font-bold",
-                  STATUS_TEXT[n.status],
-                )}
+                className={cx("mt-2 text-xs font-bold", STATUS_TEXT[n.status])}
               >
                 {n.statusLabel ?? t(`status.${n.status}`)}
               </div>
               <div className="mt-0.5 text-xs text-n500">
-                {n.txCount ? t("txs", { count: n.txCount }) : n.status === "upcoming" ? t("projected") : " "}
+                {n.txCount
+                  ? t("txs", { count: n.txCount })
+                  : n.status === "upcoming"
+                    ? t("projected")
+                    : " "}
               </div>
             </>
           );

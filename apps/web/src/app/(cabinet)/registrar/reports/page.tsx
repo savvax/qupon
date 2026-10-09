@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { listSeries } from "@/lib/api";
 import { bpsToPercent } from "@/lib/format";
+import { toLocale } from "@/i18n/locale";
 import { csvHref, getHolders, printHref, type HoldingRow } from "@/lib/reports";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export default async function RegistrarReportsPage({
   searchParams: Promise<{ mint?: string }>;
 }) {
   const sp = await searchParams;
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const t = await getTranslations("reports.registrar");
   const tc = await getTranslations("reports.cols");
   // Same investor-type/residency vocabulary as the registrar KYC queue.

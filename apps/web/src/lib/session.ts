@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { API_BASE_URL, MOCK_ENABLED } from "@/lib/api";
+import { type Locale } from "@/i18n/locale";
 
 /** httpOnly cookie holding the back-office session token; the browser's JS never sees it. */
 export const SESSION_COOKIE = "qupon_session";
@@ -16,7 +17,7 @@ export type SessionUser = {
   isDemo: boolean;
   orgId?: number | null;
   status?: "active" | "disabled" | "pending";
-  locale?: "en" | "ru";
+  locale?: Locale;
 };
 
 export const ROLE_HOME: Record<Role, string> = {

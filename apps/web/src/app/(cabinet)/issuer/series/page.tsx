@@ -8,6 +8,7 @@ import type { SeriesDTO } from "@/lib/api";
 import { bpsToPercent, formatDate } from "@/lib/format";
 import { issuerSeries } from "../_components/data";
 import { metaTitle } from "@/lib/meta";
+import { toLocale } from "@/i18n/locale";
 
 export async function generateMetadata() {
   return { title: await metaTitle("issuerSeries") };
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 export default async function IssuerSeriesList() {
   const series = await issuerSeries();
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const [t, tb, ts] = await Promise.all([
     getTranslations("issuer"),
     getTranslations("bonds"),

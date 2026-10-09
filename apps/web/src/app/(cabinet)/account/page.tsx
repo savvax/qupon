@@ -8,6 +8,7 @@ import { Icon } from "@/components/shell/icons";
 import { Card } from "@/components/ui/Card";
 import { boFetch } from "@/lib/bo";
 import { getSession } from "@/lib/session";
+import { toLocale } from "@/i18n/locale";
 
 export async function generateMetadata() {
   const t = await getTranslations("account");
@@ -18,7 +19,7 @@ export async function generateMetadata() {
 export default async function AccountPage() {
   const t = await getTranslations("account");
   // The form shows the language the interface is in now (switching it there also updates the profile).
-  const uiLocale = (await getLocale()) === "ru" ? "ru" : "en";
+  const uiLocale = toLocale(await getLocale());
   const c = await getTranslations("cabinet");
   const n = await getTranslations("notify");
   const user = await getSession();

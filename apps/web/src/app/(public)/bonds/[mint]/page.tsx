@@ -37,6 +37,7 @@ import { type AuditRow, ExportAuditButton } from "./ExportAuditButton";
 import { KasePanel } from "./KasePanel";
 import { type RegisterSet, RegisterPanel } from "./RegisterPanel";
 import { YieldBlock } from "./YieldBlock";
+import { toLocale } from "@/i18n/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -81,23 +82,25 @@ export default async function BondPage({
     if (status === 404 || status === 400) notFound();
     throw e;
   });
-  const [schedule, actions, documents, allActivity, network] = await Promise.all([
-    getSchedule(mint).catch(() => [] as ScheduleItem[]),
-    listActions(mint).catch(() => [] as ActionDTO[]),
-    listSeriesDocuments(mint),
-    listActivity(200),
-    getNetwork(),
-  ]);
+  const [schedule, actions, documents, allActivity, network] =
+    await Promise.all([
+      getSchedule(mint).catch(() => [] as ScheduleItem[]),
+      listActions(mint).catch(() => [] as ActionDTO[]),
+      listSeriesDocuments(mint),
+      listActivity(200),
+      getNetwork(),
+    ]);
   // entitlements of every action that has a snapshot: the register per record date and the money flow
   const snapped = actions.filter((a) => (a.holdersSnapshotted ?? 0) > 0);
   const ents = new Map<string, EntitlementDTO[]>(
     await Promise.all(
       snapped.map(
-        async (a) => [a.pda, await listEntitlements(a.pda).catch(() => [])] as const,
+        async (a) =>
+          [a.pda, await listEntitlements(a.pda).catch(() => [])] as const,
       ),
     ),
   );
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   // Series linked in series_settings to a KASE ticker get the market panel; failures never block the page.
   const kaseTicker = await getKaseSeriesTicker(mint);
   const [t, ts, tk, tDoc, tm] = await Promise.all([
@@ -289,7 +292,8 @@ export default async function BondPage({
         .filter((ev) => (ev.actionPda ?? ev.action_pda) === pda)
         .map((ev) => ev.sig),
     ).size;
-  const day = (ymd: string) => (ymd.length > 10 ? ymd : `${ymd}T00:00:00+05:00`);
+  const day = (ymd: string) =>
+    ymd.length > 10 ? ymd : `${ymd}T00:00:00+05:00`;
   const railStatus = (a?: ActionDTO): RailNode["status"] | undefined =>
     !a
       ? undefined
@@ -312,18 +316,28 @@ export default async function BondPage({
       const a =
         actions.find((x) => x.pda === item.actionPda) ??
         actions.find(
-          (x) => CASH.includes(x.kind) && x.periodEnd && x.periodEnd === item.periodEnd,
+          (x) =>
+            CASH.includes(x.kind) &&
+            x.periodEnd &&
+            x.periodEnd === item.periodEnd,
         );
-      const last = i === schedule.length - 1 && item.paymentDate.slice(0, 10) === matured;
+      const last =
+        i === schedule.length - 1 && item.paymentDate.slice(0, 10) === matured;
       return {
         id: `c${item.couponNumber}`,
         kind: last ? "maturity" : "coupon",
-        title: t(last ? "rail.couponMaturity" : "rail.coupon", { n: item.couponNumber }),
+        title: t(last ? "rail.couponMaturity" : "rail.coupon", {
+          n: item.couponNumber,
+        }),
         date: item.paymentDate,
-        status: railStatus(a) ?? (item.status === "Completed" ? "done" : "upcoming"),
+        status:
+          railStatus(a) ?? (item.status === "Completed" ? "done" : "upcoming"),
         amount: item.amountPerUnit,
         txCount: a ? txCount(a.pda) : undefined,
-        href: a && (a.holdersSnapshotted ?? 0) > 0 ? `?rec=${a.pda}#register` : undefined,
+        href:
+          a && (a.holdersSnapshotted ?? 0) > 0
+            ? `?rec=${a.pda}#register`
+            : undefined,
       };
     }),
     ...actions
@@ -349,7 +363,8 @@ export default async function BondPage({
     (a) => !["Completed", "Cancelled", "Finalized"].includes(a.status),
   );
   const upcoming = schedule.find(
-    (s) => s.status === "Projected" && new Date(s.recordDate).getTime() > Date.now(),
+    (s) =>
+      s.status === "Projected" && new Date(s.recordDate).getTime() > Date.now(),
   );
   const kindName = (k: string) => (tk.has(k) ? tk(k) : k);
   const demo = network.demoLogin;
@@ -391,7 +406,10 @@ export default async function BondPage({
         actors={step ? [STEP_ACTOR[step]] : []}
         action={
           demo ? (
-            <DemoAsButton role="registrar" next={`/registrar/actions/${live.pda}`}>
+            <DemoAsButton
+              role="registrar"
+              next={`/registrar/actions/${live.pda}`}
+            >
               {t("now.runAs")}
             </DemoAsButton>
           ) : undefined
@@ -406,7 +424,12 @@ export default async function BondPage({
           record: formatDate(upcoming.recordDate, locale),
           payment: formatDate(upcoming.paymentDate, locale),
         })}
-        clock={<CountdownClock to={upcoming.recordDate} label={t("now.clockRecord")} />}
+        clock={
+          <CountdownClock
+            to={upcoming.recordDate}
+            label={t("now.clockRecord")}
+          />
+        }
         actors={["registrar"]}
         action={
           demo ? (
@@ -428,10 +451,19 @@ export default async function BondPage({
 
   // ── money, register, journal, yield ──
   const lastPaid = actions
-    .filter((a) => CASH.includes(a.kind) && a.status === "Completed" && ents.get(a.pda)?.length)
-    .sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""))[0];
+    .filter(
+      (a) =>
+        CASH.includes(a.kind) &&
+        a.status === "Completed" &&
+        ents.get(a.pda)?.length,
+    )
+    .sort((a, b) =>
+      (b.completedAt ?? "").localeCompare(a.completedAt ?? ""),
+    )[0];
   const flow = lastPaid
-    ? moneyFlowOf(lastPaid, ents.get(lastPaid.pda) ?? [], activity, (u) => tm("holderSub", { units: u }))
+    ? moneyFlowOf(lastPaid, ents.get(lastPaid.pda) ?? [], activity, (u) =>
+        tm("holderSub", { units: u }),
+      )
     : null;
   const paidToHolders = actions
     .filter((a) => CASH.includes(a.kind))
@@ -480,7 +512,11 @@ export default async function BondPage({
   // accrued interest today: face × rate × 30E/360 days since the current period started
   const today = almatyToday();
   const period = schedule.find(
-    (s) => s.periodStart && s.periodEnd && s.periodStart <= today && today < s.periodEnd,
+    (s) =>
+      s.periodStart &&
+      s.periodEnd &&
+      s.periodStart <= today &&
+      today < s.periodEnd,
   );
   const accrued = period?.periodStart
     ? {
@@ -494,8 +530,13 @@ export default async function BondPage({
       }
     : null;
   const journalRow = (r: AuditRow, i: number) => (
-    <li key={`${r.sig}-${i}`} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 py-2.5 text-dense sm:grid-cols-[11rem_minmax(0,1fr)_auto]">
-      <span className="num text-n500 max-sm:col-span-2 max-sm:text-xs">{r.shown}</span>
+    <li
+      key={`${r.sig}-${i}`}
+      className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 py-2.5 text-dense sm:grid-cols-[11rem_minmax(0,1fr)_auto]"
+    >
+      <span className="num text-n500 max-sm:col-span-2 max-sm:text-xs">
+        {r.shown}
+      </span>
       <span className="min-w-0">
         <span className="font-semibold text-n900">{r.event}</span>
         {r.action && <span className="num ml-2 text-n500">{r.action}</span>}
@@ -516,7 +557,9 @@ export default async function BondPage({
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-title font-extrabold tracking-tight">{series.ticker}</h1>
+            <h1 className="text-title font-extrabold tracking-tight">
+              {series.ticker}
+            </h1>
             {status(series.status)}
             <ProvenanceChip
               kind="onchain"
@@ -575,7 +618,10 @@ export default async function BondPage({
           <Kpi
             plain
             label={t("kpi.paid")}
-            value={money({ minor: paidToHolders.toString(), currency: series.faceValue.currency })}
+            value={money({
+              minor: paidToHolders.toString(),
+              currency: series.faceValue.currency,
+            })}
           />
         </StaggerItem>
       </Stagger>
@@ -585,7 +631,10 @@ export default async function BondPage({
           <MoneyFlow
             currency={flow.currency}
             locale={locale}
-            issuer={{ label: series.ticker, address: series.issuer ?? undefined }}
+            issuer={{
+              label: series.ticker,
+              address: series.issuer ?? undefined,
+            }}
             escrow={flow.escrow}
             recipients={flow.recipients}
             title={t("money.title", { id: lastPaid.corpId })}
@@ -595,12 +644,18 @@ export default async function BondPage({
             {t("register.empty")}
           </div>
         )}
-        <YieldBlock accrued={accrued} asOf={`${today}T12:00:00+05:00`} locale={locale} />
+        <YieldBlock
+          accrued={accrued}
+          asOf={`${today}T12:00:00+05:00`}
+          locale={locale}
+        />
       </div>
 
       <section id="register" className="mt-10 scroll-mt-32">
         <h2 className="text-lg font-bold">{t("register.title")}</h2>
-        <p className="mt-0.5 mb-3 max-w-2xl text-sm text-n600">{t("register.lead")}</p>
+        <p className="mt-0.5 mb-3 max-w-2xl text-sm text-n600">
+          {t("register.lead")}
+        </p>
         <RegisterPanel sets={registerSets} initial={rec} locale={locale} />
       </section>
 
@@ -609,10 +664,14 @@ export default async function BondPage({
         <p className="mt-0.5 mb-3 text-sm text-n600">{t("journal.lead")}</p>
         <div className="rounded-card border border-n200 bg-n0 px-4">
           {audit.length === 0 ? (
-            <p className="py-6 text-center text-sm text-n600">{t("journal.empty")}</p>
+            <p className="py-6 text-center text-sm text-n600">
+              {t("journal.empty")}
+            </p>
           ) : (
             <>
-              <ol className="divide-y divide-n100">{audit.slice(0, SHOWN).map(journalRow)}</ol>
+              <ol className="divide-y divide-n100">
+                {audit.slice(0, SHOWN).map(journalRow)}
+              </ol>
               {audit.length > SHOWN && (
                 <details className="border-t border-n100">
                   <summary className="cursor-pointer py-2.5 text-sm font-semibold text-g700">

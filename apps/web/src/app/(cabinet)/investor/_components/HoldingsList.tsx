@@ -8,11 +8,12 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { bpsToPercent, formatDate, frequencyLabel } from "@/lib/format";
 import { estimateCoupon, nextCoupon, type SeriesRow } from "@/lib/portal";
+import { type Locale } from "@/i18n/locale";
 
 /** One holding card: series, units, coupon, maturity, next-coupon estimate, last payment with its tx. */
 function Holding({ row, lastTx }: { row: SeriesRow; lastTx?: string }) {
   const t = useTranslations("investor.portfolio");
-  const locale = useLocale() as "en" | "ru"; // next-intl is wired to en|ru only (src/i18n/request.ts)
+  const locale = useLocale() as Locale;
   const units = row.me?.units ?? "0";
   const next = nextCoupon(row);
   const est = next ? estimateCoupon(row.series, units, next) : undefined;

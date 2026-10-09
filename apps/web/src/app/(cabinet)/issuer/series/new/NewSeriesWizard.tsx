@@ -23,6 +23,7 @@ import {
 import { useRunWrite } from "@/lib/useRunWrite";
 import { importFromKase } from "./kaseImport";
 import { TermsheetDialog, type TermsheetParse } from "./TermsheetDialog";
+import { toLocale } from "@/i18n/locale";
 
 type Created = { series?: string; mint?: string; signatures: string[] };
 
@@ -34,7 +35,7 @@ const todayAlmaty = () =>
 /** Three steps — terms, schedule preview, review — then one request that mints and initialises the series. */
 export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
   const t = useTranslations("issuer.wizard");
-  const locale = useLocale() === "ru" ? "ru" : "en";
+  const locale = toLocale(useLocale());
   const runWrite = useRunWrite();
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [busy, setBusy] = useState(false);

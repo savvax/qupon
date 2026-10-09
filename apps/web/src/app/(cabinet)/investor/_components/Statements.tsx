@@ -18,13 +18,14 @@ import { listActivity, seev036Url } from "@/lib/api";
 import { formatDate } from "@/lib/format";
 import { useInvestor } from "./InvestorIdentity";
 import { usePortalRows } from "../_lib/usePortalRows";
+import { type Locale } from "@/i18n/locale";
 
 /** The /investor/statements page body inside <InvestorIdentity>. */
 export function Statements() {
   const { owner } = useInvestor();
   const t = useTranslations("investor.statements");
   const tc = useTranslations("common");
-  const locale = useLocale() as "en" | "ru";
+  const locale = useLocale() as Locale;
   const { rows, error, reload } = usePortalRows();
 
   // actionPda → owner → EntitlementPaid signature (the tx column)

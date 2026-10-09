@@ -33,6 +33,7 @@ import {
   MeetingButton,
 } from "../../_components/IssuerActions";
 import { metaTitle } from "@/lib/meta";
+import { toLocale } from "@/i18n/locale";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +81,7 @@ export default async function IssuerSeriesPage({
     (d) =>
       !d.seriesMint && ["prospectus", "decision", "other"].includes(d.kind),
   );
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const [t, tb, ts, tk, tr, tDoc] = await Promise.all([
     getTranslations("issuer"),
     getTranslations("bond"),

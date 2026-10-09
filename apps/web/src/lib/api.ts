@@ -2,6 +2,7 @@ import type { components } from "./api-schema";
 /// <reference types="node" /> // process.env reads below need node's ambient types in single-file checks
 import { mockGet, mockGetText } from "../mocks/api";
 import { BoError, boPost } from "./boClient";
+import { type Locale } from "@/i18n/locale";
 
 export type Schemas = components["schemas"];
 export type Amount = Schemas["Amount"];
@@ -96,7 +97,7 @@ export type ActivityLike = {
 
 export async function getNoticeText(
   pda: string,
-  lang: "en" | "ru",
+  lang: Locale,
 ): Promise<string> {
   if (MOCK) return mockGetText(`/actions/${pda}/notice?lang=${lang}`);
   const res = await fetch(

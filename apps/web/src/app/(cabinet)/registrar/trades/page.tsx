@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { toLocale } from "@/i18n/locale";
 import { Address } from "@/components/ui/Address";
 import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
@@ -38,7 +39,7 @@ export default async function RegistrarTrades({
   searchParams: Promise<{ mint?: string }>;
 }) {
   const t = await getTranslations("trades");
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const { mint: wanted } = await searchParams;
   const [series, network] = await Promise.all([
     listSeries().catch(() => []),

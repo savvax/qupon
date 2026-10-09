@@ -1,8 +1,8 @@
 /**
- * Alternate-locale labels (spec §5.8): for every short UI string of the current locale, the matching string of
- * the other locale, so a control can reserve the width of the longer one and never move when the language
- * changes. Keys are the current-locale texts; a text used for several keys keeps the longest alternative.
- * Templates with simple `{var}` placeholders are kept (filled by StableLabel); plural/select messages are not.
+ * Alternate-locale labels (spec §5.8): for every short UI string of the current locale, the longest of the
+ * matching strings of every OTHER locale, so a control can reserve the width of the longest one and never move
+ * when the language changes. Keys are the current-locale texts; a text used for several keys keeps the longest
+ * alternative. Templates with simple `{var}` placeholders are kept (filled by StableLabel); plural/select are not.
  */
 export type AltLabelMap = Record<string, string>;
 
@@ -13,7 +13,7 @@ const ICU = /\{\s*\w+\s*,\s*(plural|select|selectordinal)/;
 
 export function altLabelMap(
   current: Record<string, unknown>,
-  alternate: Record<string, unknown>,
+  ...alternates: Record<string, unknown>[]
 ): AltLabelMap {
   const out: AltLabelMap = {};
   const walk = (c: unknown, a: unknown) => {
@@ -34,7 +34,7 @@ export function altLabelMap(
       } else walk(v, alt);
     }
   };
-  walk(current, alternate);
+  for (const alternate of alternates) walk(current, alternate);
   return out;
 }
 

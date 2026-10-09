@@ -97,9 +97,12 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 		if lang == "" {
 			lang = "en"
 		}
-		if lang != "en" && lang != "ru" {
-			writeError(w, http.StatusBadRequest, "lang must be en or ru")
+		if lang != "en" && lang != "ru" && lang != "kk" {
+			writeError(w, http.StatusBadRequest, "lang must be en, ru or kk")
 			return
+		}
+		if lang == "kk" { // kk notices land in task 1523; until then fall back to EN
+			lang = "en"
 		}
 		pda, err := solana.PublicKeyFromBase58(chi.URLParam(r, "pda"))
 		if err != nil {

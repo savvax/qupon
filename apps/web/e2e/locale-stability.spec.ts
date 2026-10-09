@@ -1,8 +1,8 @@
 import { expect, type Page, test } from "@playwright/test";
 
 /**
- * Switching EN ↔ RU must not move or resize controls (spec §5.8): every button, button-styled link, h1 and
- * paragraph on these pages has the same box in both languages, on desktop and phone.
+ * Switching EN ↔ RU ↔ KK must not move or resize controls (spec §5.8): every button, button-styled link, h1
+ * and paragraph on these pages has the same box in all three languages, on desktop and phone.
  */
 test.use({ reducedMotion: "reduce" });
 
@@ -63,31 +63,32 @@ async function boxes(
 }
 
 for (const width of [1440, 390])
-  test(`controls keep their boxes in EN and RU at ${width}px`, async ({
-    page,
-    baseURL,
-  }) => {
-    test.setTimeout(240_000);
-    await page.setViewportSize({ width, height: 900 });
-    const diffs: string[] = [];
-    for (const p of PAGES) {
-      const en = await boxes(page, p.path, p.who, "en", baseURL ?? "");
-      const ru = await boxes(page, p.path, p.who, "ru", baseURL ?? "");
-      if (en.length !== ru.length)
-        diffs.push(`${p.path}: ${en.length} vs ${ru.length} elements`);
-      en.forEach((a, i) => {
-        const b = ru[i];
-        if (!b) return;
-        const moved =
-          Math.abs(a.x - b.x) > 1 ||
-          Math.abs(a.y - b.y) > 1 ||
-          Math.abs(a.w - b.w) > 1 ||
-          Math.abs(a.h - b.h) > 1;
-        if (moved)
-          diffs.push(
-            `${p.path} ${a.tag} "${a.text}"→"${b.text}" ${a.x},${a.y} ${a.w}×${a.h} vs ${b.x},${b.y} ${b.w}×${b.h}`,
-          );
-      });
-    }
-    expect(diffs).toEqual([]);
-  });
+  for (const loc of ["ru", "kk"] as const)
+    test(`controls keep their boxes in EN and ${loc.toUpperCase()} at ${width}px`, async ({
+      page,
+      baseURL,
+    }) => {
+      test.setTimeout(240_000);
+      await page.setViewportSize({ width, height: 900 });
+      const diffs: string[] = [];
+      for (const p of PAGES) {
+        const en = await boxes(page, p.path, p.who, "en", baseURL ?? "");
+        const other = await boxes(page, p.path, p.who, loc, baseURL ?? "");
+        if (en.length !== other.length)
+          diffs.push(`${p.path}: ${en.length} vs ${other.length} elements`);
+        en.forEach((a, i) => {
+          const b = other[i];
+          if (!b) return;
+          const moved =
+            Math.abs(a.x - b.x) > 1 ||
+            Math.abs(a.y - b.y) > 1 ||
+            Math.abs(a.w - b.w) > 1 ||
+            Math.abs(a.h - b.h) > 1;
+          if (moved)
+            diffs.push(
+              `${p.path} ${a.tag} "${a.text}"→"${b.text}" ${a.x},${a.y} ${a.w}×${a.h} vs ${b.x},${b.y} ${b.w}×${b.h}`,
+            );
+        });
+      }
+      expect(diffs).toEqual([]);
+    });

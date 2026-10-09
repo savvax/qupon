@@ -4,7 +4,14 @@ import { useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { cx } from "@/lib/ui/cx";
 
-/** Segmented EN | RU control: persists the choice via /api/locale and refreshes the server tree. */
+/** Codes shown in the control; KZ is the conventional short form of kk (Kazakh). */
+const CHOICES = [
+  { locale: "en", label: "EN" },
+  { locale: "ru", label: "RU" },
+  { locale: "kk", label: "KZ" },
+] as const;
+
+/** Segmented EN | RU | KZ radio group: persists the choice via /api/locale and refreshes the server tree. */
 export function LocaleSwitch() {
   const locale = useLocale();
   const router = useRouter();
@@ -17,27 +24,37 @@ export function LocaleSwitch() {
       body: JSON.stringify({ locale: next }),
     }).then(() => startTransition(() => router.refresh()));
   };
+  const checked = CHOICES.some((c) => c.locale === locale);
   return (
     <div
-      role="group"
+      role="radiogroup"
       aria-label="Language"
       className="inline-flex h-9 items-center gap-0.5 rounded-btn border border-n300 bg-n0 p-0.5 sm:h-8"
     >
-      {(["en", "ru"] as const).map((l) => (
+      {CHOICES.map((c, i) => (
         <button
-          key={l}
+          key={c.locale}
           type="button"
-          onClick={() => choose(l)}
-          aria-pressed={locale === l}
+          role="radio"
+          aria-checked={locale === c.locale}
+          aria-label={
+            c.label === "KZ"
+              ? "Қазақша"
+              : c.label === "RU"
+                ? "Русский"
+                : "English"
+          }
+          tabIndex={locale === c.locale || (!checked && i === 0) ? 0 : -1}
+          onClick={() => choose(c.locale)}
           disabled={pending}
           className={cx(
             "h-8 min-w-8 rounded-sm px-2 text-xs font-bold uppercase transition-colors sm:h-7",
-            locale === l
+            locale === c.locale
               ? "bg-g600 text-white"
               : "text-n600 hover:bg-n50 hover:text-n900",
           )}
         >
-          {l}
+          {c.label}
         </button>
       ))}
     </div>

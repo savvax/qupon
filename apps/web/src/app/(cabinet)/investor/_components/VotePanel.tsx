@@ -35,6 +35,7 @@ import {
 import { useInvestor } from "./InvestorIdentity";
 import { useWalletWrite, walletLegSent } from "../_lib/useWalletWrite";
 import { usePortalRows } from "../_lib/usePortalRows";
+import { toLocale } from "@/i18n/locale";
 
 type DemoWriteResult = {
   demo?: boolean;
@@ -60,7 +61,7 @@ function MeetingCard({
   onVote: (choice: VoteChoiceName) => void;
 }) {
   const t = useTranslations("investor.meetings");
-  const locale = useLocale() === "ru" ? "ru" : "en";
+  const locale = toLocale(useLocale());
   const { row, action } = meeting;
   const mine = row.entitlements.find((e) => e.actionPda === action.pda);
   const proposal =

@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { getKaseBond, getKaseNews, type KaseNews } from "@/lib/kase";
 import { getTranslations } from "next-intl/server";
+import { type Locale } from "@/i18n/locale";
 
 /** One last-deals chip: "price × qty" when kase.kz's raw row carries them. */
 function DealChip({ deal }: { deal: Record<string, unknown> }) {
@@ -43,7 +44,7 @@ export async function KasePanel({
   locale,
 }: {
   ticker: string;
-  locale: "en" | "ru";
+  locale: Locale;
 }) {
   const t = await getTranslations("kase.panel");
   const bond = await getKaseBond(ticker).catch(() => null);
@@ -52,7 +53,7 @@ export async function KasePanel({
     ? await getKaseNews(bond.issuerCode, locale).catch(() => null)
     : null;
   const fetched = bond?.fetchedAt
-    ? new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-GB", {
+    ? new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "ru-RU", {
         hour: "2-digit",
         minute: "2-digit",
       }).format(new Date(bond.fetchedAt))
@@ -99,7 +100,7 @@ export async function KasePanel({
               <dd className="num mt-0.5">
                 {bond.market.volume != null
                   ? bond.market.volume.toLocaleString(
-                      locale === "ru" ? "ru-RU" : "en-GB",
+                      locale === "en" ? "en-GB" : "ru-RU",
                       { maximumFractionDigits: 0 },
                     )
                   : "—"}

@@ -344,6 +344,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/registrar/approvals/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a pending scheduler proposal (nothing executes; the row leaves the pending queue). */
+        post: operations["rejectApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -1812,7 +1829,7 @@ export interface components {
             /** @description the exact qupon CLI argv approve runs */
             args: string[];
             /** @enum {string} */
-            status: "pending" | "executed";
+            status: "pending" | "running" | "executed" | "rejected" | "stale";
             /** @description CLI result JSON once executed */
             detail?: Record<string, never> | null;
         };
@@ -2609,7 +2626,7 @@ export interface operations {
     getNotice: {
         parameters: {
             query?: {
-                lang?: "en" | "ru";
+                lang?: "en" | "ru" | "kk";
             };
             header?: never;
             path: {
@@ -2695,7 +2712,7 @@ export interface operations {
     listApprovals: {
         parameters: {
             query?: {
-                status?: "pending" | "executed" | "all";
+                status?: "pending" | "running" | "executed" | "rejected" | "stale" | "all";
             };
             header?: never;
             path?: never;
@@ -2755,7 +2772,55 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description already executed, or the chain refused the step (stays pending) */
+            /** @description not pending anymore (already claimed, executed or rejected), or the chain refused the step (stays pending) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    rejectApproval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description rejected; body is {id, status:"rejected"} */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid back-office session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not registrar or admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no such approval */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description approval is not pending (already executed, rejected, claimed or stale) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -4374,7 +4439,7 @@ export interface operations {
                     /** @description 1-80 characters */
                     name?: string;
                     /** @enum {string} */
-                    locale?: "en" | "ru";
+                    locale?: "en" | "ru" | "kk";
                 };
             };
         };
@@ -4757,7 +4822,7 @@ export interface operations {
                      * @default en
                      * @enum {string}
                      */
-                    locale?: "en" | "ru";
+                    locale?: "en" | "ru" | "kk";
                 };
             };
         };
@@ -5351,7 +5416,7 @@ export interface operations {
     kaseNews: {
         parameters: {
             query?: {
-                lang?: "en" | "ru";
+                lang?: "en" | "ru" | "kk";
             };
             header?: never;
             path: {

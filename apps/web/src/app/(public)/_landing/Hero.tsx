@@ -6,13 +6,14 @@ import { Icon } from "@/components/shell/icons";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { HeroLifecycle } from "./HeroLifecycle";
 import { EXAMPLE_ACTION, type Live } from "./live";
+import { toLocale } from "@/i18n/locale";
 
 export const OVERVIEW_URL =
   "https://github.com/savvax/qupon/blob/main/docs/TECHNICAL_OVERVIEW.md";
 
 export async function Hero({ live }: { live: Live }) {
   const t = await getTranslations("landing");
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const last = live.last ?? EXAMPLE_ACTION;
   return (
     <section className="px-4 pt-6 sm:px-6">

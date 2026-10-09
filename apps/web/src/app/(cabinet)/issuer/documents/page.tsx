@@ -6,6 +6,7 @@ import { StableText } from "@/components/i18n/StableLabel";
 import { Card } from "@/components/ui/Card";
 import { boFetch } from "@/lib/bo";
 import { getSession } from "@/lib/session";
+import { toLocale } from "@/i18n/locale";
 import { DocumentsPanel, type DocumentRow } from "./DocumentsPanel";
 
 export async function generateMetadata() {
@@ -16,7 +17,7 @@ export async function generateMetadata() {
 /** The issuer's own uploads (task 807): prospectuses and decisions to attach to series. */
 export default async function IssuerDocumentsPage() {
   const t = await getTranslations("org.documents");
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const user = await getSession();
   const docs = user
     ? ((

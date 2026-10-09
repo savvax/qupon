@@ -38,8 +38,8 @@ func mountAccount(r chi.Router, deps Deps, st *store.Store) {
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "name must be 1-80 characters")
 			return
 		}
-		if locale != "en" && locale != "ru" {
-			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "locale must be en or ru")
+		if locale != "en" && locale != "ru" && locale != "kk" {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "locale must be en, ru or kk")
 			return
 		}
 		if err := st.UpdateProfile(r.Context(), u.ID, name, locale); err != nil {

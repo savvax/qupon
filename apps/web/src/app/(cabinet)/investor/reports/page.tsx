@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { toLocale } from "@/i18n/locale";
 import { Amount } from "@/components/ui/Amount";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
@@ -46,7 +47,7 @@ export default async function InvestorReportsPage({
     : null;
   const tax = user ? await getTax(year).catch(() => null) : null;
 
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const [t, tc, tm, tk] = await Promise.all([
     getTranslations("reports.investor"),
     getTranslations("reports.cols"),

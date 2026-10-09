@@ -6,6 +6,7 @@ import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { listPublicSeries } from "@/lib/api";
+import { toLocale } from "@/i18n/locale";
 import { boFetch } from "@/lib/bo";
 import { type KycApplication, formatBytes, pct } from "@/lib/kyc";
 import { KycDecision } from "./KycDecision";
@@ -22,7 +23,7 @@ export default async function KycApplicationPage({
   params: Promise<{ id: string }>;
 }) {
   const t = await getTranslations("kyc.registrar");
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
   const [res, series] = await Promise.all([

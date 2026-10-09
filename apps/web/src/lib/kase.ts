@@ -3,6 +3,7 @@
  * Never a page dependency: callers catch and degrade. */
 import { apiGet } from "@/lib/api";
 import type { PreviewRow } from "@/lib/schedulePreview";
+import { type Locale } from "@/i18n/locale";
 
 export type KaseScheduleEntry = {
   recordDate: string;
@@ -57,7 +58,7 @@ export type KaseNews = {
 export const getKaseBond = (ticker: string) =>
   apiGet<KaseBond>(`/kase/bonds/${ticker}`);
 
-export const getKaseNews = (issuerCode: string, lang: "en" | "ru") =>
+export const getKaseNews = (issuerCode: string, lang: Locale) =>
   apiGet<KaseNews>(`/kase/news/${issuerCode}?lang=${lang}`);
 
 /** The linked KASE ticker of a series, or null when the series has none (404). */

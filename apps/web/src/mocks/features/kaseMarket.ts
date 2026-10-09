@@ -360,7 +360,7 @@ export const handlers: MockHandler[] = [
           "kase_not_found",
           `kase.kz has no issuer ${m[1]}`,
         );
-      return news(query.get("lang") === "en" ? "en" : "ru");
+      return news(query.get("lang") === "ru" ? "ru" : "en"); // kk reads EN news, same as the Go API
     },
   },
 ];

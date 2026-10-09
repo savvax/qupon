@@ -2,6 +2,7 @@ import { Pulse } from "@/components/motion/Pulse";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import { toLocale } from "@/i18n/locale";
 import type { ReactNode } from "react";
 import { Address } from "@/components/ui/Address";
 import { Amount } from "@/components/ui/Amount";
@@ -103,7 +104,7 @@ export default async function RegistrarActionPage({
       // kase.kz outages degrade the card, never the page
       getKaseCheck(pda).catch(() => null),
     ]);
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const [t, ts, tk, tstep, tt, tm] = await Promise.all([
     getTranslations("action"),
     getTranslations("status"),
@@ -353,7 +354,10 @@ export default async function RegistrarActionPage({
       : undefined,
     record:
       ids[i] === "strike"
-        ? { planned: action.recordAt, effective: st.state === "done" ? st.at : null }
+        ? {
+            planned: action.recordAt,
+            effective: st.state === "done" ? st.at : null,
+          }
         : undefined,
     downloads:
       ids[i] === "announce"
@@ -369,27 +373,26 @@ export default async function RegistrarActionPage({
     t("now.next", { step: label(next.step) })
   ) : action.status === "Completed" && isCash ? (
     <>
-      {t("now.paidOut")}{" "}
-      {money(action.totalPaid)} · {t("now.holders", { count: action.holdersPaid ?? holders })}
+      {t("now.paidOut")} {money(action.totalPaid)} ·{" "}
+      {t("now.holders", { count: action.holdersPaid ?? holders })}
     </>
   ) : action.status === "Completed" ? (
     t("now.done")
   ) : (
     waitText
   );
-  const nowDetail: ReactNode =
-    tradesWait ? (
-      <Link
-        href={`/registrar/trades?mint=${action.seriesMint}`}
-        className="text-g700 underline underline-offset-2"
-      >
-        {tt("wait.link")}
-      </Link>
-    ) : next.step === "apply" ? (
-      <ProvenanceChip kind="simulated">{t("simulatedArdfm")}</ProvenanceChip>
-    ) : next.step ? (
-      waitText
-    ) : undefined;
+  const nowDetail: ReactNode = tradesWait ? (
+    <Link
+      href={`/registrar/trades?mint=${action.seriesMint}`}
+      className="text-g700 underline underline-offset-2"
+    >
+      {tt("wait.link")}
+    </Link>
+  ) : next.step === "apply" ? (
+    <ProvenanceChip kind="simulated">{t("simulatedArdfm")}</ProvenanceChip>
+  ) : next.step ? (
+    waitText
+  ) : undefined;
 
   const factsAndReconcile = (
     <div className="grid gap-6 xl:grid-cols-2">
@@ -592,9 +595,7 @@ export default async function RegistrarActionPage({
       </section>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
-        <div className="min-w-0 space-y-6">
-          {factsAndReconcile}
-        </div>
+        <div className="min-w-0 space-y-6">{factsAndReconcile}</div>
 
         <aside className="min-w-0 space-y-4">
           {isCash && (

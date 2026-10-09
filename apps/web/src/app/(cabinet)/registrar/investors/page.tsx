@@ -1,5 +1,6 @@
 import { metaTitle } from "@/lib/meta";
 import { getLocale, getTranslations } from "next-intl/server";
+import { toLocale } from "@/i18n/locale";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -21,7 +22,7 @@ export default async function RegistrarInvestors({
   searchParams: Promise<{ mint?: string }>;
 }) {
   const t = await getTranslations("registrar.investors");
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const { mint: wanted } = await searchParams;
   const series = (await listSeries().catch(() => null)) ?? [];
   const selected = series.find((s) => s.mint === wanted) ?? series[0];

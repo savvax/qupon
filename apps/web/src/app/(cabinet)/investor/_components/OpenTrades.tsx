@@ -37,6 +37,7 @@ import {
 } from "@/lib/walletSigner";
 import { useWalletWrite, walletLegSent } from "../_lib/useWalletWrite";
 import { useInvestor } from "./InvestorIdentity";
+import { type Locale } from "@/i18n/locale";
 
 type Item = { series: SeriesDTO; trade: TradeDTO };
 type DemoFunded = { signature?: string };
@@ -46,7 +47,7 @@ export function OpenTrades({ rows }: { rows: SeriesRow[] }) {
   const { connect } = useWalletUX();
   const { wallet } = useWallet();
   const t = useTranslations("trades");
-  const locale = useLocale() as "en" | "ru";
+  const locale = useLocale() as Locale;
   const runWrite = useRunWrite();
   const runWalletWrite = useWalletWrite();
   const [items, setItems] = useState<Item[]>([]);

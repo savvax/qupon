@@ -1,5 +1,6 @@
 import { StableText } from "@/components/i18n/StableLabel";
 import { getLocale, getTranslations } from "next-intl/server";
+import { toLocale } from "@/i18n/locale";
 import { Amount } from "@/components/ui/Amount";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -31,7 +32,7 @@ export async function generateMetadata() {
 
 export default async function RegistrarDashboard() {
   const t = await getTranslations("registrar.dash");
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const month = formatDate(new Date().toISOString(), locale).slice(0, 7);
   // Reads are public read models; the page renders its shell even when the API is down.
   const series = await listSeries().catch(() => null);

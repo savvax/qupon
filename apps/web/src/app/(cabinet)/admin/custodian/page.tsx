@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { boFetch } from "@/lib/bo";
+import { toLocale } from "@/i18n/locale";
 import { formatDateTime } from "@/lib/format";
 import { metaTitle } from "@/lib/meta";
 import { CustodianDialog, type CustodianEntry } from "./CustodianDialog";
@@ -27,7 +28,7 @@ export async function generateMetadata() {
  */
 export default async function AdminCustodianPage() {
   const t = await getTranslations("assets.custodian");
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   let status: CustodianStatus | null = null;
   try {
     status = await boFetch<CustodianStatus>("admin/custodian");

@@ -5,6 +5,7 @@ import {
   type AmountLike,
 } from "@/lib/ui/amount";
 import { cx } from "@/lib/ui/cx";
+import { type Locale } from "@/i18n/locale";
 
 /** Money from integer minor units: tabular figures, locale grouping, currency after the amount. */
 export function Amount({
@@ -17,7 +18,7 @@ export function Amount({
   minor: AmountLike;
   currency: string;
   decimals?: number;
-  locale?: "en" | "ru";
+  locale?: Locale;
   className?: string;
 }) {
   // Decimals: explicit prop > API-carried `decimals`/`display` > the currency table (lib/ui/amount).

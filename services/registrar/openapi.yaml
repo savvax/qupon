@@ -339,6 +339,7 @@ paths:
             enum:
               - en
               - ru
+              - kk
             default: en
       responses:
         "200":
@@ -1702,6 +1703,7 @@ paths:
                   enum:
                     - en
                     - ru
+                    - kk
       responses:
         "200":
           description: updated user
@@ -2000,6 +2002,7 @@ paths:
                   enum:
                     - en
                     - ru
+                    - kk
                   default: en
       responses:
         "200":
@@ -2510,6 +2513,7 @@ paths:
             enum:
               - en
               - ru
+              - kk
             default: en
       responses:
         "200":

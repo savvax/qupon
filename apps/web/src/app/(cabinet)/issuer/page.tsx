@@ -17,6 +17,7 @@ import {
   type ActionRow,
 } from "./_components/data";
 import { metaTitle } from "@/lib/meta";
+import { toLocale } from "@/i18n/locale";
 
 export async function generateMetadata() {
   return { title: await metaTitle("issuer") };
@@ -27,7 +28,7 @@ export const dynamic = "force-dynamic";
 export default async function IssuerDashboard() {
   const [user, series] = await Promise.all([getSession(), issuerSeries()]);
   const actions = await issuerActions(series);
-  const locale = (await getLocale()) === "ru" ? "ru" : "en";
+  const locale = toLocale(await getLocale());
   const [t, ts, tk] = await Promise.all([
     getTranslations("issuer"),
     getTranslations("status"),

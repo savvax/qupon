@@ -10,7 +10,7 @@ Qupon: a corporate-actions engine for tokenized bonds on Solana devnet for the K
 4. **Follow `docs/02-architecture.md` names and layouts.** If you must deviate, update that doc in the same commit and explain in your DONE note.
 5. **Small, reviewable commits** on your task branch with messages `feat(scope): …` / `fix` / `test` / `docs` / `chore`, body = what and why, and the task id (`task: 012`). Do not push. The orchestrator merges and pushes.
 6. **Say what is simulated.** Any simulated integration (KYC, ARDFM registration, Swift delivery, fiat) must be labelled `SIMULATED` in code comments, UI and docs.
-7. **English** in code, comments, docs, UI strings (RU notice template is the one exception).
+7. **English** in code, comments, docs, UI strings (RU/KK notice templates and `apps/web/messages/{ru,kk}` are the exceptions).
 
 ## Repo map
 `programs/qupon_bonds` (Anchor 1.2 program) · `crates/entitlement` (pure math) · `clients/ts` (Kit + Codama client, `qupon` CLI, scripts) · `services/registrar` (Go) · `apps/web` (Next.js) · `fixtures/` (shared test vectors) · `config/` · `docs/` · `tasks/` `prompts/` `ops/` `.claude/` `.pi/` (workflow; not product) · `reports/` (demo/nightly output) · `HUMAN_TODO.md` (questions for the human).

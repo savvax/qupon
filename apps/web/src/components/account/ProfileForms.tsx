@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { TextField } from "@/components/ui/TextField";
 import { boPost, boSend } from "@/lib/boClient";
+import { type Locale } from "@/i18n/locale";
 import { useRunWrite } from "@/lib/useRunWrite";
 
 /** Name and interface language; the language also switches this browser (NEXT_LOCALE). */
@@ -15,7 +16,7 @@ export function ProfileForm({
   locale: initialLocale,
 }: {
   name: string;
-  locale: "en" | "ru";
+  locale: Locale;
 }) {
   const t = useTranslations("account.profile");
   const runWrite = useRunWrite();
@@ -56,10 +57,11 @@ export function ProfileForm({
       <Select
         label={t("language")}
         value={locale}
-        onValueChange={(v) => setLocale(v as "en" | "ru")}
+        onValueChange={(v) => setLocale(v as Locale)}
         options={[
           { value: "en", label: "English" },
           { value: "ru", label: "Русский" },
+          { value: "kk", label: "Қазақша" },
         ]}
       />
       <div className="sm:col-span-2">

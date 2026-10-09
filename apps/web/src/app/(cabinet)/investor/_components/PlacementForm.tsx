@@ -29,6 +29,7 @@ import {
 import { useInvestor } from "./InvestorIdentity";
 import { useWalletWrite } from "../_lib/useWalletWrite";
 import { usePortalRows } from "../_lib/usePortalRows";
+import { type Locale } from "@/i18n/locale";
 
 /** Response of Go /demo/investor/subscribe (and the mock proxy's shape). */
 type DemoWriteResult = {
@@ -47,7 +48,7 @@ export function PlacementForm() {
   const { connect } = useWalletUX();
   const { wallet } = useWallet();
   const t = useTranslations("investor.placement");
-  const locale = useLocale() as "en" | "ru";
+  const locale = useLocale() as Locale;
   const runWrite = useRunWrite();
   const runWalletWrite = useWalletWrite();
   const { rows, error, reload } = usePortalRows();

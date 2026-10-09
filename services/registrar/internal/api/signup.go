@@ -65,9 +65,9 @@ func authSignup(deps Deps, st *store.Store) http.HandlerFunc {
 		pw := strings.ToLower(req.Password)
 		switch {
 		case !validSignupEmail(req.Email) || req.Name == "" || len(req.Name) > 100 ||
-			(req.Locale != "en" && req.Locale != "ru"):
+			(req.Locale != "en" && req.Locale != "ru" && req.Locale != "kk"):
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params",
-				"need a valid email, a name and a locale in en/ru")
+				"need a valid email, a name and a locale in en/ru/kk")
 			return
 		case len(req.Password) < minPassword:
 			writeErrorCode(w, http.StatusBadRequest, "weak_password", "password must be at least 10 characters")
@@ -92,8 +92,8 @@ func authSignup(deps Deps, st *store.Store) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		if req.Locale == "ru" { // CreateUser defaults to en; self sign-up carries the chosen locale
-			if err := st.UpdateProfile(r.Context(), u.ID, u.Name, "ru"); err != nil {
+		if req.Locale != "en" { // CreateUser defaults to en; self sign-up carries the chosen locale
+			if err := st.UpdateProfile(r.Context(), u.ID, u.Name, req.Locale); err != nil {
 				writeError(w, http.StatusInternalServerError, err.Error())
 				return
 			}
