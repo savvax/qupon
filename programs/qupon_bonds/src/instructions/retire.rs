@@ -95,6 +95,15 @@ pub fn handle_retire_batch<'info>(ctx: Context<'info, RetireBatch<'info>>) -> Re
                 continue;
             }
             let o = e.owner;
+            // Only the holder's canonical ATA: a side token account (frozen by default) must never be thawed here,
+            // or units moved into it later would be out of reach of every retire branch (review of 1510).
+            require_keys_eq!(
+                p[1].key(),
+                anchor_spl::associated_token::get_associated_token_address_with_program_id(
+                    &o, &mint_key, &program
+                ),
+                QuponError::AccountOwnerMismatch
+            );
             ent = Some(e);
             o
         };

@@ -148,6 +148,17 @@ pub struct AdmitTrade<'info> {
 pub fn handle_admit_trade(ctx: Context<AdmitTrade>) -> Result<()> {
     let series = &ctx.accounts.series;
     require_operator(series, &ctx.accounts.authority.key())?;
+    // A redemption's register is locked once armed: a trade admitted now could never settle (review of 1510).
+    if series.hook == 1 && series.record_at != 0 {
+        let kind = crate::state::ActionKind::try_from(series.record_kind)?;
+        require!(
+            !matches!(
+                kind,
+                crate::state::ActionKind::Redemption | crate::state::ActionKind::EarlyRedemption
+            ),
+            QuponError::RecordLocked
+        );
+    }
     require!(
         !mint_paused(&ctx.accounts.mint.to_account_info())?,
         QuponError::MintPaused

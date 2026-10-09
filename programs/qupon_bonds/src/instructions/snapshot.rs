@@ -18,7 +18,7 @@ use crate::{
         ActionKind, ActionStatus, Checkpoint, CorporateAction, Entitlement, EntitlementStatus,
         Investor, Series, TradeAdmission, VoteChoice,
     },
-    utils::{create_pda_account, mint_paused},
+    utils::{create_pda_account, mint_paused, require_operator},
 };
 
 /// Max holders (legacy triples) or positions (hooked groups) per `snapshot_batch` (docs/02 batch sizing).
@@ -124,6 +124,10 @@ pub fn handle_snapshot_batch<'info>(ctx: Context<'info, SnapshotBatch<'info>>) -
         ctx.accounts.action.status == ActionStatus::RecordStruck as u8,
         QuponError::WrongStatus
     );
+    // Actions announced before plan 15 keep the owner-ordered rolling hash: only operators may batch them.
+    if ctx.accounts.action.hash_scheme == 0 {
+        require_operator(series, &ctx.accounts.authority.key())?;
+    }
     require!(
         mint_paused(&ctx.accounts.mint.to_account_info())?,
         QuponError::MintNotPaused
@@ -171,6 +175,9 @@ fn snapshot_positions<'info>(ctx: Context<'info, SnapshotBatch<'info>>) -> Resul
     let clock = Clock::get()?;
     let series = &ctx.accounts.series;
     let action_key = ctx.accounts.action.key();
+    if ctx.remaining_accounts.is_empty() {
+        return Ok(()); // an empty batch must not strike the record (it would end the registrar's cancel window)
+    }
     {
         let action = &mut ctx.accounts.action;
         require!(
@@ -216,9 +223,15 @@ fn snapshot_positions<'info>(ctx: Context<'info, SnapshotBatch<'info>>) -> Resul
                 investor.bond_ata,
                 QuponError::AccountOwnerMismatch
             );
-            let ata: InterfaceAccount<TokenAccount> = InterfaceAccount::try_from(&rem[i + 1])?;
-            require_keys_eq!(ata.mint, series.mint, QuponError::AccountMintMismatch);
-            require_keys_eq!(ata.owner, investor.owner, QuponError::AccountOwnerMismatch);
+            // An investor may close an empty bond ATA: a closed account is a position holding nothing.
+            let units = if rem[i + 1].data_is_empty() {
+                0
+            } else {
+                let ata: InterfaceAccount<TokenAccount> = InterfaceAccount::try_from(&rem[i + 1])?;
+                require_keys_eq!(ata.mint, series.mint, QuponError::AccountMintMismatch);
+                require_keys_eq!(ata.owner, investor.owner, QuponError::AccountOwnerMismatch);
+                ata.amount
+            };
             if advance_checkpoint(
                 series,
                 &mut ctx.accounts.action,
@@ -232,8 +245,8 @@ fn snapshot_positions<'info>(ctx: Context<'info, SnapshotBatch<'info>>) -> Resul
                     &mut ctx.accounts.action,
                     &investor,
                     &rem[i + 2],
-                    ata.key(),
-                    ata.amount,
+                    investor.bond_ata,
+                    units,
                 )?;
             }
             i += 4;

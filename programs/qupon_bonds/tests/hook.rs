@@ -747,3 +747,154 @@ fn account_sizes_are_frozen() {
     assert_eq!(8 + CorporateAction::INIT_SPACE, 435);
     assert_eq!(8 + Checkpoint::INIT_SPACE, 77);
 }
+
+// ---- Regressions from the 1510 security review (each was a permanent liveness failure before the fix) ----
+
+fn redm(now: i64) -> qupon_bonds::AnnounceArgs {
+    qupon_bonds::AnnounceArgs {
+        kind: 1,
+        corp_id: corp_id("QPNb1-REDM-0001"),
+        ..intr_args(now)
+    }
+}
+
+/// Non-ATA Token-2022 account for the bond mint owned by `owner` (frozen by DefaultAccountState).
+fn non_ata(env: &mut Env, b: &Bond, owner: &Keypair) -> Pubkey {
+    use spl_token_2022::extension::{BaseStateWithExtensions, ExtensionType, StateWithExtensions};
+    let acct = Keypair::new();
+    let m = env.svm.get_account(&b.mint).unwrap();
+    let st = StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&m.data).unwrap();
+    let types = st.get_extension_types().unwrap();
+    let req = ExtensionType::get_required_init_account_extensions(&types);
+    let len =
+        ExtensionType::try_calculate_account_len::<spl_token_2022::state::Account>(&req).unwrap();
+    let lamports = env.svm.minimum_balance_for_rent_exemption(len);
+    env.svm.airdrop(&owner.pubkey(), 1_000_000_000).unwrap();
+    let create = anchor_lang::solana_program::system_instruction::create_account(
+        &owner.pubkey(),
+        &acct.pubkey(),
+        lamports,
+        len as u64,
+        &spl_token_2022::ID,
+    );
+    let init = spl_token_2022::instruction::initialize_account3(
+        &spl_token_2022::ID,
+        &acct.pubkey(),
+        &b.mint,
+        &owner.pubkey(),
+    )
+    .unwrap();
+    env.send(&[create, init], &[owner, &acct])
+        .expect("non-ATA account");
+    acct.pubkey()
+}
+
+#[test]
+fn a_hooked_redemption_cannot_coexist_with_open_trades() {
+    let (mut env, b, h) = hooked_with(|p| p.maturity_date = NEXT_COUPON);
+    let (s, u) = (h[0].pubkey(), h[1].pubkey());
+    let t = create_dvp(&mut env, &b, &s, &u, 5, 500_000);
+    let ix = admit_ix(&env, &b, &t, &s, &u);
+    env.send(&[ix], &[]).unwrap();
+    let now = env.now();
+    let ix = env.announce_ix(&b, &env.registrar.pubkey(), redm(now));
+    assert_err(env.send(&[ix], &[]), QuponError::TradesInFlight);
+    // Released first, the redemption can be announced; afterwards no trade can be admitted.
+    let ix = release_ix(&env, &b, &t, &s, false);
+    env.send(&[ix], &[]).expect("release the unfunded trade");
+    announce(&mut env, &b, redm(now));
+    let t2 = create_dvp(&mut env, &b, &u, &s, 1, 100_000);
+    let ix = admit_ix(&env, &b, &t2, &u, &s);
+    assert_err(env.send(&[ix], &[]), QuponError::RecordLocked);
+}
+
+#[test]
+fn a_closed_empty_ata_is_a_zero_position() {
+    let (mut env, b, h) = hooked();
+    let owners = keys(&h);
+    let z = Keypair::new();
+    env.register(&b, &z.pubkey())
+        .expect("register an empty investor");
+    env.svm.airdrop(&z.pubkey(), 1_000_000_000).unwrap();
+    let close = spl_token_2022::instruction::close_account(
+        &spl_token_2022::ID,
+        &bond_ata(&z.pubkey(), &b),
+        &z.pubkey(),
+        &z.pubkey(),
+        &[],
+    )
+    .unwrap();
+    env.send(&[close], &[&z])
+        .expect("investor closes the empty bond ATA");
+    let now = env.now();
+    let record_at = announce(&mut env, &b, intr_args(now));
+    env.set_clock(record_at + 1);
+    let reg = env.registrar.pubkey();
+    let mut pos = holders_pos(&owners);
+    pos.push(Pos::Holder(z.pubkey()));
+    env.send(&[positions_ix(&b, 0, &pos, &reg)], &[])
+        .expect("closed ATA = 0 units");
+    env.send(&[env.finalize_snapshot_ix(&b, 0)], &[])
+        .expect("complete");
+}
+
+#[test]
+fn a_permissionless_retire_only_touches_the_canonical_ata() {
+    let mut env = Env::new();
+    let b = env.setup_bond_with(|p| p.maturity_date = NEXT_COUPON);
+    let holders = env.holders(&b, &[10, 25]);
+    let owners: Vec<Pubkey> = holders.iter().map(|(k, _)| k.pubkey()).collect();
+    let h0 = holders[0].0.insecure_clone();
+    let side = non_ata(&mut env, &b, &h0);
+    let now = env.now();
+    env.settle_action(&b, redm(now), &owners);
+    let mallory = Keypair::new();
+    env.svm.airdrop(&mallory.pubkey(), 1_000_000_000).unwrap();
+    let mut ix = env.retire_ix(&b, 0, &owners[..1]);
+    ix.accounts[0].pubkey = mallory.pubkey();
+    ix.accounts[6].pubkey = side;
+    assert_err(
+        env.send(&[ix], &[&mallory]),
+        QuponError::AccountOwnerMismatch,
+    );
+    assert!(env.is_frozen(&side), "the side account stays frozen");
+}
+
+#[test]
+fn registering_before_init_hook_is_refused() {
+    let mut env = Env::new();
+    let cash = env.create_cash_mint(spl_token::ID);
+    let (mint, series) = env.create_bond_mint(BondMintOpts {
+        transfer_hook: true,
+        ..Default::default()
+    });
+    let ix = env.init_series_ix(mint, cash, spl_token::ID, env.params());
+    env.send(&[ix], &[]).unwrap();
+    let b = Bond {
+        mint,
+        series,
+        cash,
+        cash_tp: spl_token::ID,
+    };
+    let early = Keypair::new();
+    assert_err(env.register(&b, &early.pubkey()), QuponError::HookNotArmed);
+    env.send(&[init_hook_ix(&env, &b)], &[])
+        .expect("arm the gate");
+    env.register(&b, &early.pubkey())
+        .expect("now registration works");
+}
+
+#[test]
+fn an_empty_snapshot_batch_does_not_strike_the_record() {
+    let (mut env, b, _h) = hooked();
+    let now = env.now();
+    let record_at = announce(&mut env, &b, intr_args(now));
+    env.set_clock(record_at + 1);
+    let ix = positions_ix(&b, 0, &[], &env.registrar.pubkey());
+    env.send(&[ix], &[]).expect("no-op");
+    let a: CorporateAction = env.account(&action_pda(&b.series, 0));
+    assert_eq!(a.status, qupon_bonds::ActionStatus::Announced as u8);
+    env.send(&[env.cancel_ix(&b, 0)], &[])
+        .expect("the registrar can still cancel");
+    assert_eq!(env.account::<Series>(&b.series).record_at, 0);
+}

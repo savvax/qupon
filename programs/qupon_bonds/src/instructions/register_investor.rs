@@ -1,4 +1,8 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token_2022::spl_token_2022::{
+    extension::{transfer_hook::TransferHook, BaseStateWithExtensions, StateWithExtensions},
+    state::Mint as MintState,
+};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_2022::Token2022,
@@ -134,6 +138,16 @@ pub fn handle_register_investor(ctx: Context<RegisterInvestor>, kyc: KycParams) 
         &kyc,
         clock.unix_timestamp,
     )?;
+    // A mint built with our transfer hook must have its gate armed before anyone registers, or the holder would get
+    // no checkpoint and could never be snapshotted (review of 1510).
+    if ctx.accounts.series.hook == 0 {
+        let mint_info = ctx.accounts.mint.to_account_info();
+        let data = mint_info.try_borrow_data()?;
+        let hooked_mint = StateWithExtensions::<MintState>::unpack(&data)
+            .map(|m| m.get_extension::<TransferHook>().is_ok())
+            .unwrap_or(false);
+        require!(!hooked_mint, QuponError::HookNotArmed);
+    }
     if ctx.accounts.series.hook == 1 {
         let owner = ctx.accounts.owner.key();
         crate::instructions::hook::create_checkpoint(

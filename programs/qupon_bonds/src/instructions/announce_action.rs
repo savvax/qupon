@@ -211,6 +211,12 @@ pub fn handle_announce_action(ctx: Context<AnnounceAction>, a: AnnounceArgs) -> 
         .ok_or(QuponError::MathOverflow)?;
     series.open_action = Some(action_key);
     if series.hook == 1 {
+        // A redemption locks the register from record_at: an open DvP escrow could never settle, release or burn.
+        require!(
+            !matches!(kind, ActionKind::Redemption | ActionKind::EarlyRedemption)
+                || series.open_trades == 0,
+            QuponError::TradesInFlight
+        );
         // Hooked series: arm the transfer-hook gate for this record (plan 15 D1').
         series.record_kind = act.kind;
         series.record_seq = act.index.checked_add(1).ok_or(QuponError::MathOverflow)?;

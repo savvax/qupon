@@ -83,6 +83,8 @@ pub enum QuponError {
     RecordPending,
     #[msg("Not every position (investor or admitted escrow) has been snapshotted yet")]
     PositionsIncomplete,
+    #[msg("The mint carries the record-date transfer hook: run init_hook before registering investors")]
+    HookNotArmed,
 }
 
 /// Map the pure math crate's errors onto program errors (orphan rule forbids `From`).
