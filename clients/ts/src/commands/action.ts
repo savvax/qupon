@@ -32,7 +32,7 @@ import { chunk, sortByOwner } from "../lib/batch.js";
 import { accrualDays, dayCountFromCode, packYmd } from "../lib/daycount.js";
 import { ALMATY_CLOCK, type CivilClock, seriesClock } from "../lib/clock.js";
 import { txLink } from "../lib/explorer.js";
-import { actionPda, entitlementPda, investorPda } from "../lib/pda.js";
+import { actionPda, entitlementPda, investorPda, routePda } from "../lib/pda.js";
 import type { QuponRpc } from "../lib/tx.js";
 import {
 	defaultCorpId,
@@ -63,7 +63,7 @@ import {
 /** Batch sizing fixed by docs/02-architecture.md (must match the on-chain limits). */
 export const SNAPSHOT_BATCH_MAX = 8;
 // On-chain max is 10, but 10 triples (38 unique keys) exceed the 1232-byte tx limit without a lookup table; 8 fit.
-export const PAY_BATCH_MAX = 8;
+export const PAY_BATCH_MAX = 4;
 
 /**
  * Deterministic batching: sort by owner pubkey ascending, then fixed chunks.
@@ -80,7 +80,8 @@ export function sortedBatches<T>(items: readonly T[], ownerOf: (item: T) => stri
  * Pure — unit-tested against the documented 8-fits/10-doesn't limits.
  */
 export function payBatchBytes(holders: number, creates: number): number {
-	return 384 + 99 * holders + 42 * creates + (creates > 0 ? 64 : 0);
+	// Plan 15 D5/D6: 5 accounts per holder (entitlement, investor, route, cash, bond ATA) + mint and bond program.
+	return 450 + 165 * holders + 42 * creates + (creates > 0 ? 64 : 0);
 }
 
 /** Max wire size minus a safety margin for varints and rounding in the estimate above. */
@@ -436,7 +437,13 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 		.map(e => {
 			const investor = byOwner.get(e.owner);
 			if (investor === undefined) throw new Error(`no Investor PDA for entitlement owner ${e.owner}`);
-			return { owner: e.owner, entitlement: e.address, investor: investor.address, cashAta: investor.cashAta };
+			return {
+				owner: e.owner,
+				entitlement: e.address,
+				investor: investor.address,
+				cashAta: investor.cashAta,
+				bondAta: investor.bondAta,
+			};
 		});
 	// Task 1410: a holder may close their empty cash ATA during Funded — pay_batch pays the stored
 	// investor.cash_ata, so recreate the missing ones idempotently in the same tx; batches whose
@@ -449,8 +456,9 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 	const results = await runBatches(batches, async (batch, i) => {
 		const metas = [];
 		for (const holder of batch) {
-			// remaining_accounts order: [Entitlement (writable), Investor, cash ATA (writable)]
-			metas.push(wr(holder.entitlement), ro(holder.investor), wr(holder.cashAta));
+			// remaining_accounts per holder: [Entitlement (w), Investor, PayoutRoute PDA, cash destination (w), bond ATA (w)]
+			// — a full redemption burns the units in the same instruction it pays them (plan 15 D5).
+			metas.push(wr(holder.entitlement), ro(holder.investor), ro(await routePda(holder.investor)), wr(holder.cashAta), wr(holder.bondAta));
 		}
 		const base = getPayBatchInstruction({
 			authority,
@@ -460,6 +468,7 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 			escrow: account.escrow,
 			taxVault: info.account.taxVault,
 			cashTokenProgram,
+			mint: info.mint,
 		});
 		const instruction = { ...base, accounts: [...base.accounts, ...metas] };
 		// Prepended before pay_batch so the closed-ATA holder is payable in the same tx (task 1410).

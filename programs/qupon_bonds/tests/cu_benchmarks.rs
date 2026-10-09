@@ -27,7 +27,7 @@ const TX_MAX_CU: u64 = 1_400_000;
 /// Compute-unit limit the CLI sets on every transaction.
 const CLI_CU_LIMIT: u64 = 600_000;
 /// Holders per `pay_batch` transaction the CLI sends (docs/02-architecture.md "Batch sizing").
-const CLI_PAY_BATCH: usize = 8;
+const CLI_PAY_BATCH: usize = 4;
 const COMPUTE_BUDGET: Pubkey = pubkey!("ComputeBudget111111111111111111111111111111");
 /// (instruction, constant, on-chain maximum, holders per transaction the CLI sends).
 const BATCHES: [(&str, &str, usize, usize); 3] = [
@@ -395,7 +395,10 @@ fn report(rows: &[Row], spl_token_build: &str) -> String {
 
 #[test]
 fn batches_stay_inside_the_compute_limits() {
-    let coupons = |worst| [1, 5, CLI_PAY_BATCH, PAY_BATCH_MAX].map(|n| (n, flow(n, false, worst)));
+    // Sizes: one holder, the CLI pay batch, the pay maximum, the snapshot maximum (pay batches cap at PAY_BATCH_MAX).
+    let coupons = |worst| {
+        [1, CLI_PAY_BATCH, PAY_BATCH_MAX, SNAPSHOT_BATCH_MAX].map(|n| (n, flow(n, false, worst)))
+    };
     let (plain, worst) = (coupons(false), coupons(true));
     let row = |name, holders, cu| Row { name, holders, cu };
     let mut rows: Vec<Row> = vec![];
@@ -405,12 +408,27 @@ fn batches_stay_inside_the_compute_limits() {
             .filter(|(n, _)| *n <= SNAPSHOT_BATCH_MAX)
             .map(|(n, f)| row("snapshot_batch", *n, f.snapshot)),
     );
-    rows.extend(plain.iter().map(|(n, f)| row("pay_batch", *n, f.pay)));
-    rows.extend(worst.iter().map(|(n, f)| row(PAY_WORST, *n, f.pay)));
+    let payable = |n: &usize| *n <= PAY_BATCH_MAX;
+    rows.extend(
+        plain
+            .iter()
+            .filter(|(n, _)| payable(n))
+            .map(|(n, f)| row("pay_batch", *n, f.pay)),
+    );
+    rows.extend(
+        worst
+            .iter()
+            .filter(|(n, _)| payable(n))
+            .map(|(n, f)| row(PAY_WORST, *n, f.pay)),
+    );
     for (name, frozen) in [("retire_batch", false), (RETIRE_WORST, true)] {
         rows.extend([1, 5, RETIRE_BATCH_MAX].map(|n| row(name, n, retire(n, frozen))));
     }
-    let single = &plain[2].1; // the CLI-size coupon
+    let single = &plain
+        .iter()
+        .find(|(n, _)| *n == CLI_PAY_BATCH)
+        .expect("CLI-size coupon")
+        .1;
     let [admit, release, forced] = trades();
     rows.extend(
         [

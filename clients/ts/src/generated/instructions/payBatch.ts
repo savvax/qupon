@@ -14,8 +14,8 @@ export const PAY_BATCH_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([94, 1
 
 export function getPayBatchDiscriminatorBytes(): ReadonlyUint8Array { return fixEncoderSize(getBytesEncoder(), 8).encode(PAY_BATCH_DISCRIMINATOR); }
 
-export type PayBatchInstruction<TProgram extends string = typeof QUPON_BONDS_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountSeries extends string | AccountMeta<string> = string, TAccountAction extends string | AccountMeta<string> = string, TAccountCashMint extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountTaxVault extends string | AccountMeta<string> = string, TAccountCashTokenProgram extends string | AccountMeta<string> = string, TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
-Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountSeries extends string ? ReadonlyAccount<TAccountSeries> : TAccountSeries, TAccountAction extends string ? WritableAccount<TAccountAction> : TAccountAction, TAccountCashMint extends string ? ReadonlyAccount<TAccountCashMint> : TAccountCashMint, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountTaxVault extends string ? WritableAccount<TAccountTaxVault> : TAccountTaxVault, TAccountCashTokenProgram extends string ? ReadonlyAccount<TAccountCashTokenProgram> : TAccountCashTokenProgram, ...TRemainingAccounts]>;
+export type PayBatchInstruction<TProgram extends string = typeof QUPON_BONDS_PROGRAM_ADDRESS, TAccountAuthority extends string | AccountMeta<string> = string, TAccountSeries extends string | AccountMeta<string> = string, TAccountAction extends string | AccountMeta<string> = string, TAccountCashMint extends string | AccountMeta<string> = string, TAccountEscrow extends string | AccountMeta<string> = string, TAccountTaxVault extends string | AccountMeta<string> = string, TAccountCashTokenProgram extends string | AccountMeta<string> = string, TAccountMint extends string | AccountMeta<string> = string, TAccountBondTokenProgram extends string | AccountMeta<string> = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", TRemainingAccounts extends readonly AccountMeta<string>[] = []> =
+Instruction<TProgram> & InstructionWithData<ReadonlyUint8Array> & InstructionWithAccounts<[TAccountAuthority extends string ? ReadonlySignerAccount<TAccountAuthority> & AccountSignerMeta<TAccountAuthority> : TAccountAuthority, TAccountSeries extends string ? ReadonlyAccount<TAccountSeries> : TAccountSeries, TAccountAction extends string ? WritableAccount<TAccountAction> : TAccountAction, TAccountCashMint extends string ? ReadonlyAccount<TAccountCashMint> : TAccountCashMint, TAccountEscrow extends string ? WritableAccount<TAccountEscrow> : TAccountEscrow, TAccountTaxVault extends string ? WritableAccount<TAccountTaxVault> : TAccountTaxVault, TAccountCashTokenProgram extends string ? ReadonlyAccount<TAccountCashTokenProgram> : TAccountCashTokenProgram, TAccountMint extends string ? WritableAccount<TAccountMint> : TAccountMint, TAccountBondTokenProgram extends string ? ReadonlyAccount<TAccountBondTokenProgram> : TAccountBondTokenProgram, ...TRemainingAccounts]>;
 
 export type PayBatchInstructionData = { discriminator: ReadonlyUint8Array;  };
 
@@ -33,17 +33,21 @@ export function getPayBatchInstructionDataCodec(): FixedSizeCodec<PayBatchInstru
     return combineCodec(getPayBatchInstructionDataEncoder(), getPayBatchInstructionDataDecoder());
 }
 
-export type PayBatchInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountSeries extends InstructionAccountInput = InstructionAccountInput, TAccountAction extends InstructionAccountInput = InstructionAccountInput, TAccountCashMint extends InstructionAccountInput = InstructionAccountInput, TAccountEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountTaxVault extends InstructionAccountInput = InstructionAccountInput, TAccountCashTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+export type PayBatchInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountSeries extends InstructionAccountInput = InstructionAccountInput, TAccountAction extends InstructionAccountInput = InstructionAccountInput, TAccountCashMint extends InstructionAccountInput = InstructionAccountInput, TAccountEscrow extends InstructionAccountInput = InstructionAccountInput, TAccountTaxVault extends InstructionAccountInput = InstructionAccountInput, TAccountCashTokenProgram extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountBondTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
+  /** Anyone (pays the fee). */
+authority: TAccountAuthority;
 series: TAccountSeries;
 action: TAccountAction;
 cashMint: TAccountCashMint;
 escrow: TAccountEscrow;
 taxVault: TAccountTaxVault;
 cashTokenProgram: TAccountCashTokenProgram;
+/** The bond mint: full redemptions burn the paid units in the same instruction (plan 15 D5). */
+mint: TAccountMint;
+bondTokenProgram?: TAccountBondTokenProgram;
 }
 
-export function getPayBatchInstruction<TAccountAuthority extends InstructionSignerInput, TAccountSeries extends InstructionAccountInput, TAccountAction extends InstructionAccountInput, TAccountCashMint extends InstructionAccountInput, TAccountEscrow extends InstructionAccountInput, TAccountTaxVault extends InstructionAccountInput, TAccountCashTokenProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof QUPON_BONDS_PROGRAM_ADDRESS>(input: PayBatchInput<TAccountAuthority, TAccountSeries, TAccountAction, TAccountCashMint, TAccountEscrow, TAccountTaxVault, TAccountCashTokenProgram>, config?: { programAddress?: TProgramAddress } ): PayBatchInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountSeries, InstructionAccountInputAddress<TAccountSeries>>, ResolvedInstructionAccountMeta<TAccountAction, InstructionAccountInputAddress<TAccountAction>>, ResolvedInstructionAccountMeta<TAccountCashMint, InstructionAccountInputAddress<TAccountCashMint>>, ResolvedInstructionAccountMeta<TAccountEscrow, InstructionAccountInputAddress<TAccountEscrow>>, ResolvedInstructionAccountMeta<TAccountTaxVault, InstructionAccountInputAddress<TAccountTaxVault>>, ResolvedInstructionAccountMeta<TAccountCashTokenProgram, InstructionAccountInputAddress<TAccountCashTokenProgram>>> {
+export function getPayBatchInstruction<TAccountAuthority extends InstructionSignerInput, TAccountSeries extends InstructionAccountInput, TAccountAction extends InstructionAccountInput, TAccountCashMint extends InstructionAccountInput, TAccountEscrow extends InstructionAccountInput, TAccountTaxVault extends InstructionAccountInput, TAccountCashTokenProgram extends InstructionAccountInput, TAccountMint extends InstructionAccountInput, TAccountBondTokenProgram extends InstructionAccountInput, TProgramAddress extends Address = typeof QUPON_BONDS_PROGRAM_ADDRESS>(input: PayBatchInput<TAccountAuthority, TAccountSeries, TAccountAction, TAccountCashMint, TAccountEscrow, TAccountTaxVault, TAccountCashTokenProgram, TAccountMint, TAccountBondTokenProgram>, config?: { programAddress?: TProgramAddress } ): PayBatchInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountSeries, InstructionAccountInputAddress<TAccountSeries>>, ResolvedInstructionAccountMeta<TAccountAction, InstructionAccountInputAddress<TAccountAction>>, ResolvedInstructionAccountMeta<TAccountCashMint, InstructionAccountInputAddress<TAccountCashMint>>, ResolvedInstructionAccountMeta<TAccountEscrow, InstructionAccountInputAddress<TAccountEscrow>>, ResolvedInstructionAccountMeta<TAccountTaxVault, InstructionAccountInputAddress<TAccountTaxVault>>, ResolvedInstructionAccountMeta<TAccountCashTokenProgram, InstructionAccountInputAddress<TAccountCashTokenProgram>>, ResolvedInstructionAccountMeta<TAccountMint, InstructionAccountInputAddress<TAccountMint>>, ResolvedInstructionAccountMeta<TAccountBondTokenProgram, InstructionAccountInputAddress<TAccountBondTokenProgram>>> {
   // Program address.
 const programAddress = config?.programAddress ?? QUPON_BONDS_PROGRAM_ADDRESS;
 
@@ -51,17 +55,21 @@ const programAddress = config?.programAddress ?? QUPON_BONDS_PROGRAM_ADDRESS;
 const getAccountMeta = getAccountMetaFactory(programAddress, 'programId');
 
  // Original accounts.
-const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: false }, series: { value: input.series ?? null, isSigner: false, isWritable: false }, action: { value: input.action ?? null, isSigner: false, isWritable: true }, cashMint: { value: input.cashMint ?? null, isSigner: false, isWritable: false }, escrow: { value: input.escrow ?? null, isSigner: false, isWritable: true }, taxVault: { value: input.taxVault ?? null, isSigner: false, isWritable: true }, cashTokenProgram: { value: input.cashTokenProgram ?? null, isSigner: false, isWritable: false } }
+const originalAccounts = { authority: { value: input.authority ?? null, isSigner: true, isWritable: false }, series: { value: input.series ?? null, isSigner: false, isWritable: false }, action: { value: input.action ?? null, isSigner: false, isWritable: true }, cashMint: { value: input.cashMint ?? null, isSigner: false, isWritable: false }, escrow: { value: input.escrow ?? null, isSigner: false, isWritable: true }, taxVault: { value: input.taxVault ?? null, isSigner: false, isWritable: true }, cashTokenProgram: { value: input.cashTokenProgram ?? null, isSigner: false, isWritable: false }, mint: { value: input.mint ?? null, isSigner: false, isWritable: true }, bondTokenProgram: { value: input.bondTokenProgram ?? null, isSigner: false, isWritable: false } }
 const accounts = originalAccounts as Record<keyof typeof originalAccounts, ResolvedInstructionAccount>;
 
 
+// Resolve default values.
+if (!accounts.bondTokenProgram.value) {
+accounts.bondTokenProgram.value = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb' as Address<'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb'>;
+}
 
-
-return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("series", accounts.series), getAccountMeta("action", accounts.action), getAccountMeta("cashMint", accounts.cashMint), getAccountMeta("escrow", accounts.escrow), getAccountMeta("taxVault", accounts.taxVault), getAccountMeta("cashTokenProgram", accounts.cashTokenProgram)], data: getPayBatchInstructionDataEncoder().encode({}), programAddress } as PayBatchInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountSeries, InstructionAccountInputAddress<TAccountSeries>>, ResolvedInstructionAccountMeta<TAccountAction, InstructionAccountInputAddress<TAccountAction>>, ResolvedInstructionAccountMeta<TAccountCashMint, InstructionAccountInputAddress<TAccountCashMint>>, ResolvedInstructionAccountMeta<TAccountEscrow, InstructionAccountInputAddress<TAccountEscrow>>, ResolvedInstructionAccountMeta<TAccountTaxVault, InstructionAccountInputAddress<TAccountTaxVault>>, ResolvedInstructionAccountMeta<TAccountCashTokenProgram, InstructionAccountInputAddress<TAccountCashTokenProgram>>>);
+return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority), getAccountMeta("series", accounts.series), getAccountMeta("action", accounts.action), getAccountMeta("cashMint", accounts.cashMint), getAccountMeta("escrow", accounts.escrow), getAccountMeta("taxVault", accounts.taxVault), getAccountMeta("cashTokenProgram", accounts.cashTokenProgram), getAccountMeta("mint", accounts.mint), getAccountMeta("bondTokenProgram", accounts.bondTokenProgram)], data: getPayBatchInstructionDataEncoder().encode({}), programAddress } as PayBatchInstruction<TProgramAddress, ResolvedInstructionAccountMeta<TAccountAuthority, InstructionAccountInputAddress<TAccountAuthority>>, ResolvedInstructionAccountMeta<TAccountSeries, InstructionAccountInputAddress<TAccountSeries>>, ResolvedInstructionAccountMeta<TAccountAction, InstructionAccountInputAddress<TAccountAction>>, ResolvedInstructionAccountMeta<TAccountCashMint, InstructionAccountInputAddress<TAccountCashMint>>, ResolvedInstructionAccountMeta<TAccountEscrow, InstructionAccountInputAddress<TAccountEscrow>>, ResolvedInstructionAccountMeta<TAccountTaxVault, InstructionAccountInputAddress<TAccountTaxVault>>, ResolvedInstructionAccountMeta<TAccountCashTokenProgram, InstructionAccountInputAddress<TAccountCashTokenProgram>>, ResolvedInstructionAccountMeta<TAccountMint, InstructionAccountInputAddress<TAccountMint>>, ResolvedInstructionAccountMeta<TAccountBondTokenProgram, InstructionAccountInputAddress<TAccountBondTokenProgram>>>);
 }
 
 export type ParsedPayBatchInstruction<TProgram extends string = typeof QUPON_BONDS_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Anyone (pays the fee). */
 authority: TAccountMetas[0];
 series: TAccountMetas[1];
 action: TAccountMetas[2];
@@ -69,12 +77,15 @@ cashMint: TAccountMetas[3];
 escrow: TAccountMetas[4];
 taxVault: TAccountMetas[5];
 cashTokenProgram: TAccountMetas[6];
+/** The bond mint: full redemptions burn the paid units in the same instruction (plan 15 D5). */
+mint: TAccountMetas[7];
+bondTokenProgram: TAccountMetas[8];
 };
 data: PayBatchInstructionData; };
 
 export function parsePayBatchInstruction<TProgram extends string, TAccountMetas extends readonly AccountMeta[]>(instruction: Instruction<TProgram> & InstructionWithAccounts<TAccountMetas> & InstructionWithData<ReadonlyUint8Array>): ParsedPayBatchInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 7) {
-  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 7 });
+  if (instruction.accounts.length < 9) {
+  throw new SolanaError(SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS, { actualAccountMetas: instruction.accounts.length, expectedAccountMetas: 9 });
 }
 let accountIndex = 0;
 const getNextAccount = () => {
@@ -82,5 +93,5 @@ const getNextAccount = () => {
   accountIndex += 1;
   return accountMeta;
 }
-  return { programAddress: instruction.programAddress, accounts: { authority: getNextAccount(), series: getNextAccount(), action: getNextAccount(), cashMint: getNextAccount(), escrow: getNextAccount(), taxVault: getNextAccount(), cashTokenProgram: getNextAccount() }, data: getPayBatchInstructionDataDecoder().decode(instruction.data) };
+  return { programAddress: instruction.programAddress, accounts: { authority: getNextAccount(), series: getNextAccount(), action: getNextAccount(), cashMint: getNextAccount(), escrow: getNextAccount(), taxVault: getNextAccount(), cashTokenProgram: getNextAccount(), mint: getNextAccount(), bondTokenProgram: getNextAccount() }, data: getPayBatchInstructionDataDecoder().decode(instruction.data) };
 }

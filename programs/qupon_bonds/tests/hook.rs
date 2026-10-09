@@ -898,3 +898,30 @@ fn an_empty_snapshot_batch_does_not_strike_the_record() {
         .expect("the registrar can still cancel");
     assert_eq!(env.account::<Series>(&b.series).record_at, 0);
 }
+
+#[test]
+fn a_hooked_redemption_pays_burns_and_closes_without_pausing() {
+    let (mut env, b, h) = hooked_with(|p| p.maturity_date = NEXT_COUPON);
+    let owners = keys(&h);
+    let now = env.now();
+    let record_at = announce(&mut env, &b, redm(now));
+    env.set_clock(record_at + 1);
+    let reg = env.registrar.pubkey();
+    env.send(&[positions_ix(&b, 0, &holders_pos(&owners), &reg)], &[])
+        .unwrap();
+    env.send(&[env.finalize_snapshot_ix(&b, 0)], &[]).unwrap();
+    let outsider = Keypair::new();
+    env.svm.airdrop(&outsider.pubkey(), 10_000_000_000).unwrap();
+    fund_and_pay(&mut env, &b, &owners, &outsider);
+    for o in &owners {
+        assert_eq!(
+            env.balance(&bond_ata(o, &b)),
+            0,
+            "paid and burned in one instruction"
+        );
+    }
+    let ix = signed_by(env.complete_ix(&b, 0), &outsider);
+    env.send(&[ix], &[&outsider]).expect("complete");
+    env.send(&[env.close_series_ix(&b, 0)], &[])
+        .expect("close: supply already 0");
+}

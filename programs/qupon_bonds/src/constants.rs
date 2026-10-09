@@ -6,6 +6,8 @@ pub const ACTION_SEED: &[u8] = b"action";
 pub const ENTITLEMENT_SEED: &[u8] = b"entitlement";
 pub const TRADE_SEED: &[u8] = b"trade";
 pub const CHECKPOINT_SEED: &[u8] = b"ckpt";
+/// Holder-chosen payout route `["route", investor]` (plan 15 D6; read by pay_batch, created by set_payout_route).
+pub const PAYOUT_ROUTE_SEED: &[u8] = b"route";
 /// Domain separator of the order-independent snapshot hash (hash_scheme 1).
 pub const SNAP_HASH_DOMAIN: &[u8] = b"qupon:snap:v1";
 /// Standard seed of the transfer-hook validation account (spl-transfer-hook-interface).

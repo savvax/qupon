@@ -360,6 +360,15 @@ pub fn ata(owner: &Pubkey, mint: &Pubkey, tp: &Pubkey) -> Pubkey {
     get_associated_token_address_with_program_id(owner, mint, tp)
 }
 
+/// Holder-chosen payout route PDA of an Investor (plan 15 D6).
+pub fn route_pda(investor: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[qupon_bonds::constants::PAYOUT_ROUTE_SEED, investor.as_ref()],
+        &qupon_bonds::id(),
+    )
+    .0
+}
+
 /// Record-date checkpoint of `owner` on a hooked series (plan 15 D1').
 pub fn checkpoint_pda(series: &Pubkey, owner: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
@@ -811,12 +820,21 @@ impl Env {
             escrow: ata(&action, &b.cash, &b.cash_tp),
             tax_vault: ata(&b.series, &b.cash, &b.cash_tp),
             cash_token_program: b.cash_tp,
+            mint: b.mint,
+            bond_token_program: spl_token_2022::ID,
         }
         .to_account_metas(None);
+        // Per holder (plan 15 D5/D6): [Entitlement, Investor, PayoutRoute PDA, cash destination, bond ATA].
         for o in owners {
+            let investor = investor_pda(&b.series, o);
             metas.push(AccountMeta::new(entitlement_pda(&action, o), false));
-            metas.push(AccountMeta::new_readonly(investor_pda(&b.series, o), false));
+            metas.push(AccountMeta::new_readonly(investor, false));
+            metas.push(AccountMeta::new_readonly(route_pda(&investor), false));
             metas.push(AccountMeta::new(ata(o, &b.cash, &b.cash_tp), false));
+            metas.push(AccountMeta::new(
+                ata(o, &b.mint, &spl_token_2022::ID),
+                false,
+            ));
         }
         self.action_ix(qupon_bonds::instruction::PayBatch {}.data(), metas)
     }

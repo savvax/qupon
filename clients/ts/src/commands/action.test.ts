@@ -51,7 +51,7 @@ describe("sortedBatches batch shape", () => {
 
 	it("batch limits match the on-chain program (8 snapshot / 10 pay)", () => {
 		expect(SNAPSHOT_BATCH_MAX).toBe(8);
-		expect(PAY_BATCH_MAX).toBe(8); // tx-size bound, see action.ts
+		expect(PAY_BATCH_MAX).toBe(4); // tx-size bound with 5 accounts per holder, see action.ts
 	});
 });
 
@@ -94,12 +94,12 @@ describe("runBatches partial failure", () => {
 
 describe("pay tx sizing with prepended ATA creates (task 1410)", () => {
 	it("estimates the documented limits: 8 open triples fit, 10 do not", () => {
-		expect(payBatchBytes(PAY_BATCH_MAX, 0)).toBeLessThanOrEqual(1232); // why PAY_BATCH_MAX is 8
-		expect(payBatchBytes(10, 0)).toBeGreaterThan(1232);
+		expect(payBatchBytes(PAY_BATCH_MAX, 0)).toBeLessThanOrEqual(1232); // why PAY_BATCH_MAX is 4
+		expect(payBatchBytes(5, 0)).toBeGreaterThan(1232);
 	});
 
-	it("keeps an all-open batch of 8 in one tx", () => {
-		const batch = Array.from({ length: 8 }, (_, i) => ({ owner: `o${i}` }));
+	it("keeps an all-open batch of PAY_BATCH_MAX in one tx", () => {
+		const batch = Array.from({ length: PAY_BATCH_MAX }, (_, i) => ({ owner: `o${i}` }));
 		expect(splitPayBatch(batch, () => false)).toEqual([batch]);
 	});
 
@@ -112,9 +112,10 @@ describe("pay tx sizing with prepended ATA creates (task 1410)", () => {
 		}
 	});
 
-	it("an all-closed batch of 8 splits into tx-fitting chunks", () => {
-		const holders = Array.from({ length: 8 }, (_, i) => ({ owner: `o${i}` }));
-		expect(splitPayBatch(holders, () => true).map(b => b.length)).toEqual([4, 4]);
+	it("an all-closed batch of PAY_BATCH_MAX splits into tx-fitting chunks", () => {
+		// 4 holders with 4 ATA creates: 450 + 660 + 168 + 64 = 1342 B > limit → two halves of 928 B each
+		const holders = Array.from({ length: PAY_BATCH_MAX }, (_, i) => ({ owner: `o${i}` }));
+		expect(splitPayBatch(holders, () => true).map(b => b.length)).toEqual([2, 2]);
 	});
 });
 

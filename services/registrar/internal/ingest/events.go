@@ -73,6 +73,10 @@ var layouts = map[string][]field{
 		u64("cash_amount"), u32("open_trades"), u64("slot"), i64("timestamp")},
 	"TradeReleased": {pk("series"), pk("swap_dvp"), pk("escrow"), u64("returned_units"), u32("open_trades"),
 		u64("slot"), i64("timestamp")},
+	// Plan 15 D4 (task 1512): default and cure.
+	"ActionDefaulted": {pk("series"), pk("action"), u32("index"), u8("kind"), u64("required"), u64("escrow_balance"),
+		u64("shortfall"), i64("payment_at"), i64("defaulted_at"), u64("slot"), i64("timestamp")},
+	"DefaultCured": {pk("series"), pk("action"), u32("index"), i64("late_secs"), u64("slot"), i64("timestamp")},
 }
 
 // EventNames lists every known event, sorted (for tests and docs).

@@ -13,6 +13,7 @@ const SERIES_SEED = enc.encode("series");
 const INVESTOR_SEED = enc.encode("investor");
 const ACTION_SEED = enc.encode("action");
 const ENTITLEMENT_SEED = enc.encode("entitlement");
+const ROUTE_SEED = enc.encode("route");
 
 /** Series — seeds ["series", mint]. */
 export async function seriesPda(mint: Address, programId: Address = QUPON_BONDS_PROGRAM_ADDRESS): Promise<Address> {
@@ -59,4 +60,9 @@ export async function entitlementPda(
 			seeds: [ENTITLEMENT_SEED, getAddressEncoder().encode(action), getAddressEncoder().encode(owner)],
 		})
 	)[0];
+}
+
+/** Holder-chosen payout route — seeds ["route", investor] (plan 15 D6; pay_batch reads it, may be uninitialised). */
+export async function routePda(investor: Address, programId: Address = QUPON_BONDS_PROGRAM_ADDRESS): Promise<Address> {
+	return (await getProgramDerivedAddress({ programAddress: programId, seeds: [ROUTE_SEED, getAddressEncoder().encode(investor)] }))[0];
 }

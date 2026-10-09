@@ -181,14 +181,15 @@ fn pay_batch_rejects_substituted_accounts() {
     }
     let foreign_ent = entitlement_pda(&action_pda(&b2.series, 0), &y.pubkey());
 
-    // Entitlement from another action: [Entitlement, Investor, cash ATA] triples start at meta 7.
+    // Entitlement from another action: per-holder groups [Entitlement, Investor, route, cash, bond ATA] start at
+    // meta 9 (plan 15 D5/D6 layout).
     let mut ix = env.pay_ix(&b, 0, &owners);
-    ix.accounts[7].pubkey = foreign_ent;
+    ix.accounts[9].pubkey = foreign_ent;
     assert_err(env.send(&[ix], &[]), QuponError::InvalidParams);
 
     // Investor from another series.
     let mut ix = env.pay_ix(&b, 0, &owners);
-    ix.accounts[8].pubkey = investor_pda(&b2.series, &y.pubkey());
+    ix.accounts[10].pubkey = investor_pda(&b2.series, &y.pubkey());
     assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
 
     // Cash ATA of an attacker instead of the holder's registered one.
@@ -198,7 +199,7 @@ fn pay_batch_rejects_substituted_accounts() {
     );
     env.send(&[create], &[]).expect("attacker cash ATA");
     let mut ix = env.pay_ix(&b, 0, &owners);
-    ix.accounts[9].pubkey = ata(&attacker.pubkey(), &b.cash, &b.cash_tp);
+    ix.accounts[12].pubkey = ata(&attacker.pubkey(), &b.cash, &b.cash_tp);
     assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
 
     // Nobody was paid while the substitutions were refused.

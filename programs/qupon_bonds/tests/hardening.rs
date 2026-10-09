@@ -25,14 +25,17 @@ fn units_moved_after_resume_cannot_block_close() {
         ..intr_args(now)
     };
     env.settle_action(&b, redm, &[a.pubkey()]);
-    env.send(&[bond_transfer(&b, &a.pubkey(), &bob, 1)], &[&a])
-        .expect("transfer after resume");
-
+    // Plan 15 D5: pay_batch burned A's units in the same instruction it paid them, so after the register is resumed
+    // there is nothing left to move — the hazard this test guarded can no longer arise.
+    assert!(
+        env.send(&[bond_transfer(&b, &a.pubkey(), &bob, 1)], &[&a])
+            .is_err(),
+        "nothing left to transfer after an atomic redemption"
+    );
     let ix = env.retire_ix(&b, 0, &[a.pubkey()]);
-    env.send(&[ix], &[]).expect("retire A");
-    let ix = env.close_series_ix(&b, 0);
-    assert_err(env.send(&[ix], &[]), QuponError::SupplyNotZero);
+    env.send(&[ix], &[]).expect("retire A is a no-op");
 
+    // The stray path ([Investor, ATA]) stays available (legacy in-flight actions) and burns nothing here.
     let mut ix = env.retire_ix(&b, 0, &[]);
     ix.accounts.push(AccountMeta::new_readonly(
         investor_pda(&b.series, &bob),
@@ -42,7 +45,7 @@ fn units_moved_after_resume_cannot_block_close() {
         ata(&bob, &b.mint, &anchor_spl::token_2022::ID),
         false,
     ));
-    env.send(&[ix], &[]).expect("retire B's orphan unit");
+    env.send(&[ix], &[]).expect("stray path: nothing to burn");
     let act: CorporateAction = env.account(&action_pda(&b.series, 0));
     assert_eq!((act.total_retired, act.holders_retired), (10, 1));
 

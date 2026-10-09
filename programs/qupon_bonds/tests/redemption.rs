@@ -58,18 +58,10 @@ fn redemption_pays_principal_plus_final_coupon() {
     let s: Series = env.account(&b.series);
     assert_eq!(s.status, SeriesStatus::Retiring as u8);
 
-    // Close is refused while units are outstanding.
-    let ix = env.close_series_ix(&b, 0);
-    assert_err(env.send(&[ix], &[]), QuponError::SupplyNotZero);
-
-    // A suspended holder's frozen ATA is still burned (retire thaws it first).
-    let ix = env.set_status_ix(&b, &owners[0], true);
-    env.send(&[ix], &[]).expect("suspend");
-    let ix = env.retire_ix(&b, 0, &owners[..2]);
-    env.send(&[ix], &[]).expect("retire batch 1");
+    // Plan 15 D5: pay_batch already burned every paid unit, so a retire batch is a no-op and nothing is outstanding.
     let ix = env.retire_ix(&b, 0, &owners);
     env.send(&[ix], &[])
-        .expect("retire rest (idempotent for the first two)");
+        .expect("retire is idempotent after the atomic burn");
     for o in &owners {
         assert_eq!(env.balance(&ata(o, &b.mint, &spl_token_2022::ID)), 0);
         let e: Entitlement = env.account(&entitlement_pda(&pda, o));

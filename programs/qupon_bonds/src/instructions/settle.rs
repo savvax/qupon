@@ -3,10 +3,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     token_2022::Token2022,
-    token_2022_extensions::{pausable_resume, PausableToggle},
+    token_2022_extensions::{pausable_pause, pausable_resume, PausableToggle},
     token_interface::{
-        close_account, transfer_checked, CloseAccount, Mint, TokenAccount, TokenInterface,
-        TransferChecked,
+        burn_checked, close_account, thaw_account, transfer_checked, BurnChecked, CloseAccount,
+        Mint, ThawAccount, TokenAccount, TokenInterface, TransferChecked,
     },
 };
 
@@ -14,7 +14,9 @@ use crate::{
     clock::SeriesClock,
     constants::*,
     error::QuponError,
-    events::{ActionCompleted, ActionFunded, DefaultCured, EntitlementPaid, EscrowSwept},
+    events::{
+        ActionCompleted, ActionFunded, DefaultCured, EntitlementPaid, EscrowSwept, UnitsRetired,
+    },
     state::{
         ActionKind, ActionStatus, CorporateAction, Entitlement, EntitlementStatus, Investor,
         Series, SeriesStatus,
@@ -22,8 +24,8 @@ use crate::{
     utils::{mint_paused, require_operator},
 };
 
-/// Max `[Entitlement, Investor, holder cash ATA]` triples per `pay_batch` (docs/02 batch sizing).
-pub const PAY_BATCH_MAX: usize = 10;
+/// Max holders (5 accounts each) per `pay_batch` (docs/02 batch sizing; transaction size and CU).
+pub const PAY_BATCH_MAX: usize = 5;
 
 /// What the escrow must hold before anyone is paid.
 pub fn required_funding(a: &CorporateAction) -> Result<u64> {
@@ -134,8 +136,9 @@ pub fn handle_fund_action(ctx: Context<FundAction>, amount: u64) -> Result<()> {
 
 #[derive(Accounts)]
 pub struct PayBatch<'info> {
+    /// Anyone (pays the fee).
     pub authority: Signer<'info>,
-    #[account(has_one = cash_mint, has_one = tax_vault)]
+    #[account(has_one = cash_mint, has_one = tax_vault, has_one = mint)]
     pub series: Box<Account<'info, Series>>,
     #[account(
         mut,
@@ -151,10 +154,15 @@ pub struct PayBatch<'info> {
     #[account(mut)]
     pub tax_vault: Box<InterfaceAccount<'info, TokenAccount>>,
     pub cash_token_program: Interface<'info, TokenInterface>,
+    /// The bond mint: full redemptions burn the paid units in the same instruction (plan 15 D5).
+    #[account(mut)]
+    pub mint: Box<InterfaceAccount<'info, Mint>>,
+    pub bond_token_program: Program<'info, Token2022>,
 }
 
-/// `remaining_accounts` = N × [Entitlement (writable), Investor, holder cash ATA (writable)]. Idempotent: entitlements
-/// already Paid are skipped.
+/// `remaining_accounts` = N × [Entitlement (w), Investor, PayoutRoute PDA `["route", investor]`, destination cash
+/// account (w), holder bond ATA (w)]. Coupons and partial calls pay; full redemptions (REDM/MCAL) pay and burn the
+/// holder's units atomically. Idempotent: entitlements already Paid/Retired are skipped.
 pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<()> {
     let status = ctx.accounts.action.status;
     require!(
@@ -166,8 +174,28 @@ pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<(
         QuponError::WrongStatus
     );
     let rem = ctx.remaining_accounts;
-    require!(rem.len().is_multiple_of(3), QuponError::InvalidParams);
-    require!(rem.len() / 3 <= PAY_BATCH_MAX, QuponError::BatchTooLarge);
+    require!(rem.len().is_multiple_of(5), QuponError::InvalidParams);
+    require!(rem.len() / 5 <= PAY_BATCH_MAX, QuponError::BatchTooLarge);
+    let redemption = matches!(
+        ActionKind::try_from(ctx.accounts.action.kind)?,
+        ActionKind::Redemption | ActionKind::EarlyRedemption
+    );
+    let mint_key = ctx.accounts.mint.key();
+    let series_seeds: &[&[u8]] = &[SERIES_SEED, mint_key.as_ref(), &[ctx.accounts.series.bump]];
+    let bond_program = ctx.accounts.bond_token_program.key();
+    // Legacy series keep a redemption's register paused; Pausable blocks burns, so lift it for this batch only.
+    let repause = redemption && mint_paused(&ctx.accounts.mint.to_account_info())?;
+    if repause {
+        pausable_resume(CpiContext::new_with_signer(
+            bond_program,
+            PausableToggle {
+                token_program_id: ctx.accounts.bond_token_program.to_account_info(),
+                mint: ctx.accounts.mint.to_account_info(),
+                authority: ctx.accounts.series.to_account_info(),
+            },
+            &[series_seeds],
+        ))?;
+    }
 
     let action_key = ctx.accounts.action.key();
     let series_key = ctx.accounts.series.key();
@@ -176,7 +204,7 @@ pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<(
     let seeds: &[&[u8]] = &[ACTION_SEED, series_key.as_ref(), &index_le, &bump];
     let clock = Clock::get()?;
 
-    for t in rem.chunks(3) {
+    for t in rem.chunks(5) {
         // Read fresh from account data each time so a holder listed twice in one batch is paid once.
         let mut ent: Account<Entitlement> = Account::try_from(&t[0])?;
         require_keys_eq!(ent.action, action_key, QuponError::InvalidParams);
@@ -187,9 +215,17 @@ pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<(
             QuponError::AccountOwnerMismatch
         );
         require_keys_eq!(investor.owner, ent.owner, QuponError::AccountOwnerMismatch);
+        let (route, _) =
+            Pubkey::find_program_address(&[PAYOUT_ROUTE_SEED, investor.key().as_ref()], &crate::ID);
+        require_keys_eq!(t[2].key(), route, QuponError::InvalidParams);
         require_keys_eq!(
-            t[2].key(),
+            t[3].key(),
             investor.cash_ata,
+            QuponError::AccountOwnerMismatch
+        );
+        require_keys_eq!(
+            t[4].key(),
+            investor.bond_ata,
             QuponError::AccountOwnerMismatch
         );
         if ent.status != EntitlementStatus::Snapshotted as u8 {
@@ -219,10 +255,50 @@ pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<(
                 ctx.accounts.cash_mint.decimals,
             )
         };
-        pay(&t[2], payout)?;
+        pay(&t[3], payout)?;
         pay(&ctx.accounts.tax_vault.to_account_info(), ent.tax)?;
 
-        ent.status = EntitlementStatus::Paid as u8;
+        // Full redemption: burn the holder's units in the same instruction they are paid (plan 15 D5). The series
+        // PDA is the permanent delegate (and freeze authority: a suspended holder's ATA is thawed first). A holder may
+        // have burned units themselves after the snapshot: burn what is left, never more.
+        let mut burned = 0;
+        if redemption && !t[4].data_is_empty() {
+            let ata: InterfaceAccount<TokenAccount> = InterfaceAccount::try_from(&t[4])?;
+            require_keys_eq!(ata.mint, mint_key, QuponError::AccountMintMismatch);
+            if ata.is_frozen() {
+                thaw_account(CpiContext::new_with_signer(
+                    bond_program,
+                    ThawAccount {
+                        account: t[4].clone(),
+                        mint: ctx.accounts.mint.to_account_info(),
+                        authority: ctx.accounts.series.to_account_info(),
+                    },
+                    &[series_seeds],
+                ))?;
+            }
+            burned = ata.amount.min(ent.units);
+            if burned > 0 {
+                burn_checked(
+                    CpiContext::new_with_signer(
+                        bond_program,
+                        BurnChecked {
+                            mint: ctx.accounts.mint.to_account_info(),
+                            from: t[4].clone(),
+                            authority: ctx.accounts.series.to_account_info(),
+                        },
+                        &[series_seeds],
+                    ),
+                    burned,
+                    ctx.accounts.mint.decimals,
+                )?;
+            }
+        }
+
+        ent.status = if redemption {
+            EntitlementStatus::Retired
+        } else {
+            EntitlementStatus::Paid
+        } as u8;
         ent.paid_at = clock.unix_timestamp;
         ent.exit(&crate::ID)?;
 
@@ -236,12 +312,32 @@ pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<(
             .checked_add(payout)
             .ok_or(QuponError::MathOverflow)?;
         action.status = ActionStatus::Settling as u8;
+        if redemption {
+            action.total_retired = action
+                .total_retired
+                .checked_add(burned)
+                .ok_or(QuponError::MathOverflow)?;
+            action.holders_retired = action
+                .holders_retired
+                .checked_add(1)
+                .ok_or(QuponError::MathOverflow)?;
+            emit!(UnitsRetired {
+                series: series_key,
+                action: action_key,
+                index: action.index,
+                owner: ent.owner,
+                units: burned,
+                total_retired: action.total_retired,
+                slot: clock.slot,
+                timestamp: clock.unix_timestamp,
+            });
+        }
         emit!(EntitlementPaid {
             series: series_key,
             action: action_key,
             index: action.index,
             owner: ent.owner,
-            cash_ata: t[2].key(),
+            cash_ata: t[3].key(),
             units: ent.units,
             gross: ent.gross,
             tax: ent.tax,
@@ -251,6 +347,17 @@ pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<(
             slot: clock.slot,
             timestamp: clock.unix_timestamp,
         });
+    }
+    if repause {
+        pausable_pause(CpiContext::new_with_signer(
+            bond_program,
+            PausableToggle {
+                token_program_id: ctx.accounts.bond_token_program.to_account_info(),
+                mint: ctx.accounts.mint.to_account_info(),
+                authority: ctx.accounts.series.to_account_info(),
+            },
+            &[series_seeds],
+        ))?;
     }
     Ok(())
 }

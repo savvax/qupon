@@ -91,12 +91,9 @@ pub fn handle_retire_batch<'info>(ctx: Context<'info, RetireBatch<'info>>) -> Re
         } else {
             let e: Account<Entitlement> = Account::try_from(&p[0])?;
             require_keys_eq!(e.action, action_key, QuponError::InvalidParams);
-            if e.status == EntitlementStatus::Retired as u8 {
-                continue;
-            }
             let o = e.owner;
-            // Only the holder's canonical ATA: a side token account (frozen by default) must never be thawed here,
-            // or units moved into it later would be out of reach of every retire branch (review of 1510).
+            // Only the holder's canonical ATA, checked before anything is skipped: a side token account (frozen by
+            // default) must never be thawed here, or units moved into it later would be out of reach (review of 1510).
             require_keys_eq!(
                 p[1].key(),
                 anchor_spl::associated_token::get_associated_token_address_with_program_id(
@@ -104,6 +101,9 @@ pub fn handle_retire_batch<'info>(ctx: Context<'info, RetireBatch<'info>>) -> Re
                 ),
                 QuponError::AccountOwnerMismatch
             );
+            if e.status == EntitlementStatus::Retired as u8 {
+                continue; // paid and burned by pay_batch (plan 15 D5), or retired by an earlier batch
+            }
             ent = Some(e);
             o
         };
