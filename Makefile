@@ -89,4 +89,13 @@ web: ## run the web app locally
 status: ## task board
 	@bash ops/status.sh
 
-.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-ui demo-trade demo-squads api web status
+secrets-scan: ## gitleaks full-history secret scan (same as the CI secrets job; not part of verify)
+	@if command -v gitleaks >/dev/null 2>&1; then \
+		gitleaks git --redact --config .gitleaks.toml -v .; \
+	else \
+		echo "gitleaks not found. Install: brew install gitleaks (macOS),"; \
+		echo "or a pinned binary from https://github.com/gitleaks/gitleaks/releases (CI uses v8.24.2)."; \
+		exit 1; \
+	fi
+
+.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-ui demo-trade demo-squads api web status secrets-scan

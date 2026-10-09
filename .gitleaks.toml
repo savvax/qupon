@@ -1,0 +1,24 @@
+# gitleaks config (task 1503) — extends the built-in default ruleset and
+# allowlists paths that only ever contain public devnet data:
+#   config/devnet.json      — program ids and public devnet addresses
+#   fixtures/accounts/*.b64 — base64 dumps of public devnet accounts
+#   reports/*.md            — demo/nightly reports with explorer tx links
+title = "qupon"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "public devnet addresses and explorer links are not secrets"
+paths = [
+  '''^config/devnet\.json$''',
+  '''^fixtures/accounts/.*\.b64$''',
+  '''^reports/.*\.md$''',
+]
+
+# Dummy login password used by registrar API unit tests (local SQLite users,
+# fictional q.kz domain). Allowlisted by value, not path, so a real password
+# anywhere still fires.
+regexes = [
+  '''pw-123456789''',
+]
