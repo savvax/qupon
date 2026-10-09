@@ -61,6 +61,9 @@ demo-coupon: ## run the coupon scenario on devnet, write reports/demo-coupon.md
 demo: ## run the full lifecycle on devnet (S0–S4), write reports/demo-full.md
 	cd clients/ts && pnpm tsx scripts/demo-full.ts
 
+demo-plan15: ## devnet: every plan-15 instruction on a DEMO-clock series, write reports/demo-plan15.md
+	cd clients/ts && pnpm tsx scripts/demo-plan15.ts
+
 demo-seed: ## devnet: fresh series with 3 KYC'd holders (10/25/65), nothing announced — fresh data for the live demo
 	cd clients/ts && DEMO_SEED=1 pnpm tsx scripts/demo-full.ts
 
@@ -98,4 +101,4 @@ secrets-scan: ## gitleaks full-history secret scan (same as the CI secrets job; 
 		exit 1; \
 	fi
 
-.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-ui demo-trade demo-squads api web status secrets-scan
+.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-plan15 demo-ui demo-trade demo-squads api web status secrets-scan
