@@ -1,5 +1,4 @@
 import { Pulse } from "@/components/motion/Pulse";
-import { Icon } from "@/components/shell/icons";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -501,12 +500,12 @@ export default async function RegistrarActionPage({
             <Kpi
               label={t("kpi.proposal")}
               value={
-                <span className="num inline-flex items-center gap-1.5">
-                  {series ? bpsToPercent(series.couponRateBps, locale) : "—"}
-                  <Icon name="arrowRight" className="size-4 text-n400" />
-                  {action.proposalNewRateBps != null
-                    ? bpsToPercent(action.proposalNewRateBps, locale)
-                    : "—"}
+                <span className="num">
+                  {`${series ? bpsToPercent(series.couponRateBps, locale) : "—"} → ${
+                    action.proposalNewRateBps != null
+                      ? bpsToPercent(action.proposalNewRateBps, locale)
+                      : "—"
+                  }`}
                 </span>
               }
             />
@@ -653,10 +652,7 @@ export default async function RegistrarActionPage({
                 <span className="num font-semibold">
                   {series ? bpsToPercent(series.couponRateBps, locale) : "—"}
                 </span>{" "}
-                <Icon
-                  name="arrowRight"
-                  className="inline size-4 align-[-2px] text-n400"
-                />{" "}
+                <span className="text-n400">→</span>{" "}
                 <span className="num font-semibold text-g700">
                   {action.proposalNewRateBps != null
                     ? bpsToPercent(action.proposalNewRateBps, locale)

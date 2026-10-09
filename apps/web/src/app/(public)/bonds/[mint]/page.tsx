@@ -29,7 +29,7 @@ import {
   type EntitlementDTO,
   type ScheduleItem,
 } from "@/lib/api";
-import { bpsToPercent, formatDate, formatDateTime, shortKey } from "@/lib/format";
+import { bpsToPercent, formatDate, formatDateTime } from "@/lib/format";
 import { getKaseSeriesTicker } from "@/lib/kase";
 import { moneyFlowOf } from "@/lib/moneyFlow";
 import { getNetwork } from "@/lib/network";

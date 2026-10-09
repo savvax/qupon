@@ -8,6 +8,7 @@ import { WalletButton } from "@/components/wallet/WalletButton";
 import { latestSlot, MOCK_API } from "@/lib/api";
 import { getNetwork } from "@/lib/network";
 import { cx } from "@/lib/ui/cx";
+import { HideOnPath } from "./HideOnPath";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { Logo } from "./Logo";
 import { MobileNav } from "./MobileNav";
@@ -125,7 +126,10 @@ export async function PublicShell({ children }: { children: ReactNode }) {
         </div>
         <div className="hidden border-t border-n100 bg-n50/80 sm:block">
           <div className={`${CONTAINER} flex h-12 items-center justify-between gap-4`}>
-            <ViewAs demo={network.demoLogin} />
+            <HideOnPath path="/login">
+              <ViewAs demo={network.demoLogin} />
+            </HideOnPath>
+            <span aria-hidden className="flex-1" />
             <NetworkChip slot={slot} live={!MOCK_API} />
           </div>
         </div>

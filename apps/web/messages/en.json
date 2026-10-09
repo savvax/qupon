@@ -255,7 +255,7 @@
     },
     "flow": {
       "title": "Follow one coupon to the last tenge",
-      "lead": "The issuer funds an escrow; the program pays every holder their exact share, sends withheld tax to the tax vault and routes bank payouts through the paying agent. Each band is proportional to the money it carries, and each leg is a transaction you can open.",
+      "lead": "The issuer funds an escrow; the program pays each holder their exact share, sends withheld tax to the tax vault and bank payouts through the paying agent. Band widths follow the money; every leg is a transaction.",
       "terms": "Terms on this page"
     }
   },

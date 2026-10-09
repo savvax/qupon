@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { StableLabel } from "@/components/i18n/StableLabel";
 import { cx } from "@/lib/ui/cx";
 
 export type Provenance =
@@ -70,7 +71,8 @@ export function ProvenanceChip({
   const body = (
     <>
       <Glyph kind={kind} />
-      {children ?? t(kind)}
+      {/* default labels reserve the longer locale's width: switching EN ↔ RU never moves what follows */}
+      {children ?? <StableLabel align="start">{t(kind)}</StableLabel>}
     </>
   );
   return href ? (

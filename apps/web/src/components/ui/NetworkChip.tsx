@@ -77,7 +77,12 @@ export function NetworkChip({
           live && "qp-live",
         )}
       />
-      <span className="font-bold text-n900">{t(network.network)}</span>
+      <span
+        data-network={network.network}
+        className={cx("font-bold", network.mainnet ? "text-err-fg" : "text-n900")}
+      >
+        {t(network.network)}
+      </span>
       {slot !== undefined && (
         <>
           <span aria-hidden className="text-n300">

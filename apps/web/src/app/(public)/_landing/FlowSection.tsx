@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { StableText } from "@/components/i18n/StableLabel";
+import { StableLabel, StableText } from "@/components/i18n/StableLabel";
 import { GlossaryTerm, type GlossaryKey } from "@/components/ui/GlossaryTerm";
 import { MoneyFlow, type MoneyFlowProps } from "@/components/ui/MoneyFlow";
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
@@ -50,7 +50,9 @@ export async function FlowSection({ live }: { live: Live }) {
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-n600">
         <ProvenanceChip kind={real ? "onchain" : "simulated"} />
-        <span className="text-n500">{t("terms")}:</span>
+        <span className="text-n500">
+          <StableLabel align="start">{t("terms")}</StableLabel>:
+        </span>
         {TERMS.map((k) => (
           <GlossaryTerm key={k} term={k} stable />
         ))}
