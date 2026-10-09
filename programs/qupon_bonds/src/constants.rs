@@ -6,6 +6,8 @@ pub const ACTION_SEED: &[u8] = b"action";
 pub const ENTITLEMENT_SEED: &[u8] = b"entitlement";
 pub const TRADE_SEED: &[u8] = b"trade";
 pub const CHECKPOINT_SEED: &[u8] = b"ckpt";
+/// Domain separator of the order-independent snapshot hash (hash_scheme 1).
+pub const SNAP_HASH_DOMAIN: &[u8] = b"qupon:snap:v1";
 /// Standard seed of the transfer-hook validation account (spl-transfer-hook-interface).
 pub const EXTRA_METAS_SEED: &[u8] = b"extra-account-metas";
 

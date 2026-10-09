@@ -24,8 +24,7 @@ import {
 	getReleaseTradeInstruction,
 	getTradeAdmissionDecoder,
 	getTradeAdmissionSize,
-	type TradeAdmission,
-} from "../generated/index.js";
+	type TradeAdmission, findCheckpointPda } from "../generated/index.js";
 import {
 	MEMO_PROGRAM_ADDRESS,
 	cashAmount,
@@ -136,6 +135,8 @@ async function releaseIx(registrar: KeyPairSigner, info: SeriesInfo, adm: Admitt
 		escrow: adm.data.escrow,
 		seller: await investorPda(info.pda, adm.data.seller),
 		sellerBondAta: await ata(adm.data.seller, info.mint, TOKEN_2022_PROGRAM_ADDRESS),
+		// Hooked series: the escrow owner's record-date checkpoint is closed with the admission (unused otherwise).
+		escrowCheckpoint: (await findCheckpointPda({ series: info.pda, owner: adm.data.swapDvp }))[0],
 		force,
 	});
 }

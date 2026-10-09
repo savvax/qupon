@@ -307,6 +307,7 @@ func DecodeCorporateAction(data []byte) (*CorporateAction, error) {
 	if a.Reserved, err = fixed64(r); err != nil {
 		return nil, fmt.Errorf("action: reserved: %w", err)
 	}
+	a.HashScheme = a.Reserved[0]
 	if !r.Done() {
 		return nil, fmt.Errorf("action: %d trailing bytes", r.Remaining())
 	}

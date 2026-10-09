@@ -87,6 +87,11 @@ pub fn handle_init_hook(ctx: Context<InitHook>) -> Result<()> {
         );
     }
     require!(ctx.accounts.series.hook == 0, QuponError::AlreadyProcessed);
+    // Every position must get its checkpoint at registration, so the gate is armed before anybody holds units.
+    require!(
+        ctx.accounts.series.total_issued == 0 && ctx.accounts.series.ckpt_count == 0,
+        QuponError::SupplyNotZero
+    );
 
     let metas = extra_metas()?;
     let space = ExtraAccountMetaList::size_of(metas.len())
@@ -110,31 +115,100 @@ pub fn handle_init_hook(ctx: Context<InitHook>) -> Result<()> {
     Ok(())
 }
 
-#[derive(Accounts)]
-#[instruction(owner: Pubkey)]
-pub struct InitCheckpoint<'info> {
-    #[account(mut)]
-    pub payer: Signer<'info>,
-    pub series: Box<Account<'info, Series>>,
-    #[account(
-        init,
-        payer = payer,
-        space = 8 + Checkpoint::INIT_SPACE,
-        seeds = [CHECKPOINT_SEED, series.key().as_ref(), owner.as_ref()],
-        bump
-    )]
-    pub checkpoint: Box<Account<'info, Checkpoint>>,
-    pub system_program: Program<'info, System>,
+/// Create `owner`'s checkpoint on a hooked series (registration, trade admission). A checkpoint created after the
+/// pending record's `record_at` starts at its `record_seq`: the position is a frozen, freshly thawed ATA or escrow that
+/// held nothing at `record_at`, and it is counted in `ckpt_late` so completeness still adds up.
+pub fn create_checkpoint<'info>(
+    payer: &AccountInfo<'info>,
+    target: &AccountInfo<'info>,
+    system_program: &AccountInfo<'info>,
+    series: &mut Account<'info, Series>,
+    owner: &Pubkey,
+) -> Result<()> {
+    let series_key = series.key();
+    let (pda, bump) = Pubkey::find_program_address(
+        &[CHECKPOINT_SEED, series_key.as_ref(), owner.as_ref()],
+        &crate::ID,
+    );
+    require_keys_eq!(target.key(), pda, QuponError::InvalidParams);
+    if !target.data_is_empty() {
+        return Ok(());
+    }
+    create_pda_account(
+        payer,
+        target,
+        system_program,
+        8 + Checkpoint::INIT_SPACE,
+        &[
+            CHECKPOINT_SEED,
+            series_key.as_ref(),
+            owner.as_ref(),
+            &[bump],
+        ],
+    )?;
+    let late = series.record_at != 0 && Clock::get()?.unix_timestamp >= series.record_at;
+    let c = Checkpoint {
+        bump,
+        series: series_key,
+        owner: *owner,
+        last_seq: if late { series.record_seq } else { 0 },
+    };
+    c.try_serialize(&mut &mut target.try_borrow_mut_data()?[..])?;
+    series.ckpt_count = series
+        .ckpt_count
+        .checked_add(1)
+        .ok_or(QuponError::MathOverflow)?;
+    if late {
+        series.ckpt_late = series
+            .ckpt_late
+            .checked_add(1)
+            .ok_or(QuponError::MathOverflow)?;
+    }
+    Ok(())
 }
 
-/// Create an owner's checkpoint (anyone pays; registration and trade admission create them in the product flow).
-pub fn handle_init_checkpoint(ctx: Context<InitCheckpoint>, owner: Pubkey) -> Result<()> {
-    let c = &mut ctx.accounts.checkpoint;
-    c.bump = ctx.bumps.checkpoint;
-    c.series = ctx.accounts.series.key();
-    c.owner = owner;
-    c.last_seq = 0;
+/// The gate itself, shared by `execute` and the program's own unit moves (Token-2022 would re-enter this program,
+/// which Solana forbids, so those paths burn + mint and check here instead).
+pub fn require_gate_open(
+    series: &Account<Series>,
+    src_owner: &Pubkey,
+    src_ckpt: &AccountInfo,
+    dst_owner: &Pubkey,
+    dst_ckpt: &AccountInfo,
+) -> Result<()> {
+    if series.hook == 0 || series.record_at == 0 || Clock::get()?.unix_timestamp < series.record_at
+    {
+        return Ok(());
+    }
+    let kind = ActionKind::try_from(series.record_kind)?;
+    require!(
+        !matches!(kind, ActionKind::Redemption | ActionKind::EarlyRedemption),
+        QuponError::RecordLocked
+    );
+    let key = series.key();
+    require!(
+        snapshotted(src_ckpt, &key, src_owner, series.record_seq)?
+            && snapshotted(dst_ckpt, &key, dst_owner, series.record_seq)?,
+        QuponError::HolderNotSnapshotted
+    );
     Ok(())
+}
+
+/// Leaf of the order-independent snapshot hash (hash_scheme 1); XOR it in to add a holder, XOR again to remove it.
+pub fn set_hash_leaf(action: &Pubkey, owner: &Pubkey, units: u64) -> [u8; 32] {
+    solana_sha256_hasher::hashv(&[
+        SNAP_HASH_DOMAIN,
+        action.as_ref(),
+        owner.as_ref(),
+        &units.to_le_bytes(),
+    ])
+    .to_bytes()
+}
+
+pub fn xor_into(acc: &mut [u8; 32], leaf: &[u8; 32]) {
+    for (a, l) in acc.iter_mut().zip(leaf) {
+        *a ^= l;
+    }
 }
 
 #[derive(Accounts)]
@@ -169,30 +243,15 @@ pub fn handle_execute(ctx: Context<Execute>, _amount: u64) -> Result<()> {
         })?,
         QuponError::NotTransferring
     );
-    let s = &ctx.accounts.series;
-    if s.record_at == 0 || Clock::get()?.unix_timestamp < s.record_at {
-        return Ok(());
-    }
-    let kind = ActionKind::try_from(s.record_kind)?;
-    require!(
-        !matches!(kind, ActionKind::Redemption | ActionKind::EarlyRedemption),
-        QuponError::RecordLocked
-    );
-    let series = s.key();
-    for (token, ckpt) in [
-        (&ctx.accounts.source, &ctx.accounts.source_checkpoint),
-        (
-            &ctx.accounts.destination,
-            &ctx.accounts.destination_checkpoint,
-        ),
-    ] {
-        let owner = token_account(token, |a| a.base.owner)?;
-        require!(
-            snapshotted(ckpt, &series, &owner, s.record_seq)?,
-            QuponError::HolderNotSnapshotted
-        );
-    }
-    Ok(())
+    let src_owner = token_account(&ctx.accounts.source, |a| a.base.owner)?;
+    let dst_owner = token_account(&ctx.accounts.destination, |a| a.base.owner)?;
+    require_gate_open(
+        &ctx.accounts.series,
+        &src_owner,
+        &ctx.accounts.source_checkpoint,
+        &dst_owner,
+        &ctx.accounts.destination_checkpoint,
+    )
 }
 
 fn token_account<T>(
@@ -206,7 +265,7 @@ fn token_account<T>(
 }
 
 /// `true` if `info` is the owner's checkpoint PDA and it already covers record `seq`.
-fn snapshotted(info: &AccountInfo, series: &Pubkey, owner: &Pubkey, seq: u32) -> Result<bool> {
+pub fn snapshotted(info: &AccountInfo, series: &Pubkey, owner: &Pubkey, seq: u32) -> Result<bool> {
     let (pda, _) = Pubkey::find_program_address(
         &[CHECKPOINT_SEED, series.as_ref(), owner.as_ref()],
         &crate::ID,
@@ -217,23 +276,4 @@ fn snapshotted(info: &AccountInfo, series: &Pubkey, owner: &Pubkey, seq: u32) ->
     }
     let c = Checkpoint::try_deserialize(&mut &info.try_borrow_data()?[..])?;
     Ok(c.last_seq >= seq)
-}
-
-#[derive(Accounts)]
-pub struct MarkSnapshotted<'info> {
-    pub series: Box<Account<'info, Series>>,
-    #[account(mut, has_one = series)]
-    pub checkpoint: Box<Account<'info, Checkpoint>>,
-}
-
-/// SPIKE 1509 stand-in for `snapshot_batch` on a hooked series: after `record_at`, mark the owner's position as
-/// snapshotted for the pending record (anyone). Task 1510 folds this into `snapshot_batch` with the entitlement.
-pub fn handle_mark_snapshotted(ctx: Context<MarkSnapshotted>) -> Result<()> {
-    let s = &ctx.accounts.series;
-    require!(
-        s.record_at != 0 && Clock::get()?.unix_timestamp >= s.record_at,
-        QuponError::TooEarly
-    );
-    ctx.accounts.checkpoint.last_seq = s.record_seq;
-    Ok(())
 }

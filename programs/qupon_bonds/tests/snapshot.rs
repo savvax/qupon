@@ -27,14 +27,21 @@ fn struck() -> (Env, Bond, Vec<(anchor_lang::prelude::Pubkey, u64)>) {
     (env, b, holders)
 }
 
-/// Independent recomputation: sha256 chain over holders sorted by owner, starting from 32 zero bytes.
-fn expected_hash(holders: &[(anchor_lang::prelude::Pubkey, u64)]) -> [u8; 32] {
-    holders.iter().fold([0u8; 32], |prev, (owner, units)| {
+/// Independent recomputation of the order-independent set hash (hash_scheme 1, plan 15 D3):
+/// XOR over holders of sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units_le).
+fn expected_hash(b: &Bond, holders: &[(anchor_lang::prelude::Pubkey, u64)]) -> [u8; 32] {
+    let action = action_pda(&b.series, 0);
+    holders.iter().fold([0u8; 32], |mut acc, (owner, units)| {
         let mut h = Sha256::new();
-        h.update(prev);
+        h.update(b"qupon:snap:v1");
+        h.update(action.as_ref());
         h.update(owner.as_ref());
         h.update(units.to_le_bytes());
-        h.finalize().into()
+        let leaf: [u8; 32] = h.finalize().into();
+        for (a, l) in acc.iter_mut().zip(leaf) {
+            *a ^= l;
+        }
+        acc
     })
 }
 
@@ -55,7 +62,7 @@ fn snapshot_one_batch_matches_brief_and_hash() {
         (a.total_gross, a.total_tax, a.total_net),
         (500_000, 0, 500_000)
     );
-    assert_eq!(a.snapshot_hash, expected_hash(&holders));
+    assert_eq!(a.snapshot_hash, expected_hash(&b, &holders));
     for (owner, units) in &holders {
         let e: Entitlement = env.account(&entitlement_pda(&pda, owner));
         assert_eq!((e.owner, e.units), (*owner, *units));
@@ -99,7 +106,7 @@ fn snapshot_in_two_batches_is_idempotent() {
     assert_eq!((a.units_snapshotted, a.total_gross), (100, 500_000));
     assert_eq!(
         a.snapshot_hash,
-        expected_hash(&holders),
+        expected_hash(&b, &holders),
         "same hash as one batch"
     );
 }
@@ -121,12 +128,9 @@ fn strike_guards() {
     env.set_clock(now + 60);
     let mallory = Keypair::new();
     env.svm.airdrop(&mallory.pubkey(), 1_000_000_000).unwrap();
+    // Striking is permissionless (plan 15 D2): the record date is due, so anyone may freeze the register.
     let ix = env.strike_ix(&b, &mallory.pubkey(), 0);
-    assert_err(env.send(&[ix], &[&mallory]), QuponError::Unauthorized);
-
-    let pa = env.paying_agent.insecure_clone();
-    let ix = env.strike_ix(&b, &pa.pubkey(), 0);
-    env.send(&[ix], &[&pa]).expect("paying agent may strike");
+    env.send(&[ix], &[&mallory]).expect("anyone may strike");
     let ix = env.strike_ix(&b, &env.registrar.pubkey(), 0);
     assert_err(env.send(&[ix], &[]), QuponError::WrongStatus);
 }
@@ -175,14 +179,14 @@ fn batch_limits() {
 
 #[test]
 fn snapshot_review_paths() {
-    // Duplicate holder in one batch is counted once; non-operator crank refused; paying agent allowed.
+    // Duplicate holder in one batch is counted once; anyone may crank (plan 15 D2), re-sending is a no-op.
     let (mut env, b, holders) = struck();
     let a0 = holders[0].0;
     let mut ix = env.snapshot_ix(&b, 0, &[a0]);
     let mallory = Keypair::new();
     env.svm.airdrop(&mallory.pubkey(), 1_000_000_000).unwrap();
     ix.accounts[0].pubkey = mallory.pubkey();
-    assert_err(env.send(&[ix], &[&mallory]), QuponError::Unauthorized);
+    env.send(&[ix], &[&mallory]).expect("anyone snapshots");
 
     let mut ix = env.snapshot_ix(&b, 0, &[a0, a0]);
     let pa = env.paying_agent.insecure_clone();

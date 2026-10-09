@@ -204,34 +204,53 @@ func Run(ctx context.Context, rd Reader, actionPDA solana.PublicKey) (*Report, e
 	}
 
 	var hash [32]byte // starts zeroed, like a fresh CorporateAction
+	// Hooked series (plan 15 D1'): the transfer-hook gate guarantees each snapshotted position equals its balance at
+	// record_at, and positions move again after their snapshot, so units come from the entitlements; amounts, totals
+	// and the hash are still recomputed independently. Legacy series read the ATAs at the snapshot slot.
+	hooked := series.Reserved[0] == 1
 	seen := make(map[solana.PublicKey]bool, len(investors))
 	for _, ir := range investors {
 		inv := ir.Investor
 		seen[inv.Owner] = true
 
 		var expected *Entry
-		ta, err := rd.FetchTokenAccountAt(ctx, inv.BondATA, action.SnapshotSlot)
-		if err != nil {
-			return nil, fmt.Errorf("reconcile %s: fetch ata %s: %w", actionPDA, inv.BondATA, err)
-		}
-		valid := ta != nil && ta.Owner == inv.Owner && ta.Mint == series.Mint && ta.Amount > 0
-		if ta != nil && (ta.Owner != inv.Owner || ta.Mint != series.Mint) {
-			rep.Mismatches = append(rep.Mismatches, Mismatch{
-				Owner:  inv.Owner.String(),
-				Reason: ReasonATAMismatch,
-			})
+		var units uint64
+		valid := false
+		if hooked {
+			if on, ok := byOwner[inv.Owner]; ok && on.Units > 0 {
+				units, valid = on.Units, true
+			}
+		} else {
+			ta, err := rd.FetchTokenAccountAt(ctx, inv.BondATA, action.SnapshotSlot)
+			if err != nil {
+				return nil, fmt.Errorf("reconcile %s: fetch ata %s: %w", actionPDA, inv.BondATA, err)
+			}
+			valid = ta != nil && ta.Owner == inv.Owner && ta.Mint == series.Mint && ta.Amount > 0
+			if ta != nil && (ta.Owner != inv.Owner || ta.Mint != series.Mint) {
+				rep.Mismatches = append(rep.Mismatches, Mismatch{
+					Owner:  inv.Owner.String(),
+					Reason: ReasonATAMismatch,
+				})
+			}
+			if ta != nil {
+				units = ta.Amount
+			}
 		}
 		if valid {
-			e, err := entitlement.Compute(ta.Amount, series.FaceValue, action.RateBps, dc,
+			e, err := entitlement.Compute(units, series.FaceValue, action.RateBps, dc,
 				action.AccrualDays, inv.TaxRateBps, kind, action.FactorBps)
 			if err != nil {
 				return nil, fmt.Errorf("reconcile %s: compute %s: %w", actionPDA, inv.Owner, err)
 			}
-			exp := entryFromEntitlement(&e, ta.Amount)
+			exp := entryFromEntitlement(&e, units)
 			expected = &exp
 			rep.Holders++
 			rep.ExpectedTotals.add(exp)
-			hash = hashStep(&hash, inv.Owner, ta.Amount)
+			if action.HashScheme == 1 {
+				xorInto(&hash, SetHashLeaf(actionPDA, inv.Owner, units))
+			} else {
+				hash = hashStep(&hash, inv.Owner, units)
+			}
 		}
 
 		on, ok := byOwner[inv.Owner]
@@ -280,6 +299,22 @@ func Run(ctx context.Context, rd Reader, actionPDA solana.PublicKey) (*Report, e
 	rep.TotalsMatch = rep.ExpectedTotals == rep.OnchainTotals
 	rep.Ok = len(rep.Mismatches) == 0 && rep.HashMatches && rep.TotalsMatch
 	return rep, nil
+}
+
+// SetHashLeaf is hook.rs set_hash_leaf: sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units_le).
+func SetHashLeaf(action, owner solana.PublicKey, units uint64) [32]byte {
+	buf := make([]byte, 0, 13+32+32+8)
+	buf = append(buf, "qupon:snap:v1"...)
+	buf = append(buf, action[:]...)
+	buf = append(buf, owner[:]...)
+	buf = binary.LittleEndian.AppendUint64(buf, units)
+	return sha256.Sum256(buf)
+}
+
+func xorInto(acc *[32]byte, leaf [32]byte) {
+	for i := range acc {
+		acc[i] ^= leaf[i]
+	}
 }
 
 // hashStep is snapshot.rs snapshot_hash_step: sha256(prev ‖ owner ‖ units_le).

@@ -34,7 +34,17 @@ result: number; completedAt: bigint;
 /** PCAL only: share of face redeemed, bps. */
 factorBps: number; 
 /** Σ holder principal (REDM/MCAL/PCAL); escrow must hold total_net + total_tax + total_principal. */
-totalPrincipal: bigint; reserved: ReadonlyUint8Array;  };
+totalPrincipal: bigint; 
+/**
+ * 0 = rolling `sha256(prev ‖ owner ‖ units)` over owner-sorted batches; 1 = order-independent set hash: XOR of
+ * `sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units)` per holder (plan 15 D3).
+ */
+hashScheme: number; 
+/**
+ * Hooked series: checkpoints advanced by this action's snapshot (completeness = positions_done + ckpt_late ==
+ * ckpt_count).
+ */
+positionsDone: number; reserved: ReadonlyUint8Array;  };
 
 export type CorporateActionArgs = { bump: number; series: Address; index: number; 
 /** [`ActionKind`]. */
@@ -58,16 +68,26 @@ result: number; completedAt: number | bigint;
 /** PCAL only: share of face redeemed, bps. */
 factorBps: number; 
 /** Σ holder principal (REDM/MCAL/PCAL); escrow must hold total_net + total_tax + total_principal. */
-totalPrincipal: number | bigint; reserved: ReadonlyUint8Array;  };
+totalPrincipal: number | bigint; 
+/**
+ * 0 = rolling `sha256(prev ‖ owner ‖ units)` over owner-sorted batches; 1 = order-independent set hash: XOR of
+ * `sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units)` per holder (plan 15 D3).
+ */
+hashScheme: number; 
+/**
+ * Hooked series: checkpoints advanced by this action's snapshot (completeness = positions_done + ckpt_late ==
+ * ckpt_count).
+ */
+positionsDone: number; reserved: ReadonlyUint8Array;  };
 
 /** Gets the encoder for {@link CorporateActionArgs} account data. */
 export function getCorporateActionEncoder(): FixedSizeEncoder<CorporateActionArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['bump', getU8Encoder()], ['series', getAddressEncoder()], ['index', getU32Encoder()], ['kind', getU8Encoder()], ['mandatory', getU8Encoder()], ['corpId', fixEncoderSize(getBytesEncoder(), 16)], ['officialId', fixEncoderSize(getBytesEncoder(), 16)], ['announcedAt', getI64Encoder()], ['recordAt', getI64Encoder()], ['paymentAt', getI64Encoder()], ['periodStart', getI64Encoder()], ['periodEnd', getI64Encoder()], ['accrualDays', getU32Encoder()], ['rateBps', getU32Encoder()], ['perUnitGross', getU64Encoder()], ['perUnitPrincipal', getU64Encoder()], ['cashMint', getAddressEncoder()], ['escrow', getAddressEncoder()], ['status', getU8Encoder()], ['snapshotSlot', getU64Encoder()], ['snapshotHash', fixEncoderSize(getBytesEncoder(), 32)], ['unitsSnapshotted', getU64Encoder()], ['holdersSnapshotted', getU32Encoder()], ['holdersPaid', getU32Encoder()], ['totalGross', getU64Encoder()], ['totalTax', getU64Encoder()], ['totalNet', getU64Encoder()], ['totalPaid', getU64Encoder()], ['totalRetired', getU64Encoder()], ['holdersRetired', getU32Encoder()], ['proposalNewRateBps', getU32Encoder()], ['proposalNewMaturity', getI64Encoder()], ['votingEndsAt', getI64Encoder()], ['votesFor', getU64Encoder()], ['votesAgainst', getU64Encoder()], ['votesAbstain', getU64Encoder()], ['result', getU8Encoder()], ['completedAt', getI64Encoder()], ['factorBps', getU16Encoder()], ['totalPrincipal', getU64Encoder()], ['reserved', fixEncoderSize(getBytesEncoder(), 64)]]), (value) => ({ ...value, discriminator: CORPORATE_ACTION_DISCRIMINATOR }));
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['bump', getU8Encoder()], ['series', getAddressEncoder()], ['index', getU32Encoder()], ['kind', getU8Encoder()], ['mandatory', getU8Encoder()], ['corpId', fixEncoderSize(getBytesEncoder(), 16)], ['officialId', fixEncoderSize(getBytesEncoder(), 16)], ['announcedAt', getI64Encoder()], ['recordAt', getI64Encoder()], ['paymentAt', getI64Encoder()], ['periodStart', getI64Encoder()], ['periodEnd', getI64Encoder()], ['accrualDays', getU32Encoder()], ['rateBps', getU32Encoder()], ['perUnitGross', getU64Encoder()], ['perUnitPrincipal', getU64Encoder()], ['cashMint', getAddressEncoder()], ['escrow', getAddressEncoder()], ['status', getU8Encoder()], ['snapshotSlot', getU64Encoder()], ['snapshotHash', fixEncoderSize(getBytesEncoder(), 32)], ['unitsSnapshotted', getU64Encoder()], ['holdersSnapshotted', getU32Encoder()], ['holdersPaid', getU32Encoder()], ['totalGross', getU64Encoder()], ['totalTax', getU64Encoder()], ['totalNet', getU64Encoder()], ['totalPaid', getU64Encoder()], ['totalRetired', getU64Encoder()], ['holdersRetired', getU32Encoder()], ['proposalNewRateBps', getU32Encoder()], ['proposalNewMaturity', getI64Encoder()], ['votingEndsAt', getI64Encoder()], ['votesFor', getU64Encoder()], ['votesAgainst', getU64Encoder()], ['votesAbstain', getU64Encoder()], ['result', getU8Encoder()], ['completedAt', getI64Encoder()], ['factorBps', getU16Encoder()], ['totalPrincipal', getU64Encoder()], ['hashScheme', getU8Encoder()], ['positionsDone', getU32Encoder()], ['reserved', fixEncoderSize(getBytesEncoder(), 59)]]), (value) => ({ ...value, discriminator: CORPORATE_ACTION_DISCRIMINATOR }));
 }
 
 /** Gets the decoder for {@link CorporateAction} account data. */
 export function getCorporateActionDecoder(): FixedSizeDecoder<CorporateAction> {
-    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['bump', getU8Decoder()], ['series', getAddressDecoder()], ['index', getU32Decoder()], ['kind', getU8Decoder()], ['mandatory', getU8Decoder()], ['corpId', fixDecoderSize(getBytesDecoder(), 16)], ['officialId', fixDecoderSize(getBytesDecoder(), 16)], ['announcedAt', getI64Decoder()], ['recordAt', getI64Decoder()], ['paymentAt', getI64Decoder()], ['periodStart', getI64Decoder()], ['periodEnd', getI64Decoder()], ['accrualDays', getU32Decoder()], ['rateBps', getU32Decoder()], ['perUnitGross', getU64Decoder()], ['perUnitPrincipal', getU64Decoder()], ['cashMint', getAddressDecoder()], ['escrow', getAddressDecoder()], ['status', getU8Decoder()], ['snapshotSlot', getU64Decoder()], ['snapshotHash', fixDecoderSize(getBytesDecoder(), 32)], ['unitsSnapshotted', getU64Decoder()], ['holdersSnapshotted', getU32Decoder()], ['holdersPaid', getU32Decoder()], ['totalGross', getU64Decoder()], ['totalTax', getU64Decoder()], ['totalNet', getU64Decoder()], ['totalPaid', getU64Decoder()], ['totalRetired', getU64Decoder()], ['holdersRetired', getU32Decoder()], ['proposalNewRateBps', getU32Decoder()], ['proposalNewMaturity', getI64Decoder()], ['votingEndsAt', getI64Decoder()], ['votesFor', getU64Decoder()], ['votesAgainst', getU64Decoder()], ['votesAbstain', getU64Decoder()], ['result', getU8Decoder()], ['completedAt', getI64Decoder()], ['factorBps', getU16Decoder()], ['totalPrincipal', getU64Decoder()], ['reserved', fixDecoderSize(getBytesDecoder(), 64)]]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['bump', getU8Decoder()], ['series', getAddressDecoder()], ['index', getU32Decoder()], ['kind', getU8Decoder()], ['mandatory', getU8Decoder()], ['corpId', fixDecoderSize(getBytesDecoder(), 16)], ['officialId', fixDecoderSize(getBytesDecoder(), 16)], ['announcedAt', getI64Decoder()], ['recordAt', getI64Decoder()], ['paymentAt', getI64Decoder()], ['periodStart', getI64Decoder()], ['periodEnd', getI64Decoder()], ['accrualDays', getU32Decoder()], ['rateBps', getU32Decoder()], ['perUnitGross', getU64Decoder()], ['perUnitPrincipal', getU64Decoder()], ['cashMint', getAddressDecoder()], ['escrow', getAddressDecoder()], ['status', getU8Decoder()], ['snapshotSlot', getU64Decoder()], ['snapshotHash', fixDecoderSize(getBytesDecoder(), 32)], ['unitsSnapshotted', getU64Decoder()], ['holdersSnapshotted', getU32Decoder()], ['holdersPaid', getU32Decoder()], ['totalGross', getU64Decoder()], ['totalTax', getU64Decoder()], ['totalNet', getU64Decoder()], ['totalPaid', getU64Decoder()], ['totalRetired', getU64Decoder()], ['holdersRetired', getU32Decoder()], ['proposalNewRateBps', getU32Decoder()], ['proposalNewMaturity', getI64Decoder()], ['votingEndsAt', getI64Decoder()], ['votesFor', getU64Decoder()], ['votesAgainst', getU64Decoder()], ['votesAbstain', getU64Decoder()], ['result', getU8Decoder()], ['completedAt', getI64Decoder()], ['factorBps', getU16Decoder()], ['totalPrincipal', getU64Decoder()], ['hashScheme', getU8Decoder()], ['positionsDone', getU32Decoder()], ['reserved', fixDecoderSize(getBytesDecoder(), 59)]]);
 }
 
 /** Gets the codec for {@link CorporateAction} account data. */

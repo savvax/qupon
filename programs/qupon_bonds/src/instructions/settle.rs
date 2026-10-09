@@ -20,7 +20,7 @@ use crate::{
         ActionKind, ActionStatus, CorporateAction, Entitlement, EntitlementStatus, Investor,
         Series, SeriesStatus,
     },
-    utils::require_operator,
+    utils::{mint_paused, require_operator},
 };
 
 /// Max `[Entitlement, Investor, holder cash ATA]` triples per `pay_batch` (docs/02 batch sizing).
@@ -142,7 +142,6 @@ pub struct PayBatch<'info> {
 /// `remaining_accounts` = N × [Entitlement (writable), Investor, holder cash ATA (writable)]. Idempotent: entitlements
 /// already Paid are skipped.
 pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<()> {
-    require_operator(&ctx.accounts.series, &ctx.accounts.authority.key())?;
     let status = ctx.accounts.action.status;
     require!(
         status != ActionStatus::SnapshotComplete as u8,
@@ -260,7 +259,6 @@ pub struct CompleteAction<'info> {
 }
 
 pub fn handle_complete_action(ctx: Context<CompleteAction>) -> Result<()> {
-    require_operator(&ctx.accounts.series, &ctx.accounts.authority.key())?;
     let action = &ctx.accounts.action;
     require!(
         action.status == ActionStatus::Settling as u8,
@@ -277,17 +275,21 @@ pub fn handle_complete_action(ctx: Context<CompleteAction>) -> Result<()> {
         QuponError::PaymentsIncomplete
     );
 
-    let mint = ctx.accounts.mint.key();
-    let seeds: &[&[u8]] = &[SERIES_SEED, mint.as_ref(), &[ctx.accounts.series.bump]];
-    pausable_resume(CpiContext::new_with_signer(
-        ctx.accounts.bond_token_program.key(),
-        PausableToggle {
-            token_program_id: ctx.accounts.bond_token_program.to_account_info(),
-            mint: ctx.accounts.mint.to_account_info(),
-            authority: ctx.accounts.series.to_account_info(),
-        },
-        &[seeds],
-    ))?;
+    // Legacy REDM/MCAL are still paused here; coupons and partial calls already resumed at finalize, and hooked series
+    // never pause.
+    if mint_paused(&ctx.accounts.mint.to_account_info())? {
+        let mint = ctx.accounts.mint.key();
+        let seeds: &[&[u8]] = &[SERIES_SEED, mint.as_ref(), &[ctx.accounts.series.bump]];
+        pausable_resume(CpiContext::new_with_signer(
+            ctx.accounts.bond_token_program.key(),
+            PausableToggle {
+                token_program_id: ctx.accounts.bond_token_program.to_account_info(),
+                mint: ctx.accounts.mint.to_account_info(),
+                authority: ctx.accounts.series.to_account_info(),
+            },
+            &[seeds],
+        ))?;
+    }
 
     let clock = Clock::get()?;
     let kind = ActionKind::try_from(ctx.accounts.action.kind)?;

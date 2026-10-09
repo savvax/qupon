@@ -231,3 +231,40 @@ func TestRunActionNotFound(t *testing.T) {
 		t.Fatalf("err = %v, want ErrActionNotFound", err)
 	}
 }
+
+// Plan 15 D1'/D3: on a hooked series units come from the entitlements (the ATAs have moved since the snapshot) and
+// the hash is the order-independent set hash — XOR of sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units_le).
+func TestRunHookedSeriesSetHash(t *testing.T) {
+	fc := newFixture(t)
+	fc.series.Reserved[0] = 1 // hook
+	fc.action.Reserved[0] = 1
+	fc.action.HashScheme = 1
+	var want [32]byte
+	for _, h := range []struct {
+		owner solana.PublicKey
+		units uint64
+	}{{ownerC, 65}, {ownerA, 10}, {ownerB, 25}} { // any order
+		buf := append([]byte("qupon:snap:v1"), actionPDA[:]...)
+		buf = append(buf, h.owner[:]...)
+		buf = append(buf, le(h.units)...)
+		leaf := sha256.Sum256(buf)
+		for i := range want {
+			want[i] ^= leaf[i]
+		}
+	}
+	fc.action.SnapshotHash = want
+	// Trading resumed after the snapshot: the ATAs no longer hold the record-date balances.
+	for k, ta := range fc.atas {
+		fc.atas[k] = &chain.TokenAccount{Mint: ta.Mint, Owner: ta.Owner, Amount: ta.Amount + 7}
+	}
+	rep, err := Run(t.Context(), fc, actionPDA)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if !rep.Ok || !rep.HashMatches {
+		t.Fatalf("Ok=%v hashMatches=%v mismatches %+v", rep.Ok, rep.HashMatches, rep.Mismatches)
+	}
+	if rep.ExpectedTotals.Gross != 500_000 {
+		t.Errorf("gross = %d, want 500000", rep.ExpectedTotals.Gross)
+	}
+}

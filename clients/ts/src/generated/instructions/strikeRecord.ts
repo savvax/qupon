@@ -34,7 +34,8 @@ export function getStrikeRecordInstructionDataCodec(): FixedSizeCodec<StrikeReco
 }
 
 export type StrikeRecordInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountSeries extends InstructionAccountInput = InstructionAccountInput, TAccountAction extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountBondTokenProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  authority: TAccountAuthority;
+  /** Anyone (pays the fee). */
+authority: TAccountAuthority;
 series: TAccountSeries;
 action: TAccountAction;
 mint: TAccountMint;
@@ -63,6 +64,7 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedStrikeRecordInstruction<TProgram extends string = typeof QUPON_BONDS_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
+/** Anyone (pays the fee). */
 authority: TAccountMetas[0];
 series: TAccountMetas[1];
 action: TAccountMetas[2];

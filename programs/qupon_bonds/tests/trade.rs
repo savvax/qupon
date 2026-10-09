@@ -205,6 +205,7 @@ fn admit_ix(b: &Bond, authority: &Pubkey, t: &Trade) -> Instruction {
             seller: investor_pda(&b.series, &t.seller.pubkey()),
             buyer: investor_pda(&b.series, &t.buyer.pubkey()),
             admission: admission_pda(b, &t.swap),
+            escrow_checkpoint: checkpoint_pda(&b.series, &t.swap),
             bond_token_program: spl_token_2022::ID,
             system_program: system_program::ID,
         }
@@ -225,6 +226,7 @@ fn release_ix(b: &Bond, authority: &Pubkey, t: &Trade, force: bool) -> Instructi
             escrow: t.escrow,
             seller: investor_pda(&b.series, &seller),
             seller_bond_ata: bond_ata(&seller, b),
+            escrow_checkpoint: checkpoint_pda(&b.series, &t.swap),
             bond_token_program: spl_token_2022::ID,
         }
         .to_account_metas(None),

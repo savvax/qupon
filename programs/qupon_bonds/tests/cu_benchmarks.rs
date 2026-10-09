@@ -256,6 +256,7 @@ fn trades() -> [u64; 3] {
                 seller: investor_pda(&b.series, &seller),
                 buyer: investor_pda(&b.series, &buyer),
                 admission: admission_pda(&b, &swap),
+                escrow_checkpoint: checkpoint_pda(&b.series, &swap),
                 bond_token_program: spl_token_2022::ID,
                 system_program: system_program::ID,
             }
@@ -274,6 +275,7 @@ fn trades() -> [u64; 3] {
                 escrow: ata(&swap, &b.mint, &spl_token_2022::ID),
                 seller: investor_pda(&b.series, &seller),
                 seller_bond_ata: ata(&seller, &b.mint, &spl_token_2022::ID),
+                escrow_checkpoint: checkpoint_pda(&b.series, &swap),
                 bond_token_program: spl_token_2022::ID,
             }
             .to_account_metas(None),

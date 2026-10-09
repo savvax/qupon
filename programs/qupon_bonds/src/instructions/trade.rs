@@ -8,8 +8,8 @@ use anchor_spl::{
         Token2022,
     },
     token_interface::{
-        freeze_account, thaw_account, transfer_checked, FreezeAccount, Mint, ThawAccount,
-        TokenAccount, TransferChecked,
+        burn_checked, freeze_account, mint_to, thaw_account, transfer_checked, BurnChecked,
+        FreezeAccount, Mint, MintTo, ThawAccount, TokenAccount, TransferChecked,
     },
 };
 
@@ -18,7 +18,7 @@ use crate::{
     error::QuponError,
     events::{TradeAdmitted, TradeReleased},
     instructions::subscribe::require_active,
-    state::{Investor, InvestorStatus, Series, SeriesStatus, TradeAdmission},
+    state::{Checkpoint, Investor, InvestorStatus, Series, SeriesStatus, TradeAdmission},
     utils::{mint_paused, require_operator},
 };
 
@@ -140,6 +140,9 @@ pub struct AdmitTrade<'info> {
     pub admission: Box<Account<'info, TradeAdmission>>,
     pub bond_token_program: Program<'info, Token2022>,
     pub system_program: Program<'info, System>,
+    /// CHECK: hooked series: the escrow owner's (SwapDvp) record-date checkpoint, created here (unused on legacy).
+    #[account(mut, seeds = [CHECKPOINT_SEED, series.key().as_ref(), swap_dvp.key().as_ref()], bump)]
+    pub escrow_checkpoint: UncheckedAccount<'info>,
 }
 
 pub fn handle_admit_trade(ctx: Context<AdmitTrade>) -> Result<()> {
@@ -192,6 +195,16 @@ pub fn handle_admit_trade(ctx: Context<AdmitTrade>) -> Result<()> {
     adm.cash_amount = terms.amount_b;
     adm.admitted_at = clock.unix_timestamp;
 
+    if ctx.accounts.series.hook == 1 {
+        let swap = ctx.accounts.swap_dvp.key();
+        crate::instructions::hook::create_checkpoint(
+            &ctx.accounts.authority.to_account_info(),
+            &ctx.accounts.escrow_checkpoint.to_account_info(),
+            &ctx.accounts.system_program.to_account_info(),
+            &mut ctx.accounts.series,
+            &swap,
+        )?;
+    }
     let series = &mut ctx.accounts.series;
     series.open_trades = series
         .open_trades
@@ -218,6 +231,7 @@ pub struct ReleaseTrade<'info> {
     pub authority: Signer<'info>,
     #[account(mut, has_one = mint)]
     pub series: Box<Account<'info, Series>>,
+    #[account(mut)]
     pub mint: Box<InterfaceAccount<'info, Mint>>,
     #[account(
         mut,
@@ -240,10 +254,22 @@ pub struct ReleaseTrade<'info> {
     #[account(mut, address = seller.bond_ata @ QuponError::InvalidTrade)]
     pub seller_bond_ata: UncheckedAccount<'info>,
     pub bond_token_program: Program<'info, Token2022>,
+    /// CHECK: hooked series: the escrow owner's checkpoint, closed here (rent → authority); unused on legacy series.
+    #[account(mut, seeds = [CHECKPOINT_SEED, series.key().as_ref(), admission.swap_dvp.as_ref()], bump)]
+    pub escrow_checkpoint: UncheckedAccount<'info>,
 }
 
 pub fn handle_release_trade(ctx: Context<ReleaseTrade>, force: bool) -> Result<()> {
     require_operator(&ctx.accounts.series, &ctx.accounts.authority.key())?;
+    let hooked = ctx.accounts.series.hook == 1;
+    if hooked {
+        // Between `record_at` and the final snapshot the escrow's position is part of the record: keep it.
+        let s = &ctx.accounts.series;
+        require!(
+            s.record_at == 0 || Clock::get()?.unix_timestamp < s.record_at,
+            QuponError::RecordPending
+        );
+    }
     let program = ctx.accounts.bond_token_program.key();
     let mint_key = ctx.accounts.mint.key();
     let seeds: &[&[u8]] = &[SERIES_SEED, mint_key.as_ref(), &[ctx.accounts.series.bump]];
@@ -272,20 +298,50 @@ pub fn handle_release_trade(ctx: Context<ReleaseTrade>, force: bool) -> Result<(
                     false,
                 )?;
             }
-            transfer_checked(
-                CpiContext::new_with_signer(
-                    program,
-                    TransferChecked {
-                        from: escrow.clone(),
-                        mint: mint.clone(),
-                        to: dest.clone(),
-                        authority: series_info.clone(),
-                    },
-                    &[seeds],
-                ),
-                amount,
-                ctx.accounts.mint.decimals,
-            )?;
+            if hooked {
+                // A transfer would make Token-2022 call this program's hook from inside this program, which Solana
+                // forbids (re-entrancy); burn as permanent delegate and mint the same units to the seller instead.
+                burn_checked(
+                    CpiContext::new_with_signer(
+                        program,
+                        BurnChecked {
+                            mint: mint.clone(),
+                            from: escrow.clone(),
+                            authority: series_info.clone(),
+                        },
+                        &[seeds],
+                    ),
+                    amount,
+                    ctx.accounts.mint.decimals,
+                )?;
+                mint_to(
+                    CpiContext::new_with_signer(
+                        program,
+                        MintTo {
+                            mint: mint.clone(),
+                            to: dest.clone(),
+                            authority: series_info.clone(),
+                        },
+                        &[seeds],
+                    ),
+                    amount,
+                )?;
+            } else {
+                transfer_checked(
+                    CpiContext::new_with_signer(
+                        program,
+                        TransferChecked {
+                            from: escrow.clone(),
+                            mint: mint.clone(),
+                            to: dest.clone(),
+                            authority: series_info.clone(),
+                        },
+                        &[seeds],
+                    ),
+                    amount,
+                    ctx.accounts.mint.decimals,
+                )?;
+            }
             if ctx.accounts.seller.status == InvestorStatus::Suspended as u8 {
                 set_frozen(
                     program,
@@ -303,6 +359,25 @@ pub fn handle_release_trade(ctx: Context<ReleaseTrade>, force: bool) -> Result<(
         }
     }
 
+    let ckpt = ctx.accounts.escrow_checkpoint.to_account_info();
+    if hooked && *ckpt.owner == crate::ID && !ckpt.data_is_empty() {
+        Checkpoint::try_deserialize(&mut &ckpt.try_borrow_data()?[..])?; // it is a checkpoint
+        let dest = ctx.accounts.authority.to_account_info();
+        let rent = ckpt.lamports();
+        **dest.try_borrow_mut_lamports()? = dest
+            .lamports()
+            .checked_add(rent)
+            .ok_or(QuponError::MathOverflow)?;
+        **ckpt.try_borrow_mut_lamports()? = 0;
+        ckpt.assign(&anchor_lang::system_program::ID);
+        ckpt.resize(0)?;
+        ctx.accounts.series.ckpt_count = ctx
+            .accounts
+            .series
+            .ckpt_count
+            .checked_sub(1)
+            .ok_or(QuponError::MathOverflow)?;
+    }
     let series = &mut ctx.accounts.series;
     series.open_trades = series
         .open_trades

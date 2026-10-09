@@ -202,6 +202,7 @@ pub fn handle_announce_action(ctx: Context<AnnounceAction>, a: AnnounceArgs) -> 
     act.voting_ends_at = a.voting_ends_at;
     act.result = MeetingResult::Pending as u8;
     act.factor_bps = a.factor_bps;
+    act.hash_scheme = 1;
 
     let series = &mut ctx.accounts.series;
     series.action_count = series
@@ -214,6 +215,7 @@ pub fn handle_announce_action(ctx: Context<AnnounceAction>, a: AnnounceArgs) -> 
         series.record_kind = act.kind;
         series.record_seq = act.index.checked_add(1).ok_or(QuponError::MathOverflow)?;
         series.record_at = act.record_at;
+        series.ckpt_late = 0;
     }
 
     let clock = Clock::get()?;
@@ -280,7 +282,10 @@ pub fn handle_cancel_action(ctx: Context<CancelAction>) -> Result<()> {
     );
     act.status = ActionStatus::Cancelled as u8;
     act.completed_at = Clock::get()?.unix_timestamp;
-    ctx.accounts.series.open_action = None;
+    let series = &mut ctx.accounts.series;
+    series.open_action = None;
+    // Disarm the transfer-hook gate (hooked series); a cancelled record never locks anybody.
+    series.record_at = 0;
 
     let clock = Clock::get()?;
     emit!(ActionCancelled {

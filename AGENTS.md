@@ -4,7 +4,7 @@
 Qupon: a corporate-actions engine for tokenized bonds on Solana devnet for the KASE × Superteam Kazakhstan side track of Colosseum Crypto World's Fair. Deadline **2026-10-13 11:59 Asia/Almaty**; target submission 2026-10-12 20:00. Read, in this order, before your first change: `docs/00-brief.md`, `docs/01-product.md`, `docs/02-architecture.md`, `docs/03-domain.md`, `docs/04-stack.md`. `docs/05-plan.md` has the day plan, `docs/06-workflow.md` the queue mechanics.
 
 ## Non-negotiables
-1. **Correctness of corporate-action logic beats features.** The vectors in `fixtures/entitlement.json` must pass everywhere (Rust crate, on-chain tests, Go). Rounding is half-up per holder. Record date = pause the mint, snapshot on-chain.
+1. **Correctness of corporate-action logic beats features.** The vectors in `fixtures/entitlement.json` must pass everywhere (Rust crate, on-chain tests, Go). Rounding is half-up per holder. Record date = transfer-hook gate (new series) or pause the mint (legacy series), snapshot on-chain; crank steps are permissionless.
 2. **`make verify` must be green before you say DONE.** Run it yourself. Never weaken a test to make it pass; never skip a failing test; never `#[ignore]` without a task saying so.
 3. **Devnet only.** Never touch mainnet. Never commit secrets (`.env`, keypair JSON, API keys). Public keys and program ids go to `config/devnet.json`.
 4. **Follow `docs/02-architecture.md` names and layouts.** If you must deviate, update that doc in the same commit and explain in your DONE note.

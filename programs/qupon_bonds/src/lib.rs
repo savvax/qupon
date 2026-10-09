@@ -135,16 +135,6 @@ pub mod qupon_bonds {
         instructions::hook::handle_init_hook(ctx)
     }
 
-    /// Create an owner's checkpoint for a hooked series (anyone pays).
-    pub fn init_checkpoint(ctx: Context<InitCheckpoint>, owner: Pubkey) -> Result<()> {
-        instructions::hook::handle_init_checkpoint(ctx, owner)
-    }
-
-    /// SPIKE 1509: mark a position snapshotted for the pending record (anyone, after `record_at`).
-    pub fn mark_snapshotted(ctx: Context<MarkSnapshotted>) -> Result<()> {
-        instructions::hook::handle_mark_snapshotted(ctx)
-    }
-
     /// Token-2022 transfer hook (spl-transfer-hook-interface `Execute`): the record-date gate.
     #[instruction(discriminator = ExecuteInstruction::SPL_DISCRIMINATOR_SLICE)]
     pub fn execute(ctx: Context<Execute>, amount: u64) -> Result<()> {

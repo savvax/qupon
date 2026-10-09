@@ -97,7 +97,12 @@ pub struct Series {
     pub record_seq: u32,
     /// Hooked series: `record_at` of the pending record; 0 = none pending (cleared when the snapshot is final).
     pub record_at: i64,
-    pub reserved: [u8; 46],
+    /// Hooked series: checkpoints in existence (registered investors + admitted DvP escrows).
+    pub ckpt_count: u32,
+    /// Hooked series: checkpoints created after the pending record's `record_at` (they start at its `record_seq`:
+    /// nothing could be held in a frozen, unregistered ATA). Reset when a record is armed.
+    pub ckpt_late: u32,
+    pub reserved: [u8; 38],
 }
 
 /// Seeds `["investor", series, owner]`.
@@ -177,7 +182,13 @@ pub struct CorporateAction {
     pub factor_bps: u16,
     /// Σ holder principal (REDM/MCAL/PCAL); escrow must hold total_net + total_tax + total_principal.
     pub total_principal: u64,
-    pub reserved: [u8; 64],
+    /// 0 = rolling `sha256(prev ‖ owner ‖ units)` over owner-sorted batches; 1 = order-independent set hash: XOR of
+    /// `sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units)` per holder (plan 15 D3).
+    pub hash_scheme: u8,
+    /// Hooked series: checkpoints advanced by this action's snapshot (completeness = positions_done + ckpt_late ==
+    /// ckpt_count).
+    pub positions_done: u32,
+    pub reserved: [u8; 59],
 }
 
 /// Seeds `["entitlement", action, owner]`.

@@ -358,6 +358,19 @@ pub fn ata(owner: &Pubkey, mint: &Pubkey, tp: &Pubkey) -> Pubkey {
     get_associated_token_address_with_program_id(owner, mint, tp)
 }
 
+/// Record-date checkpoint of `owner` on a hooked series (plan 15 D1').
+pub fn checkpoint_pda(series: &Pubkey, owner: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[
+            qupon_bonds::constants::CHECKPOINT_SEED,
+            series.as_ref(),
+            owner.as_ref(),
+        ],
+        &qupon_bonds::id(),
+    )
+    .0
+}
+
 pub fn investor_pda(series: &Pubkey, owner: &Pubkey) -> Pubkey {
     Pubkey::find_program_address(
         &[
@@ -452,6 +465,7 @@ impl Env {
                 registrar: *signer,
                 series: b.series,
                 owner: *owner,
+                checkpoint: checkpoint_pda(&b.series, owner),
                 kyc_attestation: attestation_pda(owner),
                 investor: investor_pda(&b.series, owner),
                 mint: b.mint,

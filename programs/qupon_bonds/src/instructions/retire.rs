@@ -21,7 +21,6 @@ use crate::{
         ActionStatus, CorporateAction, Entitlement, EntitlementStatus, Investor, Series,
         SeriesStatus,
     },
-    utils::require_operator,
 };
 
 /// Max `[Entitlement, bond ATA]` pairs per `retire_batch` (docs/02 batch sizing).
@@ -52,7 +51,6 @@ pub struct RetireBatch<'info> {
 /// `close_series` by moving a unit to an un-snapshotted investor.
 pub fn handle_retire_batch<'info>(ctx: Context<'info, RetireBatch<'info>>) -> Result<()> {
     let series = &ctx.accounts.series;
-    require_operator(series, &ctx.accounts.authority.key())?;
     require!(
         ctx.accounts.action.status == ActionStatus::Retiring as u8,
         QuponError::WrongStatus

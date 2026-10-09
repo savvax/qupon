@@ -74,6 +74,7 @@ pub struct RegisterInvestor<'info> {
     #[account(mut)]
     pub registrar: Signer<'info>,
     #[account(
+        mut,
         has_one = registrar @ QuponError::Unauthorized,
         has_one = mint,
         has_one = cash_mint,
@@ -114,6 +115,9 @@ pub struct RegisterInvestor<'info> {
     pub cash_token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
+    /// CHECK: hooked series: the owner's record-date checkpoint, created here (unused on legacy series).
+    #[account(mut, seeds = [CHECKPOINT_SEED, series.key().as_ref(), owner.key().as_ref()], bump)]
+    pub checkpoint: UncheckedAccount<'info>,
 }
 
 pub fn handle_register_investor(ctx: Context<RegisterInvestor>, kyc: KycParams) -> Result<()> {
@@ -130,6 +134,16 @@ pub fn handle_register_investor(ctx: Context<RegisterInvestor>, kyc: KycParams) 
         &kyc,
         clock.unix_timestamp,
     )?;
+    if ctx.accounts.series.hook == 1 {
+        let owner = ctx.accounts.owner.key();
+        crate::instructions::hook::create_checkpoint(
+            &ctx.accounts.registrar.to_account_info(),
+            &ctx.accounts.checkpoint.to_account_info(),
+            &ctx.accounts.system_program.to_account_info(),
+            &mut ctx.accounts.series,
+            &owner,
+        )?;
+    }
 
     // DefaultAccountState=Frozen: the new ATA is frozen; only the series PDA (freeze authority) can thaw it.
     if ctx.accounts.bond_ata.is_frozen() {

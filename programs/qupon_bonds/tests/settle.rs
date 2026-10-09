@@ -148,10 +148,11 @@ fn only_issuer_or_paying_agent_funds() {
     let ix = env.fund_ix(&b, &mallory.pubkey(), 0, 1);
     assert_err(env.send(&[ix], &[&mallory]), QuponError::Unauthorized);
 
+    // Paying is permissionless (plan 15 D2) but money cannot leave an unfunded escrow.
     let ix = env.pay_ix(&b, 0, &[]);
     let mut ix2 = ix.clone();
     ix2.accounts[0].pubkey = mallory.pubkey();
-    assert_err(env.send(&[ix2], &[&mallory]), QuponError::Unauthorized);
+    assert_err(env.send(&[ix2], &[&mallory]), QuponError::Underfunded);
 }
 
 #[test]

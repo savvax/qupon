@@ -117,6 +117,9 @@ type CorporateAction struct {
 	FactorBps           uint16 // PCAL only: share of face redeemed, bps
 	TotalPrincipal      uint64 // Σ holder principal (REDM/MCAL/PCAL)
 	Reserved            [64]byte
+	// HashScheme is reserved[0] (plan 15 D3): 0 = rolling sha256 over owner-sorted holders, 1 = order-independent
+	// set hash (XOR of sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units_le)).
+	HashScheme uint8
 }
 
 // Entitlement mirrors the on-chain `Entitlement` account

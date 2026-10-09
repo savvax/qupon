@@ -183,6 +183,13 @@ fn mint_units<'info>(
     program: &Program<'info, Token2022>,
     units: u64,
 ) -> Result<()> {
+    // Hooked series: new units after `record_at` would change balances behind the gate's back (plan 15 D1').
+    require!(
+        !(series.hook == 1
+            && series.record_at != 0
+            && Clock::get()?.unix_timestamp >= series.record_at),
+        QuponError::RecordPending
+    );
     let mint_key = mint.key();
     let seeds: &[&[u8]] = &[SERIES_SEED, mint_key.as_ref(), &[series.bump]];
     mint_to(

@@ -21,12 +21,16 @@ import {
 	getPayBatchInstruction,
 	getSnapshotBatchInstruction,
 	getStrikeRecordInstruction,
+	findCheckpointPda,
+	getTradeAdmissionDecoder,
+	getTradeAdmissionSize,
+	TRADE_ADMISSION_DISCRIMINATOR,
 	getSweepEscrowInstruction,
 } from "../generated/index.js";
 import { chunk, sortByOwner } from "../lib/batch.js";
 import { accrualDays, dayCountFromCode, packYmd } from "../lib/daycount.js";
 import { txLink } from "../lib/explorer.js";
-import { actionPda, entitlementPda } from "../lib/pda.js";
+import { actionPda, entitlementPda, investorPda } from "../lib/pda.js";
 import type { QuponRpc } from "../lib/tx.js";
 import {
 	defaultCorpId,
@@ -34,6 +38,7 @@ import {
 	almatyMidnight,
 	initCtx,
 	listEntitlements,
+	listByKey,
 	listInvestors,
 	loadSeries,
 	log,
@@ -273,12 +278,57 @@ async function runStrike(opts: ActionOpts, cmd: Command): Promise<void> {
 	await sendAndReport(rpc, authority, [instruction], "action:strike", { action });
 }
 
+/** Positions per hooked `snapshot_batch` (4–5 accounts each keeps the transaction under the size limit). */
+export const HOOKED_SNAPSHOT_BATCH = 5;
+
+/**
+ * Hooked series (plan 15 D1'): positions are every investor's bond ATA and every admitted DvP escrow (counted for the
+ * seller); each advances its owner's checkpoint. Order does not matter (set hash) and re-sent positions are no-ops.
+ */
+async function runSnapshotHooked(
+	rpc: QuponRpc,
+	info: SeriesInfo,
+	authority: TransactionSigner,
+	action: Address,
+	investors: readonly { address: Address; owner: Address; bondAta: Address }[],
+): Promise<void> {
+	const admissions = await listByKey(rpc, TRADE_ADMISSION_DISCRIMINATOR, getTradeAdmissionSize(), info.pda, getTradeAdmissionDecoder());
+	const checkpoint = async (owner: Address) => (await findCheckpointPda({ series: info.pda, owner }))[0];
+	const positions = [];
+	for (const h of investors) {
+		positions.push([ro(h.address), ro(h.bondAta), wr(await entitlementPda(action, h.owner)), wr(await checkpoint(h.owner))]);
+	}
+	for (const { address, data: a } of admissions) {
+		positions.push([
+			ro(address),
+			ro(a.escrow),
+			wr(await entitlementPda(action, a.seller)),
+			wr(await checkpoint(a.swapDvp)),
+			ro(await investorPda(info.pda, a.seller)),
+		]);
+	}
+	const batches = chunk(positions, HOOKED_SNAPSHOT_BATCH);
+	log(`snapshotting ${investors.length} holders + ${admissions.length} escrow(s) in ${batches.length} batch(es)`);
+	const results = await runBatches(batches, async (batch, i) => {
+		const base = getSnapshotBatchInstruction({ authority, series: info.pda, action, mint: info.mint });
+		const instruction = { ...base, accounts: [...base.accounts, ...batch.flat()] };
+		const report = await sendQuiet(rpc, authority, [instruction], `action:snapshot batch ${i + 1}/${batches.length}`);
+		log(`  batch ${i + 1}/${batches.length}: ${report.signature} (${txLink(report.signature)})`);
+		return report;
+	});
+	out({ ok: true, action, batches: results.length, holders: investors.length, escrows: admissions.length, results });
+}
+
 async function runSnapshot(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
 	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
 	const { action } = await loadAction(rpc, info, opts.index);
 	const investors = await listInvestors(rpc, info.pda);
+	if (info.account.hook === 1) {
+		await runSnapshotHooked(rpc, info, authority, action, investors);
+		return;
+	}
 	const batches = sortedBatches(investors, h => h.owner, SNAPSHOT_BATCH_MAX);
 	log(`snapshotting ${investors.length} holders in ${batches.length} batch(es) of ≤ ${SNAPSHOT_BATCH_MAX}`);
 	const results = await runBatches(batches, async (batch, i) => {

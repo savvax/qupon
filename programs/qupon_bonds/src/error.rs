@@ -79,6 +79,10 @@ pub enum QuponError {
     HolderNotSnapshotted,
     #[msg("Record date of a redemption passed: the register is locked")]
     RecordLocked,
+    #[msg("A record date is pending: no units can be issued until its snapshot is final")]
+    RecordPending,
+    #[msg("Not every position (investor or admitted escrow) has been snapshotted yet")]
+    PositionsIncomplete,
 }
 
 /// Map the pure math crate's errors onto program errors (orphan rule forbids `From`).

@@ -34,7 +34,7 @@ export function getSnapshotBatchInstructionDataCodec(): FixedSizeCodec<SnapshotB
 }
 
 export type SnapshotBatchInput<TAccountAuthority extends InstructionSignerInput = InstructionSignerInput, TAccountSeries extends InstructionAccountInput = InstructionAccountInput, TAccountAction extends InstructionAccountInput = InstructionAccountInput, TAccountMint extends InstructionAccountInput = InstructionAccountInput, TAccountSystemProgram extends InstructionAccountInput = InstructionAccountInput> =  {
-  /** Registrar or paying agent; pays rent for new Entitlement accounts. */
+  /** Anyone; pays rent for new Entitlement accounts. */
 authority: TAccountAuthority;
 series: TAccountSeries;
 action: TAccountAction;
@@ -64,7 +64,7 @@ return Object.freeze({ accounts: [getAccountMeta("authority", accounts.authority
 
 export type ParsedSnapshotBatchInstruction<TProgram extends string = typeof QUPON_BONDS_PROGRAM_ADDRESS, TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[]> = { programAddress: Address<TProgram>;
 accounts: {
-/** Registrar or paying agent; pays rent for new Entitlement accounts. */
+/** Anyone; pays rent for new Entitlement accounts. */
 authority: TAccountMetas[0];
 series: TAccountMetas[1];
 action: TAccountMetas[2];

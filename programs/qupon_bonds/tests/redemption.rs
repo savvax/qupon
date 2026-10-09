@@ -144,7 +144,7 @@ fn early_redemption_47_days_on_btrk_terms() {
 }
 
 #[test]
-fn only_operators_retire_and_only_registrar_closes() {
+fn anyone_retires_only_registrar_closes() {
     let mut env = Env::new();
     let b = env.setup_bond_with(|p| p.maturity_date = NEXT_COUPON);
     let holders = env.holders(&b, &[10]);
@@ -154,12 +154,10 @@ fn only_operators_retire_and_only_registrar_closes() {
 
     let mallory = solana_keypair::Keypair::new();
     env.svm.airdrop(&mallory.pubkey(), 1_000_000_000).unwrap();
+    // Retiring is a permissionless crank (plan 15 D2): units can only be burned from snapshotted holders.
     let mut ix = env.retire_ix(&b, 0, &owners);
     ix.accounts[0].pubkey = mallory.pubkey();
-    assert_err(env.send(&[ix], &[&mallory]), QuponError::Unauthorized);
-
-    let ix = env.retire_ix(&b, 0, &owners);
-    env.send(&[ix], &[]).expect("retire");
+    env.send(&[ix], &[&mallory]).expect("anyone retires");
     let mut ix = env.close_series_ix(&b, 0);
     ix.accounts[0].pubkey = mallory.pubkey();
     assert_err(env.send(&[ix], &[&mallory]), QuponError::Unauthorized);
