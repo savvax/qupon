@@ -44,3 +44,30 @@ func TestKaseCacheRoundtrip(t *testing.T) {
 		t.Fatal("second key missing")
 	}
 }
+
+// Review focus: the cache is never bounded — keys are walkable codes, so every
+// put evicts rows older than 7 days (task 1416).
+func TestKaseCacheEviction(t *testing.T) {
+	ctx := context.Background()
+	st, err := Open(ctx, filepath.Join(t.TempDir(), "kase-cache-evict.db"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer func() { _ = st.Close() }()
+
+	week := int64((7 * 24 * time.Hour).Seconds())
+	at := time.Unix(1760000000, 0).Unix()
+	old := at - week - 1
+	if err := st.PutKaseCache(ctx, "bond:OLDb1", `{}`, old); err != nil {
+		t.Fatalf("put old: %v", err)
+	}
+	if err := st.PutKaseCache(ctx, "bond:TEBNb10", `{}`, at); err != nil {
+		t.Fatalf("put fresh: %v", err)
+	}
+	if _, _, ok, _ := st.GetKaseCache(ctx, "bond:OLDb1"); ok {
+		t.Error("row older than 7 days survived a put")
+	}
+	if _, _, ok, _ := st.GetKaseCache(ctx, "bond:TEBNb10"); !ok {
+		t.Error("fresh row was evicted")
+	}
+}

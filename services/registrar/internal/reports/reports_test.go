@@ -65,3 +65,24 @@ func TestWriteCSV(t *testing.T) {
 		t.Fatalf("meta = %q", s)
 	}
 }
+
+// Review focus: CSV formula injection — a user-entered cell starting with = + - @
+// or a tab would run as a formula in Excel (task 1416).
+func TestWriteCSVFormulaGuard(t *testing.T) {
+	var buf bytes.Buffer
+	h, rows := HoldingTable([]Holding{{Series: "=1+1", InvestorType: "-abc", Residency: "@KZ", KYCRef: "\tX",
+		Owner: "o", ISIN: "i", Units: 1, TaxBps: 0, Status: "Active"}})
+	rows[0][3] = "-5" // numeric cells stay untouched
+	if err := WriteCSV(&buf, h, rows, nil); err != nil {
+		t.Fatal(err)
+	}
+	s := buf.String()
+	for _, want := range []string{"'=1+1", ",-5,", "'-abc", "'@KZ", "'\tX"} {
+		if !strings.Contains(s, want) {
+			t.Errorf("csv missing %q: %q", want, s)
+		}
+	}
+	if strings.Contains(s, ",-abc,") || strings.Contains(s, ",@KZ,") {
+		t.Errorf("unguarded formula cell: %q", s)
+	}
+}

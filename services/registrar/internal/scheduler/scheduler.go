@@ -64,6 +64,10 @@ type Decision struct {
 	Reason    string `json:"reason,omitempty"`    // wait only
 }
 
+// almaty is the zone the UI and all registrar surfaces show times in (KZ has no
+// DST, so a fixed UTC+5 is exact); FixedZone avoids needing tzdata in the image.
+var almaty = time.FixedZone("Asia/Almaty", 5*60*60)
+
 func waitf(format string, a ...any) Decision {
 	return Decision{Kind: KindWait, Reason: fmt.Sprintf(format, a...)}
 }
@@ -76,10 +80,10 @@ func Decide(s *chain.Series, open *chain.CorporateAction, supply uint64, now tim
 		// Time gates only exist for the two dated steps; everything else is
 		// the same status→step mapping the manual /advance endpoint uses.
 		if open.Status == 0 && now.Unix() < open.RecordAt { // Announced → strike at the record date
-			return waitf("record date not reached until %s", time.Unix(open.RecordAt, 0).UTC().Format(time.RFC3339))
+			return waitf("record date not reached until %s", time.Unix(open.RecordAt, 0).In(almaty).Format(time.RFC3339))
 		}
 		if open.Status == 3 && now.Unix() < open.PaymentAt { // Funded → pay at the payment date
-			return waitf("payment date not reached until %s", time.Unix(open.PaymentAt, 0).UTC().Format(time.RFC3339))
+			return waitf("payment date not reached until %s", time.Unix(open.PaymentAt, 0).In(almaty).Format(time.RFC3339))
 		}
 		step, wait := executor.NextStep(open, supply, s.OpenTrades, now, cfg.AutoFund)
 		if step == "" {
@@ -92,7 +96,7 @@ func Decide(s *chain.Series, open *chain.CorporateAction, supply uint64, now tim
 	}
 	if now.Unix() < s.NextCouponDate-int64(cfg.Lead.Seconds()) {
 		return waitf("next coupon %s; announce at -%s",
-			time.Unix(s.NextCouponDate, 0).UTC().Format(time.RFC3339), cfg.Lead)
+			time.Unix(s.NextCouponDate, 0).In(almaty).Format(time.RFC3339), cfg.Lead)
 	}
 	// The final coupon is paid with the redemption (docs/01-product §S2).
 	kind := "INTR"

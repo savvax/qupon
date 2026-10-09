@@ -133,6 +133,22 @@ func HoldingTable(hs []Holding) ([]string, [][]string) {
 	return header, rows
 }
 
+// guardCell defuses CSV injection: a cell starting with = + - @ or a tab/CR would
+// run as a formula in Excel (the BOM makes Excel open the file); prefix a ' so it
+// stays text. Cells that parse as numbers (-5, +1.25) are left untouched.
+func guardCell(s string) string {
+	if s == "" {
+		return s
+	}
+	switch s[0] {
+	case '=', '+', '-', '@', '\t', '\r':
+		if _, err := strconv.ParseFloat(s, 64); err != nil {
+			return "'" + s
+		}
+	}
+	return s
+}
+
 // WriteCSV writes UTF-8 with a BOM (Excel opens Cyrillic correctly), a header row, the rows, then "# key,value"
 // metadata lines (network, generation time, source accounts) so a file is self-describing.
 func WriteCSV(w io.Writer, header []string, rows [][]string, meta [][2]string) error {
@@ -143,11 +159,16 @@ func WriteCSV(w io.Writer, header []string, rows [][]string, meta [][2]string) e
 	if err := cw.Write(header); err != nil {
 		return fmt.Errorf("write header: %w", err)
 	}
-	if err := cw.WriteAll(rows); err != nil {
-		return fmt.Errorf("write rows: %w", err)
+	for _, row := range rows {
+		for i, c := range row {
+			row[i] = guardCell(c)
+		}
+		if err := cw.Write(row); err != nil {
+			return fmt.Errorf("write rows: %w", err)
+		}
 	}
 	for _, kv := range meta {
-		if err := cw.Write([]string{"# " + kv[0], kv[1]}); err != nil {
+		if err := cw.Write([]string{"# " + kv[0], guardCell(kv[1])}); err != nil {
 			return fmt.Errorf("write meta: %w", err)
 		}
 	}

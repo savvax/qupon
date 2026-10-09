@@ -60,7 +60,7 @@ func TestDecide(t *testing.T) {
 			name:   "no open action, coupon far away → wait",
 			series: series(now0.Add(3*time.Minute).Unix(), maturity),
 			now:    now0,
-			want:   Decision{Kind: KindWait, Reason: "next coupon 2027-01-15T08:03:00Z; announce at -2m0s"},
+			want:   Decision{Kind: KindWait, Reason: "next coupon 2027-01-15T13:03:00+05:00; announce at -2m0s"},
 		},
 		{
 			name:   "inside the lead window → announce INTR at the coupon date",
@@ -95,7 +95,7 @@ func TestDecide(t *testing.T) {
 			open:   action(0),
 			supply: 2,
 			now:    now0,
-			want:   Decision{Kind: KindWait, Reason: "record date not reached until 2027-01-15T08:00:50Z"},
+			want:   Decision{Kind: KindWait, Reason: "record date not reached until 2027-01-15T13:00:50+05:00"},
 		},
 		{
 			name:   "announced at the record date → strike",
@@ -153,7 +153,7 @@ func TestDecide(t *testing.T) {
 			open:   action(3),
 			supply: 2,
 			now:    now0,
-			want:   Decision{Kind: KindWait, Reason: "payment date not reached until 2027-01-15T08:01:10Z"},
+			want:   Decision{Kind: KindWait, Reason: "payment date not reached until 2027-01-15T13:01:10+05:00"},
 		},
 		{
 			name:   "funded at the payment date → pay",
