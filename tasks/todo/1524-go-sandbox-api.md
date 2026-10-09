@@ -39,5 +39,21 @@ Implement task 1524 of plan 15 exactly as written below (the plan section is cop
 - The web sandbox UI (1532, Opus) is being built against a typed client for exactly the three endpoints in this task; match its request/response shapes (`apps/web/src/lib` — look for the sandbox API types once 1532 merges, or ask the lead via reports/questions).
 - Series REST already exposes `demoClock {daySecs, issueTs, issueDate}`, `hookGate`, `inDefault`; actions expose `defaultedAt`, `curedAt`, `bankPending`, `finalizedAt`.
 
+## The web contract (task 1532, merged) — implement exactly this
+- Source of truth: `apps/web/src/lib/sandbox.ts` (types) and `apps/web/src/mocks/features/sandbox.ts` (a mock autopilot that
+  replays the expected states; copy its state progression). Add the same shapes to openapi.yaml (both copies).
+- `POST /demo/sandbox` `{wallet?, requestId}` → 201 `{id, mint, ticker, clock:{daySecs, issueTs}, schedule, links}`;
+  errors 429 `demo_throttled`, 400 `bad_wallet`. Idempotent per `requestId`. Set the `qupon_sandbox` cookie value = id.
+- `GET /demo/sandbox/{id}` → `{id, clock, serverTime, expiresAt, wallet, autofund, series, schedule, actions, holders[],
+  entitlements, next:{step, actor, at}, activity, scenarios[], links}`; 404 `sandbox_not_found`. Actions may be
+  `Defaulted` (`defaultedAt`, `curedAt`, `bankPending`); entitlements may be `PaidToAgent`. All times are real instants.
+- `POST /demo/sandbox/{id}/scenario` `{kind}` → `{kind, at, signatures, error?, logs?, trade?}` (`trade` = TradeAccrued
+  fields); 409 `scenario_unavailable`.
+- The web proxy calls these without a session and forwards `X-Forwarded-For` and the sandbox cookie. Rate-limit on the
+  LAST `X-Forwarded-For` entry (the one Caddy appends) — never the first, which the visitor controls.
+- Send the `non_kyc_transfer` attempt with skipPreflight so the refusal has a signature + logs.
+- When a visitor wallet joined, leave that holder's payout unpaid for ~60 s after funding so the page's Claim button has a
+  window (the autopilot pays everyone else immediately).
+
 ## Finish
 `make verify` green, commits carry `task: 1524`, `reports/worklog/1524.md` written. Print `DONE:1524` or `BLOCKED:1524 <reason>`.
