@@ -1,4 +1,5 @@
 import { Hero } from "./_landing/Hero";
+import { FlowSection } from "./_landing/FlowSection";
 import { LiveStrip } from "./_landing/LiveStrip";
 import { loadLive } from "./_landing/live";
 import {
@@ -21,6 +22,7 @@ export default async function Home() {
     <>
       <Hero live={live} />
       <LiveStrip live={live} />
+      <FlowSection live={live} />
       <HowItWorks />
       <Platform />
       <Scenarios />

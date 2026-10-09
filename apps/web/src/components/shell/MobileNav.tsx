@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Drawer } from "@/components/ui/Dialog";
 import { Icon } from "./icons";
@@ -10,10 +10,13 @@ export function MobileNav({
   links,
   menuLabel,
   signInLabel,
+  extra,
 }: {
   links: { href: string; label: string }[];
   menuLabel: string;
   signInLabel: string;
+  /** Rendered under the links (the View-as role switch). */
+  extra?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -39,7 +42,8 @@ export function MobileNav({
             </Link>
           ))}
         </nav>
-        <Button asChild block className="mt-4">
+        {extra && <div className="mt-4 border-t border-n100 pt-4">{extra}</div>}
+        <Button asChild block variant="secondary" className="mt-4">
           <Link href="/login" onClick={() => setOpen(false)}>
             {signInLabel}
           </Link>

@@ -1,0 +1,110 @@
+{
+  "meta": "Sandbox",
+  "eyebrow": "Your sandbox bond",
+  "title": "{name}: a whole bond life in minutes",
+  "lead": "One bond day lasts {s} seconds here, so a half-year coupon plays out in six minutes. Same maths and the same steps as a real series.",
+  "preview": "Preview: the transactions below are examples from a fixture. Nothing is sent to devnet from this page yet.",
+  "viewAs": "View as",
+  "roles": {
+    "public": "Public",
+    "issuer": "Issuer",
+    "registrar": "Registrar",
+    "investor": "Investor"
+  },
+  "scenario": "Scenario",
+  "scenarios": {
+    "coupon": "Coupon with a bank payout",
+    "default": "Default and cure"
+  },
+  "restart": "Start over",
+  "switchTo": "Switch to {role} to do this",
+  "you": "Your {units} bonds earn on this coupon:",
+  "rail": {
+    "issue": "Issue",
+    "issued": "Placed",
+    "coupon": "Coupon {n}",
+    "maturity": "Maturity"
+  },
+  "flowTitle": "Coupon 2, step by step",
+  "steps": {
+    "announce": "Announced",
+    "record": "Record date",
+    "snapshot": "Snapshot",
+    "fund": "Funded",
+    "pay": "Paid",
+    "complete": "Completed"
+  },
+  "detail": {
+    "snapshot": "3 holders · Σ 100 = supply",
+    "pay": "2 to wallets · 1 via the paying agent",
+    "record": "The hook gate snapshots each position before it moves"
+  },
+  "unitsLabel": "{units} bonds",
+  "now": {
+    "announced": "Coupon 2 is announced. The record date passes by itself and trading never stops.",
+    "snapshotted": "Snapshot complete: 3 holders, Σ 100 bonds = supply. The issuer funds 5,000.00 ₸ before the payment date.",
+    "funded": "The escrow holds 5,000.00 ₸. Anyone can push the payout to the 3 holders.",
+    "agent": "Nomad Pension chose a bank route: 2,762.50 ₸ is with the paying agent until it confirms the bank transfer.",
+    "complete": "Every holder is paid. Anyone can complete the action.",
+    "done": "Coupon 2 paid: 4,512.50 ₸ to 3 holders and 487.50 ₸ to the tax vault.",
+    "short": "The payment date passed and the escrow holds 2,000.00 of 5,000.00 ₸. After the grace day anyone can record a default.",
+    "defaulted": "Coupon 2 is in default: 3,000.00 ₸ short. The bond keeps trading; record-date holders keep their claims.",
+    "cured": "Cured: the escrow is complete. Anyone can push the payout.",
+    "curedPaid": "Paid after the cure: every record-date holder received their coupon."
+  },
+  "clock": {
+    "record": "Record date",
+    "payment": "Payment date",
+    "grace": "Grace day ends",
+    "next": "Coupon 3 record date"
+  },
+  "btn": {
+    "snapshot": "Snapshot 3 holders",
+    "fund": "Fund 5,000.00 ₸",
+    "pay": "Pay holders",
+    "confirm": "Confirm bank payout",
+    "complete": "Complete coupon 2",
+    "declare": "Declare default",
+    "cure": "Fund 3,000.00 ₸ and cure"
+  },
+  "feed": {
+    "title": "Transactions",
+    "lead": "Every step is a transaction.",
+    "ago": "{s} s ago",
+    "agoMin": "{m} min ago",
+    "example": "example"
+  },
+  "tx": {
+    "issue": "Issue SWND28: 100 bonds placed",
+    "announce": "Announce coupon {n}",
+    "snapshot": "Snapshot {n} holders",
+    "fund": "Issuer funds 5,000.00 ₸",
+    "fund1": "Issuer funds coupon 1",
+    "pay1": "Pay coupon 1 to {n} holders",
+    "complete1": "Complete coupon 1",
+    "payWallet": "Pay {who}: {amount} ₸",
+    "payAgent": "Pay the paying agent for {who}: {amount} ₸",
+    "bank": "Bank payout confirmed for {who} (simulated)",
+    "complete": "Complete coupon 2",
+    "default": "Record default on coupon 2",
+    "cure": "Issuer cures: funds 3,000.00 ₸"
+  },
+  "tour": {
+    "now": {
+      "title": "What happens now",
+      "body": "This bar names the next step, who may take it and gives you the one button. Switch the role above to see it from each side."
+    },
+    "rail": {
+      "title": "The bond's life",
+      "body": "Every coupon is a stub on the sheet. Paid ones carry their transactions; the ringing one is in progress."
+    },
+    "flow": {
+      "title": "Follow the money",
+      "body": "Bands are proportional to amounts: escrow to each holder, tax to the tax vault, the bank leg through the paying agent. Step through it."
+    },
+    "feed": {
+      "title": "Every step is a transaction",
+      "body": "Each line is one transaction. On a live series the link opens it in the Solana explorer."
+    }
+  }
+}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/shell/icons";
 import { cx } from "@/lib/ui/cx";
@@ -232,11 +233,11 @@ export function Audiences() {
   );
 }
 
-/** Nine rows grouped by status into three columns instead of one long hairline table. */
+/** Nine rows grouped by provenance into three columns, each headed by the chip used next to features site-wide. */
 const GROUPS = [
-  { tone: "success", keys: ["core", "trades"] },
-  { tone: "warn", keys: ["cash", "kyc", "iso", "notice"] },
-  { tone: "neutral", keys: ["ardfm", "mainnet", "squads"] },
+  { tone: "success", chip: "onchain", keys: ["core", "trades"] },
+  { tone: "warn", chip: "simulated", keys: ["cash", "kyc", "iso", "notice"] },
+  { tone: "neutral", chip: "roadmap", keys: ["ardfm", "mainnet", "squads"] },
 ] as const;
 
 export function ImplementedVsSimulated() {
@@ -254,6 +255,12 @@ export function ImplementedVsSimulated() {
                 : "border border-n200 bg-n0",
             )}
           >
+            <div className="mb-5 border-b border-n200/70 pb-4">
+              <ProvenanceChip kind={g.chip} />
+              <p className="mt-2 text-sm text-n600">
+                <StableText>{t(`groups.${g.chip}`)}</StableText>
+              </p>
+            </div>
             <ul className="space-y-6">
               {g.keys.map((k) => (
                 <li key={k}>

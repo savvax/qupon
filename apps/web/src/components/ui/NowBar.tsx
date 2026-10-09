@@ -42,7 +42,8 @@ export function NowBar({
   /** A CountdownClock or a date. */
   clock?: ReactNode;
   tone?: keyof typeof TONE;
-  dock?: "page" | "tabbar";
+  /** Phones: docked to the screen bottom (`page`), above the cabinet tab bar (`tabbar`) or inline (`none`). */
+  dock?: "page" | "tabbar" | "none";
   className?: string;
 }) {
   const t = useTranslations("kit");
@@ -53,8 +54,11 @@ export function NowBar({
         className={cx(
           "z-30 flex flex-col gap-3 border p-3 sm:p-4 md:flex-row md:items-center md:gap-5 md:rounded-card",
           // phones: docked bar, full width, raised above the content
-          "max-md:fixed max-md:inset-x-0 max-md:border-x-0 max-md:border-b-0 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))] max-md:shadow-dock",
-          dock === "tabbar" ? "max-md:bottom-16" : "max-md:bottom-0",
+          dock !== "none" &&
+            "max-md:fixed max-md:inset-x-0 max-md:border-x-0 max-md:border-b-0 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))] max-md:shadow-dock",
+          dock === "tabbar" && "max-md:bottom-16",
+          dock === "page" && "max-md:bottom-0",
+          dock === "none" && "rounded-card",
           TONE[tone],
           className,
         )}
@@ -95,7 +99,7 @@ export function NowBar({
         </div>
       </section>
       {/* reserves the docked bar's height on phones */}
-      <div aria-hidden className="h-28 md:hidden" />
+      {dock !== "none" && <div aria-hidden className="h-28 md:hidden" />}
     </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { type CSSProperties, type ReactNode, useId } from "react";
+import { StableLabel } from "@/components/i18n/StableLabel";
 
 export const GLOSSARY = [
   "recordDate",
@@ -31,9 +32,12 @@ export type GlossaryKey = (typeof GLOSSARY)[number];
 export function GlossaryTerm({
   term,
   children,
+  stable = false,
 }: {
   term: GlossaryKey;
   children?: ReactNode;
+  /** Reserve the width of the longer EN/RU term (standalone chips; not inside running text). */
+  stable?: boolean;
 }) {
   const t = useTranslations("kit.glossary");
   const id = `qp-g${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
@@ -45,7 +49,12 @@ export function GlossaryTerm({
         className="qp-term inline font-[inherit] text-[length:inherit]"
         style={{ anchorName: `--${id}` } as CSSProperties}
       >
-        {children ?? t(`${term}.term`)}
+        {children ??
+          (stable ? (
+            <StableLabel align="start">{t(`${term}.term`)}</StableLabel>
+          ) : (
+            t(`${term}.term`)
+          ))}
       </button>
       <span
         id={id}

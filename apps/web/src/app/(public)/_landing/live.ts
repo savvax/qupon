@@ -1,4 +1,5 @@
 import {
+  type ActivityLike,
   eventSeries,
   listActivity,
   listPublicSeries,
@@ -22,9 +23,15 @@ export type LastAction = {
   currency: string;
   holders: number;
   sig?: string;
+  /** When it completed (ISO 8601). */
+  at?: string;
+  /** The action account (landing money flow). */
+  actionPda?: string;
+  mint?: string;
 };
 
 export type Live = {
+  activity: ActivityLike[];
   active: SeriesDTO[];
   txCount: number;
   txMore: boolean;
@@ -37,12 +44,19 @@ export async function loadLive(): Promise<Live> {
     listPublicSeries().catch(() => [] as SeriesDTO[]),
     listActivity(200).catch(() => []),
   ]);
+  // The last *payout*: a completed coupon/redemption/call that actually paid someone (a meeting completes with 0).
   const done = activity
-    .filter((e) => e.kind === "ActionCompleted")
+    .filter(
+      (e) =>
+        e.kind === "ActionCompleted" &&
+        BigInt(String(e.payload?.total_paid ?? "0")) > 0n &&
+        Number(e.payload?.holders_paid ?? 0) > 0,
+    )
     .sort((a, b) => b.ts - a.ts)[0];
   const p = done?.payload ?? {};
   const s = done ? eventSeries(done, series) : undefined;
   return {
+    activity,
     active: series.filter((x) => x.status === "Active"),
     txCount: new Set(activity.map((e) => e.sig)).size,
     txMore: activity.length >= 200,
@@ -55,6 +69,9 @@ export async function loadLive(): Promise<Live> {
             currency: s.faceValue.currency,
             holders: Number(p.holders_paid ?? 0),
             sig: done.sig,
+            at: new Date(done.ts * 1000).toISOString(),
+            actionPda: done.actionPda ?? done.action_pda ?? undefined,
+            mint: s.mint,
           }
         : undefined,
   };

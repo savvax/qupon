@@ -71,7 +71,7 @@ function Marker({ state, n }: { state: FlowStepState; n: number }) {
 
 /**
  * A corporate action as a row of steps (record → snapshot → fund → pay → complete …), each with its time, its
- * transaction, who may push it and what it produced. Horizontal when its container is ≥ 56 rem wide, a vertical
+ * transaction, who may push it and what it produced. Horizontal when its container is ≥ 48 rem wide, a vertical
  * rail below that — nothing is truncated at any width.
  */
 export function ActionFlow({
@@ -90,20 +90,20 @@ export function ActionFlow({
     );
   return (
     <div className={cx("@container", className)}>
-      <ol className="grid @4xl:auto-cols-[minmax(0,1fr)] @4xl:grid-flow-col">
+      <ol className="grid @3xl:auto-cols-[minmax(0,1fr)] @3xl:grid-flow-col">
         {steps.map((s, i) => {
           const last = i === steps.length - 1;
           return (
             <li
               key={s.id}
               aria-current={s.state === "current" ? "step" : undefined}
-              className="relative flex gap-3 pb-5 last:pb-0 @4xl:flex-col @4xl:gap-2.5 @4xl:pr-4 @4xl:pb-0"
+              className="relative flex gap-3 pb-5 last:pb-0 @3xl:flex-col @3xl:gap-2.5 @3xl:pr-4 @3xl:pb-0"
             >
               {!last && (
                 <span
                   aria-hidden
                   className={cx(
-                    "absolute top-7 bottom-1 left-[11px] w-0.5 rounded-full @4xl:top-[11px] @4xl:right-2 @4xl:bottom-auto @4xl:left-8 @4xl:h-0.5 @4xl:w-auto",
+                    "absolute top-7 bottom-1 left-[11px] w-0.5 rounded-full @3xl:top-[11px] @3xl:right-2 @3xl:bottom-auto @3xl:left-8 @3xl:h-0.5 @3xl:w-auto",
                     s.state === "done" ? "bg-g500" : "bg-n200",
                   )}
                 />

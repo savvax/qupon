@@ -18,7 +18,17 @@
     "forInvestors": "For investors",
     "tagline": "Corporate actions for tokenized bonds",
     "menu": "Menu",
-    "main": "Main"
+    "main": "Main",
+    "try": "Try it in 3 minutes",
+    "tryShort": "Try in 3 min",
+    "sandbox": "Sandbox",
+    "viewAs": "View as",
+    "view": {
+      "public": "Public",
+      "issuer": "Issuer",
+      "registrar": "Registrar",
+      "investor": "Investor"
+    }
   },
   "status": {
     "Active": "Active",
@@ -72,14 +82,14 @@
       "badge": "Live on Solana devnet",
       "title": "Every coupon, redemption and bondholder vote, executed on-chain",
       "lead": "Record date, per-holder entitlements, escrowed settlement and ISO 20022 reporting for tokenized bonds, under Kazakhstan market rules.",
-      "cta": "Open the demo",
+      "cta": "Try it in 3 minutes",
       "overview": "Technical overview"
     },
     "last": {
-      "title": "Last corporate action",
+      "title": "Last completed payout",
       "completed": "Completed",
       "total": "Total paid",
-      "holders": "{count, plural, =0 {Not paid yet} one {# holder paid} other {# holders paid}}",
+      "holders": "{count, plural, one {# holder paid} other {# holders paid}}",
       "steps": "All 6 steps on-chain",
       "example": "Example from the brief",
       "stepOf": "Step {n} of {total}"
@@ -208,6 +218,11 @@
           "badge": "Ready, not deployed",
           "text": "Network profile, write confirmations and a dry-run deploy script are in place; everything runs on devnet."
         }
+      },
+      "groups": {
+        "onchain": "Running on Solana devnet: the program enforces it and every step is a transaction.",
+        "simulated": "Stand-ins for outside systems, labelled wherever they appear. Nothing real leaves the demo.",
+        "roadmap": "Designed, not built yet."
       }
     },
     "platform": {
@@ -237,6 +252,11 @@
         "title": "Mainnet-ready",
         "text": "Same code, a network profile per deployment: demo access off and a typed confirmation for every write on mainnet."
       }
+    },
+    "flow": {
+      "title": "Follow one coupon to the last tenge",
+      "lead": "The issuer funds an escrow; the program pays every holder their exact share, sends withheld tax to the tax vault and routes bank payouts through the paying agent. Each band is proportional to the money it carries, and each leg is a transaction you can open.",
+      "terms": "Terms on this page"
     }
   },
   "bonds": {

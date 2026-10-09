@@ -204,8 +204,8 @@ export function MoneyFlow({
             {fundT > 0 && (
               <path
                 d={band(H / 2 - fundT / 2, fundT, top, fundT)}
-                fill="var(--color-viz-escrow)"
-                opacity={fundOn ? (isCurrent("fund") ? 1 : 0.85) : 0.15}
+                fill="var(--color-p500)"
+                opacity={fundOn ? (isCurrent("fund") ? 0.7 : 0.4) : 0.12}
                 className="transition-opacity duration-300"
               />
             )}
@@ -217,7 +217,10 @@ export function MoneyFlow({
               />
             )}
           </svg>
-          <span className="absolute inset-x-0 top-1/2 -translate-y-[calc(100%+6px)] text-center text-micro font-bold text-n700">
+          <span
+            className="absolute inset-x-0 text-center text-micro font-bold text-n700"
+            style={{ top: Math.max(0, top - 20) }}
+          >
             <Amount minor={escrow.funded} currency={currency} locale={locale} />
           </span>
         </div>
@@ -302,7 +305,7 @@ export function MoneyFlow({
               <li
                 key={r.id}
                 className={cx(
-                  "grid grid-cols-[4px_minmax(0,1fr)_auto] items-center gap-x-2.5 rounded-btn border px-2.5",
+                  "grid grid-cols-[4px_minmax(0,1fr)] items-center gap-x-2.5 rounded-btn border px-2.5",
                   isCurrent(r.id) ? "border-g400 ring-2 ring-g400/40" : "border-n200",
                   r.kind === "agent" && "qp-hatch",
                 )}
@@ -320,42 +323,46 @@ export function MoneyFlow({
                           : "var(--color-viz-pending)",
                   }}
                 />
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-bold text-n900" title={r.label}>
-                    {r.kind === "tax" ? t("taxVault") : r.kind === "agent" ? t("agent") : r.label}
-                  </div>
-                  <div className="truncate text-xs text-n500">
-                    {r.kind === "tax"
-                      ? t("taxSub")
-                      : r.kind === "agent"
-                        ? t("agentSub", { who: r.label })
-                        : r.sub}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-0.5 text-right">
-                  <Amount
-                    minor={r.amount}
-                    currency={currency}
-                    locale={locale}
-                    className={cx(
-                      "text-sm font-bold",
-                      s === "paid" || s === "agent" ? "text-n900" : "text-n500",
-                    )}
-                  />
-                  {s === "paid" && r.tx ? (
-                    <Tx sig={r.tx} sample={sampleTx} />
-                  ) : r.kind === "agent" ? (
-                    <ProvenanceChip kind="simulated" className="h-5" />
-                  ) : (
-                    <span
-                      className={cx(
-                        "text-micro font-bold",
-                        s === "defaulted" ? "text-default" : "text-n500",
-                      )}
-                    >
-                      {t(`status.${s}`)}
+                <div className="min-w-0 space-y-0.5">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="min-w-0 truncate text-sm font-bold text-n900" title={r.label}>
+                      {r.kind === "tax" ? t("taxVault") : r.kind === "agent" ? t("agent") : r.label}
                     </span>
-                  )}
+                    <Amount
+                      minor={r.amount}
+                      currency={currency}
+                      locale={locale}
+                      className={cx(
+                        "shrink-0 text-sm font-bold",
+                        s === "paid" || s === "agent" ? "text-n900" : "text-n500",
+                      )}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate text-xs text-n500">
+                      {r.kind === "tax"
+                        ? t("taxSub")
+                        : r.kind === "agent"
+                          ? t("agentSub", { who: r.label })
+                          : r.sub}
+                    </span>
+                    <span className="shrink-0">
+                      {s === "paid" && r.tx ? (
+                        <Tx sig={r.tx} sample={sampleTx} />
+                      ) : r.kind === "agent" ? (
+                        <ProvenanceChip kind="simulated" className="h-5" />
+                      ) : (
+                        <span
+                          className={cx(
+                            "text-micro font-bold",
+                            s === "defaulted" ? "text-default" : "text-n500",
+                          )}
+                        >
+                          {t(`status.${s}`)}
+                        </span>
+                      )}
+                    </span>
+                  </div>
                 </div>
               </li>
             );

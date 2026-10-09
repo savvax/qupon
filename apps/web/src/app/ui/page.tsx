@@ -11,6 +11,7 @@ import { Stepper } from "@/components/ui/Stepper";
 import { STATUS_TONE } from "@/lib/ui/badge";
 import type { ButtonSize, ButtonVariant } from "@/lib/ui/button";
 import { GalleryDemo } from "./demo";
+import { PrimitivesGallery } from "./primitives";
 
 // Dev-only component reference (not linked from any nav); excluded from search engines.
 export const metadata: Metadata = {
@@ -273,6 +274,8 @@ export default function GalleryPage() {
           action={<Button variant="secondary">Refresh</Button>}
         />
       </Section>
+
+      <PrimitivesGallery />
 
       <GalleryDemo />
     </main>

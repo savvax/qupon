@@ -224,6 +224,12 @@ export async function listActivity(limit = 200): Promise<ActivityLike[]> {
   return body.events ?? [];
 }
 
+/** Slot of the newest indexed event (header network chip); undefined when the feed is empty or down. */
+export const latestSlot = (): Promise<number | undefined> =>
+  listActivity(1)
+    .then((evs) => evs.reduce((m, e) => Math.max(m, e.slot ?? 0), 0) || undefined)
+    .catch(() => undefined);
+
 /** Advance one lifecycle step through the session proxy (registrar session required). */
 export async function postAdvance(
   pda: string,
