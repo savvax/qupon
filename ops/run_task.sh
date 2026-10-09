@@ -10,6 +10,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/ops/lib.sh"
 [ -f "$ROOT/.env" ] && set -a && source "$ROOT/.env" && set +a
 
+# Copy-on-write clone of main's build cache (APFS clonefile: instant, shares blocks until written): registry crates and
+# node toolchains are reused, only this worktree's own crates rebuild — no full Rust build per task, little extra disk.
+if [ ! -e target ] && [ -d "$ROOT/target" ]; then
+  cp -c -R "$ROOT/target" target 2>/dev/null || rm -rf target
+  rm -f target/deploy/qupon_bonds-keypair.json   # a symlink to the out-of-repo program keypair in the main tree
+fi
+
 ID=$(task_id "$TASK")
 TIMEOUT_MIN=$(task_timeout "$TASK")
 PROMPT="$(cat "$ROOT/prompts/worker-preamble.md")

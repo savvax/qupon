@@ -3,7 +3,7 @@ id: 1534
 title: registrar console v2
 agent: glm
 tier: T1
-depends_on: [1530, 1522, 1523]
+depends_on: [1530, 1522, 1523, 91522]
 verify: make verify
 timeout_min: 90
 plan: docs/superpowers/plans/2026-10-09-plan15-judge-experience.md
