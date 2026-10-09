@@ -1,6 +1,6 @@
 # Verified build — qupon_bonds (task 036)
 
-Date: 2026-10-06 (updated after tasks 1301 and 91301) · program id `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (devnet)
+Date: 2026-10-09 (updated after task 1519, plan-15 program wave) · program id `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (devnet)
 
 ## Deterministic build
 
@@ -8,7 +8,7 @@ Date: 2026-10-06 (updated after tasks 1301 and 91301) · program id `QPN1zdVm6Pg
 solana-verify build --library-name qupon_bonds \
   --base-image solanafoundation/solana-verifiable-build:4.3.0
 solana-verify get-executable-hash target/deploy/qupon_bonds.so
-# fbd258bbba79abf8bfb8f991a9c0b30ef6ce33c84b288acd3557bb92872865f5
+# 4a2e46778847f8b6277194a74ee89e9145fc8c03f8e4e8c9ede3bdda752a3505
 ```
 
 - solana-verify **0.5.2**. The default image (3.0.1, cargo 1.84) cannot build our
@@ -18,13 +18,13 @@ solana-verify get-executable-hash target/deploy/qupon_bonds.so
 
 ## On-chain match
 
-- Current binary (task 1402: partial calls keep units and lower the outstanding face, `fund_action` capped at the
-  shortfall, `sweep_escrow`): docker-built .so (633,000 bytes; program account extended by 20,000 bytes) deployed
-  with the registrar upgrade authority, tx
-  `51Kkq7y1BMPCjHsDCMFLBdaZj15fgaqMPjBRSoaUhtigzSZiRYP1zR5fXmE28zr8yFahVxSCbKVDf6XYktHChgQf`; IDL republished
-  (previous verified binaries: 1301 `bbe6b2bf…`, 041 `3d419567…`, 036 `804e0ca8…`).
+- Current binary (task 1519, plan-15 wave 1510–1515 + review fixes: hook-gated record date, permissionless crank,
+  demo clock, default/cure, atomic pay+burn, holder payout routes, disclosure hash, accrued interest on trades):
+  docker-built .so (777,600 bytes; program account extended by 200,000 bytes) deployed with the registrar upgrade
+  authority, tx `4CRj5VPpCi1jPSPRjjdiWiT718nAP3Zk7dp4v473DR1JBH4WBizvQmwFEgA5d7HXMgQg91GoPgeNyY4hRu4uPwT2`; IDL
+  republished (previous verified binaries: 1402 `fbd258bb…`, 1301 `bbe6b2bf…`, 041 `3d419567…`, 036 `804e0ca8…`).
 - `solana-verify get-program-hash QPN1zd… -u devnet` →
-  `fbd258bbba79abf8bfb8f991a9c0b30ef6ce33c84b288acd3557bb92872865f5` ✅ matches.
+  `4a2e46778847f8b6277194a74ee89e9145fc8c03f8e4e8c9ede3bdda752a3505` ✅ matches.
 
 ## Judges: verify from repo
 
