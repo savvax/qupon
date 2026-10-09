@@ -3,7 +3,7 @@ id: 1519
 title: program wave integration and devnet deploy (Opus)
 agent: claude
 tier: T0
-depends_on: [1515]
+depends_on: [1515, 1516]
 verify: make verify
 timeout_min: 180
 plan: docs/superpowers/plans/2026-10-09-plan15-judge-experience.md
@@ -18,6 +18,7 @@ Implement task 1519 of plan 15 exactly as written below (the plan section is cop
 - docs/02-architecture.md
 - docs/03-domain.md
 - programs/qupon_bonds/tests/common/mod.rs
+- programs/qupon_bonds/tests/hook.rs (transfer-hook gate, spike 1509)
 
 ## Plan section
 ### Task 1519: program wave integration and devnet deploy (Opus)

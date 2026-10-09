@@ -18,6 +18,7 @@ Implement task 1511 of plan 15 exactly as written below (the plan section is cop
 - docs/02-architecture.md
 - docs/03-domain.md
 - programs/qupon_bonds/tests/common/mod.rs
+- programs/qupon_bonds/tests/hook.rs (transfer-hook gate, spike 1509)
 
 ## Plan section
 ### Task 1511: program — demo clock per series
@@ -25,14 +26,14 @@ Implement task 1511 of plan 15 exactly as written below (the plan section is cop
 **Agent:** glm · **Depends on:** 1501, 1510 · **Role:** anchor
 
 **Files:**
-- Modify: `state.rs` Series: before `reserved` add `pub day_secs: u32, pub issue_ymd: u32,`; `reserved: [u8; 52]`
+- Modify: `state.rs` Series: before `reserved` add `pub day_secs: u32, pub issue_ymd: u32,`; `reserved: [u8; 38]` (46 after 1509, minus 8)
 - Create: `programs/qupon_bonds/src/clock.rs` (wrapper over `entitlement::CivilClock`)
-- Modify: `init_series.rs` (params `day_secs: u32`, `issue_ymd: u32`; validation via clock), `announce_action.rs` (`civil_matches` → clock), `settle.rs` (`next_coupon_after` → clock), `meeting.rs` (`is_almaty_midnight` → clock), `utils.rs` (`strike_lead_secs` → clock)
+- Modify: `init_series.rs` (params `day_secs: u32`, `issue_ymd: u32`; validation via clock), `announce_action.rs` (`civil_matches` → clock), `settle.rs` (`next_coupon_after` → clock), `meeting.rs` (`is_almaty_midnight` → clock)
 - Modify TS: `clients/ts/src/lib/clock.ts` (mirror of CivilClock, tested against `fixtures/entitlement.json` `clock_cases`), `src/commands/common.ts` (`almatyMidnight` callers → clock), `series.ts`/`seriesCreate.ts` (`--demo-day-secs <n>`: issue_date = now rounded down to the second, maturity/next dates through the clock), `action.ts`/`lifecycle.ts` (record_at = period_end − 1 series-day; payment_at = period_end; meeting dates through the clock)
 - Modify Go: `chain/types.go`/`decode.go` (Series `DaySecs`, `IssueYmd`), `scheduler/scheduler.go` (lead/payment delay in series-days for demo series; tick 2 s when any demo series is open)
 - Test: `programs/qupon_bonds/tests/init_series.rs`, new `tests/demo_clock.rs`; `clients/ts/src/lib/clock.test.ts`; Go decode test
 
-**Interfaces — Produces:** `pub struct SeriesClock(CivilClock)` with `SeriesClock::of(&Series) -> Result<Self>`, `::from_params(day_secs, issue_date, issue_ymd) -> Result<Self>`, `.civil(ts)`, `.ts(ymd)`, `.add_months(ts, m)`, `.is_midnight(ts)`, `.strike_lead() -> i64` (real 600, demo `day_secs`), `.grace() -> i64` (one series day), `.is_demo()`. TS `seriesClock(series)` with the same methods. CLI flag `--demo-day-secs`.
+**Interfaces — Produces:** `pub struct SeriesClock(CivilClock)` with `SeriesClock::of(&Series) -> Result<Self>`, `::from_params(day_secs, issue_date, issue_ymd) -> Result<Self>`, `.civil(ts)`, `.ts(ymd)`, `.add_months(ts, m)`, `.is_midnight(ts)`, `.grace() -> i64` (one series day), `.is_demo()`. TS `seriesClock(series)` with the same methods. CLI flag `--demo-day-secs`.
 
 - [ ] **Step 1: failing test** `tests/demo_clock.rs`:
 
@@ -82,7 +83,7 @@ fn real_clock_series_unchanged() {
 //! Civil dates ↔ timestamps for a series: real = Almaty midnights; demo = `day_secs` per civil day (spec D7).
 use anchor_lang::prelude::*;
 use entitlement::{CivilClock, Ymd};
-use crate::{constants::{ALMATY_UTC_OFFSET_SECS, STRIKE_LEAD_REAL_SECS}, error::{math_err, QuponError}, state::Series};
+use crate::{constants::ALMATY_UTC_OFFSET_SECS, error::{math_err, QuponError}, state::Series};
 
 pub struct SeriesClock(pub CivilClock);
 
@@ -97,7 +98,6 @@ impl SeriesClock {
     pub fn ts(&self, d: Ymd) -> Result<i64> { self.0.ts(d).map_err(math_err) }
     pub fn add_months(&self, ts: i64, m: u32) -> Result<i64> { self.0.add_months(ts, m).map_err(math_err) }
     pub fn is_midnight(&self, ts: i64) -> bool { self.0.is_midnight(ts) }
-    pub fn strike_lead(&self) -> i64 { if self.0.is_demo() { self.0.day_secs } else { STRIKE_LEAD_REAL_SECS } }
     pub fn grace(&self) -> i64 { self.0.day_secs }
 }
 ```

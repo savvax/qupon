@@ -18,6 +18,7 @@ Implement task 1513 of plan 15 exactly as written below (the plan section is cop
 - docs/02-architecture.md
 - docs/03-domain.md
 - programs/qupon_bonds/tests/common/mod.rs
+- programs/qupon_bonds/tests/hook.rs (transfer-hook gate, spike 1509)
 
 ## Plan section
 ### Task 1513: program — atomic pay + burn at redemption; 5-account pay layout
@@ -35,7 +36,7 @@ Implement task 1513 of plan 15 exactly as written below (the plan section is cop
     assert_eq!(cash_balances(&env, &h), vec![1_050_000, 2_625_000, 6_825_000]); // principal + final coupon
     assert_eq!(mint_supply(&env, &b), 0);
     for e in fetch_entitlements(&env, &r) { assert_eq!(e.status, EntitlementStatus::Retired as u8); }
-    assert!(mint_paused(&env, &b.mint)); // paused again after every batch
+    // hooked: register stays locked by the gate; legacy variant of this test asserts the mint is paused again
     complete_as_outsider(&mut env, &b, &r);
     close_series(&mut env, &b, &r).expect("supply already 0");
 }
@@ -58,7 +59,7 @@ Implement task 1513 of plan 15 exactly as written below (the plan section is cop
 }
 ```
 
-- [ ] **Step 2: implement** — in `handle_pay_batch`: `require!(rem.len().is_multiple_of(5))`; per holder verify `t[2].key() == find_program_address([PAYOUT_ROUTE_SEED, investor.key()])`, `t[3] == investor.cash_ata` (1514 adds the bank branch), `t[4] == investor.bond_ata`; for `Redemption | EarlyRedemption`: once per batch `pausable_resume` (series PDA signer), per holder after the cash transfer: if the bond ATA is frozen `thaw_account` (series PDA = freeze authority), `burn_checked(ent.units)` with the series PDA as permanent delegate, `ent.status = Retired`, `action.total_retired += units`, `action.holders_retired += 1`, emit `UnitsRetired`; at the end of the batch `pausable_pause`. `complete_action` reconciliation unchanged; for REDM/MCAL → `Retiring` (supply already 0) — `close_series` requirement `holders_retired == holders_snapshotted` holds.
+- [ ] **Step 2: implement** — in `handle_pay_batch`: `require!(rem.len().is_multiple_of(5))`; per holder verify `t[2].key() == find_program_address([PAYOUT_ROUTE_SEED, investor.key()])`, `t[3] == investor.cash_ata` (1514 adds the bank branch), `t[4] == investor.bond_ata`; for `Redemption | EarlyRedemption` — hooked series: the register is already locked by the gate and a permanent-delegate burn does not invoke the hook, so no pause dance; legacy series: once per batch `pausable_resume` (series PDA signer) — then per holder after the cash transfer: if the bond ATA is frozen `thaw_account` (series PDA = freeze authority), `burn_checked(ent.units)` with the series PDA as permanent delegate, `ent.status = Retired`, `action.total_retired += units`, `action.holders_retired += 1`, emit `UnitsRetired`; legacy only: at the end of the batch `pausable_pause`. `complete_action` reconciliation unchanged; for REDM/MCAL → `Retiring` (supply already 0) — `close_series` requirement `holders_retired == holders_snapshotted` holds.
 - [ ] **Step 3:** CLI pay builder passes 5 accounts/holder and the new fixed accounts; `cu_benchmarks` asserts ≤ 400k CU for a 5-holder REDM batch; codama; docs; `make verify`.
 - [ ] **Step 4: commit** `feat(program): atomic pay+burn for redemptions; payout-route slot in pay_batch` (`task: 1513`).
 

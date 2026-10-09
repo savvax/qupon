@@ -18,6 +18,7 @@ Implement task 1515 of plan 15 exactly as written below (the plan section is cop
 - docs/02-architecture.md
 - docs/03-domain.md
 - programs/qupon_bonds/tests/common/mod.rs
+- programs/qupon_bonds/tests/hook.rs (transfer-hook gate, spike 1509)
 
 ## Plan section
 ### Task 1515: program — disclosure anchoring and accrued interest on DvP trades

@@ -9,6 +9,7 @@
 
 ## Global Constraints
 - Devnet only. Never commit secrets. Toolchain pins unchanged (Agave 4.3.0, Anchor 1.2.0, @solana/kit 8.x, Go 1.26, Node 22, pnpm 9).
+- **New series are hooked** (Token-2022 `TransferHook` = this program, `init_hook` after `init_series`); legacy series keep the pause path. Every client that moves bond units adds the hook extras (1516).
 - **Account sizes are frozen** (D8): `Series` 389 B, `Investor` 182 B, `CorporateAction` 435 B, `Entitlement` 131 B, `TradeAdmission` 193 B. New fields only by shrinking `reserved` by exactly their byte size; every such task adds a test asserting `8 + INIT_SPACE` is unchanged.
 - **Error codes are positional**: append new `QuponError` variants only at the end of the enum (before the closing brace at `error.rs:76`), never reorder.
 - **Enums are append-only**: `ActionStatus::Defaulted = 10`; `EntitlementStatus::PaidToAgent = 3`.
@@ -21,14 +22,14 @@
 
 ## Review Focus
 - An outsider calls a permissionless step (strike/snapshot/finalize/pay/complete/retire/declare_default) at the wrong time or with substituted accounts (other investor's ATA, foreign entitlement, wrong destination) → the instruction fails and no token moves. Pinned in 1510, 1512, 1513, 1514.
-- A transfer is attempted between an early strike and `record_at` → it fails (`MintPaused`), and every entitlement equals the balance at `record_at`. Pinned in 1510.
+- A transfer is attempted after `record_at` before the sender's or receiver's snapshot → `HolderNotSnapshotted`; snapshot-then-transfer in one tx passes and the entitlement equals the balance at `record_at`; a direct `execute` call is rejected. Pinned in 1509/1510.
 - An INTR coupon defaults, a holder sells the bond, the issuer cures → the coupon goes to the record-date holder, not the buyer. Pinned in 1512.
 - A full redemption where one holder is suspended (frozen ATA) and one holder chose bank payout → pay+burn succeeds for all, supply reaches 0, `close_series` works after the agent confirms. Pinned in 1513/1514.
 - A demo-clock series on the mainnet profile, and the real clock after the refactor → registrar refuses the former; every pre-existing program test passes unchanged for the latter. Pinned in 1511 and 1524.
 
 ---
 
-## Harness (lead does H1–H2 before releasing wave A; not queue tasks)
+## Harness (H1–H2 done 2026-10-09, commit 337dd88; not queue tasks)
 
 Existing loop (`ops/orchestrate.sh`): claim → worktree → `ops/run_task.sh` (pi GLM-5.3) → orchestrator's own `make verify` → rebase + ff-merge. **New:** an Opus gate between verify and merge, with feedback → resume.
 
@@ -254,14 +255,14 @@ for (const r of routes)
 
 | Wave | Release | Tasks | Ends |
 |---|---|---|---|
-| A — foundations | Oct 9 after H1/H2 | 1501, 1503, 1504, 1530 (Opus), 1510 | Oct 9 night |
+| A — foundations | Oct 9 (H1/H2 done, 1509 spike GO) | 1501, 1503, 1504, 1530 (Opus), 1510 (Opus) | Oct 10 morning |
 | B — program chain | each after its predecessor merges | 1511 → 1512 → 1513 → 1514 → 1515 → 1519 (Opus deploy) | Oct 10 18:00 |
-| C — services | after 1515 (1502, 1505, 1531 earlier) | 1502, 1505, 1520, 1521, 1522, 1523, 1524, 1525, 1526, 1541 | Oct 11 12:00 |
+| C — services | after 1515 (1502, 1505, 1516, 1531 earlier) | 1502, 1505, 1516, 1520, 1521, 1522, 1523, 1524, 1525, 1526, 1541 | Oct 11 12:00 |
 | D — product UI | after 1530 golden screens | 1531, 1532, 1533, 1534, 1535, 1536 | Oct 11 22:00 |
 | E — finish | — | 1537 (Opus pre-flight), 1540 (Opus redeploy + live e2e) | Oct 12 12:00 (code freeze) |
 | T2 stretch | only if A–D are merged by Oct 11 18:00 | 1550, 1551 | — |
 
-Agent tags: `glm` unless stated. Opus (`agent: claude`): 1530, 1537, 1519, 1540. Lead budget: ≤ 2 concurrent Opus reviews.
+Agent tags: `glm` unless stated. Opus (`agent: claude`): 1510, 1530, 1537, 1519, 1540. Lead budget: ≤ 2 concurrent Opus reviews.
 
 ---
 
@@ -444,135 +445,50 @@ Fill the checksum from `https://github.com/gitleaks/gitleaks/releases/download/v
 
 **Acceptance:** switching to KZ persists via cookie and profile; every base page renders in kk with no raw keys (sweep in kk shows no console errors for base namespaces); amounts/dates formatted `kk-KZ`; `make verify` green.
 
-### Task 1510: program — exact record date, trustless crank, set hash
+### Task 1509: spike — transfer-hook gate (DONE, GO)
 
-**Agent:** glm · **Depends on:** — · **Role:** anchor
+**Agent:** claude (Opus, lead) · merged. Evidence: `programs/qupon_bonds/tests/hook.rs` (6 tests), `reports/worklog/1509.md`. The program is the bond mint's transfer hook (`execute`, SPL discriminator); `init_hook` writes the validation account (extra metas: series PDA, checkpoint of the source owner, checkpoint of the destination owner — owners read from bytes 32..64 of the token accounts); `announce_action` arms `Series.{record_kind, record_seq, record_at}` (carved from `reserved`, now 46 B); `Checkpoint ["ckpt", series, owner] {bump, series, owner, last_seq}`; `mark_snapshotted` is a stand-in removed by 1510. CU: hooked transfer 30k; 2 marks + transfer 41k; 2 marks + SettleDvp 73k.
+
+### Task 1510: program — hook-gated record date in the product flow, trustless crank, set hash
+
+**Agent:** claude (Opus) · **Depends on:** 1509 · **Role:** anchor
 
 **Files:**
-- Modify: `programs/qupon_bonds/src/state.rs` (CorporateAction: `pub hash_scheme: u8,` before `reserved`, `reserved: [u8; 63]`)
-- Modify: `programs/qupon_bonds/src/constants.rs` (`STRIKE_LEAD_REAL_SECS: i64 = 600`, `SNAP_HASH_DOMAIN: &[u8] = b"qupon:snap:v1"`)
-- Modify: `programs/qupon_bonds/src/utils.rs` (`pub fn strike_lead_secs(_series: &Series) -> i64 { STRIKE_LEAD_REAL_SECS }` — 1511 makes it clock-aware)
-- Modify: `programs/qupon_bonds/src/instructions/snapshot.rs`, `settle.rs` (pay_batch, complete_action), `retire.rs` (retire_batch), `announce_action.rs` (set `hash_scheme = 1`)
-- Modify: `programs/qupon_bonds/src/events.rs` (+ `StrikeTiming`)
-- Modify: `services/registrar/internal/chain/types.go` + `decode.go` (CorporateAction `HashScheme uint8` = first reserved byte), `services/registrar/internal/reconcile/reconcile.go` (scheme 1 hash)
-- Test: `programs/qupon_bonds/tests/snapshot.rs`, `settle.rs`, `hardening.rs`; `services/registrar/internal/reconcile/reconcile_test.go`
-- Regenerate: `clients/ts/src/generated` (`pnpm codama`), `fixtures/accounts/*.b64` via `cargo test -p qupon_bonds --test export_fixtures` (sizes unchanged)
-- Docs: `docs/02-architecture.md` (signer column → "anyone" for the crank steps; StrikeTiming), `docs/03-domain.md` §4 (exact boundary + resume rule)
+- Modify: `programs/qupon_bonds/src/instructions/hook.rs` (remove `mark_snapshotted`; keep `init_hook`, `init_checkpoint`, `execute`; export `fn create_checkpoint(payer, series, owner, last_seq)` used below)
+- Modify: `register_investor.rs` (hooked series: create the owner's checkpoint; `last_seq = series.record_seq` if a record is pending and `now ≥ record_at`, else 0 — a new investor held nothing at `record_at` because their ATA was frozen until now), `trade.rs` (`admit_trade` on a hooked series creates the escrow owner's (`swap_dvp`) checkpoint with the same rule), `subscribe.rs` (`subscribe`/`issue_units`: hooked series with `record_at != 0 && now ≥ record_at` → `RecordPending`), `announce_action.rs` (`hash_scheme = 1`; `cancel_action` clears `series.record_at` when hooked)
+- Modify: `snapshot.rs`:
+  - legacy series: unchanged flow (strike → pause → snapshot → finalize), but **no role check** on strike/snapshot/finalize (anyone);
+  - hooked series: `strike_record` is not used (`WrongStatus`); `snapshot_batch(escrow_counts: Vec<u8>)` runs from `now ≥ series.record_at` while the action is Announced or RecordStruck (first batch: status → RecordStruck, `snapshot_slot = slot`, emit `RecordStruck`); per holder the group is `[Investor, bond ATA, Entitlement PDA, Checkpoint]` followed by `escrow_counts[i] × [TradeAdmission, escrow ATA, escrow Checkpoint]` (each admission's `seller == investor.owner` and `escrow` matches); units = own ATA + those escrows; zero units → only advance checkpoints (no Entitlement); every checkpoint touched gets `last_seq = record_seq`; already-advanced checkpoint + existing Entitlement → skip (idempotent);
+  - set hash for `hash_scheme == 1` (both paths): `snapshot_hash ^= sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units_le)`;
+  - `finalize_snapshot`: Σ units == supply (both paths); hooked: INTR/PCAL/BMET → `series.record_at = 0` (gate off, ex-date trading); REDM/MCAL keep it (register locked); legacy: INTR/PCAL resume right after finalize like BMET; REDM/MCAL stay paused.
+- Modify: `settle.rs` (`pay_batch`, `complete_action` no role check; `complete_action` resumes only if the mint is paused), `retire.rs` (`retire_batch` no role check)
+- Modify: `error.rs` (append `RecordPending`), `state.rs` (CorporateAction `hash_scheme: u8`, `reserved: [u8; 63]`)
+- Modify: `clients/ts/src/commands/action.ts` (`action:snapshot` builds the hooked groups incl. open admissions of each seller, `escrow_counts`; legacy unchanged), `clients/ts/src/lib/batch.ts` if needed; `pnpm codama`
+- Modify: Go `internal/chain` (CorporateAction `HashScheme`; Series hook fields; `DecodeCheckpoint`), `internal/reconcile` (scheme 1 set hash; hooked actions count escrowed units to the seller)
+- Tests: `tests/hook.rs` (rewrite the spike tests on the product flow), `tests/snapshot.rs`, `tests/trade.rs`, `tests/registry.rs` (new cases only); Go reconcile test
+- Docs: `docs/02-architecture.md` rows 7–9, 22–25 and the record-date section; `docs/03-domain.md` §4 (D1' text from the spec)
 
-**Interfaces — Produces:** event `StrikeTiming { series, action, index: u32, record_at: i64, struck_at: i64, early_by_secs: i64, snapshot_slot: u64, slot: u64, timestamp: i64 }`; `CorporateAction.hash_scheme` (0 = rolling, 1 = set hash); Go `reconcile.SetHashLeaf(action, owner [32]byte, units uint64) [32]byte`.
+**Tests (all on a hooked series unless stated):**
+- `intr_full_cycle_hooked_outsider_crank`: announce → `record_at` → outsider snapshot (3 groups) → finalize (Σ == 100) → a plain hooked transfer with no snapshot passes (gate off) → issuer funds → outsider pays → complete; cash 50,000 / 125,000 / 325,000.
+- `transfer_after_record_needs_snapshot_and_entitlement_is_balance_at_record_at`: 10-unit holder sends 4 in a `[snapshot(both), transfer]` tx → entitlement units 10 (not 6), receiver's entitlement unchanged by the 4.
+- `open_trade_across_record_date_is_attributed_to_seller`: 5 units escrowed at `record_at` → seller's entitlement = own + 5; settlement after `record_at` needs the seller group snapshotted (escrow checkpoint advanced) and the buyer's; Σ == supply.
+- `mint_blocked_while_record_pending`: `issue_units` after `record_at` → `RecordPending`; after finalize → ok.
+- `investor_registered_after_record_can_receive`: new investor's checkpoint starts at `record_seq`; a snapshotted holder can send to them.
+- `redemption_record_locks_register`: REDM announced; after `record_at` every transfer → `RecordLocked`, even after snapshot.
+- `legacy_series_unchanged_but_permissionless`: non-hooked series, outsider runs strike→snapshot→finalize→pay→complete; INTR resumes after finalize; REDM stays paused.
+- `set_hash_independent_of_batch_order` (hooked and legacy), `account_sizes_unchanged`.
 
-- [ ] **Step 1: failing tests** (`tests/snapshot.rs`, using `tests/common` helpers `setup_bond`, `holders`, `intr_args`, `Env::set_clock`):
+**Acceptance:** all tests above pass; all pre-existing tests pass unedited except helper signature updates for `snapshot_batch` (listed in the worklog); CLI `action:snapshot` works for both paths (unit test of the builder); Go reconcile scheme-1 test; `make verify` green.
 
-```rust
-#[test]
-fn outsider_can_strike_inside_lead_window_and_register_is_exact_at_record_at() {
-    let mut env = Env::new();
-    let b = setup_bond(&mut env);
-    let h = holders(&mut env, &b, &[10, 25, 65]);
-    let a = announce_intr(&mut env, &b); // existing helper path via intr_args
-    let outsider = env.new_funded_keypair();
-    env.set_clock(a.record_at - 300);
-    env.send(&[strike_ix(&b, &a, &outsider.pubkey())], &[&outsider]).expect("strike within lead");
-    // nobody can move units between the early strike and record_at
-    let err = env.send(&[transfer_ix(&b, &h[0], &h[1], 1)], &[&h[0].kp]).unwrap_err();
-    assert_err(err, "MintPaused"); // Token-2022 pausable error surfaced as custom 0x43
-    env.set_clock(a.record_at + 1);
-    snapshot_all_as(&mut env, &b, &a, &h, &outsider);
-    let ents = fetch_entitlements(&env, &a);
-    assert_eq!(ents.iter().map(|e| e.units).collect::<Vec<_>>(), vec![10, 25, 65]);
-    assert_eq!(ents.iter().map(|e| e.gross).collect::<Vec<_>>(), vec![50_000, 125_000, 325_000]);
-    let ev = env.last_event::<StrikeTiming>();
-    assert_eq!(ev.early_by_secs, 300);
-}
+### Task 1516: clients for hooked series (mint, init_hook, transfer extras)
 
-#[test]
-fn strike_before_lead_window_is_too_early() {
-    let (mut env, b, _h, a) = intr_announced();
-    env.set_clock(a.record_at - 601);
-    let err = env.send(&[strike_ix(&b, &a, &b.registrar.pubkey())], &[&b.registrar]).unwrap_err();
-    assert_err(err, "TooEarly");
-}
+**Agent:** glm · **Depends on:** 1510 · **Role:** ts-client
 
-#[test]
-fn set_hash_is_independent_of_batch_order() {
-    let (mut env, b, h, a) = intr_struck();
-    // submit holders in reverse owner order, one per batch, as an outsider
-    let outsider = env.new_funded_keypair();
-    for holder in h.iter().rev() { env.send(&[snapshot_ix(&b, &a, &[holder], &outsider.pubkey())], &[&outsider]).unwrap(); }
-    let action = fetch_action(&env, &a);
-    let mut expect = [0u8; 32];
-    for holder in &h {
-        let leaf = solana_sha256_hasher::hashv(&[b"qupon:snap:v1", a.pda.as_ref(), holder.owner.as_ref(), &holder.units.to_le_bytes()]).to_bytes();
-        for i in 0..32 { expect[i] ^= leaf[i]; }
-    }
-    assert_eq!(action.hash_scheme, 1);
-    assert_eq!(action.snapshot_hash, expect);
-}
+**Files:** `clients/ts/src/lib/bondMint.ts` / `bondMintFlow.ts` (new series: add `TransferHook` extension with program id = Qupon and authority = series PDA; after `init_series` send `init_hook`), `clients/ts/src/lib/hook.ts` (new: `hookExtras(series, srcOwner, dstOwner): AccountMeta[]` = [series, checkpoint(src), checkpoint(dst), program id, extra-metas PDA] read-only; `withHookExtras(ix, …)`), `clients/ts/src/commands/trade.ts` (fund: seller → escrow transfer with extras; settle/cancel/reclaim: append the bond leg's extras and set `leg_a_extras_count`; before settle after a record date prepend `snapshot_batch` for the seller group and the buyer), any demo transfer in `scripts/demo-full.ts`, `apps/web/src/app/(cabinet)/investor/_components/OpenTrades.tsx` + `src/lib/portal.ts` (wallet-signed funding transfer with extras), tests `hook.test.ts` (extras derivation vs fixtures: the PDAs for a known mint/owners), `trade.test.ts` updates.
+- [ ] Legacy (non-hooked) series: no extras (detect `series.hook == 0`).
+- [ ] Commit `feat(cli,web): hooked bond mints and transfer-hook extras on every bond transfer`.
 
-#[test]
-fn intr_resumes_trading_after_finalize_and_pays_record_date_holder() {
-    let (mut env, b, h, a) = intr_snapshotted(); // finalize done
-    assert!(!mint_paused(&env, &b.mint));
-    env.send(&[transfer_ix(&b, &h[0], &h[1], 10)], &[&h[0].kp]).expect("ex-date trading");
-    fund_full(&mut env, &b, &a);
-    let outsider = env.new_funded_keypair();
-    pay_all_as(&mut env, &b, &a, &h, &outsider);
-    assert_eq!(cash_balance(&env, &h[0]), 50_000); // the seller still gets the coupon
-    complete_as(&mut env, &b, &a, &outsider);
-    assert_eq!(fetch_action(&env, &a).status, ActionStatus::Completed as u8);
-}
-
-#[test]
-fn redemption_stays_paused_after_finalize() {
-    let (env, b, _h, _a) = redm_snapshotted();
-    assert!(mint_paused(&env, &b.mint));
-}
-
-#[test]
-fn outsider_cannot_fund_or_redirect_payment() {
-    let (mut env, b, h, a) = intr_snapshotted();
-    let outsider = env.new_funded_keypair();
-    assert_err(env.send(&[fund_ix_as(&b, &a, &outsider, 1)], &[&outsider]).unwrap_err(), "Unauthorized");
-    fund_full(&mut env, &b, &a);
-    // destination is not the investor's registered cash ATA
-    let err = env.send(&[pay_ix_with_dest(&b, &a, &h[0], &outsider.cash_ata(&b))], &[&outsider]).unwrap_err();
-    assert_err(err, "AccountOwnerMismatch");
-}
-
-#[test]
-fn account_sizes_unchanged() {
-    assert_eq!(8 + CorporateAction::INIT_SPACE, 435);
-    assert_eq!(8 + Series::INIT_SPACE, 389);
-}
-```
-
-(Add any missing tiny helpers — `new_funded_keypair`, `transfer_ix`, `snapshot_all_as`, `pay_all_as`, `complete_as`, `mint_paused`, `last_event` — to `tests/common/mod.rs`; reuse existing builders, do not duplicate them.)
-- [ ] **Step 2: run** `cargo test -p qupon_bonds --test snapshot` → new tests fail.
-- [ ] **Step 3: implement**
-  - `strike_record`: delete `require_operator`; replace the time check with
-    ```rust
-    let lead = strike_lead_secs(&ctx.accounts.series);
-    require!(clock.unix_timestamp >= action.record_at.checked_sub(lead).ok_or(QuponError::MathOverflow)?, QuponError::TooEarly);
-    ```
-    after the existing `RecordStruck` emit, emit `StrikeTiming { early_by_secs: action.record_at - clock.unix_timestamp, struck_at: clock.unix_timestamp, … }`.
-  - `snapshot_batch`, `finalize_snapshot`, `pay_batch`, `complete_action`, `retire_batch`: delete the `require_operator` call (keep the `authority`/payer signer; update its doc comment to "anyone (pays fees/rent)").
-  - `snapshot_batch`: replace the hash line with
-    ```rust
-    if action.hash_scheme == 1 {
-        let leaf = solana_sha256_hasher::hashv(&[SNAP_HASH_DOMAIN, action_key.as_ref(), owner.as_ref(), &ata.amount.to_le_bytes()]).to_bytes();
-        for (h, l) in action.snapshot_hash.iter_mut().zip(leaf) { *h ^= l; }
-    } else {
-        action.snapshot_hash = snapshot_hash_step(&action.snapshot_hash, &owner, ata.amount);
-    }
-    ```
-  - `announce_action`: `act.hash_scheme = 1;` for every new action.
-  - `finalize_snapshot`: `let resume = meeting || action.kind == ActionKind::Interest as u8 || action.kind == ActionKind::PartialRedemption as u8;` and resume when `resume` (the existing BMET block becomes the `resume` block; comment: "claims are fixed in Entitlement PDAs, so INTR/PCAL trade ex-date while being paid; REDM/MCAL stay frozen until paid and burned").
-  - `complete_action`: resume only `if mint_paused(&ctx.accounts.mint.to_account_info())?`.
-- [ ] **Step 4: Go** — `chain/types.go` CorporateAction gains `HashScheme uint8`; `decode.go` reads it as the first byte of `reserved` (size check unchanged); `reconcile.go`: `if a.HashScheme == 1 { hash = XOR of SetHashLeaf(...) over investors in any order } else { existing chain }`; table test with the 3 brief holders computing the same bytes as the Rust test.
-- [ ] **Step 5: codama + fixtures + docs**, `cargo test -p qupon_bonds`, `go test ./services/registrar/...`, `make verify`.
-- [ ] **Step 6: commit** `feat(program): exact record date, permissionless crank, order-independent snapshot hash` (`task: 1510`).
-
-**Acceptance:** all 7 new tests pass; every pre-existing program test passes unedited; CU benchmark test still within limits; Go reconcile test for scheme 1 passes; docs tables updated; `make verify` green.
+**Acceptance:** unit tests derive the same PDAs as the program tests; `qupon series:create` on LiteSVM-free arg tests shows the TransferHook extension and the `init_hook` call; `make verify` green.
 
 ### Task 1530: design language v2 + golden screens (Opus)
 
@@ -601,14 +517,14 @@ fn account_sizes_unchanged() {
 **Agent:** glm · **Depends on:** 1501, 1510 · **Role:** anchor
 
 **Files:**
-- Modify: `state.rs` Series: before `reserved` add `pub day_secs: u32, pub issue_ymd: u32,`; `reserved: [u8; 52]`
+- Modify: `state.rs` Series: before `reserved` add `pub day_secs: u32, pub issue_ymd: u32,`; `reserved: [u8; 38]` (46 after 1509, minus 8)
 - Create: `programs/qupon_bonds/src/clock.rs` (wrapper over `entitlement::CivilClock`)
-- Modify: `init_series.rs` (params `day_secs: u32`, `issue_ymd: u32`; validation via clock), `announce_action.rs` (`civil_matches` → clock), `settle.rs` (`next_coupon_after` → clock), `meeting.rs` (`is_almaty_midnight` → clock), `utils.rs` (`strike_lead_secs` → clock)
+- Modify: `init_series.rs` (params `day_secs: u32`, `issue_ymd: u32`; validation via clock), `announce_action.rs` (`civil_matches` → clock), `settle.rs` (`next_coupon_after` → clock), `meeting.rs` (`is_almaty_midnight` → clock)
 - Modify TS: `clients/ts/src/lib/clock.ts` (mirror of CivilClock, tested against `fixtures/entitlement.json` `clock_cases`), `src/commands/common.ts` (`almatyMidnight` callers → clock), `series.ts`/`seriesCreate.ts` (`--demo-day-secs <n>`: issue_date = now rounded down to the second, maturity/next dates through the clock), `action.ts`/`lifecycle.ts` (record_at = period_end − 1 series-day; payment_at = period_end; meeting dates through the clock)
 - Modify Go: `chain/types.go`/`decode.go` (Series `DaySecs`, `IssueYmd`), `scheduler/scheduler.go` (lead/payment delay in series-days for demo series; tick 2 s when any demo series is open)
 - Test: `programs/qupon_bonds/tests/init_series.rs`, new `tests/demo_clock.rs`; `clients/ts/src/lib/clock.test.ts`; Go decode test
 
-**Interfaces — Produces:** `pub struct SeriesClock(CivilClock)` with `SeriesClock::of(&Series) -> Result<Self>`, `::from_params(day_secs, issue_date, issue_ymd) -> Result<Self>`, `.civil(ts)`, `.ts(ymd)`, `.add_months(ts, m)`, `.is_midnight(ts)`, `.strike_lead() -> i64` (real 600, demo `day_secs`), `.grace() -> i64` (one series day), `.is_demo()`. TS `seriesClock(series)` with the same methods. CLI flag `--demo-day-secs`.
+**Interfaces — Produces:** `pub struct SeriesClock(CivilClock)` with `SeriesClock::of(&Series) -> Result<Self>`, `::from_params(day_secs, issue_date, issue_ymd) -> Result<Self>`, `.civil(ts)`, `.ts(ymd)`, `.add_months(ts, m)`, `.is_midnight(ts)`, `.grace() -> i64` (one series day), `.is_demo()`. TS `seriesClock(series)` with the same methods. CLI flag `--demo-day-secs`.
 
 - [ ] **Step 1: failing test** `tests/demo_clock.rs`:
 
@@ -658,7 +574,7 @@ fn real_clock_series_unchanged() {
 //! Civil dates ↔ timestamps for a series: real = Almaty midnights; demo = `day_secs` per civil day (spec D7).
 use anchor_lang::prelude::*;
 use entitlement::{CivilClock, Ymd};
-use crate::{constants::{ALMATY_UTC_OFFSET_SECS, STRIKE_LEAD_REAL_SECS}, error::{math_err, QuponError}, state::Series};
+use crate::{constants::ALMATY_UTC_OFFSET_SECS, error::{math_err, QuponError}, state::Series};
 
 pub struct SeriesClock(pub CivilClock);
 
@@ -673,7 +589,6 @@ impl SeriesClock {
     pub fn ts(&self, d: Ymd) -> Result<i64> { self.0.ts(d).map_err(math_err) }
     pub fn add_months(&self, ts: i64, m: u32) -> Result<i64> { self.0.add_months(ts, m).map_err(math_err) }
     pub fn is_midnight(&self, ts: i64) -> bool { self.0.is_midnight(ts) }
-    pub fn strike_lead(&self) -> i64 { if self.0.is_demo() { self.0.day_secs } else { STRIKE_LEAD_REAL_SECS } }
     pub fn grace(&self) -> i64 { self.0.day_secs }
 }
 ```
@@ -689,7 +604,7 @@ impl SeriesClock {
 
 **Agent:** glm · **Depends on:** 1511 · **Role:** anchor
 
-**Files:** `state.rs` (ActionStatus `Defaulted = 10`; CorporateAction `defaulted_at: i64, cured_at: i64` → `reserved: [u8; 47]`; Series `in_default: u8, defaults_count: u16` → `reserved: [u8; 49]`), new `instructions/default.rs`, `settle.rs` (`fund_action`), `lib.rs`, `events.rs` (`ActionDefaulted`, `DefaultCured`), `error.rs` (append `NotOverdue`), CLI `action:default` in `clients/ts/src/commands/action.ts`, tests `tests/default.rs`, docs 02/03 (§ "Default and cure").
+**Files:** `state.rs` (ActionStatus `Defaulted = 10`; CorporateAction `defaulted_at: i64, cured_at: i64` → `reserved: [u8; 47]`; Series `in_default: u8, defaults_count: u16` → `reserved: [u8; 35]`), new `instructions/default.rs`, `settle.rs` (`fund_action`), `lib.rs`, `events.rs` (`ActionDefaulted`, `DefaultCured`), `error.rs` (append `NotOverdue`), CLI `action:default` in `clients/ts/src/commands/action.ts`, tests `tests/default.rs`, docs 02/03 (§ "Default and cure").
 
 **Interfaces — Produces:** `declare_default()` accounts `{ payer: Signer, series (mut), action (mut, has_one series, has_one escrow), escrow }`; events `ActionDefaulted { series, action, index, kind, required, escrow_balance, shortfall, payment_at, defaulted_at, slot, timestamp }`, `DefaultCured { series, action, index, late_secs, slot, timestamp }`.
 
@@ -787,7 +702,7 @@ pub fn handle_declare_default(ctx: Context<DeclareDefault>) -> Result<()> {
     assert_eq!(cash_balances(&env, &h), vec![1_050_000, 2_625_000, 6_825_000]); // principal + final coupon
     assert_eq!(mint_supply(&env, &b), 0);
     for e in fetch_entitlements(&env, &r) { assert_eq!(e.status, EntitlementStatus::Retired as u8); }
-    assert!(mint_paused(&env, &b.mint)); // paused again after every batch
+    // hooked: register stays locked by the gate; legacy variant of this test asserts the mint is paused again
     complete_as_outsider(&mut env, &b, &r);
     close_series(&mut env, &b, &r).expect("supply already 0");
 }
@@ -810,7 +725,7 @@ pub fn handle_declare_default(ctx: Context<DeclareDefault>) -> Result<()> {
 }
 ```
 
-- [ ] **Step 2: implement** — in `handle_pay_batch`: `require!(rem.len().is_multiple_of(5))`; per holder verify `t[2].key() == find_program_address([PAYOUT_ROUTE_SEED, investor.key()])`, `t[3] == investor.cash_ata` (1514 adds the bank branch), `t[4] == investor.bond_ata`; for `Redemption | EarlyRedemption`: once per batch `pausable_resume` (series PDA signer), per holder after the cash transfer: if the bond ATA is frozen `thaw_account` (series PDA = freeze authority), `burn_checked(ent.units)` with the series PDA as permanent delegate, `ent.status = Retired`, `action.total_retired += units`, `action.holders_retired += 1`, emit `UnitsRetired`; at the end of the batch `pausable_pause`. `complete_action` reconciliation unchanged; for REDM/MCAL → `Retiring` (supply already 0) — `close_series` requirement `holders_retired == holders_snapshotted` holds.
+- [ ] **Step 2: implement** — in `handle_pay_batch`: `require!(rem.len().is_multiple_of(5))`; per holder verify `t[2].key() == find_program_address([PAYOUT_ROUTE_SEED, investor.key()])`, `t[3] == investor.cash_ata` (1514 adds the bank branch), `t[4] == investor.bond_ata`; for `Redemption | EarlyRedemption` — hooked series: the register is already locked by the gate and a permanent-delegate burn does not invoke the hook, so no pause dance; legacy series: once per batch `pausable_resume` (series PDA signer) — then per holder after the cash transfer: if the bond ATA is frozen `thaw_account` (series PDA = freeze authority), `burn_checked(ent.units)` with the series PDA as permanent delegate, `ent.status = Retired`, `action.total_retired += units`, `action.holders_retired += 1`, emit `UnitsRetired`; legacy only: at the end of the batch `pausable_pause`. `complete_action` reconciliation unchanged; for REDM/MCAL → `Retiring` (supply already 0) — `close_series` requirement `holders_retired == holders_snapshotted` holds.
 - [ ] **Step 3:** CLI pay builder passes 5 accounts/holder and the new fixed accounts; `cu_benchmarks` asserts ≤ 400k CU for a 5-holder REDM batch; codama; docs; `make verify`.
 - [ ] **Step 4: commit** `feat(program): atomic pay+burn for redemptions; payout-route slot in pay_batch` (`task: 1513`).
 
@@ -928,7 +843,7 @@ Translate every `apps/web/messages/en/<ns>.json` into `messages/kk/<ns>.json` (a
 
 ### Task 1520: CLI — crank as anyone, claim, routes, sandbox helpers, proof hooks
 
-**Agent:** glm · **Depends on:** 1515 · **Role:** ts-client
+**Agent:** glm · **Depends on:** 1515, 1516 · **Role:** ts-client
 
 **Files:** `clients/ts/src/commands/action.ts`, `lifecycle.ts`, `payout.ts` (new group; register in `commands/index.ts`), `common.ts` (`signer(cmd, "any")` = `--keypair` or `QUPON_CRANK_KEYPAIR` or registrar), tests next to each.
 
@@ -953,7 +868,7 @@ Translate every `apps/web/messages/en/<ns>.json` into `messages/kk/<ns>.json` (a
 
 **Agent:** glm · **Depends on:** 1521 · **Role:** go-backend
 
-**Files:** `internal/executor/executor.go` (`NextStep`: status 10 → `fund` only with autofund else none; `PaidToAgent` pending → step `confirm_bank` for registrar/paying-agent operator UI, never automatic; `cliCommand` entries for `default`, `confirm-bank`, `claim`), `internal/scheduler/scheduler.go` (strike at `record_at − lead`; when SnapshotComplete and `now ≥ payment_at + grace` and not autofund → `default`; demo-clock series ticks every 2 s; scenario flag per series `no_autofund` read from `series_settings`), migrations `007_series_scenario.sql` (`series_settings.no_autofund INTEGER NOT NULL DEFAULT 0`, `series_settings.sandbox_id TEXT`), tests with the fake CLI.
+**Files:** `internal/executor/executor.go` (`NextStep`: status 10 → `fund` only with autofund else none; `PaidToAgent` pending → step `confirm_bank` for registrar/paying-agent operator UI, never automatic; `cliCommand` entries for `default`, `confirm-bank`, `claim`), `internal/scheduler/scheduler.go` (hooked series: snapshot from `record_at` (no strike); legacy: strike at `record_at`; when SnapshotComplete and `now ≥ payment_at + grace` and not autofund → `default`; demo-clock series ticks every 2 s; scenario flag per series `no_autofund` read from `series_settings`), migrations `007_series_scenario.sql` (`series_settings.no_autofund INTEGER NOT NULL DEFAULT 0`, `series_settings.sandbox_id TEXT`), tests with the fake CLI.
 - [ ] Table tests: every status × (autofund on/off) × (real/demo) → expected step and time gate.
 - [ ] Commit `feat(registrar): autopilot for default/cure, early strike, demo-clock ticks`.
 

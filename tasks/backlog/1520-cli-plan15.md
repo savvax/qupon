@@ -3,7 +3,7 @@ id: 1520
 title: CLI — crank as anyone, claim, routes, sandbox helpers, proof hooks
 agent: glm
 tier: T0
-depends_on: [1515]
+depends_on: [1515, 1516]
 verify: make verify
 timeout_min: 60
 plan: docs/superpowers/plans/2026-10-09-plan15-judge-experience.md
@@ -19,7 +19,7 @@ Implement task 1520 of plan 15 exactly as written below (the plan section is cop
 ## Plan section
 ### Task 1520: CLI — crank as anyone, claim, routes, sandbox helpers, proof hooks
 
-**Agent:** glm · **Depends on:** 1515 · **Role:** ts-client
+**Agent:** glm · **Depends on:** 1515, 1516 · **Role:** ts-client
 
 **Files:** `clients/ts/src/commands/action.ts`, `lifecycle.ts`, `payout.ts` (new group; register in `commands/index.ts`), `common.ts` (`signer(cmd, "any")` = `--keypair` or `QUPON_CRANK_KEYPAIR` or registrar), tests next to each.
 

@@ -18,13 +18,14 @@ Implement task 1512 of plan 15 exactly as written below (the plan section is cop
 - docs/02-architecture.md
 - docs/03-domain.md
 - programs/qupon_bonds/tests/common/mod.rs
+- programs/qupon_bonds/tests/hook.rs (transfer-hook gate, spike 1509)
 
 ## Plan section
 ### Task 1512: program — default and cure
 
 **Agent:** glm · **Depends on:** 1511 · **Role:** anchor
 
-**Files:** `state.rs` (ActionStatus `Defaulted = 10`; CorporateAction `defaulted_at: i64, cured_at: i64` → `reserved: [u8; 47]`; Series `in_default: u8, defaults_count: u16` → `reserved: [u8; 49]`), new `instructions/default.rs`, `settle.rs` (`fund_action`), `lib.rs`, `events.rs` (`ActionDefaulted`, `DefaultCured`), `error.rs` (append `NotOverdue`), CLI `action:default` in `clients/ts/src/commands/action.ts`, tests `tests/default.rs`, docs 02/03 (§ "Default and cure").
+**Files:** `state.rs` (ActionStatus `Defaulted = 10`; CorporateAction `defaulted_at: i64, cured_at: i64` → `reserved: [u8; 47]`; Series `in_default: u8, defaults_count: u16` → `reserved: [u8; 35]`), new `instructions/default.rs`, `settle.rs` (`fund_action`), `lib.rs`, `events.rs` (`ActionDefaulted`, `DefaultCured`), `error.rs` (append `NotOverdue`), CLI `action:default` in `clients/ts/src/commands/action.ts`, tests `tests/default.rs`, docs 02/03 (§ "Default and cure").
 
 **Interfaces — Produces:** `declare_default()` accounts `{ payer: Signer, series (mut), action (mut, has_one series, has_one escrow), escrow }`; events `ActionDefaulted { series, action, index, kind, required, escrow_balance, shortfall, payment_at, defaulted_at, slot, timestamp }`, `DefaultCured { series, action, index, late_secs, slot, timestamp }`.
 
