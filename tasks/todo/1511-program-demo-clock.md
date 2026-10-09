@@ -1,4 +1,5 @@
 ---
+blocked_reason: agent committed on branch HEAD instead of task/1511-program-demo-clock (work kept on HEAD)
 id: 1511
 title: program — demo clock per series
 agent: glm
