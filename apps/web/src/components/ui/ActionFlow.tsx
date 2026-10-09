@@ -32,6 +32,20 @@ export type FlowStep = {
   downloads?: { label: string; href: string }[];
 };
 
+/** Horizontal from a container width that leaves each step ≥ ~110 px: @2xl (42 rem) for ≤ 6 steps, @3xl otherwise. */
+const LAYOUT = {
+  narrow: {
+    ol: "@2xl:auto-cols-[minmax(0,1fr)] @2xl:grid-flow-col",
+    li: "@2xl:flex-col @2xl:gap-2.5 @2xl:pr-4 @2xl:pb-0",
+    line: "@2xl:top-[11px] @2xl:right-2 @2xl:bottom-auto @2xl:left-8 @2xl:h-0.5 @2xl:w-auto",
+  },
+  wide: {
+    ol: "@3xl:auto-cols-[minmax(0,1fr)] @3xl:grid-flow-col",
+    li: "@3xl:flex-col @3xl:gap-2.5 @3xl:pr-4 @3xl:pb-0",
+    line: "@3xl:top-[11px] @3xl:right-2 @3xl:bottom-auto @3xl:left-8 @3xl:h-0.5 @3xl:w-auto",
+  },
+} as const;
+
 function Marker({ state, n }: { state: FlowStepState; n: number }) {
   const base =
     "relative z-10 grid size-6 shrink-0 place-items-center rounded-full text-micro font-bold";
@@ -72,7 +86,7 @@ function Marker({ state, n }: { state: FlowStepState; n: number }) {
 /**
  * A corporate action as a row of steps (record → snapshot → fund → pay → complete …), each with its time, its
  * transaction, who may push it and what it produced. Horizontal when its container is ≥ 48 rem wide, a vertical
- * rail below that — nothing is truncated at any width.
+ * rail below that (see LAYOUT) — nothing is truncated at any width.
  */
 export function ActionFlow({
   steps,
@@ -88,22 +102,24 @@ export function ActionFlow({
     Math.round(
       (new Date(effective).getTime() - new Date(planned).getTime()) / 1000,
     );
+  const L = LAYOUT[steps.length <= 6 ? "narrow" : "wide"];
   return (
     <div className={cx("@container", className)}>
-      <ol className="grid @3xl:auto-cols-[minmax(0,1fr)] @3xl:grid-flow-col">
+      <ol className={cx("grid", L.ol)}>
         {steps.map((s, i) => {
           const last = i === steps.length - 1;
           return (
             <li
               key={s.id}
               aria-current={s.state === "current" ? "step" : undefined}
-              className="relative flex gap-3 pb-5 last:pb-0 @3xl:flex-col @3xl:gap-2.5 @3xl:pr-4 @3xl:pb-0"
+              className={cx("relative flex gap-3 pb-5 last:pb-0", L.li)}
             >
               {!last && (
                 <span
                   aria-hidden
                   className={cx(
-                    "absolute top-7 bottom-1 left-[11px] w-0.5 rounded-full @3xl:top-[11px] @3xl:right-2 @3xl:bottom-auto @3xl:left-8 @3xl:h-0.5 @3xl:w-auto",
+                    "absolute top-7 bottom-1 left-[11px] w-0.5 rounded-full",
+                    L.line,
                     s.state === "done" ? "bg-g500" : "bg-n200",
                   )}
                 />

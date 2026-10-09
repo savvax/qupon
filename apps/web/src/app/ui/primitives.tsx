@@ -62,7 +62,7 @@ const flow = (
     at: states[i] === "done" ? `2027-08-3${i < 2 ? 0 : 1}T0${i}:4${i}:00+05:00` : undefined,
     tx: states[i] === "done" ? (i % 2 ? SIG : SIG2) : undefined,
     detail: label === "Paid" && states[i] === "done" ? "3 of 3 holders paid" : label === "Snapshot" && states[i] === "done" ? "Σ 100 = supply" : undefined,
-    record: label === "Record date" ? { planned: "2027-08-31T00:00:00+05:00", effective: states[i] === "done" ? (states[0] === "done" && states[5] === "defaulted" ? "2027-08-31T00:00:42+05:00" : "2027-08-31T00:00:00+05:00") : null } : undefined,
+    record: label === "Record date" ? { planned: "2027-08-31T00:00:00+05:00", effective: states[i] === "done" ? (states[3] === "defaulted" ? "2027-08-31T00:00:42+05:00" : "2027-08-31T00:00:00+05:00") : null } : undefined,
     downloads: label === "Announced" ? [{ label: "seev.031", href: "#" }] : label === "Completed" && states[i] === "done" ? [{ label: "seev.036 (ZIP)", href: "#" }] : undefined,
   }));
 

@@ -4,7 +4,7 @@
   "title": "{name}: a whole bond life in minutes",
   "lead": "One bond day lasts {s} seconds here, so a half-year coupon plays out in six minutes. Same maths and the same steps as a real series.",
   "preview": "Preview: the transactions below are examples from a fixture. Nothing is sent to devnet from this page yet.",
-  "viewAs": "View as",
+  "viewAs": "Act as",
   "roles": {
     "public": "Public",
     "issuer": "Issuer",
