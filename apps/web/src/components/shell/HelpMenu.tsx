@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { cx } from "@/lib/ui/cx";
-import { TOURS, type TourRole, tourKey } from "@/lib/tours";
+import { isTourHome, TOURS, type TourRole, tourKey } from "@/lib/tours";
 import { TOUR_RESTART } from "./Tour";
 
 const ITEM = "block w-full rounded-sm px-3 py-2 text-left text-sm font-semibold text-n800 transition-colors hover:bg-n50";
@@ -21,7 +21,7 @@ export function HelpItems({ role, onDone }: { role: TourRole; onDone?: () => voi
     try {
       localStorage.removeItem(tourKey(role));
     } catch {}
-    if (pathname === home) window.dispatchEvent(new CustomEvent(TOUR_RESTART, { detail: role }));
+    if (isTourHome(role, pathname)) window.dispatchEvent(new CustomEvent(TOUR_RESTART, { detail: role }));
     else router.push(home);
   };
   return (

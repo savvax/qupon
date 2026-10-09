@@ -8,8 +8,9 @@ export const TOURS = {
   issuer: { home: "/issuer", steps: ["welcome", "now", "kpi", "todo", "latest", "nav", "help"] },
   investor: { home: "/investor", steps: ["welcome", "now", "checklist", "portfolio", "holdings", "nav", "help"] },
   sandbox: {
-    home: "/sandbox/demo",
-    steps: ["welcome", "now", "roles", "scenario", "rail", "steps", "money", "feed", "help"],
+    // every visitor's own /sandbox/<id> is the sandbox's home (isTourHome); the help menu starts one here
+    home: "/sandbox/new",
+    steps: ["welcome", "now", "rail", "scenario", "steps", "money", "roles", "feed", "help"],
   },
 } as const;
 
@@ -17,3 +18,9 @@ export type TourRole = keyof typeof TOURS;
 
 /** localStorage key of a tour's progress: the step index, or "done" once finished or skipped. */
 export const tourKey = (role: TourRole) => `qupon.tour.${role}`;
+
+/** Whether `path` is the page a role's tour belongs to: the role's home, or any visitor's own sandbox. */
+export const isTourHome = (role: TourRole, path: string) =>
+  role === "sandbox"
+    ? /^\/sandbox\/(?!new$)[\w-]+$/.test(path)
+    : path === TOURS[role].home;

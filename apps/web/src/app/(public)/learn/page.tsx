@@ -172,7 +172,7 @@ export default async function LearnPage() {
         <p className="max-w-[62ch] text-sm text-n700">{t("cta.lead")}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button asChild>
-            <Link href="/sandbox/demo">{t("cta.sandbox")}</Link>
+            <Link href="/sandbox/new">{t("cta.sandbox")}</Link>
           </Button>
           <Button asChild variant="secondary">
             <Link href="/bonds">{t("cta.bonds")}</Link>

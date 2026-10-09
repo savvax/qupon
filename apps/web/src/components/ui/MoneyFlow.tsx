@@ -346,7 +346,7 @@ export function MoneyFlow({
                           : "var(--color-viz-pending)",
                   }}
                 />
-                <div className="min-w-0 space-y-0.5">
+                <div className={cx("min-w-0", r.kind === "agent" ? "space-y-px" : "space-y-0.5")}>
                   <div className="flex items-baseline justify-between gap-2">
                     <span
                       className="min-w-0 truncate text-sm font-bold text-n900"
@@ -370,20 +370,26 @@ export function MoneyFlow({
                       )}
                     />
                   </div>
+                  {/* the agent leg: who it pays for on its own line, then the simulated bank leg and the
+                      on-chain transaction that paid the agent */}
+                  {r.kind === "agent" && (
+                    <div className="truncate text-xs text-n500" title={t("agentSub", { who: r.label })}>
+                      {t("agentSub", { who: r.label })}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="min-w-0 truncate text-xs text-n500">
-                      {r.kind === "tax"
-                        ? t("taxSub")
-                        : r.kind === "agent"
-                          ? t("agentSub", { who: r.label })
-                          : r.sub}
-                    </span>
-                    <span className="shrink-0">
-                      {s === "paid" && r.tx ? (
+                    {r.kind === "agent" ? (
+                      <ProvenanceChip kind="simulated" className="h-5" />
+                    ) : (
+                      <span className="min-w-0 truncate text-xs text-n500">
+                        {r.kind === "tax" ? t("taxSub") : r.sub}
+                      </span>
+                    )}
+                    {/* the agent line shares its width with the chip: the link may shorten, never overflow */}
+                    <span className={r.kind === "agent" ? "min-w-0" : "shrink-0"}>
+                      {(s === "paid" || s === "agent") && r.tx ? (
                         <Tx sig={r.tx} sample={sampleTx} />
-                      ) : r.kind === "agent" ? (
-                        <ProvenanceChip kind="simulated" className="h-5" />
-                      ) : (
+                      ) : r.kind === "agent" ? null : (
                         <span
                           className={cx(
                             "text-micro font-bold",

@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TourStep } from "@/components/ui/TourStep";
-import { TOURS, type TourRole, tourKey } from "@/lib/tours";
+import { isTourHome, TOURS, type TourRole, tourKey } from "@/lib/tours";
 
 /** The help menu restarts a tour with this window event (detail = the role). */
 export const TOUR_RESTART = "qupon:tour-restart";
@@ -24,7 +24,7 @@ function target(name: string): HTMLElement | null {
  * Esc or Skip closes it for good; the help menu restarts it and moves focus to its Next button.
  */
 export function Tour({ role }: { role: TourRole }) {
-  const { home, steps } = TOURS[role];
+  const { steps } = TOURS[role];
   const t = useTranslations(`learn.tour.${role}`);
   const pathname = usePathname();
   const [step, setStep] = useState<number | null>(null);
@@ -49,13 +49,13 @@ export function Tour({ role }: { role: TourRole }) {
 
   // the tour belongs to the home page: it closes (unfinished, so it resumes) when the user navigates away
   useEffect(() => {
-    if (pathname !== home) return setStep(null);
+    if (!isTourHome(role, pathname)) return setStep(null);
     let saved: string | null = null;
     try {
       saved = localStorage.getItem(key);
     } catch {}
     if (saved !== "done") setStep(Math.min(Number(saved) || 0, steps.length - 1));
-  }, [pathname, home, key, steps.length]);
+  }, [pathname, role, key, steps.length]);
 
   useEffect(() => {
     const restart = (e: Event) => {

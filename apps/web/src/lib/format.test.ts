@@ -24,6 +24,8 @@ describe("shortKey", () => {
 describe("formatDate / formatDateTime", () => {
   it("formats for people per locale, in Almaty time (task 9106)", () => {
     expect(formatDate("2027-03-01", "ru")).toBe("01.03.2027");
+    // kk: the same numeric shape, engine-independent (server and browser must agree for hydration)
+    expect(formatDate("2027-03-01", "kk")).toBe("01.03.2027");
     expect(formatDate("2027-03-01", "en")).toBe("Mar 1, 2027");
     expect(formatDate("2026-11-30T20:00:00Z", "en")).toBe("Dec 1, 2026");
     expect(formatDateTime("2027-02-28T18:30:00+05:00", "ru")).toBe(

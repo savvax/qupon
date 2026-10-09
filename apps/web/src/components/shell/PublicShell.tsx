@@ -72,7 +72,7 @@ export async function PublicShell({ children }: { children: ReactNode }) {
     { href: "/bonds", label: t("bonds") },
     { href: "/learn", label: t("learn") },
     { href: "/#how", label: t("howItWorks") },
-    { href: "/sandbox/demo", label: t("sandbox") },
+    { href: "/sandbox/new", label: t("sandbox") },
   ];
   return (
     <div className="flex min-h-screen flex-col">
@@ -109,7 +109,8 @@ export async function PublicShell({ children }: { children: ReactNode }) {
             <SignInButton label={c("signIn")} />
             {/* the header's one primary action */}
             <Button asChild size="sm" className="h-9">
-              <Link href="/login?choose=1">
+              {/* the sandbox is devnet-only (the registrar refuses /demo/sandbox on mainnet) */}
+              <Link href={network.mainnet ? "/login?choose=1" : "/sandbox/new"}>
                 <span className="sm:hidden">
                   <StableLabel>{t("tryShort")}</StableLabel>
                 </span>

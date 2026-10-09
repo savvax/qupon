@@ -1,92 +1,280 @@
 {
   "meta": "Sandbox",
-  "eyebrow": "Your sandbox bond",
-  "title": "{name}: a whole bond life in minutes",
-  "lead": "One bond day lasts {s} seconds here, so a half-year coupon plays out in six minutes. Same maths and the same steps as a real series.",
-  "preview": "Preview: the transactions below are examples from a fixture. Nothing is sent to devnet from this page yet.",
-  "viewAs": "Act as",
+  "title": "{ticker}: your own bond, a whole life in minutes",
+  "lead": "A real series on Solana devnet whose <clock>demo clock</clock> runs one bond day in {s} s, so its year passes in about six minutes. Same program, same maths, same steps as a real bond.",
+  "devnet": "Devnet",
+  "mock": "Mock registrar",
+  "bondPage": "Open the bond page",
+  "restart": "Start over",
+  "startNew": "Start a new sandbox",
+  "stale": "The registrar did not answer the last update. The page keeps trying every few seconds.",
+  "bankSimulated": "Bank transfer simulated",
+  "viewAs": "View as",
   "roles": {
-    "public": "Public",
+    "anyone": "Anyone",
     "issuer": "Issuer",
     "registrar": "Registrar",
     "investor": "Investor"
   },
-  "scenario": "Scenario",
-  "scenarios": {
-    "coupon": "Coupon with a bank payout",
-    "default": "Default and cure"
+  "calendar": {
+    "title": "Bond calendar",
+    "rate": "1 day = {s} s",
+    "day": "Day {day} of {total}"
   },
-  "restart": "Start over",
-  "switchTo": "Switch to {role} to do this",
-  "you": "Your {units} bonds earn on this coupon:",
   "rail": {
     "issue": "Issue",
-    "issued": "Placed",
+    "placed": "Placed",
     "coupon": "Coupon {n}",
     "maturity": "Maturity"
   },
-  "flowTitle": "Coupon 2, step by step",
-  "steps": {
-    "announce": "Announced",
-    "record": "Record date",
-    "snapshot": "Snapshot",
-    "fund": "Funded",
-    "pay": "Paid",
-    "complete": "Completed"
-  },
-  "detail": {
-    "snapshot": "3 holders · Σ 100 = supply",
-    "pay": "2 to wallets · 1 via the paying agent",
-    "record": "The hook gate snapshots each position before it moves"
-  },
-  "unitsLabel": "{units} bonds",
   "now": {
-    "announced": "Coupon 2 is announced. The record date passes by itself and trading never stops.",
-    "snapshotted": "Snapshot complete: 3 holders, Σ 100 bonds = supply. The issuer funds 5,000.00 ₸ before the payment date.",
-    "funded": "The escrow holds 5,000.00 ₸. Anyone can push the payout to the 3 holders.",
-    "agent": "Nomad Pension chose a bank route: 2,762.50 ₸ is with the paying agent until it confirms the bank transfer.",
-    "complete": "Every holder is paid. Anyone can complete the action.",
-    "done": "Coupon 2 paid: 4,512.50 ₸ to 3 holders and 487.50 ₸ to the tax vault.",
-    "short": "The payment date passed and the escrow holds 2,000.00 of 5,000.00 ₸. After the grace day anyone can record a default.",
-    "defaulted": "Coupon 2 is in default: 3,000.00 ₸ short. The bond keeps trading; record-date holders keep their claims.",
-    "cured": "Cured: the escrow is complete. Anyone can push the payout.",
-    "curedPaid": "Paid after the cure: every record-date holder received their coupon."
+    "issued": "{ticker} is placed: {units} bonds with {holders} investors. The autopilot announces coupon 1 next.",
+    "announced": "{action} is announced. The record date comes by itself and trading never stops.",
+    "snapshot": "Record date passed: {done} of {count} holders snapshotted on-chain.",
+    "funding": "Snapshot final: {count} holders, Σ {units} bonds = supply. The issuer funds {amount} ₸ now.",
+    "skipped": "Funding skipped: the escrow holds 0 of {amount} ₸. One bond day after the payment date anyone can record the default.",
+    "defaulted": "{action} is in default: {amount} ₸ short. The bond keeps trading; the record-date holders keep their claims.",
+    "funded": "The escrow holds {amount} ₸. Anyone can push the payout to {count} holders.",
+    "paying": "Paying: {done} of {count} holders paid.",
+    "bank": "{who} chose the bank route: {amount} ₸ is with the paying agent until it confirms the bank transfer.",
+    "claim": "Your {amount} ₸ is ready: claim it with your wallet, or the autopilot pays it in a minute.",
+    "complete": "Every holder is paid. Anyone can complete {action}.",
+    "paid": "{action} paid: {net} ₸ to {count} holders and {tax} ₸ to the tax vault.",
+    "redeemed": "Redeemed: the last coupon and the principal are paid and every bond burned in the same transaction. The series is closed."
+  },
+  "who": {
+    "anyone": "Any wallet may send this step; the program checks every rule. Here the autopilot sends it.",
+    "issuer": "The issuer signs this step. In the sandbox the autopilot plays the issuer.",
+    "registrar": "The registrar signs this step.",
+    "payingAgent": "The paying agent confirms once its bank transfer is made.",
+    "holder": "Only the holder's own wallet can claim it."
   },
   "clock": {
+    "announce": "Announcement",
     "record": "Record date",
     "payment": "Payment date",
-    "grace": "Grace day ends",
-    "next": "Coupon 3 record date"
+    "grace": "Default possible",
+    "claim": "Autopilot pays",
+    "next": "Next step"
   },
   "btn": {
-    "snapshot": "Snapshot 3 holders",
-    "fund": "Fund 5,000.00 ₸",
-    "pay": "Pay holders",
-    "confirm": "Confirm bank payout",
-    "complete": "Complete coupon 2",
-    "declare": "Declare default",
-    "cure": "Fund 3,000.00 ₸ and cure"
+    "cure": "Fund {amount} ₸ and cure"
+  },
+  "detail": {
+    "defaulted": "{amount} ₸ short: in default",
+    "cured": "Funded late: default cured",
+    "hook": "The transfer hook snapshots each position before it moves",
+    "bank": "{n} with the paying agent",
+    "supply": "Σ {units} bonds = supply",
+    "burned": "Bonds burned in the same transaction"
+  },
+  "flowTitle": "{action}, step by step",
+  "flowEmptyTitle": "Steps",
+  "flowEmpty": "No corporate action yet: the autopilot announces coupon 1 in a moment.",
+  "moneyTitle": "Where the money of {action} goes",
+  "try": {
+    "title": "Try it yourself",
+    "lead": "Each button changes your bond on devnet. The result names what the program did and links the transaction.",
+    "logs": "Program logs",
+    "skip_funding": {
+      "title": "Skip the funding",
+      "what": "The autopilot stops funding the next coupon. One bond day after its payment date anyone can record the <term>default</term> on-chain.",
+      "button": "Skip funding"
+    },
+    "cure": {
+      "title": "Cure the default",
+      "what": "The issuer funds the shortfall late. The program records the <term>cure</term> and pays the record-date holders.",
+      "button": "Fund and cure"
+    },
+    "non_kyc_transfer": {
+      "title": "Send to a wallet without KYC",
+      "what": "Try to move 1 bond to an outsider. Token-2022 and the <term>transfer hook</term> keep bonds with registered investors only.",
+      "button": "Try the transfer"
+    },
+    "dvp_trade": {
+      "title": "Trade 5 bonds with accrued",
+      "what": "A delivery-versus-payment trade at clean 100 % plus <term>accrued interest</term>. The program emits TradeAccrued.",
+      "button": "Trade 5 bonds"
+    },
+    "why": {
+      "closed": "The bond is redeemed",
+      "skipped": "Funding is already skipped",
+      "nothingToFund": "No coupon is left to fund",
+      "noDefault": "Needs a coupon in default"
+    },
+    "result": {
+      "skipped": "Armed: the autopilot will not fund the next coupon. Watch the Now bar for the default.",
+      "defaulted": "ActionDefaulted on-chain: {amount} ₸ short.",
+      "cured": "DefaultCured on-chain: the issuer funded late and the record-date holders are paid.",
+      "refused": "Refused ({error}): an outsider's bond account stays frozen, so no bond moved.",
+      "traded": "Settled: {units} bonds for {cash} ₸ = {clean} clean + {accrued} accrued ({days} days, 30E/360).",
+      "exCoupon": "Negative accrued: inside the ex-coupon window the seller keeps the coupon."
+    }
+  },
+  "register": {
+    "title": "Register at the record date",
+    "lead": "At the <rd>record date</rd> every position is snapshotted on-chain and becomes an <ent>entitlement</ent>: gross, the tax withheld and the net paid.",
+    "empty": "No snapshot yet: the rows appear here one by one, holder by holder, once the record date passes.",
+    "progress": "{done} of {count} snapshotted",
+    "complete": "Σ {units} bonds = supply ✓",
+    "total": "Total",
+    "you": "You",
+    "bankRoute": "Bank route",
+    "taxRate": "{rate} tax",
+    "col": {
+      "holder": "Holder",
+      "units": "Bonds",
+      "gross": "Gross",
+      "tax": "Tax",
+      "net": "Net",
+      "netPrincipal": "Net + principal",
+      "status": "Status",
+      "tx": "Transaction"
+    },
+    "status": {
+      "owed": "Snapshotted",
+      "waiting": "Waiting for the snapshot",
+      "paid": "Paid",
+      "burned": "Paid, bonds burned",
+      "agent": "With the paying agent",
+      "defaulted": "Unpaid: in default",
+      "claim": "Claimable"
+    }
+  },
+  "role": {
+    "coupon": "Coupon {n}",
+    "maturity": "Maturity",
+    "anyone": {
+      "title": "Anyone can push",
+      "body": "Strike, snapshot, finalize, pay, complete and declaring a default are <term>permissionless</term>: any wallet can send them and the program checks every rule. Money only goes where the program says.",
+      "next": "Next permissionless step",
+      "declare": "Declare default",
+      "none": "Nothing to push right now."
+    },
+    "issuer": {
+      "title": "Issuer",
+      "body": "The issuer funds each coupon into the action's escrow. The sandbox autopilot signs as the issuer unless you skip the funding.",
+      "owe": "{action} to fund",
+      "due": "Payment date",
+      "funded": "Funded",
+      "auto": "The autopilot funds it right after the snapshot.",
+      "skipped": "Funding skipped: this coupon will default.",
+      "paidIn": "Funded in full.",
+      "cured": "Funded late: the default is cured.",
+      "cure": "Fund the shortfall and cure",
+      "before": "The amount due is fixed by the snapshot at the record date of {action}.",
+      "none": "Nothing is due before coupon 1 is announced."
+    },
+    "registrar": {
+      "title": "Registrar and paying agent",
+      "body": "The registrar keeps the register: only KYC-attested investors hold bonds. At the record date the <term>transfer hook</term> snapshots each position before it moves, so trading never pauses.",
+      "investors": "Registered investors",
+      "supply": "Bonds outstanding",
+      "bank": "Bank payouts to confirm",
+      "sas": "SAS attestation",
+      "kyc": "KYC check",
+      "bankTransfer": "Bank transfer"
+    },
+    "investor": {
+      "title": "Investor",
+      "pick": "Holder",
+      "units": "Bonds held",
+      "route": "Payout route",
+      "wallet": "Wallet",
+      "bank": "Bank account",
+      "bankSim": "Simulated",
+      "gross": "{action}, gross",
+      "tax": "Tax withheld",
+      "net": "Net",
+      "status": "Status",
+      "owed": "Owed",
+      "paid": "Paid",
+      "withAgent": "With the paying agent",
+      "defaulted": "Unpaid: in default",
+      "noSnapshot": "Not snapshotted yet for {action}.",
+      "none": "No coupon announced yet.",
+      "claimed": "Claimed:",
+      "walletLead": "Add your own wallet as a fourth holder: a new sandbox registers it, gives it 5 bonds and test tenge, and lets you claim the coupon yourself.",
+      "walletConnect": "Use my wallet",
+      "walletUse": "Start with {short}"
+    }
+  },
+  "claim": {
+    "button": "Claim {amount} ₸",
+    "connect": "Connect your wallet to claim",
+    "pending": "Claiming your coupon…",
+    "done": "Coupon claimed"
   },
   "feed": {
     "title": "Transactions",
-    "lead": "Every step is a transaction.",
+    "lead": "Every step is a devnet transaction.",
+    "count": "{n}",
     "ago": "{s} s ago",
     "agoMin": "{m} min ago",
-    "example": "example"
+    "all": "Show all {n}"
   },
   "tx": {
-    "issue": "Issue SWND28: 100 bonds placed",
-    "announce": "Announce coupon {n}",
-    "snapshot": "Snapshot {n} holders",
-    "fund": "Issuer funds 5,000.00 ₸",
-    "fund1": "Issuer funds coupon 1",
-    "pay1": "Pay coupon 1 to {n} holders",
-    "complete1": "Complete coupon 1",
-    "payWallet": "Pay {who}: {amount} ₸",
-    "payAgent": "Pay the paying agent for {who}: {amount} ₸",
-    "bank": "Bank payout confirmed for {who} (simulated)",
-    "complete": "Complete coupon 2",
-    "default": "Record default on coupon 2",
-    "cure": "Issuer cures: funds 3,000.00 ₸"
-  }
+    "SeriesInitialized": "Create {ticker} on a demo clock",
+    "InvestorRegistered": "Register {who} (KYC attested)",
+    "UnitsIssued": "Place {units} bonds with {who}",
+    "ActionAnnounced": "Announce {action}",
+    "RecordStruck": "Strike the record date of {action}",
+    "HolderSnapshotted": "Snapshot {who}: {units} bonds",
+    "SnapshotFinalized": "Finalize the snapshot: Σ {units} bonds",
+    "ActionFunded": "Issuer funds {amount} ₸",
+    "EntitlementPaid": "Pay {who}: {amount} ₸",
+    "PaidToAgent": "Pay the paying agent for {who}: {amount} ₸",
+    "BankPayoutConfirmed": "Bank payout to {who} confirmed (simulated transfer)",
+    "ActionCompleted": "Complete {action}",
+    "UnitsRetired": "Burn {units} bonds of {who}",
+    "SeriesClosed": "Close the series: every bond redeemed",
+    "ActionDefaulted": "Record default on {action}: {amount} ₸ short",
+    "DefaultCured": "Default on {action} cured",
+    "TradeAdmitted": "Admit a DvP trade: {units} bonds, {seller} → {buyer}",
+    "TradeAccrued": "Settle {units} bonds for {cash} ₸ incl. {accrued} ₸ accrued",
+    "refused": "Transfer to a wallet without KYC refused: {error}"
+  },
+  "start": {
+    "devnet": "Devnet",
+    "title": "Creating your bond on devnet",
+    "lead": "A fresh series of your own, on a demo clock. It usually takes under a minute; then the bond lives a whole year in about six.",
+    "working": "The registrar is sending the transactions…",
+    "elapsed": "{s} s",
+    "steps": {
+      "series": {
+        "title": "Create the series",
+        "body": "1,000 ₸ face, 10 % semi-annual, one year; one bond day lasts a second."
+      },
+      "investors": {
+        "title": "Register three investors",
+        "body": "Each gets an on-chain KYC attestation (the KYC check itself is simulated)."
+      },
+      "place": {
+        "title": "Place 10, 25 and 65 bonds",
+        "body": "One investor is a non-resident fund: 15 % tax and payouts through the paying agent's bank."
+      },
+      "wallet": {
+        "title": "Add your wallet",
+        "body": "Registered as a fourth holder with 5 bonds and test tenge from the faucet."
+      },
+      "autopilot": {
+        "title": "Hand it to the autopilot",
+        "body": "Record dates, snapshots, funding and payouts run by themselves; you can interfere."
+      }
+    },
+    "failedTitle": "The sandbox did not start",
+    "failed": "The registrar answered: {reason}",
+    "throttledTitle": "Sandbox limit reached",
+    "throttled": "Three sandboxes per visitor per hour keep devnet fees in check. Try again in a few minutes, or read how a bond lives on Qupon meanwhile.",
+    "retry": "Try again",
+    "learn": "How a bond lives on Qupon",
+    "bonds": "Browse the bonds"
+  },
+  "gone": {
+    "title": "This sandbox has ended",
+    "body": "Sandboxes live for 24 hours. Start a new one: it takes a minute.",
+    "cta": "Start a new sandbox",
+    "bonds": "Browse the bonds"
+  },
+  "issuerOf": "Issuer of {ticker}"
 }

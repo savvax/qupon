@@ -7,6 +7,7 @@ import { HeroBackdrop } from "./HeroBackdrop";
 import { HeroLifecycle } from "./HeroLifecycle";
 import { EXAMPLE_ACTION, type Live } from "./live";
 import { toLocale } from "@/i18n/locale";
+import { getNetwork } from "@/lib/network";
 
 export const OVERVIEW_URL =
   "https://github.com/savvax/qupon/blob/main/docs/TECHNICAL_OVERVIEW.md";
@@ -15,6 +16,8 @@ export async function Hero({ live }: { live: Live }) {
   const t = await getTranslations("landing");
   const locale = toLocale(await getLocale());
   const last = live.last ?? EXAMPLE_ACTION;
+  // "Try it in 3 minutes" opens the visitor's own sandbox bond; devnet only
+  const tryHref = (await getNetwork()).mainnet ? "/login?choose=1" : "/sandbox/new";
   return (
     <section className="px-4 pt-6 sm:px-6">
       {/* Fixed heights per breakpoint: switching EN ↔ RU never resizes the hero (spec §5.8). */}
@@ -33,7 +36,7 @@ export async function Hero({ live }: { live: Live }) {
             </p>
             <div className="mt-8 flex flex-col gap-3 min-[480px]:flex-row">
               <Button asChild variant="primaryOnDark" size="lg">
-                <Link href="/login?choose=1">
+                <Link href={tryHref}>
                   {t("hero.cta")} <Icon name="arrowRight" className="size-4" />
                 </Link>
               </Button>

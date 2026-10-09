@@ -3,7 +3,7 @@
 Task 1530. The rules every Qupon screen follows, and the primitives that carry them. Tokens live in
 `apps/web/src/app/globals.css` (`@theme`); primitives in `apps/web/src/components/ui/`; every primitive in every
 state is on `/ui`. Golden screens built on this language: landing `/`, bond dossier `/bonds/[mint]`, action console
-`/registrar/actions/[pda]`, sandbox shell `/sandbox/[id]`.
+`/registrar/actions/[pda]`, sandbox `/sandbox/[id]` (live since task 1532).
 
 ## 1. Principles
 
@@ -160,4 +160,5 @@ the whole journal as CSV ("Export issue audit").
 
 Rules of use: one NowBar per page; ActionFlow at the top of an action page; MoneyFlow under the KPIs; the
 LifecycleRail directly under the page header (dossier, sandbox). States the API does not expose yet (Defaulted,
-PaidToAgent, demo clock) appear only through fixture props (gallery, sandbox) — never invented in the API client.
+PaidToAgent, demo clock) appear only through fixture props (gallery) or the sandbox API contract (`lib/sandbox.ts`) —
+never invented in the API client.

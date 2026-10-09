@@ -19,8 +19,10 @@ export function formatDate(iso: string, locale?: string): string {
       month: "2-digit",
       day: "2-digit",
     }).format(new Date(iso));
-  const intl = locale === "en" ? "en-US" : locale === "kk" ? "kk-KZ" : "ru-RU";
-  const eu = locale !== "en"; // kk-KZ uses the same 2-digit day.month shape as ru-RU
+  // kk shares ru's numeric dd.mm.yyyy. Not "kk-KZ": Node's ICU prints 11.04.2027, Chrome 2027-04-11, so a client
+  // component formatting a date hydrated with a mismatch on every kk page.
+  const intl = locale === "en" ? "en-US" : "ru-RU";
+  const eu = locale !== "en";
   return new Intl.DateTimeFormat(intl, {
     timeZone: "Asia/Almaty",
     year: "numeric",

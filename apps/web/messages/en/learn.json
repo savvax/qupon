@@ -152,20 +152,20 @@
     },
     "sandbox": {
       "welcome": {
-        "title": "The judge sandbox",
-        "body": "A whole bond life on a demo clock: one bond day lasts two seconds. Step through it yourself."
+        "title": "Your own bond on devnet",
+        "body": "A real Qupon series on a demo clock: one bond day lasts a second, so its whole year plays out in about six minutes while the autopilot pushes every step."
       },
       "now": {
         "title": "What happens now",
-        "body": "This bar names the next step, who may take it and gives you the one button. Switch the role above to see it from each side."
+        "body": "The next step, who may push it and when, with a live countdown on the bond's own clock."
       },
       "roles": {
         "title": "View as",
-        "body": "Public, issuer, registrar or investor: the same events from each chair. Permissionless steps work from any role."
+        "body": "Anyone, issuer, registrar or investor: the same bond from each chair. Pick an investor to follow one holder's coupon."
       },
       "scenario": {
-        "title": "Scenarios",
-        "body": "The coupon scenario pays on time; the default scenario misses the funding, defaults, then cures. Restart any time."
+        "title": "Try it yourself",
+        "body": "Skip the funding to force a default, cure it, send bonds to a wallet without KYC, or trade 5 bonds with accrued interest. Each one lands on devnet."
       },
       "rail": {
         "title": "The bond's life",
@@ -173,15 +173,15 @@
       },
       "steps": {
         "title": "The steps",
-        "body": "Each step of the coupon: who may push it, when it happened and the files it produced."
+        "body": "Each step of the live action with its time and transaction; the ones marked with a plus can be pushed by anyone."
       },
       "money": {
-        "title": "Follow the money",
-        "body": "Bands are proportional to amounts: escrow to each holder, tax to the tax vault, the bank leg through the paying agent. Step through it."
+        "title": "Register and money",
+        "body": "At the record date the register fills holder by holder; during the payout the bands follow the money to each holder, the tax vault and the paying agent."
       },
       "feed": {
         "title": "Every step is a transaction",
-        "body": "Each line is one transaction. On a live series the link opens it in the Solana explorer."
+        "body": "Each line opens its transaction in the Solana explorer."
       },
       "help": {
         "title": "Help",

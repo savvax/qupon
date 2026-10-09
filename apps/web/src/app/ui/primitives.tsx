@@ -16,7 +16,7 @@ import {
   CURRENCY,
   ESCROW_REQUIRED,
   recipients,
-} from "../(public)/sandbox/[id]/fixture";
+} from "./moneyFixture";
 
 const SIG = "4J3pSbG7fNfUX9VZXvCjJFh3Pv2VkD1Ry8StQqPq6bFgWHXn5ydEPAmxCvfX1QqTMdgKkTQEH7kq5FZ5THJ1W8Z";
 const SIG2 = "3Sp4jVLUu8FWeCJiKDA6mruYgRBMhJW9uCJdM2iNPvFrMdKaTrLoVe9nvCGdz9cAoPzVKYtu2";

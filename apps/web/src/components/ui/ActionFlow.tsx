@@ -1,7 +1,7 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Address } from "@/components/ui/Address";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { cx } from "@/lib/ui/cx";
 import { type Actor, ActorChip } from "./ActorChip";
 import { type Locale } from "@/i18n/locale";
@@ -98,13 +98,17 @@ function Marker({ state, n }: { state: FlowStepState; n: number }) {
 export function ActionFlow({
   steps,
   locale,
+  dateOnly = false,
   className,
 }: {
   steps: FlowStep[];
   locale: Locale;
+  /** Dates without the time of day: a demo-clock series (one bond day = seconds) has no meaningful hours. */
+  dateOnly?: boolean;
   className?: string;
 }) {
   const t = useTranslations("kit.flow");
+  const when = (iso: string) => (dateOnly ? formatDate(iso, locale) : formatDateTime(iso, locale));
   const delta = (planned: string, effective: string) =>
     Math.round(
       (new Date(effective).getTime() - new Date(planned).getTime()) / 1000,
@@ -159,20 +163,20 @@ export function ActionFlow({
                 </div>
                 {s.at && (
                   <div className="num mt-0.5 text-n600">
-                    {formatDateTime(s.at, locale)}
+                    {when(s.at)}
                   </div>
                 )}
                 {s.record && (
                   <dl className="mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 text-micro text-n600">
                     <dt>{t("planned")}</dt>
                     <dd className="num text-n900">
-                      {formatDateTime(s.record.planned, locale)}
+                      {when(s.record.planned)}
                     </dd>
                     {s.record.effective && (
                       <>
                         <dt>{t("effective")}</dt>
                         <dd className="num text-n900">
-                          {formatDateTime(s.record.effective, locale)}{" "}
+                          {when(s.record.effective)}{" "}
                           {(() => {
                             const d = delta(
                               s.record.planned,

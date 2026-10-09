@@ -6,14 +6,26 @@
  * generated Kit client shared with the CLI.
  */
 import { findAssociatedTokenPda } from "@solana-program/token-2022";
-import { type Address, type TransactionSigner, address } from "@solana/kit";
 import {
+  type Address,
+  AccountRole,
+  type TransactionSigner,
+  address,
+} from "@solana/kit";
+import {
+  fetchCorporateAction,
   fetchInvestor,
   fetchSeries,
   getCastVoteInstructionAsync,
+  getPayBatchInstruction,
   getSubscribeInstructionAsync,
 } from "@qupon/client/src/generated";
-import { investorPda, seriesPda } from "@qupon/client/src/lib/pda";
+import {
+  entitlementPda,
+  investorPda,
+  routePda,
+  seriesPda,
+} from "@qupon/client/src/lib/pda";
 import {
   DayCount,
   type Ymd,
@@ -234,4 +246,52 @@ export async function buildSubscribeIx(
     units,
     pricePerUnit,
   });
+}
+
+/**
+ * Build `pay_batch` for the signer's own entitlement: the holder claims their coupon (pay is a permissionless
+ * crank, plan 15 D2). Mirrors the CLI's per-holder remaining accounts [Entitlement (w), Investor, PayoutRoute,
+ * cash destination (w), bond ATA (w)] for a wallet-routed holder (a bank-routed one is paid to the paying agent
+ * by the crank instead).
+ */
+export async function buildClaimIx(
+  rpc: PortalRpc,
+  seriesMint: string,
+  actionPda: Address,
+  owner: TransactionSigner,
+) {
+  const mint = address(seriesMint);
+  const series = await seriesPda(mint);
+  const account = (await fetchSeries(rpc, series)).data;
+  const action = (await fetchCorporateAction(rpc, actionPda)).data;
+  const investor = await investorPda(series, owner.address);
+  const record = (await fetchInvestor(rpc, investor)).data;
+  const { value: cashMintAccount } = await rpc
+    .getAccountInfo(account.cashMint, { commitment: "confirmed", encoding: "base64" })
+    .send();
+  if (cashMintAccount === null)
+    throw new Error(`cash mint ${account.cashMint} not found on chain`);
+  const base = getPayBatchInstruction({
+    authority: owner,
+    series,
+    action: actionPda,
+    cashMint: account.cashMint,
+    escrow: action.escrow,
+    taxVault: account.taxVault,
+    cashTokenProgram: cashMintAccount.owner,
+    mint,
+  });
+  const w = AccountRole.WRITABLE;
+  const r = AccountRole.READONLY;
+  return {
+    ...base,
+    accounts: [
+      ...base.accounts,
+      { address: await entitlementPda(actionPda, owner.address), role: w },
+      { address: investor, role: r },
+      { address: await routePda(investor), role: r },
+      { address: record.cashAta, role: w },
+      { address: record.bondAta, role: w },
+    ],
+  };
 }
