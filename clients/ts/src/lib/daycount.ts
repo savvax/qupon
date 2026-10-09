@@ -130,3 +130,18 @@ export function accrualDays(dc: DayCount, start: Ymd, end: Ymd): number {
 	}
 	return days;
 }
+
+/** Chronological comparison; field order (y, m, d) mirrors Rust's `derive(Ord)`. */
+export function compareYmd(a: Ymd, b: Ymd): number {
+	return a.y - b.y || a.m - b.m || a.d - b.d;
+}
+
+/** Same day `months` later, clamped to the month's last day (Jan 31 + 1 → Feb 28/29).
+ * Mirrors `Ymd::add_months` — the coupon schedule step. */
+export function addMonths(date: Ymd, months: number): Ymd {
+	if (!Number.isInteger(months)) throw new MathError("InvalidDate", `months=${months}`);
+	const total = date.y * 12 + date.m - 1 + months;
+	const y = Math.trunc(total / 12);
+	const m = (total % 12) + 1;
+	return ymd(y, m, Math.min(date.d, daysInMonth(y, m)));
+}

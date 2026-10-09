@@ -40,6 +40,10 @@
     {"id": "settle_on_period_start", "units": 65, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "start": "2027-01-03", "settle": "2027-01-03", "days": 0, "accrued": 0},
     {"id": "act365_btrk_47_days", "units": 1000, "face": 1000000, "rate_bps": 1595, "day_count": "ACT_365", "start": "2026-08-23", "settle": "2026-10-09", "days": 47, "accrued": 20538356}
   ],
+  "yield_cases": [
+    {"id": "par_bond_ytm_equals_coupon", "clean": 100000, "face": 100000, "rate_bps": 1000, "frequency": 2, "settle": "2026-10-03", "maturity": "2027-10-03", "ytm": 0.10},
+    {"id": "discount_95", "clean": 95000, "face": 100000, "rate_bps": 1000, "frequency": 2, "settle": "2026-10-03", "maturity": "2027-10-03", "ytm": 0.15592}
+  ],
   "totals_check": {
     "description": "Sum over brief holders must equal supply * per_unit; here supply=100, per_unit_gross=5000",
     "supply": 100,

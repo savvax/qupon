@@ -14,9 +14,11 @@ import (
 const fixturePath = "../../../../fixtures/entitlement.json"
 
 type fixtures struct {
-	DayCountCases []dayCase `json:"day_count_cases"`
-	Cases         []entCase `json:"cases"`
-	TotalsCheck   totals    `json:"totals_check"`
+	DayCountCases []dayCase     `json:"day_count_cases"`
+	Cases         []entCase     `json:"cases"`
+	ClockCases    []clockCase   `json:"clock_cases"`
+	AccruedCases  []accruedCase `json:"accrued_cases"`
+	TotalsCheck   totals        `json:"totals_check"`
 }
 
 type dayCase struct {
