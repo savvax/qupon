@@ -4,6 +4,7 @@
  */
 import type { Command } from "commander";
 import { registerAssetCommands } from "./asset.js";
+import { registerDisclosureCommands } from "./disclosure.js";
 import { registerKycCommands } from "./kyc.js";
 import { registerActionCommands } from "./action.js";
 import { registerInvestorCommands } from "./investor.js";
@@ -21,6 +22,7 @@ export function registerCommands(program: Command): void {
 	registerInvestorCommands(program);
 	registerKycCommands(program);
 	registerActionCommands(program);
+	registerDisclosureCommands(program);
 	registerLifecycleCommands(program);
 	registerPayoutCommands(program);
 	registerTradeCommands(program);

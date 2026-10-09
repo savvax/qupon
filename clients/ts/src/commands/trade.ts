@@ -21,11 +21,14 @@ import {
 	fetchMaybeTradeAdmission,
 	findAdmissionPda,
 	findCheckpointPda,
+	fetchCorporateAction,
 	getAdmitTradeInstructionAsync,
 	getReleaseTradeInstruction,
 	getSnapshotBatchInstruction,
 	getTradeAdmissionDecoder,
 	getTradeAdmissionSize,
+	type CorporateAction,
+	type Series,
 	type TradeAdmission,
 } from "../generated/index.js";
 import {
@@ -41,6 +44,9 @@ import {
 	tradeStatus,
 	type TradeStatus,
 } from "../lib/dvp.js";
+import { accruedSigned, type Accrued } from "../lib/accrued.js";
+import { seriesClock } from "../lib/clock.js";
+import { dayCountFromCode } from "../lib/daycount.js";
 import { hookExtras, withHookExtras } from "../lib/hook.js";
 import { entitlementPda, investorPda } from "../lib/pda.js";
 import type { QuponRpc } from "../lib/tx.js";
@@ -231,6 +237,9 @@ async function runCreate(opts: CreateOpts, cmd: Command): Promise<void> {
 		userBSettlementDestination: null,
 		earliestSettlementTimestamp: null,
 	});
+	// The open action decides the accrual start (ex-coupon window); the program checks it is the series' open one.
+	const open = info.account.openAction;
+	const openAction = isSome(open) ? { address: open.value, account: (await fetchCorporateAction(rpc, open.value)).data } : null;
 	const admit = await getAdmitTradeInstructionAsync({
 		authority: registrar,
 		series: info.pda,
@@ -238,9 +247,44 @@ async function runCreate(opts: CreateOpts, cmd: Command): Promise<void> {
 		swapDvp,
 		seller: await investorPda(info.pda, seller),
 		buyer: await investorPda(info.pda, buyer),
+		...(openAction !== null ? { openAction: openAction.address } : {}),
 	});
-	log(`trade ${swapDvp}: ${units} bonds for ${cash} minor units of cash; the registrar settles`);
-	await sendAndReport(rpc, registrar, [create, admit], "trade:create", { swapDvp, escrowBond, escrowCash, nonce, seller, buyer, units, cashAmount: cash });
+	const acc = tradeAccrued(info.account, openAction?.account ?? null, units, Math.floor(Date.now() / 1_000));
+	const clean = cash - acc.amount;
+	log(`trade ${swapDvp}: ${units} bonds for ${cash} minor units of cash (clean ${clean} + accrued ${acc.amount}, ${acc.days} days); the registrar settles`);
+	await sendAndReport(rpc, registrar, [create, admit], "trade:create", {
+		swapDvp,
+		escrowBond,
+		escrowCash,
+		nonce,
+		seller,
+		buyer,
+		units,
+		cashAmount: cash,
+		accrued: acc.amount,
+		accruedDays: acc.days,
+		clean,
+	});
+}
+
+/** ActionStatus codes in which an open coupon makes the bond trade ex-coupon (RecordStruck … Settling, Defaulted). */
+const EX_COUPON_STATUSES = new Set([1, 2, 3, 4, 10]);
+
+/**
+ * Accrued interest of a trade settling at `nowSecs` — mirrors `admit_trade`'s `TradeAccrued` (plan 15, task 1515):
+ * from the running period start, or, once an open coupon's record date has passed, from that coupon's period end
+ * (negative: the seller keeps the coupon).
+ */
+export function tradeAccrued(
+	series: Pick<Series, "periodStart" | "dayCount" | "faceValue" | "couponRateBps" | "daySecs" | "issueDate" | "issueYmd">,
+	openAction: Pick<CorporateAction, "kind" | "status" | "periodEnd"> | null,
+	units: bigint,
+	nowSecs: number,
+): Accrued {
+	const clock = seriesClock(series);
+	const ex = openAction !== null && openAction.kind === 0 && EX_COUPON_STATUSES.has(openAction.status);
+	const start = clock.civil(Number(ex ? openAction.periodEnd : series.periodStart));
+	return accruedSigned(units, series.faceValue, series.couponRateBps, dayCountFromCode(series.dayCount), start, clock.floorCivil(nowSecs));
 }
 
 interface TradeOpts extends GlobalOptions {

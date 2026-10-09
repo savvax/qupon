@@ -545,6 +545,7 @@ fn admit_ix(env: &Env, b: &Bond, t: &Trade, seller: &Pubkey, buyer: &Pubkey) -> 
             escrow_checkpoint: checkpoint_pda(&b.series, &t.swap),
             bond_token_program: spl_token_2022::ID,
             system_program: system_program::ID,
+            open_action: None,
         }
         .to_account_metas(None),
     )

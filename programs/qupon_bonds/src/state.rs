@@ -204,7 +204,9 @@ pub struct CorporateAction {
     pub cured_at: i64,
     /// Bank-routed payouts handed to the paying agent but not yet confirmed (plan 15 D6); `complete_action` needs 0.
     pub bank_pending: u32,
-    pub reserved: [u8; 39],
+    /// sha256 of the action's official notification (seev.031 XML), anchored once by the registrar (plan 15 D9).
+    pub disclosure_hash: [u8; 32],
+    pub reserved: [u8; 7],
 }
 
 /// Seeds `["entitlement", action, owner]`.

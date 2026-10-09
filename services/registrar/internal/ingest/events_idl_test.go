@@ -34,7 +34,7 @@ func idlKind(raw json.RawMessage) (field, error) {
 		switch scalar {
 		case "pubkey":
 			return pk(""), nil
-		case "u8", "u16", "u32", "u64", "i64", "bool":
+		case "u8", "u16", "u32", "i32", "u64", "i64", "bool":
 			return field{kind: scalar}, nil
 		}
 		return field{}, fmt.Errorf("unsupported idl type %q", scalar)

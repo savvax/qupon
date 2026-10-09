@@ -9,6 +9,7 @@
 export * from './admitTrade.js';
 export * from './announceAction.js';
 export * from './applyTermsChange.js';
+export * from './attachDisclosure.js';
 export * from './cancelAction.js';
 export * from './castVote.js';
 export * from './closeSeries.js';

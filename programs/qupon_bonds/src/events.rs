@@ -359,3 +359,30 @@ pub struct BankPayoutConfirmed {
     pub slot: u64,
     pub timestamp: i64,
 }
+
+/// The registrar anchored the sha256 of the action's official notification (seev.031) on-chain (plan 15 D9).
+#[event]
+pub struct DisclosureAttached {
+    pub series: Pubkey,
+    pub action: Pubkey,
+    pub index: u32,
+    pub hash: [u8; 32],
+    pub slot: u64,
+    pub timestamp: i64,
+}
+
+/// Accrued interest on an admitted DvP trade (plan 15, task 1515): `cash_amount = clean + accrued`; negative accrued
+/// in the ex-coupon window (the seller keeps the coupon). Day count of the series, half-up once per trade.
+#[event]
+pub struct TradeAccrued {
+    pub series: Pubkey,
+    pub swap_dvp: Pubkey,
+    pub units: u64,
+    pub cash_amount: u64,
+    pub settle_ymd: u32,
+    pub accrued_days: i32,
+    pub accrued: i64,
+    pub clean: i64,
+    pub slot: u64,
+    pub timestamp: i64,
+}

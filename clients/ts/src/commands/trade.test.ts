@@ -21,6 +21,7 @@ import {
   bondLegExtras,
   recordDateSnapshotIx,
   recordPending,
+  tradeAccrued,
   type Admitted,
 } from "./trade.js";
 import type { SeriesInfo } from "./common.js";
@@ -161,4 +162,27 @@ describe("DvP leg_a_extras_count", () => {
       "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd",
     );
   });
+});
+
+describe("tradeAccrued (plan 15, task 1515; fixtures accrued_cases)", () => {
+	// 30E/360 series from 2026-10-03, real Almaty clock; 12:00 Almaty = 07:00 UTC.
+	const series = {
+		periodStart: BigInt(Date.UTC(2026, 9, 2, 19) / 1_000),
+		dayCount: 0, // Thirty360
+		faceValue: 100_000n,
+		couponRateBps: 1_000,
+		daySecs: 0,
+		issueDate: 0n,
+		issueYmd: 20261003,
+	};
+	const at = (y: number, m: number, d: number) => Date.UTC(y, m - 1, d, 7) / 1_000;
+	it("trade_5_bonds_30_days", () => {
+		expect(tradeAccrued(series, null, 5n, at(2026, 11, 3))).toEqual({ amount: 4_167n, days: 30 });
+	});
+	it("ex_coupon_negative_1_day: from the open coupon's period end", () => {
+		const coupon = { kind: 0, status: 2, periodEnd: BigInt(Date.UTC(2027, 0, 2, 19) / 1_000) };
+		expect(tradeAccrued(series, coupon, 10n, at(2027, 1, 2))).toEqual({ amount: -278n, days: -1 });
+		// Before the record date (Announced) the bond still trades cum-coupon.
+		expect(tradeAccrued(series, { ...coupon, status: 0 }, 10n, at(2027, 1, 2)).amount > 0n).toBe(true);
+	});
 });

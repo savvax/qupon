@@ -13,12 +13,18 @@ use anchor_spl::{
     },
 };
 
+use entitlement::DayCount;
+
 use crate::{
+    clock::SeriesClock,
     constants::*,
-    error::QuponError,
-    events::{TradeAdmitted, TradeReleased},
+    error::{math_err, QuponError},
+    events::{TradeAccrued, TradeAdmitted, TradeReleased},
     instructions::subscribe::require_active,
-    state::{Checkpoint, Investor, InvestorStatus, Series, SeriesStatus, TradeAdmission},
+    state::{
+        ActionKind, ActionStatus, Checkpoint, CorporateAction, Investor, InvestorStatus, Series,
+        SeriesStatus, TradeAdmission,
+    },
     utils::{mint_paused, require_operator},
 };
 
@@ -143,6 +149,9 @@ pub struct AdmitTrade<'info> {
     /// CHECK: hooked series: the escrow owner's (SwapDvp) record-date checkpoint, created here (unused on legacy).
     #[account(mut, seeds = [CHECKPOINT_SEED, series.key().as_ref(), swap_dvp.key().as_ref()], bump)]
     pub escrow_checkpoint: UncheckedAccount<'info>,
+    /// The series' open action, if any (decides the accrual start: ex-coupon after a coupon's record date).
+    #[account(constraint = Some(open_action.key()) == series.open_action @ QuponError::InvalidParams)]
+    pub open_action: Option<Box<Account<'info, CorporateAction>>>,
 }
 
 pub fn handle_admit_trade(ctx: Context<AdmitTrade>) -> Result<()> {
@@ -221,6 +230,60 @@ pub fn handle_admit_trade(ctx: Context<AdmitTrade>) -> Result<()> {
         .open_trades
         .checked_add(1)
         .ok_or(QuponError::MathOverflow)?;
+    // Accrued interest at admission (plan 15): from the running period start, or — between an open coupon's record
+    // date and its payment — from that coupon's period end (negative: the seller keeps the coupon). Event only: the
+    // price is the parties' business; the split makes it legible.
+    {
+        let s = &*series;
+        require!(
+            s.open_action.is_none() || ctx.accounts.open_action.is_some(),
+            QuponError::InvalidParams
+        );
+        let ex_coupon_end = ctx.accounts.open_action.as_ref().and_then(|a| {
+            let ex = a.kind == ActionKind::Interest as u8
+                && [
+                    ActionStatus::RecordStruck,
+                    ActionStatus::SnapshotComplete,
+                    ActionStatus::Funded,
+                    ActionStatus::Settling,
+                    ActionStatus::Defaulted,
+                ]
+                .iter()
+                .any(|st| a.status == *st as u8);
+            ex.then_some(a.period_end)
+        });
+        let clock_s = SeriesClock::of(s)?;
+        let start = clock_s.civil(ex_coupon_end.unwrap_or(s.period_start))?;
+        let settle = clock_s
+            .0
+            .floor_civil(clock.unix_timestamp)
+            .map_err(math_err)?;
+        let dc = DayCount::try_from(s.day_count).map_err(math_err)?;
+        let (accrued, days) = entitlement::accrued_signed(
+            terms.amount_a,
+            s.face_value,
+            s.coupon_rate_bps,
+            dc,
+            start,
+            settle,
+        )
+        .map_err(math_err)?;
+        let cash = i64::try_from(terms.amount_b).map_err(|_| error!(QuponError::MathOverflow))?;
+        emit!(TradeAccrued {
+            series: s.key(),
+            swap_dvp: ctx.accounts.swap_dvp.key(),
+            units: terms.amount_a,
+            cash_amount: terms.amount_b,
+            settle_ymd: u32::from(settle.y) * 10_000
+                + u32::from(settle.m) * 100
+                + u32::from(settle.d),
+            accrued_days: days,
+            accrued,
+            clean: cash.checked_sub(accrued).ok_or(QuponError::MathOverflow)?,
+            slot: clock.slot,
+            timestamp: clock.unix_timestamp,
+        });
+    }
     emit!(TradeAdmitted {
         series: adm.series,
         swap_dvp: adm.swap_dvp,

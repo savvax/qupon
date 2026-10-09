@@ -208,6 +208,7 @@ fn admit_ix(b: &Bond, authority: &Pubkey, t: &Trade) -> Instruction {
             escrow_checkpoint: checkpoint_pda(&b.series, &t.swap),
             bond_token_program: spl_token_2022::ID,
             system_program: system_program::ID,
+            open_action: None,
         }
         .to_account_metas(None),
     )
@@ -479,4 +480,54 @@ fn forced_release_unwinds_a_trade_that_cannot_be_cancelled() {
     env.send(&[snapshot], &[]).expect("snapshot");
     let finalize = env.finalize_snapshot_ix(&b, 0);
     env.send(&[finalize], &[]).expect("finalize");
+}
+
+// ---- Accrued interest on admitted trades (plan 15, task 1515) ----
+
+fn accrued_of(meta: &litesvm::types::TransactionMetadata) -> qupon_bonds::events::TradeAccrued {
+    events_of::<qupon_bonds::events::TradeAccrued>(&meta.logs)
+        .pop()
+        .expect("TradeAccrued emitted")
+}
+
+#[test]
+fn a_trade_a_month_into_the_period_carries_its_accrued_interest() {
+    let (mut env, b, seller, buyer) = market();
+    // 2026-07-03 (period start) + one month = 2026-08-03: 30 days in 30E/360.
+    env.set_clock(ISSUE_DATE + 31 * 86_400 + 3_600);
+    let reg = env.registrar.pubkey();
+    let t = create_dvp(&mut env, &b, &reg, &seller, &buyer, 41);
+    let meta = env
+        .send(&[admit_ix(&b, &env.registrar.pubkey(), &t)], &[])
+        .expect("admit");
+    let ev = accrued_of(&meta);
+    // 10 bonds × 100,000 × 10% × 30/360 = 8,333.33 → 8,333 (twice fixtures' `trade_5_bonds_30_days`, rounded once).
+    assert_eq!((ev.accrued_days, ev.accrued), (30, 8_333));
+    assert_eq!((ev.cash_amount, ev.clean), (CASH, CASH as i64 - 8_333));
+    assert_eq!(ev.settle_ymd, 20260803);
+}
+
+#[test]
+fn a_trade_in_the_ex_coupon_window_has_negative_accrued_interest() {
+    let (mut env, b, seller, buyer) = market();
+    let owners = vec![seller.pubkey(), buyer.pubkey()];
+    env.intr_snapshotted(&b, &owners); // coupon record final: the bond trades ex-date until payment
+    env.set_clock(NEXT_COUPON - 86_400 + 3_600); // 2027-01-02, the day before the coupon's period end
+    let reg = env.registrar.pubkey();
+    let t = create_dvp(&mut env, &b, &reg, &seller, &buyer, 42);
+    let mut ix = admit_ix(&b, &env.registrar.pubkey(), &t);
+    let last = ix.accounts.len() - 1;
+    ix.accounts[last].pubkey = action_pda(&b.series, 0); // the open action decides the accrual start
+    let meta = env.send(&[ix], &[]).expect("admit ex-coupon");
+    let ev = accrued_of(&meta);
+    // fixtures/entitlement.json `ex_coupon_negative_1_day`: from the period end (2027-01-03) back to 2027-01-02.
+    assert_eq!((ev.accrued_days, ev.accrued), (-1, -278));
+    assert_eq!(ev.clean, CASH as i64 + 278);
+    // Leaving the open action out is refused.
+    let reg = env.registrar.pubkey();
+    let t2 = create_dvp(&mut env, &b, &reg, &seller, &buyer, 43);
+    assert_err(
+        env.send(&[admit_ix(&b, &env.registrar.pubkey(), &t2)], &[]),
+        QuponError::InvalidParams,
+    );
 }

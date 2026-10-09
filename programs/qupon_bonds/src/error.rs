@@ -89,6 +89,8 @@ pub enum QuponError {
     NotOverdue,
     #[msg("Bank-routed payouts await the paying agent's confirmation")]
     BankPayoutsPending,
+    #[msg("The disclosure hash of this action is already anchored")]
+    AlreadyAttached,
 }
 
 /// Map the pure math crate's errors onto program errors (orphan rule forbids `From`).

@@ -131,6 +131,11 @@ pub mod qupon_bonds {
         instructions::meeting::handle_apply_terms_change(ctx)
     }
 
+    /// Anchor the sha256 of the action's official notification (seev.031) once (registrar).
+    pub fn attach_disclosure(ctx: Context<AttachDisclosure>, hash: [u8; 32]) -> Result<()> {
+        instructions::disclosure::handle_attach_disclosure(ctx, hash)
+    }
+
     /// The holder chooses where payouts go: wallet (0) or bank (1, with the sha256 of the bank details) (holder).
     pub fn set_payout_route(
         ctx: Context<SetPayoutRoute>,

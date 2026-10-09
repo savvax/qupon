@@ -28,6 +28,7 @@ func u8(name string) field         { return field{name, "u8", 0} }
 func u16(name string) field        { return field{name, "u16", 0} }
 func u32(name string) field        { return field{name, "u32", 0} }
 func u64(name string) field        { return field{name, "u64", 0} }
+func i32(name string) field        { return field{name, "i32", 0} }
 func i64(name string) field        { return field{name, "i64", 0} }
 func boolean(name string) field    { return field{name, "bool", 0} }
 func arr(name string, n int) field { return field{name, "bytes", n} }
@@ -83,6 +84,10 @@ var layouts = map[string][]field{
 		u64("slot"), i64("timestamp")},
 	"BankPayoutConfirmed": {pk("series"), pk("action"), u32("index"), pk("owner"), arr("reference_hash", 32),
 		u64("slot"), i64("timestamp")},
+	// Plan 15 D9 + task 1515: anchored disclosure, accrued interest on admitted trades.
+	"DisclosureAttached": {pk("series"), pk("action"), u32("index"), arr("hash", 32), u64("slot"), i64("timestamp")},
+	"TradeAccrued": {pk("series"), pk("swap_dvp"), u64("units"), u64("cash_amount"), u32("settle_ymd"),
+		i32("accrued_days"), i64("accrued"), i64("clean"), u64("slot"), i64("timestamp")},
 }
 
 // EventNames lists every known event, sorted (for tests and docs).
@@ -128,7 +133,7 @@ func decodeEvent(raw []byte) (Event, error) {
 	pos := 0
 	ev := Event{Name: name, Fields: make(map[string]any, len(layouts[name]))}
 	for _, f := range layouts[name] {
-		need := map[string]int{"pk": 32, "u8": 1, "u16": 2, "u32": 4, "u64": 8, "i64": 8, "bool": 1, "bytes": f.n}[f.kind]
+		need := map[string]int{"pk": 32, "u8": 1, "u16": 2, "u32": 4, "i32": 4, "u64": 8, "i64": 8, "bool": 1, "bytes": f.n}[f.kind]
 		if pos+need > len(body) {
 			return Event{}, fmt.Errorf("event %s: field %s needs %d bytes at offset %d, %d left", name, f.name, need, pos, len(body)-pos)
 		}
@@ -146,6 +151,8 @@ func decodeEvent(raw []byte) (Event, error) {
 			// decimal string: JS loses integer precision above 2^53, and u64
 			// amounts/units must survive the JSON payload to the browser
 			ev.Fields[f.name] = strconv.FormatUint(binary.LittleEndian.Uint64(chunk), 10)
+		case "i32":
+			ev.Fields[f.name] = int32(binary.LittleEndian.Uint32(chunk))
 		case "i64":
 			ev.Fields[f.name] = int64(binary.LittleEndian.Uint64(chunk))
 		case "bool":

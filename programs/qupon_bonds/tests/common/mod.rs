@@ -1065,3 +1065,17 @@ pub fn bond_transfer(b: &Bond, from: &Pubkey, to: &Pubkey, amount: u64) -> Instr
     )
     .unwrap()
 }
+
+/// Anchor events of type `T` emitted in a transaction ("Program data: <base64>" log lines).
+pub fn events_of<T>(logs: &[String]) -> Vec<T>
+where
+    T: anchor_lang::AnchorDeserialize + anchor_lang::Discriminator,
+{
+    use base64::Engine;
+    logs.iter()
+        .filter_map(|l| l.strip_prefix("Program data: "))
+        .filter_map(|b| base64::engine::general_purpose::STANDARD.decode(b).ok())
+        .filter(|d| d.starts_with(T::DISCRIMINATOR))
+        .filter_map(|d| T::deserialize(&mut &d[T::DISCRIMINATOR.len()..]).ok())
+        .collect()
+}
