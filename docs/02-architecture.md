@@ -191,3 +191,7 @@ Scheduler (Go) notices `next_coupon_date − 5d` → creates announcement via ex
 - `finalize_snapshot`: `positions_done + ckpt_late == ckpt_count` (`PositionsIncomplete`) and `units_snapshotted ≥ supply` (holders' own burns after their snapshot can only lower supply); INTR/PCAL/BMET disarm the gate (`record_at = 0`, ex-date trading), REDM/MCAL keep it.
 - `release_trade` refuses between `record_at` and the final snapshot (`RecordPending`); a forced release burns from the escrow and mints to the seller (a transfer would re-enter this program through Token-2022, which Solana forbids); it closes the escrow checkpoint (`ckpt_count − 1`).
 - Legacy (non-hooked) series keep strike → pause → snapshot; INTR/PCAL now resume at `finalize_snapshot`, REDM/MCAL stay paused until `complete_action`.
+
+### Default and cure (plan 15 D4, task 1512)
+- `declare_default` (anyone): action SnapshotComplete, `now ≥ payment_at + one series day` (`NotOverdue`), escrow < net + tax + principal → status **Defaulted (10)**, `defaulted_at`, `Series.in_default = 1`, `defaults_count += 1`, event `ActionDefaulted { required, escrow_balance, shortfall, … }`. Coupons keep trading (the record is final); redemptions keep the register frozen.
+- `fund_action` also accepts Defaulted; when the escrow covers the action → Funded, `cured_at`, `in_default = 0`, event `DefaultCured { late_secs }`; payment then goes to the record-date holders. A new action cannot be announced while one is in default (`ActionAlreadyOpen`).

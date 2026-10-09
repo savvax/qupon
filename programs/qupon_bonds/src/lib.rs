@@ -131,6 +131,11 @@ pub mod qupon_bonds {
         instructions::meeting::handle_apply_terms_change(ctx)
     }
 
+    /// Payment date + one series day passed and the escrow is short: the action is in default (anyone).
+    pub fn declare_default(ctx: Context<DeclareDefault>) -> Result<()> {
+        instructions::default::handle_declare_default(ctx)
+    }
+
     /// Write the transfer-hook validation account and switch the series to the hook gate (registrar).
     pub fn init_hook(ctx: Context<InitHook>) -> Result<()> {
         instructions::hook::handle_init_hook(ctx)

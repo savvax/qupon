@@ -1,4 +1,5 @@
 pub mod announce_action;
+pub mod default;
 pub mod hook;
 pub mod init_series;
 pub mod meeting;
@@ -10,6 +11,7 @@ pub mod subscribe;
 pub mod trade;
 
 pub use announce_action::*;
+pub use default::*;
 pub use hook::*;
 pub use init_series::*;
 pub use meeting::*;

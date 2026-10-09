@@ -295,3 +295,30 @@ pub struct TradeReleased {
     pub slot: u64,
     pub timestamp: i64,
 }
+
+/// Plan 15 D4: the payment date plus one series day passed and the escrow still does not cover the action.
+#[event]
+pub struct ActionDefaulted {
+    pub series: Pubkey,
+    pub action: Pubkey,
+    pub index: u32,
+    pub kind: u8,
+    pub required: u64,
+    pub escrow_balance: u64,
+    pub shortfall: u64,
+    pub payment_at: i64,
+    pub defaulted_at: i64,
+    pub slot: u64,
+    pub timestamp: i64,
+}
+
+/// Funding after a default covered the action: payment proceeds to the record-date holders.
+#[event]
+pub struct DefaultCured {
+    pub series: Pubkey,
+    pub action: Pubkey,
+    pub index: u32,
+    pub late_secs: i64,
+    pub slot: u64,
+    pub timestamp: i64,
+}

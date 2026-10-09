@@ -16,6 +16,7 @@ import {
 	getAnnounceActionInstructionAsync,
 	getCancelActionInstruction,
 	getCompleteActionInstruction,
+	getDeclareDefaultInstruction,
 	getFinalizeSnapshotInstruction,
 	getFundActionInstruction,
 	getPayBatchInstruction,
@@ -264,6 +265,16 @@ async function runCancel(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { action } = await loadAction(rpc, info, opts.index);
 	const instruction = getCancelActionInstruction({ registrar, series: info.pda, action });
 	await sendAndReport(rpc, registrar, [instruction], "action:cancel", { action });
+}
+
+/** Declare the open action in default (plan 15 D4): payment date + one series day passed, escrow short (anyone). */
+async function runDefault(opts: ActionOpts, cmd: Command): Promise<void> {
+	const { rpc, cfg } = await initCtx(cmd);
+	const info = await loadSeries(rpc, cfg, opts.series);
+	const payer = await signer(cmd, "registrar"); /* any keypair may declare it: --keypair overrides */
+	const { action, account } = await loadAction(rpc, info, opts.index);
+	const instruction = getDeclareDefaultInstruction({ payer, series: info.pda, action, escrow: account.escrow });
+	await sendAndReport(rpc, payer, [instruction], "action:default", { action });
 }
 
 async function runStrike(opts: ActionOpts, cmd: Command): Promise<void> {
@@ -531,6 +542,11 @@ export function registerActionCommands(program: Command): void {
 		.requiredOption("--series <name>", "series name in config/devnet.json")
 		.option(indexOpt, "action index (default: the open action)")
 		.action(runCancel);
+
+	withGlobals(program.command("action:default").description("declare the action in default: payment date + one series day passed, escrow short (anyone)"))
+		.requiredOption("--series <name>", "series name in config/devnet.json")
+		.option(indexOpt, "action index (default: the open action)")
+		.action(runDefault);
 
 	withGlobals(program.command("action:strike").description("strike the record date (pauses the bond mint)"))
 		.requiredOption("--series <name>", "series name in config/devnet.json")

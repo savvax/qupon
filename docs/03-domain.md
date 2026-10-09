@@ -61,6 +61,9 @@ Secondary trades between registered investors settle through the Solana Foundati
 
 Alternative when Pausable CPI misbehaves on devnet (fallback, do not implement unless needed): freeze every registered ATA in `strike_record` batches and thaw in `complete_action`.
 
+### 4b. Default and cure (plan 15 D4)
+If the escrow does not cover an action one series day after its payment date, anyone can record the default on-chain (`declare_default`). The claims stay with the holders at the record date; a late full funding cures the default and pays them. Pro-rata payment of a partial escrow is out of scope.
+
 ## 5. Corporate-action state machine
 
 ```

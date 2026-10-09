@@ -13,6 +13,7 @@ export * from './cancelAction.js';
 export * from './castVote.js';
 export * from './closeSeries.js';
 export * from './completeAction.js';
+export * from './declareDefault.js';
 export * from './execute.js';
 export * from './finalizeMeeting.js';
 export * from './finalizeSnapshot.js';

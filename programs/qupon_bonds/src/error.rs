@@ -85,6 +85,8 @@ pub enum QuponError {
     PositionsIncomplete,
     #[msg("The mint carries the record-date transfer hook: run init_hook before registering investors")]
     HookNotArmed,
+    #[msg("Not overdue yet: a default needs the payment date plus one series day without full funding")]
+    NotOverdue,
 }
 
 /// Map the pure math crate's errors onto program errors (orphan rule forbids `From`).

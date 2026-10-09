@@ -147,7 +147,7 @@ type Entitlement struct {
 func ActionStatusName(code uint8) string {
 	actionStatusNames := [...]string{
 		"Announced", "RecordStruck", "SnapshotComplete", "Funded", "Settling",
-		"Completed", "Retiring", "Cancelled", "VotingOpen", "Finalized",
+		"Completed", "Retiring", "Cancelled", "VotingOpen", "Finalized", "Defaulted",
 	}
 	if int(code) < len(actionStatusNames) {
 		return actionStatusNames[code]

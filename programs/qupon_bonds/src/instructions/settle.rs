@@ -14,7 +14,7 @@ use crate::{
     clock::SeriesClock,
     constants::*,
     error::QuponError,
-    events::{ActionCompleted, ActionFunded, EntitlementPaid, EscrowSwept},
+    events::{ActionCompleted, ActionFunded, DefaultCured, EntitlementPaid, EscrowSwept},
     state::{
         ActionKind, ActionStatus, CorporateAction, Entitlement, EntitlementStatus, Investor,
         Series, SeriesStatus,
@@ -37,7 +37,7 @@ pub fn required_funding(a: &CorporateAction) -> Result<u64> {
 pub struct FundAction<'info> {
     /// Issuer or paying agent (checked in the handler).
     pub funder: Signer<'info>,
-    #[account(has_one = cash_mint)]
+    #[account(mut, has_one = cash_mint)]
     pub series: Box<Account<'info, Series>>,
     #[account(
         mut,
@@ -69,7 +69,9 @@ pub fn handle_fund_action(ctx: Context<FundAction>, amount: u64) -> Result<()> {
     );
     let status = ctx.accounts.action.status;
     require!(
-        status == ActionStatus::SnapshotComplete as u8 || status == ActionStatus::Funded as u8,
+        status == ActionStatus::SnapshotComplete as u8
+            || status == ActionStatus::Funded as u8
+            || status == ActionStatus::Defaulted as u8,
         QuponError::WrongStatus
     );
     require!(amount > 0, QuponError::NothingToDo);
@@ -98,10 +100,23 @@ pub fn handle_fund_action(ctx: Context<FundAction>, amount: u64) -> Result<()> {
     let required = required_funding(action)?;
     let balance = ctx.accounts.escrow.amount;
     let fully_funded = balance >= required;
+    let clock = Clock::get()?;
     if fully_funded {
+        if action.status == ActionStatus::Defaulted as u8 {
+            // Cure (plan 15 D4): late, but the record-date holders are now paid in full.
+            action.cured_at = clock.unix_timestamp;
+            ctx.accounts.series.in_default = 0;
+            emit!(DefaultCured {
+                series: action.series,
+                action: action.key(),
+                index: action.index,
+                late_secs: clock.unix_timestamp.saturating_sub(action.payment_at),
+                slot: clock.slot,
+                timestamp: clock.unix_timestamp,
+            });
+        }
         action.status = ActionStatus::Funded as u8;
     }
-    let clock = Clock::get()?;
     emit!(ActionFunded {
         series: action.series,
         action: action.key(),

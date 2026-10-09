@@ -46,6 +46,7 @@ u8_enum!(ActionStatus {
     Cancelled = 7,
     VotingOpen = 8,
     Finalized = 9,
+    Defaulted = 10,
 });
 u8_enum!(EntitlementStatus { Snapshotted = 0, Paid = 1, Retired = 2 });
 u8_enum!(VoteChoice { None = 0, For = 1, Against = 2, Abstain = 3 });
@@ -107,7 +108,11 @@ pub struct Series {
     pub day_secs: u32,
     /// Packed `yyyymmdd` of the issue civil date — the demo clock's calendar anchor (0 = derive from `issue_date`).
     pub issue_ymd: u32,
-    pub reserved: [u8; 30],
+    /// 1 while an action of this series is in default (plan 15 D4); cleared when it is cured.
+    pub in_default: u8,
+    /// Defaults ever declared on this series.
+    pub defaults_count: u16,
+    pub reserved: [u8; 27],
 }
 
 /// Seeds `["investor", series, owner]`.
@@ -193,7 +198,10 @@ pub struct CorporateAction {
     /// Hooked series: checkpoints advanced by this action's snapshot (completeness = positions_done + ckpt_late ==
     /// ckpt_count).
     pub positions_done: u32,
-    pub reserved: [u8; 59],
+    /// When `declare_default` ran (0 = never); `cured_at` when funding later covered the shortfall.
+    pub defaulted_at: i64,
+    pub cured_at: i64,
+    pub reserved: [u8; 43],
 }
 
 /// Seeds `["entitlement", action, owner]`.
