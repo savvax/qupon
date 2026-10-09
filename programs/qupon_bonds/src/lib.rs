@@ -131,6 +131,23 @@ pub mod qupon_bonds {
         instructions::meeting::handle_apply_terms_change(ctx)
     }
 
+    /// The holder chooses where payouts go: wallet (0) or bank (1, with the sha256 of the bank details) (holder).
+    pub fn set_payout_route(
+        ctx: Context<SetPayoutRoute>,
+        route: u8,
+        bank_ref_hash: [u8; 32],
+    ) -> Result<()> {
+        instructions::payout_route::handle_set_payout_route(ctx, route, bank_ref_hash)
+    }
+
+    /// The paying agent confirms a bank-routed payout with the transfer's reference hash (paying agent).
+    pub fn confirm_bank_payout(
+        ctx: Context<ConfirmBankPayout>,
+        reference_hash: [u8; 32],
+    ) -> Result<()> {
+        instructions::payout_route::handle_confirm_bank_payout(ctx, reference_hash)
+    }
+
     /// Payment date + one series day passed and the escrow is short: the action is in default (anyone).
     pub fn declare_default(ctx: Context<DeclareDefault>) -> Result<()> {
         instructions::default::handle_declare_default(ctx)

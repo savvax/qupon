@@ -77,6 +77,12 @@ var layouts = map[string][]field{
 	"ActionDefaulted": {pk("series"), pk("action"), u32("index"), u8("kind"), u64("required"), u64("escrow_balance"),
 		u64("shortfall"), i64("payment_at"), i64("defaulted_at"), u64("slot"), i64("timestamp")},
 	"DefaultCured": {pk("series"), pk("action"), u32("index"), i64("late_secs"), u64("slot"), i64("timestamp")},
+	// Plan 15 D6 (task 1514): holder-chosen payout route and bank payouts.
+	"PayoutRouteSet": {pk("series"), pk("investor"), pk("owner"), u8("route"), arr("bank_ref_hash", 32), u64("slot"), i64("timestamp")},
+	"PaidToAgent": {pk("series"), pk("action"), u32("index"), pk("owner"), pk("agent_cash"), u64("amount"),
+		u64("slot"), i64("timestamp")},
+	"BankPayoutConfirmed": {pk("series"), pk("action"), u32("index"), pk("owner"), arr("reference_hash", 32),
+		u64("slot"), i64("timestamp")},
 }
 
 // EventNames lists every known event, sorted (for tests and docs).

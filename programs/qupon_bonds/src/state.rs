@@ -48,7 +48,8 @@ u8_enum!(ActionStatus {
     Finalized = 9,
     Defaulted = 10,
 });
-u8_enum!(EntitlementStatus { Snapshotted = 0, Paid = 1, Retired = 2 });
+u8_enum!(EntitlementStatus { Snapshotted = 0, Paid = 1, Retired = 2, PaidToAgent = 3 });
+u8_enum!(PayoutRouteKind { Wallet = 0, Bank = 1 });
 u8_enum!(VoteChoice { None = 0, For = 1, Against = 2, Abstain = 3 });
 u8_enum!(MeetingResult { Pending = 0, Approved = 1, Rejected = 2, NoQuorum = 3 });
 
@@ -201,7 +202,9 @@ pub struct CorporateAction {
     /// When `declare_default` ran (0 = never); `cured_at` when funding later covered the shortfall.
     pub defaulted_at: i64,
     pub cured_at: i64,
-    pub reserved: [u8; 43],
+    /// Bank-routed payouts handed to the paying agent but not yet confirmed (plan 15 D6); `complete_action` needs 0.
+    pub bank_pending: u32,
+    pub reserved: [u8; 39],
 }
 
 /// Seeds `["entitlement", action, owner]`.
@@ -250,4 +253,19 @@ pub struct Checkpoint {
     pub series: Pubkey,
     pub owner: Pubkey,
     pub last_seq: u32,
+}
+
+/// Seeds `["route", investor]` — where the holder wants payouts to go (plan 15 D6). Set only by the holder's own
+/// signature; absent = their registered wallet cash account. Bank: the paying agent receives the payout and
+/// confirms the (SIMULATED) bank transfer with a reference hash.
+#[account]
+#[derive(InitSpace)]
+pub struct PayoutRoute {
+    pub bump: u8,
+    pub investor: Pubkey,
+    /// [`PayoutRouteKind`].
+    pub route: u8,
+    /// sha256 of the holder's bank details (never stored in clear); zero for the wallet route.
+    pub bank_ref_hash: [u8; 32],
+    pub updated_at: i64,
 }

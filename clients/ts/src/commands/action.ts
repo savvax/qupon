@@ -84,6 +84,11 @@ export function payBatchBytes(holders: number, creates: number): number {
 	return 450 + 165 * holders + 42 * creates + (creates > 0 ? 64 : 0);
 }
 
+/** PayoutRoute `["route", investor]`: discriminator (8) + bump (1) + investor (32), then the route byte (1 = bank). */
+export function payoutRouteIsBank(data: Uint8Array): boolean {
+	return data.length > 41 && data[41] === 1;
+}
+
 /** Max wire size minus a safety margin for varints and rounding in the estimate above. */
 export const PAY_TX_BYTE_LIMIT = 1232 - 52;
 
@@ -113,6 +118,7 @@ export function ensureCashAtas(args: {
 }): Instruction[] {
 	return args.batch
 		.filter(h => args.missing.has(h.cashAta as string))
+		.filter((h, i, all) => all.findIndex(x => x.cashAta === h.cashAta) === i) // one create per account (bank routes share the agent's)
 		.map(h =>
 			getCreateAssociatedTokenIdempotentInstruction({
 				payer: args.payer,
@@ -432,19 +438,26 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 	// Payable = entitlements still Snapshotted (re-runs skip Paid ones — idempotent).
 	const [investors, entitlements] = await Promise.all([listInvestors(rpc, info.pda), listEntitlements(rpc, action)]);
 	const byOwner = new Map(investors.map(inv => [inv.owner as string, inv]));
-	const payable = entitlements
+	const unpaid = entitlements
 		.filter(e => e.status === 0) // Snapshotted
 		.map(e => {
 			const investor = byOwner.get(e.owner);
 			if (investor === undefined) throw new Error(`no Investor PDA for entitlement owner ${e.owner}`);
-			return {
-				owner: e.owner,
-				entitlement: e.address,
-				investor: investor.address,
-				cashAta: investor.cashAta,
-				bondAta: investor.bondAta,
-			};
+			return { owner: e.owner, entitlement: e.address, investor: investor.address, walletCash: investor.cashAta, bondAta: investor.bondAta };
 		});
+	// Plan 15 D6: a holder who chose the bank route is paid to the paying agent's cash account (SIMULATED bank transfer,
+	// confirmed later with `payout:confirm-bank`); everyone else to the cash account recorded at registration.
+	const routes = await Promise.all(unpaid.map(h => routePda(h.investor)));
+	const routeAccounts = await fetchEncodedAccounts(rpc, routes);
+	const payingAgent = info.account.payingAgent;
+	const [agentCash] = await findAssociatedTokenPda({ owner: payingAgent, mint: cashMint, tokenProgram: cashTokenProgram });
+	const payable = unpaid.map((h, i) => {
+		const acc = routeAccounts[i];
+		const bank = acc !== undefined && acc.exists && payoutRouteIsBank(acc.data);
+		return { ...h, route: routes[i] as Address, cashAta: bank ? agentCash : h.walletCash, ataOwner: bank ? payingAgent : h.owner };
+	});
+	const banked = payable.filter(h => h.cashAta === agentCash).length;
+	if (banked > 0) log(`${banked} holder(s) chose the bank route: paid to the paying agent ${payingAgent} for confirmation`);
 	// Task 1410: a holder may close their empty cash ATA during Funded — pay_batch pays the stored
 	// investor.cash_ata, so recreate the missing ones idempotently in the same tx; batches whose
 	// tx would overflow the 1232-byte limit split (deterministic order preserved).
@@ -458,7 +471,7 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 		for (const holder of batch) {
 			// remaining_accounts per holder: [Entitlement (w), Investor, PayoutRoute PDA, cash destination (w), bond ATA (w)]
 			// — a full redemption burns the units in the same instruction it pays them (plan 15 D5).
-			metas.push(wr(holder.entitlement), ro(holder.investor), ro(await routePda(holder.investor)), wr(holder.cashAta), wr(holder.bondAta));
+			metas.push(wr(holder.entitlement), ro(holder.investor), ro(holder.route), wr(holder.cashAta), wr(holder.bondAta));
 		}
 		const base = getPayBatchInstruction({
 			authority,
@@ -472,7 +485,14 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 		});
 		const instruction = { ...base, accounts: [...base.accounts, ...metas] };
 		// Prepended before pay_batch so the closed-ATA holder is payable in the same tx (task 1410).
-		const instructions = [...ensureCashAtas({ batch, missing: missingAta, payer: authority, cashMint, cashTokenProgram }), instruction];
+		const creates = ensureCashAtas({
+			batch: batch.map(h => ({ owner: h.ataOwner, cashAta: h.cashAta })),
+			missing: missingAta,
+			payer: authority,
+			cashMint,
+			cashTokenProgram,
+		});
+		const instructions = [...creates, instruction];
 		const report = await sendQuiet(rpc, authority, instructions, `action:pay batch ${i + 1}/${batches.length}`);
 		log(`  batch ${i + 1}/${batches.length}: ${report.signature} (${txLink(report.signature)})`);
 		return report;

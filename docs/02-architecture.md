@@ -196,3 +196,8 @@ Scheduler (Go) notices `next_coupon_date − 5d` → creates announcement via ex
 ### Default and cure (plan 15 D4, task 1512)
 - `declare_default` (anyone): action SnapshotComplete, `now ≥ payment_at + one series day` (`NotOverdue`), escrow < net + tax + principal → status **Defaulted (10)**, `defaulted_at`, `Series.in_default = 1`, `defaults_count += 1`, event `ActionDefaulted { required, escrow_balance, shortfall, … }`. Coupons keep trading (the record is final); redemptions keep the register frozen.
 - `fund_action` also accepts Defaulted; when the escrow covers the action → Funded, `cured_at`, `in_default = 0`, event `DefaultCured { late_secs }`; payment then goes to the record-date holders. A new action cannot be announced while one is in default (`ActionAlreadyOpen`).
+
+### Holder-chosen payout route (plan 15 D6, task 1514)
+- `set_payout_route(route, bank_ref_hash)` (the holder; `has_one owner`): creates/updates `PayoutRoute ["route", investor] {investor, route (0 wallet, 1 bank), bank_ref_hash, updated_at}`; bank needs a non-zero sha256 of the bank details, wallet a zero hash; event `PayoutRouteSet`. Nobody else can choose or change it.
+- `pay_batch`: a bank-routed holder's payout must go to the paying agent's cash ATA (`AccountOwnerMismatch` otherwise), entitlement → `PaidToAgent (3)`, `CorporateAction.bank_pending += 1`, event `PaidToAgent`; redemptions still burn now.
+- `confirm_bank_payout(reference_hash)` (paying agent): `PaidToAgent → Paid` (coupon) or `Retired` (redemption), `bank_pending −= 1`, event `BankPayoutConfirmed`. `complete_action` requires `bank_pending == 0` (`BankPayoutsPending`). The bank transfer itself is SIMULATED.

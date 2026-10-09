@@ -322,3 +322,40 @@ pub struct DefaultCured {
     pub slot: u64,
     pub timestamp: i64,
 }
+
+/// The holder chose where payouts go (plan 15 D6).
+#[event]
+pub struct PayoutRouteSet {
+    pub series: Pubkey,
+    pub investor: Pubkey,
+    pub owner: Pubkey,
+    pub route: u8,
+    pub bank_ref_hash: [u8; 32],
+    pub slot: u64,
+    pub timestamp: i64,
+}
+
+/// A bank-routed payout left the escrow for the paying agent's cash account (bank transfer SIMULATED).
+#[event]
+pub struct PaidToAgent {
+    pub series: Pubkey,
+    pub action: Pubkey,
+    pub index: u32,
+    pub owner: Pubkey,
+    pub agent_cash: Pubkey,
+    pub amount: u64,
+    pub slot: u64,
+    pub timestamp: i64,
+}
+
+/// The paying agent confirmed the bank transfer to the holder (reference hash on-chain).
+#[event]
+pub struct BankPayoutConfirmed {
+    pub series: Pubkey,
+    pub action: Pubkey,
+    pub index: u32,
+    pub owner: Pubkey,
+    pub reference_hash: [u8; 32],
+    pub slot: u64,
+    pub timestamp: i64,
+}

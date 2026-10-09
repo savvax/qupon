@@ -101,8 +101,10 @@ pub fn handle_retire_batch<'info>(ctx: Context<'info, RetireBatch<'info>>) -> Re
                 ),
                 QuponError::AccountOwnerMismatch
             );
-            if e.status == EntitlementStatus::Retired as u8 {
-                continue; // paid and burned by pay_batch (plan 15 D5), or retired by an earlier batch
+            if e.status == EntitlementStatus::Retired as u8
+                || e.status == EntitlementStatus::PaidToAgent as u8
+            {
+                continue; // paid and burned by pay_batch (plan 15 D5/D6), or retired by an earlier batch
             }
             ent = Some(e);
             o

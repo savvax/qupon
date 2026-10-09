@@ -12,4 +12,5 @@ export * from './entitlement.js';
 export * from './escrowCheckpoint.js';
 export * from './extraAccountMetaList.js';
 export * from './investor.js';
+export * from './route.js';
 export * from './series.js';

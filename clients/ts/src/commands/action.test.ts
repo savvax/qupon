@@ -12,6 +12,7 @@ import {
 	SNAPSHOT_BATCH_MAX,
 	ensureCashAtas,
 	payBatchBytes,
+	payoutRouteIsBank,
 	runBatches,
 	sortedBatches,
 	splitPayBatch,
@@ -164,5 +165,15 @@ describe("ensureCashAtas — closed cash ATA during Funded (task 1410)", () => {
 			cashTokenProgram,
 		});
 		expect(all).toHaveLength(3);
+	});
+});
+
+describe("payoutRouteIsBank (plan 15 D6)", () => {
+	it("reads the route byte after discriminator, bump and investor", () => {
+		const data = new Uint8Array(82);
+		expect(payoutRouteIsBank(data)).toBe(false);
+		data[41] = 1;
+		expect(payoutRouteIsBank(data)).toBe(true);
+		expect(payoutRouteIsBank(new Uint8Array(10))).toBe(false);
 	});
 });

@@ -131,7 +131,7 @@ func TestDecodeEventErrors(t *testing.T) {
 }
 
 func TestLayoutsCoverAllEvents(t *testing.T) {
-	if len(EventNames) != 23 {
-		t.Fatalf("known events = %d, want 23 (events.rs count): %v", len(EventNames), EventNames)
+	if len(EventNames) != 26 {
+		t.Fatalf("known events = %d, want 26 (events.rs count): %v", len(EventNames), EventNames)
 	}
 }

@@ -15,11 +15,12 @@ use crate::{
     constants::*,
     error::QuponError,
     events::{
-        ActionCompleted, ActionFunded, DefaultCured, EntitlementPaid, EscrowSwept, UnitsRetired,
+        ActionCompleted, ActionFunded, DefaultCured, EntitlementPaid, EscrowSwept, PaidToAgent,
+        UnitsRetired,
     },
     state::{
         ActionKind, ActionStatus, CorporateAction, Entitlement, EntitlementStatus, Investor,
-        Series, SeriesStatus,
+        PayoutRoute, PayoutRouteKind, Series, SeriesStatus,
     },
     utils::{mint_paused, require_operator},
 };
@@ -218,11 +219,23 @@ pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<(
         let (route, _) =
             Pubkey::find_program_address(&[PAYOUT_ROUTE_SEED, investor.key().as_ref()], &crate::ID);
         require_keys_eq!(t[2].key(), route, QuponError::InvalidParams);
-        require_keys_eq!(
-            t[3].key(),
-            investor.cash_ata,
-            QuponError::AccountOwnerMismatch
-        );
+        // Holder-chosen route (plan 15 D6): bank → the paying agent's cash account, for a SIMULATED bank transfer the
+        // agent confirms later; otherwise the cash account recorded at registration. Nobody else can pick either.
+        let bank = *t[2].owner == crate::ID && !t[2].data_is_empty() && {
+            let r = PayoutRoute::try_deserialize(&mut &t[2].try_borrow_data()?[..])?;
+            require_keys_eq!(r.investor, investor.key(), QuponError::InvalidParams);
+            r.route == PayoutRouteKind::Bank as u8
+        };
+        let destination = if bank {
+            anchor_spl::associated_token::get_associated_token_address_with_program_id(
+                &ctx.accounts.series.paying_agent,
+                &ctx.accounts.cash_mint.key(),
+                &ctx.accounts.cash_token_program.key(),
+            )
+        } else {
+            investor.cash_ata
+        };
+        require_keys_eq!(t[3].key(), destination, QuponError::AccountOwnerMismatch);
         require_keys_eq!(
             t[4].key(),
             investor.bond_ata,
@@ -294,7 +307,9 @@ pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<(
             }
         }
 
-        ent.status = if redemption {
+        ent.status = if bank {
+            EntitlementStatus::PaidToAgent
+        } else if redemption {
             EntitlementStatus::Retired
         } else {
             EntitlementStatus::Paid
@@ -312,6 +327,22 @@ pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<(
             .checked_add(payout)
             .ok_or(QuponError::MathOverflow)?;
         action.status = ActionStatus::Settling as u8;
+        if bank {
+            action.bank_pending = action
+                .bank_pending
+                .checked_add(1)
+                .ok_or(QuponError::MathOverflow)?;
+            emit!(PaidToAgent {
+                series: series_key,
+                action: action_key,
+                index: action.index,
+                owner: ent.owner,
+                agent_cash: t[3].key(),
+                amount: payout,
+                slot: clock.slot,
+                timestamp: clock.unix_timestamp,
+            });
+        }
         if redemption {
             action.total_retired = action
                 .total_retired
@@ -395,6 +426,7 @@ pub fn handle_complete_action(ctx: Context<CompleteAction>) -> Result<()> {
                     .ok_or(QuponError::MathOverflow)?,
         QuponError::PaymentsIncomplete
     );
+    require!(action.bank_pending == 0, QuponError::BankPayoutsPending);
 
     // Legacy REDM/MCAL are still paused here; coupons and partial calls already resumed at finalize, and hooked series
     // never pause.

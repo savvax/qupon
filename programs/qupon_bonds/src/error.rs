@@ -87,6 +87,8 @@ pub enum QuponError {
     HookNotArmed,
     #[msg("Not overdue yet: a default needs the payment date plus one series day without full funding")]
     NotOverdue,
+    #[msg("Bank-routed payouts await the paying agent's confirmation")]
+    BankPayoutsPending,
 }
 
 /// Map the pure math crate's errors onto program errors (orphan rule forbids `From`).
