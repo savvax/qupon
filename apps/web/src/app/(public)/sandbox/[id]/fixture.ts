@@ -11,6 +11,7 @@ import type { Actor } from "@/components/ui/ActorChip";
 import type { FlowStepState } from "@/components/ui/ActionFlow";
 import type { FlowRecipient } from "@/components/ui/MoneyFlow";
 import type { RailNode } from "@/components/ui/LifecycleRail";
+import { STEP_ACTOR as FLOW_ACTOR } from "@/lib/actionFlow";
 
 export const CURRENCY = "tKZT";
 /** One bond day lasts 2 s: a half-year coupon period plays in 6 minutes. */
@@ -50,13 +51,14 @@ export const ROLE_CAN: Record<Actor, Role[]> = {
 
 export const STEP_IDS = ["announce", "record", "snapshot", "fund", "pay", "complete"] as const;
 export type StepId = (typeof STEP_IDS)[number];
+/** Who may push each step: the program's own rules (actionFlow.STEP_ACTOR); the record date is the strike. */
 export const STEP_ACTOR: Record<StepId, Actor> = {
-  announce: "registrar",
-  record: "anyone",
-  snapshot: "anyone",
-  fund: "issuer",
-  pay: "anyone",
-  complete: "anyone",
+  announce: FLOW_ACTOR.announce,
+  record: FLOW_ACTOR.strike,
+  snapshot: FLOW_ACTOR.snapshot,
+  fund: FLOW_ACTOR.fund,
+  pay: FLOW_ACTOR.pay,
+  complete: FLOW_ACTOR.complete,
 };
 
 export type Frame = {

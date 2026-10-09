@@ -6,6 +6,17 @@
  */
 import type { ActionDTO, ActivityLike } from "./api";
 
+/**
+ * An action as the flow sees it: the API's `ActionDTO`, plus the plan-15 states the API does not expose yet
+ * (docs/design/language.md §11): `Defaulted` (D4) and bank-routed payouts that sit with the paying agent
+ * (`PaidToAgent` entitlements, D6). Only fixtures (gallery, sandbox) set them; the API client never invents them.
+ */
+export type FlowAction = Omit<ActionDTO, "status"> & {
+  status: ActionDTO["status"] | "Defaulted";
+  /** holders whose payout went to the paying agent (entitlement PaidToAgent) and awaits bank confirmation */
+  bankPending?: number;
+};
+
 /** One row of an action timeline (stepper + timeline card on the registrar action page). */
 export type TimelineStep = {
   id: StepId;
@@ -32,7 +43,9 @@ export type StepId =
   | "sweep"
   | "votes"
   | "meet_finalize"
-  | "apply";
+  | "apply"
+  // plan 15 D6: never in a timeline (stepsForKind); nextStep offers it while bank payouts await confirmation
+  | "confirm_bank";
 
 /** Console button labels (task 030 wording). */
 export const STEP_LABELS: Record<StepId, string> = {
@@ -48,6 +61,7 @@ export const STEP_LABELS: Record<StepId, string> = {
   sweep: "Sweep escrow",
   votes: "Cast votes (portal)",
   meet_finalize: "Finalize meeting",
+  confirm_bank: "Confirm bank payout",
   apply: "Apply terms change (ARDFM registration — SIMULATED)",
 };
 
@@ -166,9 +180,10 @@ const DONE_STATUSES: Record<StepId, string[]> = {
   votes: ["Finalized"],
   meet_finalize: ["Finalized"],
   apply: [], // BMET Completed — derived below
+  confirm_bank: ["Completed", "Retiring"],
 };
 
-function stepDone(step: StepId, a: ActionDTO, seriesClosed: boolean): boolean {
+function stepDone(step: StepId, a: FlowAction, seriesClosed: boolean): boolean {
   if (step === "retire")
     return (
       a.holdersRetired != null &&
@@ -187,7 +202,7 @@ export type StepDetail = {
 };
 
 /** Extra human detail under a timeline row (translated by the page: steps.detail.<key>). */
-function stepDetail(step: StepId, a: ActionDTO): StepDetail | undefined {
+function stepDetail(step: StepId, a: FlowAction): StepDetail | undefined {
   const hs = a.holdersSnapshotted ?? 0;
   switch (step) {
     case "snapshot":
@@ -229,7 +244,7 @@ function stepDetail(step: StepId, a: ActionDTO): StepDetail | undefined {
  * rows as fallback). `seriesClosed` comes from the series status.
  */
 export function buildTimeline(
-  a: ActionDTO,
+  a: FlowAction,
   activity: ActivityLike[],
   seriesClosed: boolean,
 ): TimelineStep[] {
@@ -289,7 +304,18 @@ export function buildTimeline(
   });
 }
 
-export type NextStep = { step: StepId | null; label?: string; wait?: string };
+/** The clock a step waits on or races: the NowBar counts down to `at` (CountdownClock; demo-clock aware). */
+export type TimeGate = { at: number; kind: "record" | "payment" | "vote" };
+
+export type NextStep = {
+  step: StepId | null;
+  label?: string;
+  wait?: string;
+  /** record: the step is next but TooEarly until then; payment: the funding deadline; vote: the voting window */
+  gate?: TimeGate;
+};
+
+const at = (iso?: string | null) => (iso ? new Date(iso).getTime() : NaN);
 
 /**
  * The step the console can run right now (mirror of executor.NextStep; the
@@ -298,7 +324,7 @@ export type NextStep = { step: StepId | null; label?: string; wait?: string };
  * "Fund escrow (issuer)" IS the issuer approval.
  */
 export function nextStep(
-  a: ActionDTO,
+  a: FlowAction,
   now = Date.now(),
   /** bond mint supply (series.totalIssued): once units_snapshotted reaches it, finalize (executor.NextStep) */
   supply?: bigint,
@@ -313,7 +339,9 @@ export function nextStep(
           step: null,
           wait: `open secondary trades: settle or cancel them first (${openTrades})`,
         };
-      return { step: "strike", label: STEP_LABELS.strike };
+      return at(a.recordAt) > now
+        ? { step: "strike", label: STEP_LABELS.strike, gate: { at: at(a.recordAt), kind: "record" } }
+        : { step: "strike", label: STEP_LABELS.strike };
     case "RecordStruck": {
       // finalize_snapshot needs every outstanding unit in the snapshot (executor.NextStep:
       // units_snapshotted == mint supply). Zero-balance investors are never snapshotted, so
@@ -331,12 +359,17 @@ export function nextStep(
       return { step: "snapshot", label: STEP_LABELS.snapshot };
     }
     case "SnapshotComplete":
-      return { step: "fund", label: STEP_LABELS.fund };
+    case "Defaulted": // the cure is funding: the record-date holders keep their claims (D4)
+      return Number.isNaN(at(a.paymentAt))
+        ? { step: "fund", label: STEP_LABELS.fund }
+        : { step: "fund", label: STEP_LABELS.fund, gate: { at: at(a.paymentAt), kind: "payment" } };
     case "Funded": // Go executor: always pay (idempotent batches → Settling)
       return { step: "pay", label: STEP_LABELS.pay };
     case "Settling":
       if (hs > 0 && (a.holdersPaid ?? 0) < hs)
         return { step: "pay", label: STEP_LABELS.pay };
+      if ((a.bankPending ?? 0) > 0)
+        return { step: "confirm_bank", label: STEP_LABELS.confirm_bank };
       return { step: "complete", label: STEP_LABELS.complete };
     case "Retiring":
       if ((a.holdersRetired ?? 0) < hs)
@@ -352,7 +385,9 @@ export function nextStep(
         ? new Date(a.votingEndsAt).getTime() > now
         : true;
       if (open && voted < total)
-        return { step: null, wait: "voting still open" };
+        return a.votingEndsAt
+          ? { step: null, wait: "voting still open", gate: { at: at(a.votingEndsAt), kind: "vote" } }
+          : { step: null, wait: "voting still open" };
       return { step: "meet_finalize", label: STEP_LABELS.meet_finalize };
     }
     case "Finalized":
@@ -492,4 +527,6 @@ export const STEP_ACTOR: Record<
   votes: "holder",
   meet_finalize: "registrar",
   apply: "registrar",
+  // D6: the paying agent confirms each bank payout with its reference (the bank transfer itself is SIMULATED)
+  confirm_bank: "payingAgent",
 };

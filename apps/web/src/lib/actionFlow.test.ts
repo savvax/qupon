@@ -5,6 +5,7 @@ import {
   findOnchainError,
   nextStep,
   paidTxByOwner,
+  STEP_ACTOR,
   stepsForKind,
 } from "./actionFlow";
 
@@ -114,6 +115,43 @@ describe("nextStep (mirror of Go executor.NextStep)", () => {
       }),
     ).toMatchObject({ step: "complete" });
     expect(nextStep({ ...base, status: "Completed" }).step).toBeNull();
+  });
+
+  it("carries the time gate the NowBar counts down to", () => {
+    const now = Date.parse("2027-02-27T00:00:00+05:00");
+    // before the record date the strike is next but TooEarly: count to the record date
+    expect(nextStep(base, now)).toMatchObject({
+      step: "strike",
+      gate: { kind: "record", at: Date.parse(base.recordAt) },
+    });
+    expect(
+      nextStep(base, Date.parse("2027-02-28T00:00:01+05:00")).gate,
+    ).toBeUndefined();
+    // funding races the payment date (shown before and after it)
+    expect(nextStep({ ...base, status: "SnapshotComplete" }, now)).toMatchObject({
+      step: "fund",
+      gate: { kind: "payment", at: Date.parse(base.paymentAt) },
+    });
+    // an open vote counts to the end of the voting window
+    const votingEndsAt = "2027-02-27T12:00:00+05:00";
+    expect(
+      nextStep(
+        { ...base, kind: "BMET", status: "VotingOpen", unitsSnapshotted: "100", votingEndsAt },
+        now,
+      ),
+    ).toMatchObject({ step: null, gate: { kind: "vote", at: Date.parse(votingEndsAt) } });
+  });
+
+  it("plan 15 fixture states: a default is cured by funding; bank payouts wait on the paying agent", () => {
+    expect(nextStep({ ...base, status: "Defaulted" })).toMatchObject({ step: "fund" });
+    expect(STEP_ACTOR.fund).toBe("issuer");
+    const settled = { ...base, status: "Settling" as const, holdersSnapshotted: 3, holdersPaid: 3 };
+    expect(nextStep({ ...settled, bankPending: 1 })).toMatchObject({ step: "confirm_bank" });
+    expect(STEP_ACTOR.confirm_bank).toBe("payingAgent");
+    expect(nextStep({ ...settled, bankPending: 0 })).toMatchObject({ step: "complete" });
+    // the crank steps are permissionless
+    for (const s of ["strike", "snapshot", "finalize", "pay", "complete", "retire"] as const)
+      expect(STEP_ACTOR[s]).toBe("anyone");
   });
 
   it("gates the meeting on the voting window", () => {
