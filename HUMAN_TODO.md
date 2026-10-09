@@ -40,3 +40,4 @@ The human answers inline under the item. The planner pass folds answers into tas
     Resolved: the task was merged (tasks/done/), branch no longer needed.
 - [x] 2026-10-06 08:46 (1002) rebase conflict on task/1002-kase-ui (branch kept) — resolve by hand or let the lead/planner split; then delete blocked_reason.
     Resolved: the task was merged (tasks/done/), branch no longer needed.
+- [ ] 2026-10-09 18:38 (1511) BLOCKED by glm-2: agent committed on branch HEAD instead of task/1511-program-demo-clock (work kept on HEAD) — fix, then delete the blocked_reason line in tasks/todo/1511-program-demo-clock.md.
