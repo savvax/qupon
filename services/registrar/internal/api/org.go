@@ -306,8 +306,10 @@ var seriesDocKinds = map[string]bool{"prospectus": true, "decision": true, "othe
 
 // validWebsite: an org website is rendered as a link in the admin console, so only plain
 // http(s) URLs may be stored — javascript: and friends are refused at the boundary (empty clears it).
+// URL schemes are case-insensitive (RFC 3986 §3.1), so HTTPS://x is accepted (task 1423).
 func validWebsite(w string) bool {
-	return w == "" || strings.HasPrefix(w, "http://") || strings.HasPrefix(w, "https://")
+	l := strings.ToLower(w)
+	return l == "" || strings.HasPrefix(l, "http://") || strings.HasPrefix(l, "https://")
 }
 
 func orgMembers(st *store.Store) http.HandlerFunc {

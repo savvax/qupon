@@ -9,6 +9,11 @@ describe("httpHref (org website link gate)", () => {
     );
   });
 
+  it("compares the scheme case-insensitively (task 1423)", () => {
+    expect(httpHref("HTTPS://example.kz")).toBe("HTTPS://example.kz");
+    expect(httpHref("JavaScript:alert(1)")).toBeNull();
+  });
+
   it("keeps scripted and scheme-less values as inert text", () => {
     expect(httpHref("javascript:alert(1)")).toBeNull();
     expect(httpHref("data:text/html,x")).toBeNull();

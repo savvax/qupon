@@ -236,6 +236,24 @@ func TestOrgProfileAndMembers(t *testing.T) {
 	}
 }
 
+// URL schemes are case-insensitive (RFC 3986 §3.1): HTTPS://example.kz is accepted,
+// javascript: in any case is refused (task 1423).
+func TestValidWebsite(t *testing.T) {
+	for w, ok := range map[string]bool{
+		"":                    true,
+		"https://example.kz":  true,
+		"HTTPS://example.kz":  true,
+		"Http://example.kz":   true,
+		"javascript:alert(1)": false,
+		"JavaScript:alert(1)": false,
+		"data:text/html,x":    false,
+		"example.kz":          false,
+	} {
+		if got := validWebsite(w); got != ok {
+			t.Errorf("validWebsite(%q) = %v, want %v", w, got, ok)
+		}
+	}
+}
 func TestInviteSingleUse(t *testing.T) {
 	e := newOrgEnv(t)
 

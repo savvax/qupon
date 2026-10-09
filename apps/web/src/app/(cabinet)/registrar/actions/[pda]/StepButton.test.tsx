@@ -9,7 +9,8 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { StepButton } from "./StepButton";
 
-/** Task 1418: a successful step stays loading until polling sees the new status (devnet read lag). */
+/** Task 1418: a successful step stays loading until polling sees the new status (devnet read lag).
+ *  Task 1423: batch progress (unitsSnapshotted/holdersPaid/holdersRetired) ends the wait too. */
 
 const bo = vi.hoisted(() => ({
   post: () => Promise.resolve({ signature: "SigStep1" as const }),
@@ -65,6 +66,23 @@ describe("StepButton (task 1418)", () => {
     expect(btn.getAttribute("aria-busy")).toBe("true");
     expect(btn.disabled).toBe(true);
     rerender(<StepButton pda="Act1" label="Advance" status="Voting" />);
+    expect(btn.getAttribute("aria-busy")).toBeNull();
+    expect(btn.disabled).toBe(false);
+  });
+
+  it("re-enables when only progress changes (batch landed, status held)", async () => {
+    const { rerender } = render(
+      <StepButton pda="Act1" label="Pay" status="Settling" progress="0" />,
+    );
+    const btn = button();
+    fireEvent.click(btn);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(btn.getAttribute("aria-busy")).toBe("true");
+    rerender(
+      <StepButton pda="Act1" label="Pay" status="Settling" progress="3" />,
+    );
     expect(btn.getAttribute("aria-busy")).toBeNull();
     expect(btn.disabled).toBe(false);
   });

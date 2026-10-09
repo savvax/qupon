@@ -14,19 +14,23 @@ type AdvanceResult = {
 
 /**
  * Runs the action's next step (POST /api/bo/registrar/actions/{pda}/advance), then refreshes the server tree
- * every 2.5 s (≤ 60 s) until the on-chain status moves — devnet reads lag the confirmation. The button stays
- * loading for that whole wait. Errors stay visible under the button; a series outside the executor registry
- * turns the panel read-only.
+ * every 2.5 s (≤ 60 s) until the on-chain status or a batch counter moves — devnet reads lag the confirmation
+ * (task 1418). Snapshot/pay/retire land in batches without a status change, so the caller passes those counters
+ * as `progress` and the wait ends on either change (task 1423). The button stays loading for the whole wait.
+ * Errors stay visible under the button; a series outside the executor registry turns the panel read-only.
  */
 export function StepButton({
   pda,
   label,
   status,
+  progress = "",
   secondary = false,
 }: {
   pda: string;
   label: string;
   status: string;
+  /** Batch progress key (unitsSnapshotted/holdersPaid/holdersRetired) — changes while the status holds. */
+  progress?: string;
   secondary?: boolean;
 }) {
   const t = useTranslations("action");
@@ -43,13 +47,14 @@ export function StepButton({
     timers.current = [];
     polledFrom.current = null;
   };
+  const watch = `${status}|${progress}`;
   useEffect(() => {
-    // the chain reader caught up: end the wait and re-enable the button
-    if (polledFrom.current !== null && polledFrom.current !== status) {
+    // the chain reader caught up (status moved or a batch landed): end the wait and re-enable the button
+    if (polledFrom.current !== null && polledFrom.current !== watch) {
       stopPolling();
       setBusy(false);
     }
-  }, [status]);
+  }, [watch]);
   useEffect(() => stopPolling, []);
 
   if (readOnly) {
@@ -82,10 +87,10 @@ export function StepButton({
       setBusy(false);
       return;
     }
-    // Success: the button stays loading until polling sees the new status or the 60 s budget ends —
-    // devnet reads lag the confirmation, so re-enabling now would allow a double submit (task 1418).
+    // Success: the button stays loading until polling sees the status or progress move, or the 60 s budget
+    // ends — devnet reads lag the confirmation, so re-enabling now would allow a double submit (task 1418).
     stopPolling();
-    polledFrom.current = status;
+    polledFrom.current = watch;
     for (let i = 1; i <= 24; i++)
       timers.current.push(setTimeout(() => router.refresh(), i * 2500));
     timers.current.push(

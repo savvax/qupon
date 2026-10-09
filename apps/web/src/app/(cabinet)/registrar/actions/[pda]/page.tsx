@@ -119,6 +119,9 @@ export default async function RegistrarActionPage({
     series ? BigInt(series.totalIssued) : undefined,
     series?.openTrades ?? 0,
   );
+  // Batch counters move while the status holds (snapshot/pay/retire land in batches): StepButton ends its
+  // post-success wait when this key changes (task 1423).
+  const progress = `${action.unitsSnapshotted ?? "-"}|${action.holdersPaid ?? "-"}|${action.holdersRetired ?? "-"}`;
   // open secondary trades block the record date (TradesInFlight): say so and link the page that clears them
   const tradesWait = action.status === "Announced" && !next.step;
   const paidTx = paidTxByOwner(activity, pda);
@@ -381,6 +384,7 @@ export default async function RegistrarActionPage({
               pda={pda}
               label={label(next.step)}
               status={action.status}
+              progress={progress}
             />
           ) : action.status === "Completed" ? null : (
             // a completed action needs no box: the status pill already says it
@@ -412,6 +416,7 @@ export default async function RegistrarActionPage({
                 pda={pda}
                 label={label("finalize")}
                 status={action.status}
+                progress={progress}
                 secondary
               />
             )}
