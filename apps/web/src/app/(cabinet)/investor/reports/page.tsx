@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Kpi } from "@/components/ui/Kpi";
 import { formatDate } from "@/lib/format";
-import { majorToMinor } from "@/lib/ui/amount";
+import { currencyDecimals, majorToMinor } from "@/lib/ui/amount";
 import {
   csvHref,
   getStatement,
@@ -161,8 +161,9 @@ export default async function InvestorReportsPage({
 
   const totalsCards = (totals: PayoutTotals[]) =>
     totals.map((x) => {
-      // Totals are major-unit strings; <Amount> takes minor units (text-base: no cut at 390 px).
-      const minor = (v: string) => majorToMinor(v, 2);
+      // Totals are major-unit strings at the currency's own decimals (Go reports.Sum); <Amount> takes minor units.
+      const minor = (v: string) =>
+        majorToMinor(v, currencyDecimals(x.currency));
       return (
         <div
           key={x.currency}

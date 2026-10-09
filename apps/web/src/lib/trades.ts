@@ -10,6 +10,7 @@ import {
 } from "@solana-program/token-2022";
 import {
   type Address,
+  type Instruction,
   type ReadonlyUint8Array,
   type TransactionSigner,
   address,
@@ -139,14 +140,15 @@ export async function tradeEscrow(
 
 /**
  * Build the funding transfer of one leg (seller → bonds, buyer → cash) from the wallet's associated token account
- * to the trade's escrow, after re-reading the record and checking it against `shown`.
+ * to the trade's escrow, after re-reading the record and checking it against `shown`. Only the unfunded remainder
+ * is sent (`required − escrow balance`, task 1417); `null` when the leg is already whole — nothing to send.
  */
 export async function buildFundTradeIx(
   rpc: PortalRpc,
   shown: ShownTrade,
   side: TradeSide,
   owner: TransactionSigner,
-) {
+): Promise<Instruction | null> {
   const read = async (a: Address) =>
     (
       await rpc
@@ -185,13 +187,26 @@ export async function buildFundTradeIx(
     tokenProgram,
     mint,
   });
+  const escrow = await tradeEscrow(swapDvp, mint, tokenProgram);
+  const escrowAccount = await read(escrow);
+  // Token-account layout (both token programs): mint 32, owner 32, then the u64 balance.
+  const funded = escrowAccount
+    ? BigInt(
+        getU64Decoder().decode(
+          getBase64Encoder().encode(escrowAccount.data[0]),
+          64,
+        ),
+      )
+    : 0n;
+  const remaining = (side === "seller" ? shown.units : shown.cash) - funded;
+  if (remaining <= 0n) return null; // escrow already holds the whole leg
   return getTransferCheckedInstruction(
     {
       source,
       mint,
-      destination: await tradeEscrow(swapDvp, mint, tokenProgram),
+      destination: escrow,
       authority: owner,
-      amount: side === "seller" ? shown.units : shown.cash,
+      amount: remaining,
       decimals,
     },
     { programAddress: tokenProgram },

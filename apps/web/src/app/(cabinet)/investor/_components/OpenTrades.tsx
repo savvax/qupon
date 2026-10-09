@@ -28,11 +28,7 @@ import {
   listTrades,
   withTradeErrors,
 } from "@/lib/trades";
-import {
-  CURRENCY_DECIMALS,
-  CURRENCY_SIGN,
-  formatAmount,
-} from "@/lib/ui/amount";
+import { CURRENCY_SIGN, currencyDecimals, formatAmount } from "@/lib/ui/amount";
 import { useRunWrite } from "@/lib/useRunWrite";
 import {
   portalRpc,
@@ -109,28 +105,29 @@ export function OpenTrades({ rows }: { rows: SeriesRow[] }) {
     } else if (wallet && "signTransaction" in wallet.adapter) {
       // One signer object for fee payer and transfer authority (Kit rejects two signers with one address).
       const signer = walletTransactionSigner(wallet.adapter, address(owner));
-      sent = walletLegSent(
-        await runWalletWrite({
-          ...toasts,
-          call: async () => {
-            const ix = await buildFundTradeIx(
-              portalRpc(),
-              {
-                swapDvp: trade.swapDvp,
-                seller: trade.seller,
-                buyer: trade.buyer,
-                bondMint: series.mint,
-                cashMint: series.cashMint,
-                units: BigInt(trade.units),
-                cash: BigInt(trade.cashAmount.minor),
-              },
-              side,
-              signer,
-            );
-            return signAndSendWithWallet(signer, portalRpc(), [ix]);
-          },
-        }),
+      const ix = await buildFundTradeIx(
+        portalRpc(),
+        {
+          swapDvp: trade.swapDvp,
+          seller: trade.seller,
+          buyer: trade.buyer,
+          bondMint: series.mint,
+          cashMint: series.cashMint,
+          units: BigInt(trade.units),
+          cash: BigInt(trade.cashAmount.minor),
+        },
+        side,
+        signer,
       );
+      // null = the escrow already holds the whole leg (task 1417): no tx to sign, the leg is done.
+      sent = ix
+        ? walletLegSent(
+            await runWalletWrite({
+              ...toasts,
+              call: () => signAndSendWithWallet(signer, portalRpc(), [ix]),
+            }),
+          )
+        : true;
     }
     setBusy(null);
     if (sent) {
@@ -164,7 +161,7 @@ export function OpenTrades({ rows }: { rows: SeriesRow[] }) {
                   units,
                 })}{" "}
                 <Amount
-                  minor={cash.minor}
+                  minor={cash} // the API Amount object: display-carried decimals beat the table
                   currency={cash.currency}
                   locale={locale}
                 />
@@ -192,7 +189,7 @@ export function OpenTrades({ rows }: { rows: SeriesRow[] }) {
                     : side === "seller"
                       ? t("open.deliver", { units })
                       : t("open.pay", {
-                          amount: `${formatAmount(cash.minor, CURRENCY_DECIMALS[cash.currency] ?? 2, locale)} ${CURRENCY_SIGN[cash.currency] ?? cash.currency}`,
+                          amount: `${formatAmount(cash.minor, currencyDecimals(cash.currency), locale)} ${CURRENCY_SIGN[cash.currency] ?? cash.currency}`,
                         })}
                 </Button>
               )}

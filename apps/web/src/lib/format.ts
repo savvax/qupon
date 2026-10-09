@@ -72,17 +72,6 @@ export function formatAmount(amount: { display: string }): string {
   return amount.display;
 }
 
-/** Minor-unit decimals per settlement currency; unknown currencies get 2. */
-export function currencyDecimals(currency: string): number {
-  switch (currency) {
-    case "USDC":
-    case "tUSDC":
-      return 6;
-    default:
-      return 2; // KZT, tKZT and anything else the registrar throws at us
-  }
-}
-
 /** "100000" @ 2 → "1,000.00" (BigInt-safe, exact: minor units carry no rounding). */
 export function formatMinor(minor: string, decimals: number): string {
   const n = BigInt(minor);

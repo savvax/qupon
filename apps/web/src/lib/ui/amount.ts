@@ -36,8 +36,40 @@ export const CURRENCY_SIGN: Record<string, string> = {
   KZT: "₸",
   USDC: "USDC",
 };
+/** The ONE minor-unit decimals table (every currency the registry/mocks use); keep format.ts free of a second one. */
 export const CURRENCY_DECIMALS: Record<string, number> = {
   tKZT: 2,
   KZT: 2,
+  KZTE: 2,
+  "KZTE-dev": 2,
+  dKZT: 2,
   USDC: 6,
+  tUSDC: 6,
 };
+
+/** Minor-unit decimals of a settlement currency; unknown currencies get 2. */
+export function currencyDecimals(currency: string): number {
+  return CURRENCY_DECIMALS[currency] ?? 2;
+}
+
+/** A minor-unit amount, or an API `Amount` object that may carry its own decimals. */
+export type AmountLike =
+  | string
+  | bigint
+  | number
+  | { minor: string | bigint | number; display?: string; decimals?: number };
+
+/** Decimals for rendering: explicit prop > API `decimals` > fraction digits of `display` > currency table > 2. */
+export function renderDecimals(
+  v: AmountLike,
+  currency: string,
+  decimals?: number,
+): number {
+  if (decimals !== undefined) return decimals;
+  if (typeof v === "object") {
+    if (v.decimals !== undefined) return v.decimals;
+    const frac = /\.(\d+)/.exec(v.display ?? "")?.[1]; // "0.050000 USDC" → 6
+    if (frac) return frac.length;
+  }
+  return currencyDecimals(currency);
+}

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   bpsToPercent,
-  currencyDecimals,
   formatAmount,
   formatDate,
   formatDateTime,
@@ -80,12 +79,7 @@ describe("formatAmount", () => {
   });
 });
 
-describe("currencyDecimals / formatMinor", () => {
-  it("maps settlement currencies to minor units", () => {
-    expect(currencyDecimals("tKZT")).toBe(2);
-    expect(currencyDecimals("USDC")).toBe(6);
-    expect(currencyDecimals("XSU")).toBe(2); // unknown → 2
-  });
+describe("formatMinor", () => {
   it("formats minor units with grouping", () => {
     expect(formatMinor("100000", 2)).toBe("1,000.00");
     expect(formatMinor("325000", 2)).toBe("3,250.00");

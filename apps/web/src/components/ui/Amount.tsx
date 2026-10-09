@@ -1,7 +1,8 @@
 import {
-  CURRENCY_DECIMALS,
   CURRENCY_SIGN,
   formatAmount,
+  renderDecimals,
+  type AmountLike,
 } from "@/lib/ui/amount";
 import { cx } from "@/lib/ui/cx";
 
@@ -13,19 +14,21 @@ export function Amount({
   locale = "en",
   className,
 }: {
-  minor: string | bigint | number;
+  minor: AmountLike;
   currency: string;
   decimals?: number;
   locale?: "en" | "ru";
   className?: string;
 }) {
-  const d = decimals ?? CURRENCY_DECIMALS[currency] ?? 2;
+  // Decimals: explicit prop > API-carried `decimals`/`display` > the currency table (lib/ui/amount).
+  const d = renderDecimals(minor, currency, decimals);
+  const units = typeof minor === "object" ? minor.minor : minor;
   return (
     <span
       className={cx("num whitespace-nowrap", className)}
-      title={`${minor} minor units`}
+      title={`${units} minor units`}
     >
-      {formatAmount(minor, d, locale)}
+      {formatAmount(units, d, locale)}
       <span className="ml-1 text-[0.85em] font-medium text-n500">
         {CURRENCY_SIGN[currency] ?? currency}
       </span>

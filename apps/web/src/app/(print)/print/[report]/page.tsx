@@ -6,7 +6,7 @@ import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatDate, formatDateTime } from "@/lib/format";
-import { majorToMinor } from "@/lib/ui/amount";
+import { currencyDecimals, majorToMinor } from "@/lib/ui/amount";
 import {
   csvHref,
   getHolders,
@@ -303,21 +303,30 @@ export default async function PrintReportPage({
                     </td>
                     <td className="px-1 py-1.5 text-right">
                       <Amount
-                        minor={majorToMinor(x.gross, 2)}
+                        minor={majorToMinor(
+                          x.gross,
+                          currencyDecimals(x.currency),
+                        )}
                         currency={x.currency}
                         locale={locale}
                       />
                     </td>
                     <td className="px-1 py-1.5 text-right">
                       <Amount
-                        minor={majorToMinor(x.tax, 2)}
+                        minor={majorToMinor(
+                          x.tax,
+                          currencyDecimals(x.currency),
+                        )}
                         currency={x.currency}
                         locale={locale}
                       />
                     </td>
                     <td className="px-1 py-1.5 text-right">
                       <Amount
-                        minor={majorToMinor(x.net, 2)}
+                        minor={majorToMinor(
+                          x.net,
+                          currencyDecimals(x.currency),
+                        )}
                         currency={x.currency}
                         locale={locale}
                       />
@@ -326,7 +335,10 @@ export default async function PrintReportPage({
                       <td className="px-1 py-1.5 text-right">
                         {Number(x.principal) > 0 ? (
                           <Amount
-                            minor={majorToMinor(x.principal, 2)}
+                            minor={majorToMinor(
+                              x.principal,
+                              currencyDecimals(x.currency),
+                            )}
                             currency={x.currency}
                             locale={locale}
                           />

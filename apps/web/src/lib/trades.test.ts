@@ -1,8 +1,11 @@
 import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
 import {
+  type Address,
   address,
+  getBase64Decoder,
   getAddressEncoder,
   getProgramDerivedAddress,
+  getU64Decoder,
   getU64Encoder,
 } from "@solana/kit";
 import { describe, expect, it } from "vitest";
@@ -12,11 +15,13 @@ import {
   SWAP_DVP_SIZE,
   type ShownTrade,
   type TradeDTO,
+  buildFundTradeIx,
   checkSwapDvp,
   legFunded,
   tradeEscrow,
   withTradeErrors,
 } from "./trades";
+import { type PortalRpc, walletTransactionSigner } from "./walletSigner";
 
 // The brief's reference trade: 5 bonds at par (face 1,000 KZT = 100,000 tiyn) = 500,000 tiyn.
 const SELLER = "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo";
@@ -159,5 +164,69 @@ describe("legFunded / withTradeErrors", () => {
     await expect(withTradeErrors(fail("other"), t)).rejects.toMatchObject({
       message: "raw",
     });
+  });
+});
+
+const B64 = (bytes: Uint8Array) => getBase64Decoder().decode(bytes);
+/** Fake rpc serving crafted accounts by address (buildFundTradeIx reads record, mint, escrow). */
+function fakeTradeRpc(
+  accounts: Record<string, { owner: string; data: string[] }>,
+) {
+  return {
+    getAccountInfo: (a: Address) => ({
+      send: async () => ({ value: accounts[a] ?? null }),
+    }),
+  } as unknown as PortalRpc;
+}
+describe("buildFundTradeIx (partial funding, task 1417)", () => {
+  const signer = walletTransactionSigner(
+    { signTransaction: async (t) => t },
+    address(BUYER),
+  );
+  const mintAccount = () => {
+    const data = new Uint8Array(82);
+    data[44] = 2; // decimals (mint layout: option 36 + supply 8, then decimals)
+    return { owner: TOKEN_2022_PROGRAM_ADDRESS, data: [B64(data)] };
+  };
+  const tokenAccount = (amount: bigint) => {
+    const data = new Uint8Array(165);
+    data.set(getU64Encoder().encode(amount), 64); // balance offset: mint 32 + owner 32
+    return { owner: TOKEN_2022_PROGRAM_ADDRESS, data: [B64(data)] };
+  };
+  const cashEscrow = () =>
+    tradeEscrow(address(SWAP), address(CASH), TOKEN_2022_PROGRAM_ADDRESS);
+  it("transfers only the unfunded remainder when the escrow is half funded", async () => {
+    const escrow = String(await cashEscrow());
+    const rpc = fakeTradeRpc({
+      [SWAP]: { owner: DVP_PROGRAM, data: [B64(record().data)] },
+      [CASH]: mintAccount(),
+      [escrow]: tokenAccount(250_000n), // half of the shown 500,000 cash
+    });
+    const ix = await buildFundTradeIx(rpc, shown, "buyer", signer);
+    expect(ix).not.toBeNull();
+    // TransferChecked layout: u8 discriminator, then the u64 amount.
+    expect(getU64Decoder().decode(ix!.data!, 1)).toBe(250_000n);
+  });
+  it("returns null when the leg is already fully funded", async () => {
+    const escrow = String(await cashEscrow());
+    const rpc = fakeTradeRpc({
+      [SWAP]: { owner: DVP_PROGRAM, data: [B64(record().data)] },
+      [CASH]: mintAccount(),
+      [escrow]: tokenAccount(500_000n),
+    });
+    expect(await buildFundTradeIx(rpc, shown, "buyer", signer)).toBeNull();
+  });
+  const seller = walletTransactionSigner(
+    { signTransaction: async (t) => t },
+    address(SELLER),
+  );
+  it("sends the whole leg when the escrow does not exist yet", async () => {
+    const rpc = fakeTradeRpc({
+      [SWAP]: { owner: DVP_PROGRAM, data: [B64(record().data)] },
+      [CASH]: mintAccount(),
+      [BOND]: mintAccount(), // seller funds the bond leg
+      // no escrow account on chain yet → funded 0, full leg transfers
+    });
+    expect(await buildFundTradeIx(rpc, shown, "seller", seller)).not.toBeNull();
   });
 });
