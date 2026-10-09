@@ -1,12 +1,16 @@
 package ingest
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	solana "github.com/solana-foundation/solana-go/v2"
 	"github.com/solana-foundation/solana-go/v2/rpc"
@@ -20,7 +24,7 @@ const (
 )
 
 // fakeRPC answers getSignaturesForAddress and getTransaction like a devnet node.
-func fakeRPC(t *testing.T, program solana.PublicKey, logs []string) *httptest.Server {
+func fakeRPC(t *testing.T, logs []string) *httptest.Server {
 	t.Helper()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -74,7 +78,7 @@ func newPoller(t *testing.T, rpcURL string) (*Poller, *store.Store) {
 }
 
 func TestPollIngestsEventsInOrder(t *testing.T) {
-	srv := fakeRPC(t, solana.MustPublicKeyFromBase58("QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"), fixtureLogs(t))
+	srv := fakeRPC(t, fixtureLogs(t))
 	p, st := newPoller(t, srv.URL)
 
 	if err := p.Poll(t.Context()); err != nil {
@@ -345,7 +349,7 @@ func TestPollFirstRunCapsBackfill(t *testing.T) {
 }
 
 func TestLastSlotTracksHighestIngested(t *testing.T) {
-	srv := fakeRPC(t, solana.MustPublicKeyFromBase58("QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"), fixtureLogs(t))
+	srv := fakeRPC(t, fixtureLogs(t))
 	p, _ := newPoller(t, srv.URL)
 	if p.LastSlot() != 0 {
 		t.Fatalf("lastSlot before the first poll = %d, want 0", p.LastSlot())
@@ -355,5 +359,177 @@ func TestLastSlotTracksHighestIngested(t *testing.T) {
 	}
 	if p.LastSlot() != 312 { // the fake node's tx slot
 		t.Fatalf("lastSlot = %d, want 312", p.LastSlot())
+	}
+}
+
+// warnCounter counts Warn records so tests can assert "one warn, no spam".
+type warnCounter struct{ warns int }
+
+func (c *warnCounter) Enabled(context.Context, slog.Level) bool { return true }
+func (c *warnCounter) Handle(_ context.Context, r slog.Record) error {
+	if r.Level == slog.LevelWarn {
+		c.warns++
+	}
+	return nil
+}
+func (c *warnCounter) WithAttrs([]slog.Attr) slog.Handler { return c }
+func (c *warnCounter) WithGroup(string) slog.Handler      { return c }
+
+// oneSigRPC lists exactly one signature at blockTime and answers getTransaction
+// with the fixture tx when served, null ("not found") otherwise.
+func oneSigRPC(t *testing.T, sig string, blockTime int64, served bool) *httptest.Server {
+	t.Helper()
+	logs := fixtureLogs(t)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Method string `json:"method"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("decode rpc request: %v", err)
+		}
+		writeResult := func(v any) {
+			_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "result": v})
+		}
+		switch req.Method {
+		case "getSignaturesForAddress":
+			writeResult([]map[string]any{
+				{"signature": sig, "slot": 312, "err": nil, "blockTime": blockTime},
+			})
+		case "getTransaction":
+			if !served {
+				writeResult(nil)
+				return
+			}
+			writeResult(map[string]any{
+				"slot": 312, "blockTime": blockTime,
+				"meta": map[string]any{"err": nil, "logMessages": logs},
+			})
+		default:
+			t.Errorf("unexpected rpc method %q", req.Method)
+		}
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+// A fresh signature the RPC cannot serve yet (null getTransaction) must not be
+// skipped as pruned: the first poll errors once without moving the cursor; the
+// second poll, once the node serves the tx, ingests its events.
+func TestPollRetriesFreshNotFoundTx(t *testing.T) {
+	sig := fakeSigs(1)[0]
+	var missing atomic.Bool
+	missing.Store(true)
+	logs := fixtureLogs(t)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Method string `json:"method"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("decode rpc request: %v", err)
+		}
+		writeResult := func(v any) {
+			_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "result": v})
+		}
+		switch req.Method {
+		case "getSignaturesForAddress":
+			writeResult([]map[string]any{
+				{"signature": sig, "slot": 312, "err": nil, "blockTime": time.Now().Unix()},
+			})
+		case "getTransaction":
+			if missing.Load() {
+				writeResult(nil)
+				return
+			}
+			writeResult(map[string]any{
+				"slot": 312, "blockTime": time.Now().Unix(),
+				"meta": map[string]any{"err": nil, "logMessages": logs},
+			})
+		default:
+			t.Errorf("unexpected rpc method %q", req.Method)
+		}
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	p, st := newPoller(t, srv.URL)
+	warns := &warnCounter{}
+	p.log = slog.New(warns)
+
+	if err := p.Poll(t.Context()); !errors.Is(err, errTxNotServed) {
+		t.Fatalf("poll err = %v, want errTxNotServed", err)
+	}
+	if cur, _ := st.IngestCursor(t.Context()); cur != "" {
+		t.Errorf("cursor = %q, want empty (fresh tx must not advance it)", cur)
+	}
+	if warns.warns != 1 {
+		t.Errorf("warns = %d, want exactly 1 per poll", warns.warns)
+	}
+
+	missing.Store(false)
+	if err := p.Poll(t.Context()); err != nil {
+		t.Fatalf("second poll: %v", err)
+	}
+	rows, err := st.ListActivity(t.Context(), 100)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(rows) != 4 { // the four fixture events
+		t.Fatalf("rows = %d, want 4", len(rows))
+	}
+	if cur, _ := st.IngestCursor(t.Context()); cur != sig {
+		t.Errorf("cursor = %s, want %s", cur, sig)
+	}
+}
+
+// A not-found signature older than the freshness window is genuinely pruned:
+// it is skipped with a warn and the cursor advances past it.
+func TestPollSkipsOldPrunedTx(t *testing.T) {
+	sig := fakeSigs(1)[0]
+	srv := oneSigRPC(t, sig, time.Now().Add(-2*time.Hour).Unix(), false)
+	p, st := newPoller(t, srv.URL)
+	warns := &warnCounter{}
+	p.log = slog.New(warns)
+
+	if err := p.Poll(t.Context()); err != nil {
+		t.Fatalf("poll: %v (old not-found must be skipped)", err)
+	}
+	if cur, _ := st.IngestCursor(t.Context()); cur != sig {
+		t.Errorf("cursor = %q, want %s (pruned tx skipped)", cur, sig)
+	}
+	rows, err := st.ListActivity(t.Context(), 100)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(rows) != 0 {
+		t.Errorf("rows = %d, want 0", len(rows))
+	}
+	if warns.warns != 1 {
+		t.Errorf("warns = %d, want 1 (pruned)", warns.warns)
+	}
+}
+
+// getTransaction "not found" on the primary is retried on the fallback RPC:
+// a fresh tx that lags on the primary is ingested in the same poll.
+func TestPollFreshNotFoundUsesFallback(t *testing.T) {
+	sig := fakeSigs(1)[0]
+	primary := oneSigRPC(t, sig, time.Now().Unix(), false)
+	fallback := oneSigRPC(t, sig, time.Now().Unix(), true)
+	p, st := newPoller(t, primary.URL)
+	p.fallback = rpc.New(fallback.URL)
+
+	if err := p.Poll(t.Context()); err != nil {
+		t.Fatalf("poll: %v", err)
+	}
+	rows, err := st.ListActivity(t.Context(), 100)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(rows) != 4 {
+		t.Fatalf("rows = %d, want 4 (fallback must serve the tx)", len(rows))
+	}
+	if cur, _ := st.IngestCursor(t.Context()); cur != sig {
+		t.Errorf("cursor = %s, want %s", cur, sig)
 	}
 }

@@ -3,6 +3,7 @@ package ingest
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -21,7 +22,21 @@ const (
 	defaultPageSize    = 1000 // getSignaturesForAddress page limit
 	defaultBackfillCap = 2000 // first run (empty cursor): ingest at most this many recent txs
 	txNotFound         = "not found"
+	freshWindow        = time.Hour // not-found inside this window is retried, not skipped as pruned
 )
+
+// errTxNotServed marks a getTransaction "not found" for a signature younger
+// than freshWindow: Poll returns it without advancing the cursor so the next
+// tick retries (a lagging RPC must not lose events forever).
+var errTxNotServed = errors.New("tx not served yet")
+
+// isNotFound reports whether getTransaction failed because the node has no such
+// tx: the library returns ErrNotFound for a null result, some nodes answer a
+// JSON-RPC error whose message contains "not found".
+func isNotFound(err error) bool {
+	return err != nil && (errors.Is(err, rpc.ErrNotFound) ||
+		strings.Contains(strings.ToLower(err.Error()), txNotFound))
+}
 
 // Poller keeps the activity table in sync with on-chain qupon_bonds events by
 // polling getSignaturesForAddress + getTransaction every interval.
@@ -154,22 +169,33 @@ func (p *Poller) fetchNew(ctx context.Context, cur string) ([]*rpc.TransactionSi
 	return out, nil
 }
 
-// ingestTx fetches one transaction and stores its events.
+// ingestTx fetches one transaction and stores its events. A getTransaction
+// "not found" (or a nil tx) is asked of the fallback RPC too; if both lack it,
+// signatures younger than freshWindow return errTxNotServed so Poll retries
+// next tick — only older ones are skipped as pruned (nil BlockTime = young).
 func (p *Poller) ingestTx(ctx context.Context, s *rpc.TransactionSignature) error {
 	zero := uint64(0)
 	txOpts := &rpc.GetTransactionOpts{Encoding: solana.EncodingJSON, MaxSupportedTransactionVersion: &zero}
 	tx, err := p.rpc.GetTransaction(ctx, s.Signature, txOpts)
-	if err != nil && p.fallback != nil && !strings.Contains(strings.ToLower(err.Error()), txNotFound) {
+	if (err != nil || tx == nil) && p.fallback != nil {
 		tx, err = p.fallback.GetTransaction(ctx, s.Signature, txOpts)
 	}
+	if err == nil && tx == nil {
+		err = rpc.ErrNotFound
+	}
 	if err != nil {
-		if strings.Contains(strings.ToLower(err.Error()), txNotFound) {
+		if !isNotFound(err) {
+			return fmt.Errorf("getTransaction %s: %w", s.Signature, err)
+		}
+		if s.BlockTime != nil && time.Since(time.Unix(int64(*s.BlockTime), 0)) > freshWindow {
 			p.log.Warn("ingest: transaction pruned from history", "sig", s.Signature.String())
 			return nil
 		}
-		return fmt.Errorf("getTransaction %s: %w", s.Signature, err)
+		// one warn per tick: Poll stops here and retries the signature next poll
+		p.log.Warn("ingest: transaction not served yet, will retry", "sig", s.Signature.String())
+		return fmt.Errorf("getTransaction %s: %w", s.Signature, errTxNotServed)
 	}
-	if tx == nil || tx.Meta == nil {
+	if tx.Meta == nil {
 		return nil
 	}
 	if tx.Slot > p.lastSlot.Load() { // single writer (the poll loop); the handler reads atomically
