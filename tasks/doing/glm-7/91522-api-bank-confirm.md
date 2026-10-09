@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: [1522]
 verify: make verify
-timeout_min: 90
+timeout_min: 120
 ---
 ## Goal
 The paying agent must be able to confirm bank-routed payouts (plan 15 D6) from the console, and anyone must be able to

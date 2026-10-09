@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: [1530, 1502, 1525]
 verify: make verify
-timeout_min: 90
+timeout_min: 120
 plan: docs/superpowers/plans/2026-10-09-plan15-judge-experience.md
 ---
 ## Goal

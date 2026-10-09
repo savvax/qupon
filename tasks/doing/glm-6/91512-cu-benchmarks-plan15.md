@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: []
 verify: make verify
-timeout_min: 90
+timeout_min: 120
 ---
 ## Goal
 Show judges the program is cheap and bounded: CU numbers for every new instruction, asserted in tests.

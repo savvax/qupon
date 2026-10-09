@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: []
 verify: make verify
-timeout_min: 90
+timeout_min: 120
 ---
 ## Goal
 `/login` and `/signup` are the first screens a judge sees after the landing; bring them to the v2 design language.

@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: []
 verify: make verify
-timeout_min: 90
+timeout_min: 120
 ---
 ## Goal
 Fixtures prove specific numbers; invariants prove the math holds for every input. Add deterministic randomized tests.

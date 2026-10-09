@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: [1532, 1536]
 verify: make verify
-timeout_min: 90
+timeout_min: 120
 ---
 ## Goal
 1530 left the middle of the landing in the old style. Finish it in the v2 design language and make the evidence

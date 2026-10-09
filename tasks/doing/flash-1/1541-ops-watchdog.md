@@ -5,7 +5,7 @@ agent: flash
 tier: T1
 depends_on: []
 verify: make verify
-timeout_min: 30
+timeout_min: 120
 plan: docs/superpowers/plans/2026-10-09-plan15-judge-experience.md
 ---
 ## Goal

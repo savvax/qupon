@@ -5,7 +5,7 @@ agent: glm
 tier: T1
 depends_on: []
 verify: make verify
-timeout_min: 90
+timeout_min: 120
 ---
 ## Goal
 Dozens of throw-away demo series now live on devnet (every `make demo` run creates new ones). The final deploy (1540)
