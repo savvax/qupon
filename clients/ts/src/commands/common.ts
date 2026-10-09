@@ -51,9 +51,10 @@ export function withGlobals(cmd: Command): Command {
 		.option("--json", "JSON output (always on)");
 }
 
-export type Role = "registrar" | "issuer" | "payingAgent" | "investor" | "kycProvider";
+export type Role = "any" | "registrar" | "issuer" | "payingAgent" | "investor" | "kycProvider";
 
 const ROLE_ENV: Record<Role, string> = {
+	any: "QUPON_CRANK_KEYPAIR",
 	registrar: "QUPON_REGISTRAR_KEYPAIR",
 	issuer: "QUPON_ISSUER_KEYPAIR",
 	payingAgent: "QUPON_PAYING_AGENT_KEYPAIR",
@@ -73,12 +74,16 @@ export async function initCtx(cmd: Command): Promise<Ctx> {
 	return { rpc: createRpc(o.rpc), cfg: loadConfig() };
 }
 
-/** Signing keypair: --keypair > QUPON_KEYPAIR > role-specific env var. */
+/**
+ * Signing keypair: --keypair > QUPON_KEYPAIR > role-specific env var. Role "any" (permissionless crank, plan 15 D2)
+ * is exactly --keypair > QUPON_CRANK_KEYPAIR > the registrar's, so a global QUPON_KEYPAIR never overrides the crank.
+ */
 export async function signer(cmd: Command, role: Role): Promise<KeyPairSigner> {
 	const o = cmd.optsWithGlobals() as GlobalOptions;
-	const path = o.keypair ?? process.env.QUPON_KEYPAIR ?? process.env[ROLE_ENV[role]];
-	if (path === undefined || path === "") {
-		throw new Error(`no ${role} keypair: pass --keypair <path> or set QUPON_KEYPAIR / ${ROLE_ENV[role]}`);
+	const vars = role === "any" ? [ROLE_ENV.any, ROLE_ENV.registrar] : ["QUPON_KEYPAIR", ROLE_ENV[role]];
+	const path = o.keypair ?? vars.map(v => process.env[v]).find(v => v !== undefined && v !== "");
+	if (path === undefined) {
+		throw new Error(`no ${role} keypair: pass --keypair <path> or set ${vars.join(" / ")}`);
 	}
 	return loadKeypairFromPath(path);
 }

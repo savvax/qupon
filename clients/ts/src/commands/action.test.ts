@@ -1,12 +1,23 @@
 /**
  * Batching logic of `action:snapshot` / `action:pay` (pure `sortedBatches`), partial-failure
- * reporting, and pay-batch tx sizing + idempotent cash-ATA recreation (task 1410).
+ * reporting, pay-batch tx sizing + idempotent cash-ATA recreation (task 1410), the holder's
+ * `action:claim` pay_batch builder, demo-clock announce dates and the role-"any" signer (plan 15, task 1520).
  */
+import { generateKeyPairSync } from "node:crypto";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { Command } from "commander";
 import { describe, expect, it, vi } from "vitest";
-import { AccountRole, generateKeyPairSigner, getBase58Encoder } from "@solana/kit";
+import { AccountRole, createNoopSigner, generateKeyPairSigner, getBase58Encoder } from "@solana/kit";
 import { address } from "@solana/kit";
 import { ASSOCIATED_TOKEN_PROGRAM_ADDRESS, findAssociatedTokenPda } from "@solana-program/token-2022";
+import { ALMATY_CLOCK, CivilClock } from "../lib/clock.js";
+import { loadKeypairFromPath } from "../lib/keys.js";
+import { signer, withGlobals, type GlobalOptions } from "./common.js";
 import {
+	announceDates,
+	claimPayBatchIx,
 	PAY_BATCH_MAX,
 	PAY_TX_BYTE_LIMIT,
 	SNAPSHOT_BATCH_MAX,
@@ -175,5 +186,106 @@ describe("payoutRouteIsBank (plan 15 D6)", () => {
 		data[41] = 1;
 		expect(payoutRouteIsBank(data)).toBe(true);
 		expect(payoutRouteIsBank(new Uint8Array(10))).toBe(false);
+	});
+});
+
+describe("announceDates (plan 15 D7 — demo clock derives the dates)", () => {
+	// 1 s per civil day anchored at 2026-10-09: a whole bond life in minutes.
+	const demo = CivilClock.demo(1, 1_791_000_000, { y: 2026, m: 10, d: 9 });
+
+	it("demo: record = period end − 1 series-day, payment = period end + delay series-days", () => {
+		expect(announceDates({}, 1_000n, demo)).toEqual({ recordAt: 999n, paymentAt: 1_000n });
+		expect(announceDates({ paymentDelayDays: "2" }, 1_000n, demo)).toEqual({ recordAt: 999n, paymentAt: 1_002n });
+	});
+
+	it("demo: explicit --record-at/--payment-at win (the demo scripts pin exact seconds)", () => {
+		expect(announceDates({ recordAt: "995", paymentAt: "1017" }, 1_000n, demo)).toEqual({ recordAt: 995n, paymentAt: 1017n });
+	});
+
+	it("real: both timestamps required; --payment-delay-days rejected", () => {
+		expect(announceDates({ recordAt: "10", paymentAt: "20" }, 1_000n, ALMATY_CLOCK)).toEqual({ recordAt: 10n, paymentAt: 20n });
+		expect(() => announceDates({ recordAt: "10" }, 1_000n, ALMATY_CLOCK)).toThrow(/required on a real-clock/);
+		expect(() => announceDates({ recordAt: "10", paymentAt: "20", paymentDelayDays: "1" }, 1_000n, ALMATY_CLOCK)).toThrow(/only applies to a demo-clock/);
+	});
+});
+
+describe("claimPayBatchIx (action:claim, plan 15 D2/D6)", () => {
+	it("appends the holder's 5 pay accounts after the 9 fixed ones, holder as authority", () => {
+		const holder = createNoopSigner(OWNERS[1]!);
+		const fixed = OWNERS.slice(2).map(a => a as string); // series, action, cashMint, escrow, taxVault, cashTokenProgram, mint…
+		const ix = claimPayBatchIx({
+			holder,
+			series: fixed[0]!,
+			action: fixed[1]!,
+			cashMint: fixed[2]!,
+			escrow: fixed[3]!,
+			taxVault: fixed[4]!,
+			cashTokenProgram: fixed[5]!,
+			mint: fixed[6]!,
+			entitlement: fixed[0]!,
+			investor: fixed[1]!,
+			route: fixed[2]!,
+			cashAta: fixed[3]!,
+			bondAta: fixed[4]!,
+		});
+		// Signer metas carry an extra `signer` prop — compare the wire shape (address, role) only.
+		const metas = ix.accounts.map(a => ({ address: a.address, role: a.role }));
+		// 9 fixed pay_batch accounts + [Entitlement (w), Investor, PayoutRoute, cash destination (w), bond ATA (w)]
+		expect(metas).toHaveLength(14);
+		expect(metas[0]).toEqual({ address: holder.address, role: AccountRole.READONLY_SIGNER }); // anyone may pay
+		expect(metas.slice(9)).toEqual([
+			{ address: fixed[0]!, role: AccountRole.WRITABLE },
+			{ address: fixed[1]!, role: AccountRole.READONLY },
+			{ address: fixed[2]!, role: AccountRole.READONLY },
+			{ address: fixed[3]!, role: AccountRole.WRITABLE },
+			{ address: fixed[4]!, role: AccountRole.WRITABLE },
+		]);
+	});
+});
+
+describe("signer role \"any\" (permissionless crank, plan 15 D2)", () => {
+	const dir = mkdtempSync(join(tmpdir(), "qupon-signer-"));
+	const VARS = ["QUPON_KEYPAIR", "QUPON_CRANK_KEYPAIR", "QUPON_REGISTRAR_KEYPAIR"] as const;
+	/** A solana-keygen style file: [secret 32, public 32] — node's DER encodings end with exactly those bytes. */
+	const kpFile = (name: string): string => {
+		const { privateKey, publicKey } = generateKeyPairSync("ed25519");
+		const priv = privateKey.export({ type: "pkcs8", format: "der" }) as Buffer;
+		const pub = publicKey.export({ type: "spki", format: "der" }) as Buffer;
+		writeFileSync(join(dir, name), JSON.stringify([...priv.subarray(-32), ...pub.subarray(-32)]));
+		return join(dir, name);
+	};
+	const cmd = (): Command => withGlobals(new Command("t"));
+
+	it("resolves --keypair > QUPON_CRANK_KEYPAIR > registrar (QUPON_KEYPAIR ignored for role any)", async () => {
+		const flag = kpFile("flag.json");
+		const generic = kpFile("generic.json");
+		const crank = kpFile("crank.json");
+		const registrar = kpFile("registrar.json");
+		const as = async (p: string) => (await loadKeypairFromPath(p)).address;
+		try {
+			process.env.QUPON_KEYPAIR = generic;
+			process.env.QUPON_CRANK_KEYPAIR = crank;
+			process.env.QUPON_REGISTRAR_KEYPAIR = registrar;
+			expect((await signer(cmd(), "any")).address).toBe(await as(crank));
+			const c = cmd();
+			(c.opts() as GlobalOptions).keypair = flag;
+			expect((await signer(c, "any")).address).toBe(await as(flag));
+			delete process.env.QUPON_KEYPAIR;
+			delete process.env.QUPON_CRANK_KEYPAIR;
+			expect((await signer(cmd(), "any")).address).toBe(await as(registrar)); // operators keep working
+		} finally {
+			for (const v of VARS) delete process.env[v];
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it("without any keypair it names the env vars it looked for", async () => {
+		const saved = VARS.map(v => [v, process.env[v]] as const);
+		try {
+			for (const v of VARS) delete process.env[v];
+			await expect(signer(cmd(), "any")).rejects.toThrow(/QUPON_CRANK_KEYPAIR.*QUPON_REGISTRAR_KEYPAIR/s);
+		} finally {
+			for (const [v, val] of saved) if (val !== undefined) process.env[v] = val;
+		}
 	});
 });

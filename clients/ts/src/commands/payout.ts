@@ -22,16 +22,24 @@ interface RouteOpts extends GlobalOptions {
 	bankRef?: string;
 }
 
+/**
+ * Validate `--route` / `--bank-ref` into the on-chain args (plan 15 D6): only the sha256 of the bank reference ever
+ * leaves this process. Pure — unit-tested.
+ */
+export function payoutRouteArgs(route: string, bankRef: string | undefined): { routeArg: number; bankRefHash: Uint8Array } {
+	const r = route === "bank" ? 1 : route === "wallet" ? 0 : -1;
+	if (r < 0) throw new Error("--route must be wallet or bank");
+	if (r === 1 && (bankRef === undefined || bankRef.trim() === "")) throw new Error("--bank-ref is required for the bank route");
+	if (r === 0 && bankRef !== undefined) throw new Error("--bank-ref only applies to the bank route");
+	return { routeArg: r, bankRefHash: r === 1 ? sha256Bytes(bankRef ?? "") : new Uint8Array(32) };
+}
+
 async function runRoute(opts: RouteOpts, cmd: Command): Promise<void> {
-	const route = opts.route === "bank" ? 1 : opts.route === "wallet" ? 0 : -1;
-	if (route < 0) throw new Error("--route must be wallet or bank");
-	if (route === 1 && (opts.bankRef === undefined || opts.bankRef.trim() === "")) throw new Error("--bank-ref is required for the bank route");
-	if (route === 0 && opts.bankRef !== undefined) throw new Error("--bank-ref only applies to the bank route");
+	const { routeArg: route, bankRefHash } = payoutRouteArgs(opts.route, opts.bankRef);
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
 	const owner = await signer(cmd, "investor");
 	const investor = await investorPda(info.pda, owner.address);
-	const bankRefHash = route === 1 ? sha256Bytes(opts.bankRef ?? "") : new Uint8Array(32);
 	const instruction = getSetPayoutRouteInstruction({
 		owner,
 		series: info.pda,

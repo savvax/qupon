@@ -92,7 +92,7 @@ interface SeriesOpts extends GlobalOptions {
 async function runRetire(opts: SeriesOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, "registrar");
+	const authority = await signer(cmd, "any"); // permissionless (plan 15 D2): any keypair pays the fee
 	const { action } = await loadAction(rpc, info, opts.index);
 	const [investors, entitlements] = await Promise.all([listInvestors(rpc, info.pda), listEntitlements(rpc, action)]);
 	const entitled = new Set(entitlements.map(e => e.owner as string));

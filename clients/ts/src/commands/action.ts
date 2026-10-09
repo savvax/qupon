@@ -4,7 +4,7 @@
  * complete. Batching is deterministic: holders sorted by owner pubkey ascending
  * (the snapshot-hash order), then fixed-size chunks sent sequentially.
  */
-import { fetchEncodedAccounts, isSome, type Address, type Instruction, type TransactionSigner } from "@solana/kit";
+import { address, fetchEncodedAccounts, isSome, type Address, type Instruction, type TransactionSigner } from "@solana/kit";
 import {
 	findAssociatedTokenPda,
 	getCreateAssociatedTokenIdempotentInstruction,
@@ -12,6 +12,7 @@ import {
 import type { Command } from "commander";
 import {
 	fetchCorporateAction,
+	fetchInvestor,
 	type CorporateAction,
 	getAnnounceActionInstructionAsync,
 	getCancelActionInstruction,
@@ -33,6 +34,7 @@ import { accrualDays, dayCountFromCode, packYmd } from "../lib/daycount.js";
 import { ALMATY_CLOCK, type CivilClock, seriesClock } from "../lib/clock.js";
 import { txLink } from "../lib/explorer.js";
 import { actionPda, entitlementPda, investorPda, routePda } from "../lib/pda.js";
+import { loadKeypairFromPath } from "../lib/keys.js";
 import type { QuponRpc } from "../lib/tx.js";
 import {
 	defaultCorpId,
@@ -167,8 +169,9 @@ export async function loadAction(
 
 interface AnnounceOpts extends GlobalOptions {
 	series: string;
-	recordAt: string;
-	paymentAt: string;
+	recordAt?: string;
+	paymentAt?: string;
+	paymentDelayDays?: string;
 	officialId?: string;
 	corpId?: string;
 	kind: string;
@@ -205,6 +208,32 @@ export function announcePlan(
 	return { kind: k as CashKind, code, periodEnd, factorBps: factor };
 }
 
+/**
+ * Record/payment dates for `action:announce` (plan 15 D7): a demo-clock series derives them from the period end —
+ * record = period end − 1 series-day (the ex-date boundary), payment = period end + delay series-days — while a real
+ * clock takes explicit timestamps (explicit flags win on a demo series too, e.g. the demo scripts).
+ * Pure — unit-tested for both clocks.
+ */
+export function announceDates(
+	opts: { recordAt?: string; paymentAt?: string; paymentDelayDays?: string },
+	periodEnd: bigint,
+	clock: CivilClock,
+): { recordAt: bigint; paymentAt: bigint } {
+	const delayDays = opts.paymentDelayDays === undefined ? 0 : parseIntArg(opts.paymentDelayDays, "--payment-delay-days");
+	if (!clock.isDemo()) {
+		if (opts.recordAt === undefined || opts.paymentAt === undefined) {
+			throw new Error("--record-at and --payment-at are required on a real-clock series (a demo-clock series derives them)");
+		}
+		if (delayDays !== 0) throw new Error("--payment-delay-days only applies to a demo-clock series");
+		return { recordAt: parseAt(opts.recordAt, "--record-at"), paymentAt: parseAt(opts.paymentAt, "--payment-at") };
+	}
+	const day = BigInt(clock.daySecs);
+	return {
+		recordAt: opts.recordAt === undefined ? periodEnd - day : parseAt(opts.recordAt, "--record-at"),
+		paymentAt: opts.paymentAt === undefined ? periodEnd + BigInt(delayDays) * day : parseAt(opts.paymentAt, "--payment-at"),
+	};
+}
+
 async function runAnnounce(opts: AnnounceOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
@@ -218,8 +247,7 @@ async function runAnnounce(opts: AnnounceOpts, cmd: Command): Promise<void> {
 	const startYmd = clock.civil(Number(periodStart));
 	const endYmd = clock.civil(Number(periodEnd));
 	const days = accrualDays(dayCountFromCode(s.dayCount), startYmd, endYmd);
-	const recordAt = parseAt(opts.recordAt, "--record-at");
-	const paymentAt = parseAt(opts.paymentAt, "--payment-at");
+	const { recordAt, paymentAt } = announceDates(opts, periodEnd, clock);
 	const index = s.actionCount;
 	const corpId =
 		opts.corpId ?? defaultCorpId(info.name, plan.kind, index + 1); // e.g. QPNb1-INTR-0001
@@ -278,7 +306,7 @@ async function runCancel(opts: ActionOpts, cmd: Command): Promise<void> {
 async function runDefault(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const payer = await signer(cmd, "registrar"); /* any keypair may declare it: --keypair overrides */
+	const payer = await signer(cmd, "any"); // permissionless (plan 15 D2): any keypair pays the fee
 	const { action, account } = await loadAction(rpc, info, opts.index);
 	const instruction = getDeclareDefaultInstruction({ payer, series: info.pda, action, escrow: account.escrow });
 	await sendAndReport(rpc, payer, [instruction], "action:default", { action });
@@ -287,7 +315,7 @@ async function runDefault(opts: ActionOpts, cmd: Command): Promise<void> {
 async function runStrike(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
+	const authority = await signer(cmd, "any"); // permissionless (plan 15 D2): any keypair pays the fee
 	const { action } = await loadAction(rpc, info, opts.index);
 	const instruction = getStrikeRecordInstruction({
 		authority,
@@ -342,7 +370,7 @@ async function runSnapshotHooked(
 async function runSnapshot(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
+	const authority = await signer(cmd, "any"); // permissionless (plan 15 D2): any keypair pays the fee
 	const { action } = await loadAction(rpc, info, opts.index);
 	const investors = await listInvestors(rpc, info.pda);
 	if (info.account.hook === 1) {
@@ -380,7 +408,7 @@ async function runSnapshot(opts: ActionOpts, cmd: Command): Promise<void> {
 async function runFinalizeSnapshot(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
+	const authority = await signer(cmd, "any"); // permissionless (plan 15 D2): any keypair pays the fee
 	const { action } = await loadAction(rpc, info, opts.index);
 	const instruction = getFinalizeSnapshotInstruction({
 		authority,
@@ -431,7 +459,7 @@ async function runFund(opts: FundOpts, cmd: Command): Promise<void> {
 async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
+	const authority = await signer(cmd, "any"); // permissionless (plan 15 D2): any keypair pays the fee
 	const { action, account } = await loadAction(rpc, info, opts.index);
 	const cashMint = account.cashMint;
 	const cashTokenProgram = await tokenProgramOfMint(rpc, cashMint);
@@ -500,10 +528,101 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 	out({ ok: true, action, batches: results.length, holders: payable.length, results });
 }
 
+interface ClaimOpts extends GlobalOptions {
+	series: string;
+	index?: string;
+	owner: string;
+	feePayer?: string;
+}
+
+/**
+ * `action:claim` (plan 15 D2/D6): one holder's pay_batch — the same account layout as an `action:pay` batch of one,
+ * i.e. [Entitlement (w), Investor, PayoutRoute, cash destination (w), bond ATA (w)] after the 9 fixed accounts.
+ * Pure instruction building — unit-tested.
+ */
+export function claimPayBatchIx(args: {
+	holder: TransactionSigner;
+	series: Address;
+	action: Address;
+	cashMint: Address;
+	escrow: Address;
+	taxVault: Address;
+	cashTokenProgram: Address;
+	mint: Address;
+	entitlement: Address;
+	investor: Address;
+	route: Address;
+	cashAta: Address;
+	bondAta: Address;
+}): Instruction {
+	const base = getPayBatchInstruction({
+		authority: args.holder,
+		series: args.series,
+		action: args.action,
+		cashMint: args.cashMint,
+		escrow: args.escrow,
+		taxVault: args.taxVault,
+		cashTokenProgram: args.cashTokenProgram,
+		mint: args.mint,
+	});
+	return {
+		...base,
+		accounts: [...base.accounts, wr(args.entitlement), ro(args.investor), ro(args.route), wr(args.cashAta), wr(args.bondAta)],
+	};
+}
+
+async function runClaim(opts: ClaimOpts, cmd: Command): Promise<void> {
+	const { rpc, cfg } = await initCtx(cmd);
+	const info = await loadSeries(rpc, cfg, opts.series);
+	const owner = address(opts.owner);
+	const holder = await signer(cmd, "investor"); // the holder claims their own payout (QUPON_INVESTOR_KEYPAIR)
+	if (holder.address !== owner) log(`signer ${holder.address} is not --owner ${owner} — still a valid permissionless pay_batch`);
+	const feePayer = opts.feePayer === undefined ? holder : await loadKeypairFromPath(opts.feePayer);
+	const { action, account } = await loadAction(rpc, info, opts.index);
+	const cashMint = account.cashMint;
+	const cashTokenProgram = await tokenProgramOfMint(rpc, cashMint);
+	const investor = await investorPda(info.pda, owner);
+	const record = (await fetchInvestor(rpc, investor)).data;
+	const route = await routePda(investor);
+	const [routeAcc] = await fetchEncodedAccounts(rpc, [route]);
+	const bank = routeAcc !== undefined && routeAcc.exists && payoutRouteIsBank(routeAcc.data);
+	// Bank route ⇒ the paying agent's cash ATA (SIMULATED bank transfer, confirmed later with payout:confirm-bank).
+	const payingAgent = info.account.payingAgent;
+	const [agentCash] = await findAssociatedTokenPda({ owner: payingAgent, mint: cashMint, tokenProgram: cashTokenProgram });
+	const cashAta = bank ? agentCash : record.cashAta;
+	const [ataAcc] = await fetchEncodedAccounts(rpc, [cashAta]);
+	const instructions = ensureCashAtas({
+		batch: [{ owner: bank ? payingAgent : owner, cashAta }],
+		missing: new Set(ataAcc !== undefined && ataAcc.exists ? [] : [cashAta as string]),
+		payer: feePayer,
+		cashMint,
+		cashTokenProgram,
+	});
+	instructions.push(
+		claimPayBatchIx({
+			holder,
+			series: info.pda,
+			action,
+			cashMint,
+			escrow: account.escrow,
+			taxVault: info.account.taxVault,
+			cashTokenProgram,
+			mint: info.mint,
+			entitlement: await entitlementPda(action, owner),
+			investor,
+			route,
+			cashAta,
+			bondAta: record.bondAta,
+		}),
+	);
+	log(`claiming ${owner}'s payout (${bank ? `bank route via paying agent ${payingAgent}` : "wallet route"})`);
+	await sendAndReport(rpc, feePayer, instructions, "action:claim", { action, owner, route: bank ? "bank" : "wallet" });
+}
+
 async function runComplete(opts: ActionOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
-	const authority = await signer(cmd, "registrar") /* registrar or paying agent are both valid operators */;
+	const authority = await signer(cmd, "any"); // permissionless (plan 15 D2): any keypair pays the fee
 	const { action } = await loadAction(rpc, info, opts.index);
 	const instruction = getCompleteActionInstruction({
 		authority,
@@ -558,8 +677,9 @@ const indexOpt = "--index <n>" as const;
 export function registerActionCommands(program: Command): void {
 	withGlobals(program.command("action:announce").description("announce a cash action: INTR coupon, REDM at maturity, MCAL/PCAL early call"))
 		.requiredOption("--series <name>", "series name in config/devnet.json")
-		.requiredOption("--record-at <ts>", "record date: unix ts or +seconds from now")
-		.requiredOption("--payment-at <ts>", "payment date: unix ts or +seconds from now")
+		.option("--record-at <ts>", "record date: unix ts or +seconds from now (required on a real clock)")
+		.option("--payment-at <ts>", "payment date: unix ts or +seconds from now (required on a real clock)")
+		.option("--payment-delay-days <n>", "demo clock only: payment = period end + N series-days (default 0)")
 		.option("--kind <kind>", "INTR | REDM | MCAL | PCAL", "INTR")
 		.option("--call-date <ymd>", "MCAL/PCAL: call date YYYY-MM-DD (accrued coupon ends here)")
 		.option("--factor-bps <n>", "PCAL: share of face redeemed, bps")
@@ -602,6 +722,13 @@ export function registerActionCommands(program: Command): void {
 		.requiredOption("--series <name>", "series name in config/devnet.json")
 		.option(indexOpt, "action index (default: the open action)")
 		.action(runPay);
+
+	withGlobals(program.command("action:claim").description("holder: claim one holder's own payout (pay_batch for a single owner, bank route honoured)"))
+		.requiredOption("--series <name>", "series name in config/devnet.json")
+		.option(indexOpt, "action index (default: the open action)")
+		.requiredOption("--owner <pubkey>", "the holder claiming their payout")
+		.option("--fee-payer <path>", "keypair paying the tx fee (default: the holder's)")
+		.action(runClaim);
 
 	withGlobals(program.command("action:complete").description("complete the action (resumes the mint, advances schedule)"))
 		.requiredOption("--series <name>", "series name in config/devnet.json")

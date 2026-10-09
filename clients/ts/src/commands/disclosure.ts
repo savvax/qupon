@@ -15,12 +15,16 @@ interface AttachOpts extends GlobalOptions {
 	file: string;
 }
 
+/** sha256 of the notification file's bytes — the only thing that ever goes on-chain (plan 15 D9). Pure — unit-tested. */
+export async function disclosureHash(file: string): Promise<Uint8Array> {
+	return new Uint8Array(createHash("sha256").update(await readFile(file)).digest());
+}
 async function runAttach(opts: AttachOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
 	const registrar = await signer(cmd, "registrar");
 	const { action } = await loadAction(rpc, info, opts.index);
-	const hash = new Uint8Array(createHash("sha256").update(await readFile(opts.file)).digest());
+	const hash = await disclosureHash(opts.file);
 	const instruction = getAttachDisclosureInstruction({ registrar, series: info.pda, action, hash });
 	await sendAndReport(rpc, registrar, [instruction], "disclosure:attach", {
 		action,
