@@ -1,7 +1,7 @@
 ---
 id: 1523
 title: Go notices + ISO for plan 15 (incl. kk)
-agent: glm
+agent: claude
 tier: T1
 depends_on: [1521]
 verify: make verify

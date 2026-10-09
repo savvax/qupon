@@ -1,7 +1,7 @@
 ---
 id: 1524
 title: sandbox API — a judge's own bond on a demo clock
-agent: glm
+agent: claude
 tier: T0
 depends_on: [1520, 1522]
 verify: make verify

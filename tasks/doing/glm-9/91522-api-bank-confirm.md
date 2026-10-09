@@ -1,7 +1,7 @@
 ---
 id: 91522
 title: API: bank-payout confirmations and declare-default for the console
-agent: glm
+agent: claude
 tier: T1
 depends_on: [1522]
 verify: make verify

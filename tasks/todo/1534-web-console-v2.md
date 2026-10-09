@@ -1,7 +1,7 @@
 ---
 id: 1534
 title: registrar console v2
-agent: glm
+agent: claude
 tier: T1
 depends_on: [1530, 1522, 1523, 91522]
 verify: make verify

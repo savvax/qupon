@@ -1,7 +1,7 @@
 ---
 id: 1525
 title: public holder lookup + featured series
-agent: glm
+agent: claude
 tier: T1
 depends_on: [1521]
 verify: make verify
