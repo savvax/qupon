@@ -33,5 +33,11 @@ Implement task 1524 of plan 15 exactly as written below (the plan section is cop
 
 **Acceptance:** tests green; on devnet (by 1540) a sandbox reaches maturity within 7 minutes with autopilot; `make verify` green.
 
+## Lead notes (after 1521, 1522)
+- Already on main: `series_settings.no_autofund` + `sandbox_id` (migration 007, task 1522) with `Store.SetSeriesNoAutofund` / `NoAutofundSeries`; the scheduler skips funding for flagged series, so `skip_funding` = set the flag and the autopilot declares the default after `executor.DefaultDue`. Your migration is therefore `008_sandboxes.sql`.
+- `executor.NextStep` now takes the Series (hooked series snapshot from record_at without a strike); new steps `declare_default`, `confirm_bank_payout`.
+- The web sandbox UI (1532, Opus) is being built against a typed client for exactly the three endpoints in this task; match its request/response shapes (`apps/web/src/lib` — look for the sandbox API types once 1532 merges, or ask the lead via reports/questions).
+- Series REST already exposes `demoClock {daySecs, issueTs, issueDate}`, `hookGate`, `inDefault`; actions expose `defaultedAt`, `curedAt`, `bankPending`, `finalizedAt`.
+
 ## Finish
 `make verify` green, commits carry `task: 1524`, `reports/worklog/1524.md` written. Print `DONE:1524` or `BLOCKED:1524 <reason>`.
