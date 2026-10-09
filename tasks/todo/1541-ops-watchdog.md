@@ -2,7 +2,7 @@
 id: 1541
 title: uptime watchdog
 agent: flash
-tier: T2
+tier: T1
 depends_on: []
 verify: make verify
 timeout_min: 30

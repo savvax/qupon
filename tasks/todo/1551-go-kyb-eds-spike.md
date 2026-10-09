@@ -2,7 +2,7 @@
 id: 1551
 title: KYB via НУЦ РК e-signature (spike)
 agent: glm
-tier: T2
+tier: T1
 depends_on: []
 verify: make verify
 timeout_min: 90

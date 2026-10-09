@@ -2,7 +2,7 @@
 id: 91531
 title: e2e language switch locator (radio, not button)
 agent: flash
-tier: T2
+tier: T1
 depends_on: [1531]
 verify: make verify
 timeout_min: 30
