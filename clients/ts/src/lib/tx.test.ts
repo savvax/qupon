@@ -3,6 +3,7 @@ import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import { generateKeyPairSigner, type Signature } from "@solana/kit";
 import {
+  isBlockhashExpired,
   anchorErrorFromLogs,
   computeUnitLimit,
   createRpc,
@@ -209,4 +210,23 @@ describe("createRpc", () => {
       await new Promise((resolve) => server.close(resolve));
     }
   }, 10_000);
+});
+
+describe("isBlockhashExpired (task 1426)", () => {
+  it("matches a blockhash error nested in a simulation failure", () => {
+    const e = new Error("Transaction simulation failed", {
+      cause: new Error("Blockhash not found"),
+    });
+    expect(isBlockhashExpired(e)).toBe(true);
+  });
+  it("matches the top-level message and ignores program errors", () => {
+    expect(isBlockhashExpired(new Error("block height exceeded"))).toBe(true);
+    expect(
+      isBlockhashExpired(
+        new Error("Transaction simulation failed", {
+          cause: new Error("custom program error: 0x1772"),
+        }),
+      ),
+    ).toBe(false);
+  });
 });

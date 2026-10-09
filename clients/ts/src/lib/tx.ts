@@ -187,8 +187,7 @@ export async function sendInstructions(
       );
     } catch (e) {
       lastError = e;
-      const retryable =
-        String((e as Error).message).match(/blockhash|block height/i) !== null;
+      const retryable = isBlockhashExpired(e);
       const logs = logsOf(e);
       const detail = (e as { cause?: { message?: string } })?.cause;
       if (logs?.length)
@@ -206,6 +205,17 @@ export async function sendInstructions(
     `[${label}] transaction failed: ${reason}${(lastError as Error).message}`,
     { cause: lastError },
   );
+}
+
+/**
+ * An expired / unknown blockhash, worth re-signing with a fresh one. Kit wraps a preflight "Blockhash not found" as
+ * "Transaction simulation failed" with the reason in `cause`, so both levels are checked.
+ */
+export function isBlockhashExpired(e: unknown): boolean {
+  const re = /blockhash|block height/i;
+  const msg = (x: unknown) =>
+    String((x as { message?: unknown })?.message ?? "");
+  return re.test(msg(e)) || re.test(msg((e as { cause?: unknown })?.cause));
 }
 
 /** Program logs of a failed send: Kit's preflight error carries them in `context.logs` (older shapes in `cause`). */
