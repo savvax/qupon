@@ -30,5 +30,10 @@ Implement task 1535 of plan 15 exactly as written below (the plan section is cop
 
 **Acceptance:** specs green; Opus design score ≥ 8.
 
+## Lead notes (after 1532, 1536)
+- `/proof/[mint]` exists (task 1536): the dossier header gets a prominent "Verify on-chain" link to `/proof/<mint>`, and each
+  action row of the register links to its card there (`/proof/<mint>#<actionPda>` — check the anchor ids 1536 renders).
+- The shared "implemented vs simulated" grid is `ScopeGrid` (from 1536) — reuse it, never copy it.
+
 ## Finish
 `make verify` green, commits carry `task: 1535`, `reports/worklog/1535.md` written. Print `DONE:1535` or `BLOCKED:1535 <reason>`.
