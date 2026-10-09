@@ -12,10 +12,12 @@ import {
 	getInitializePausableConfigInstruction,
 	getInitializePermanentDelegateInstruction,
 	getInitializeTokenMetadataInstruction,
+	getInitializeTransferHookInstruction,
 	getMintSize,
 	getSetAuthorityInstruction,
 	getUpdateTokenMetadataFieldInstruction,
 } from "@solana-program/token-2022";
+import { QUPON_BONDS_PROGRAM_ADDRESS } from "../generated/index.js";
 import type { QuponSeriesConfig } from "./config.js";
 import { fromUnixUtc, ymd, type Ymd } from "./daycount.js";
 
@@ -41,6 +43,9 @@ export function bondMintExtensions(series: Address, registrar: Address): Extensi
 		{ __kind: "PausableConfig", authority: series, paused: false },
 		{ __kind: "MintCloseAuthority", closeAuthority: series },
 		{ __kind: "DefaultAccountState", state: AccountState.Frozen },
+		// plan 15 D1': this program is the transfer hook — the record date is a gate, not a pause.
+		// Only the series PDA could re-point it (authority = series).
+		{ __kind: "TransferHook", authority: series, programId: QUPON_BONDS_PROGRAM_ADDRESS },
 	];
 }
 
@@ -109,6 +114,8 @@ export function buildCreateBondMintInstructions(params: {
 		getInitializePausableConfigInstruction({ mint: m, authority: series }),
 		getInitializeMintCloseAuthorityInstruction({ mint: m, closeAuthority: series }),
 		getInitializeDefaultAccountStateInstruction({ mint: m, state: AccountState.Frozen }),
+		// the hook gate (plan 15 D1'): armed by `init_hook` right after init_series
+		getInitializeTransferHookInstruction({ mint: m, authority: series, programId: QUPON_BONDS_PROGRAM_ADDRESS }),
 		// Temporary mint authority = registrar so it can sign InitializeTokenMetadata…
 		getInitializeMint2Instruction({ mint: m, decimals: 0, mintAuthority: registrar.address, freezeAuthority: series }),
 		getInitializeTokenMetadataInstruction({

@@ -1,7 +1,9 @@
 /** `series:init` — initialize the on-chain Series for a name in config/devnet.json. */
-import { address, type Address, type KeyPairSigner, type Signature } from "@solana/kit";
+import { address, type Address, type Instruction, type KeyPairSigner, type Signature } from "@solana/kit";
+import { fetchMaybeMint } from "@solana-program/token-2022";
 import type { Command } from "commander";
-import { getInitSeriesInstructionAsync } from "../generated/index.js";
+import { getInitHookInstructionAsync, getInitSeriesInstructionAsync } from "../generated/index.js";
+import { mintIsHooked } from "../lib/hook.js";
 import { seriesPda } from "../lib/pda.js";
 import type { QuponConfig } from "../lib/config.js";
 import type { QuponRpc } from "../lib/tx.js";
@@ -76,8 +78,15 @@ export async function initSeries(
 		approvalBps: opts.approvalBps,
 	});
 	const pda: Address = await seriesPda(mint);
+	const instructions: Instruction[] = [instruction];
+	// Hooked mint (plan 15 D1'): arm the transfer-hook gate right after init_series — same tx, same registrar.
+	const mintAccount = await fetchMaybeMint(rpc, mint);
+	if (mintAccount.exists && mintIsHooked(mintAccount.data)) {
+		instructions.push(await getInitHookInstructionAsync({ registrar, series: pda, mint }));
+		log("mint is hooked — init_hook arms the record-date gate (plan 15 D1')");
+	}
 	log(`initializing series '${name}' (mint ${mint}, PDA ${pda})`);
-	const report = await sendQuiet(rpc, registrar, [instruction], "series:init");
+	const report = await sendQuiet(rpc, registrar, instructions, "series:init");
 	return { signature: report.signature, slot: report.slot, seriesPda: pda };
 }
 

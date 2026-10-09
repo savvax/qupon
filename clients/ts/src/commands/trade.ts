@@ -4,7 +4,7 @@
  * transfer, and the registrar settles or cancels — always together with `release_trade`, so no command that
  * reports success leaves a trade admitted (an admitted trade blocks the next record date).
  */
-import { address, getBase64Encoder, isAddress, type Address, type Instruction, type KeyPairSigner } from "@solana/kit";
+import { address, getBase64Encoder, isAddress, isSome, type AccountMeta, type Address, type Instruction, type KeyPairSigner, type TransactionSigner } from "@solana/kit";
 import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
 import { getTransferCheckedInstruction as getTransferCheckedInstructionSpl } from "@solana-program/token";
 import {
@@ -20,11 +20,14 @@ import {
 	TRADE_ADMISSION_DISCRIMINATOR,
 	fetchMaybeTradeAdmission,
 	findAdmissionPda,
+	findCheckpointPda,
 	getAdmitTradeInstructionAsync,
 	getReleaseTradeInstruction,
+	getSnapshotBatchInstruction,
 	getTradeAdmissionDecoder,
 	getTradeAdmissionSize,
-	type TradeAdmission, findCheckpointPda } from "../generated/index.js";
+	type TradeAdmission,
+} from "../generated/index.js";
 import {
 	MEMO_PROGRAM_ADDRESS,
 	cashAmount,
@@ -38,7 +41,8 @@ import {
 	tradeStatus,
 	type TradeStatus,
 } from "../lib/dvp.js";
-import { investorPda } from "../lib/pda.js";
+import { hookExtras, withHookExtras } from "../lib/hook.js";
+import { entitlementPda, investorPda } from "../lib/pda.js";
 import type { QuponRpc } from "../lib/tx.js";
 import {
 	initCtx,
@@ -48,10 +52,12 @@ import {
 	out,
 	parseBigInt,
 	parseIntArg,
+	ro,
 	sendAndReport,
 	signer,
 	tokenProgramOfMint,
 	withGlobals,
+	wr,
 	type GlobalOptions,
 	type SeriesInfo,
 } from "./common.js";
@@ -114,7 +120,7 @@ export async function listTrades(rpc: QuponRpc, info: SeriesInfo): Promise<Trade
 	return rows.sort((x, y) => Number(x.admittedAt - y.admittedAt) || x.swapDvp.localeCompare(y.swapDvp));
 }
 
-interface Admitted {
+export interface Admitted {
 	readonly admission: Address;
 	readonly data: TradeAdmission;
 }
@@ -139,6 +145,38 @@ async function releaseIx(registrar: KeyPairSigner, info: SeriesInfo, adm: Admitt
 		escrowCheckpoint: (await findCheckpointPda({ series: info.pda, owner: adm.data.swapDvp }))[0],
 		force,
 	});
+}
+
+/** True when the transfer-hook gate is armed and past its record date: a bond transfer may then move
+ *  only once both owners' positions are snapshotted (plan 15 D1'). */
+export function recordPending(info: SeriesInfo, nowSec: number | bigint): boolean {
+	return info.account.hook === 1 && info.account.recordAt !== 0n && BigInt(nowSec) >= BigInt(info.account.recordAt);
+}
+
+/** Hooked series: the DvP bond leg crosses the hook gate, so SettleDvp/CancelDvp carry the 5 extras after
+ *  their fixed accounts and say how many (`leg_a_extras_count`); legacy series (`series.hook == 0`) carry none. */
+export async function bondLegExtras(info: SeriesInfo, srcOwner: Address, dstOwner: Address): Promise<AccountMeta[]> {
+	return info.account.hook === 1 ? hookExtras(info.mint, srcOwner, dstOwner) : [];
+}
+
+/** The positions a record-date-crossing settle must snapshot first (same tx): the seller's group, the
+ *  trade's escrow group (escrowed units belong to the seller) and the buyer's — the same layout
+ *  `action:snapshot` sends (programs/qupon_bonds tests/hook.rs pins the order). */
+export async function recordDateSnapshotIx(
+	authority: TransactionSigner,
+	info: SeriesInfo,
+	action: Address,
+	adm: Admitted,
+): Promise<Instruction> {
+	const { seller, buyer, swapDvp } = adm.data;
+	const checkpoint = async (owner: Address) => (await findCheckpointPda({ series: info.pda, owner }))[0];
+	const positions = [
+		[ro(await investorPda(info.pda, seller)), ro(await ata(seller, info.mint, TOKEN_2022_PROGRAM_ADDRESS)), wr(await entitlementPda(action, seller)), wr(await checkpoint(seller))],
+		[ro(adm.admission), ro(adm.data.escrow), wr(await entitlementPda(action, seller)), wr(await checkpoint(swapDvp)), ro(await investorPda(info.pda, seller))],
+		[ro(await investorPda(info.pda, buyer)), ro(await ata(buyer, info.mint, TOKEN_2022_PROGRAM_ADDRESS)), wr(await entitlementPda(action, buyer)), wr(await checkpoint(buyer))],
+	];
+	const base = getSnapshotBatchInstruction({ authority, series: info.pda, action, mint: info.mint });
+	return { ...base, accounts: [...base.accounts, ...positions.flat()] };
 }
 
 interface CreateOpts extends GlobalOptions {
@@ -236,7 +274,11 @@ async function runFund(opts: TradeOpts & { side: string }, cmd: Command): Promis
 		amount: leg.amount - funded,
 		decimals: await mintDecimals(rpc, leg.mint),
 	});
-	await sendAndReport(rpc, owner, [instruction], "trade:fund", { swapDvp, side, escrow, amount: leg.amount - funded });
+	// Hooked series, bond leg: the seller → escrow transfer crosses the hook gate — append the extras.
+	const ix = leg.mint === info.mint
+		? await withHookExtras(instruction, info.mint, owner.address, swapDvp)
+		: instruction;
+	await sendAndReport(rpc, owner, [ix], "trade:fund", { swapDvp, side, escrow, amount: leg.amount - funded });
 }
 
 async function runSettle(opts: TradeOpts, cmd: Command): Promise<void> {
@@ -248,6 +290,9 @@ async function runSettle(opts: TradeOpts, cmd: Command): Promise<void> {
 	const trade = await readTrade(rpc, swapDvp);
 	if (trade === null) throw new Error(`trade ${swapDvp} is already closed — run trade:cancel to release its admission`);
 	const { seller, buyer } = adm.data;
+	const pending = recordPending(info, Math.floor(Date.now() / 1000));
+	// Hooked series: the bond leg (escrow → buyer) crosses the hook gate — extras + leg_a_extras_count.
+	const extras = await bondLegExtras(info, swapDvp, buyer);
 	const settle = getSettleDvpInstruction({
 		settlementAuthority: registrar,
 		swapDvp,
@@ -262,14 +307,29 @@ async function runSettle(opts: TradeOpts, cmd: Command): Promise<void> {
 		tokenProgramA: trade.tokenProgramA,
 		tokenProgramB: trade.tokenProgramB,
 		memoProgram: MEMO_PROGRAM_ADDRESS,
-		legAExtrasCount: 0,
+		legAExtrasCount: extras.length,
 	});
-	await sendAndReport(rpc, registrar, [settle, await releaseIx(registrar, info, adm, false)], "trade:settle", {
+	const settleIx = { ...settle, accounts: [...settle.accounts, ...extras] };
+	const instructions: Instruction[] = [];
+	if (pending) {
+		// Plan 15 D1': settle right after the record date — snapshot the seller, the escrow and the buyer
+		// first so the gate lets the escrow → buyer transfer through, all in one transaction.
+		const open = info.account.openAction;
+		if (!isSome(open)) throw new Error("record date is pending but the series has no open action");
+		instructions.push(await recordDateSnapshotIx(registrar, info, open.value, adm));
+		log("record date pending: snapshotting seller + escrow + buyer before the settle (release after action:finalize-snapshot)");
+	}
+	instructions.push(settleIx);
+	// release_trade refuses between record_at and the final snapshot (RecordPending): release later,
+	// once the record is final (trade:cancel on the closed record reduces to the release).
+	if (!pending) instructions.push(await releaseIx(registrar, info, adm, false));
+	await sendAndReport(rpc, registrar, instructions, "trade:settle", {
 		swapDvp,
 		seller,
 		buyer,
 		units: adm.data.units,
 		cashAmount: adm.data.cashAmount,
+		...(pending ? { released: false } : {}),
 	});
 }
 
@@ -296,22 +356,25 @@ async function runCancel(opts: TradeOpts & { force?: boolean }, cmd: Command): P
 		);
 	} else if (trade !== null) {
 		const buyerCash = await ata(buyer, trade.mintB, trade.tokenProgramB);
+		// Hooked series: the refunded bond leg (escrow → seller) crosses the hook gate — extras + count.
+		const extras = await bondLegExtras(info, swapDvp, seller);
+		const cancel = getCancelDvpInstruction({
+			settlementAuthority: registrar,
+			swapDvp,
+			mintA: trade.mintA,
+			mintB: trade.mintB,
+			dvpAtaA: adm.data.escrow,
+			dvpAtaB: await escrowAta(swapDvp, trade.mintB, trade.tokenProgramB),
+			userAAtaA: await ata(seller, trade.mintA, trade.tokenProgramA),
+			userBAtaB: buyerCash,
+			tokenProgramA: trade.tokenProgramA,
+			tokenProgramB: trade.tokenProgramB,
+			memoProgram: MEMO_PROGRAM_ADDRESS,
+			legAExtrasCount: extras.length,
+		});
 		instructions.push(
 			getCreateAssociatedTokenIdempotentInstruction({ payer: registrar, ata: buyerCash, owner: buyer, mint: trade.mintB, tokenProgram: trade.tokenProgramB }),
-			getCancelDvpInstruction({
-				settlementAuthority: registrar,
-				swapDvp,
-				mintA: trade.mintA,
-				mintB: trade.mintB,
-				dvpAtaA: adm.data.escrow,
-				dvpAtaB: await escrowAta(swapDvp, trade.mintB, trade.tokenProgramB),
-				userAAtaA: await ata(seller, trade.mintA, trade.tokenProgramA),
-				userBAtaB: buyerCash,
-				tokenProgramA: trade.tokenProgramA,
-				tokenProgramB: trade.tokenProgramB,
-				memoProgram: MEMO_PROGRAM_ADDRESS,
-				legAExtrasCount: 0,
-			}),
+			{ ...cancel, accounts: [...cancel.accounts, ...extras] },
 		);
 	}
 	const returnedUnits = force ? ((await tokenAmount(rpc, adm.data.escrow)) ?? 0n) : 0n;

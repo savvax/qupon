@@ -1,6 +1,10 @@
-import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
+import {
+  TOKEN_2022_PROGRAM_ADDRESS,
+  getMintCodec,
+} from "@solana-program/token-2022";
 import {
   type Address,
+  type ReadonlyUint8Array,
   address,
   getBase64Decoder,
   getAddressEncoder,
@@ -10,6 +14,8 @@ import {
 } from "@solana/kit";
 import { describe, expect, it } from "vitest";
 import { BoError } from "./boClient";
+import { QUPON_BONDS_PROGRAM_ADDRESS } from "@qupon/client/src/generated";
+import { hookExtras } from "@qupon/client/src/lib/hook";
 import {
   DVP_PROGRAM,
   SWAP_DVP_SIZE,
@@ -167,7 +173,7 @@ describe("legFunded / withTradeErrors", () => {
   });
 });
 
-const B64 = (bytes: Uint8Array) => getBase64Decoder().decode(bytes);
+const B64 = (bytes: ReadonlyUint8Array) => getBase64Decoder().decode(bytes);
 /** Fake rpc serving crafted accounts by address (buildFundTradeIx reads record, mint, escrow). */
 function fakeTradeRpc(
   accounts: Record<string, { owner: string; data: string[] }>,
@@ -228,5 +234,42 @@ describe("buildFundTradeIx (partial funding, task 1417)", () => {
       // no escrow account on chain yet → funded 0, full leg transfers
     });
     expect(await buildFundTradeIx(rpc, shown, "seller", seller)).not.toBeNull();
+  });
+
+  it("hooked bond mint (plan 15 D1'): the seller leg carries the 5 transfer-hook extras; the cash leg does not", async () => {
+    const hooked = () => {
+      const data = getMintCodec().encode({
+        mintAuthority: null,
+        supply: 0n,
+        decimals: 0,
+        isInitialized: true,
+        freezeAuthority: null,
+        extensions: [
+          {
+            __kind: "TransferHook" as const,
+            authority: address(SELLER),
+            programId: QUPON_BONDS_PROGRAM_ADDRESS,
+          },
+        ],
+      });
+      return { owner: TOKEN_2022_PROGRAM_ADDRESS, data: [B64(data)] };
+    };
+    const rpc = fakeTradeRpc({
+      [SWAP]: { owner: DVP_PROGRAM, data: [B64(record().data)] },
+      [BOND]: hooked(), // seller funds the bond leg on a hooked series
+    });
+    const ix = await buildFundTradeIx(rpc, shown, "seller", seller);
+    expect(ix).not.toBeNull();
+    // TransferChecked accounts (source, mint, destination, authority) + the 5 read-only hook extras
+    expect((ix!.accounts ?? []).slice(4)).toEqual(
+      await hookExtras(address(BOND), address(SELLER), address(SWAP)),
+    );
+    const cashRpc = fakeTradeRpc({
+      [SWAP]: { owner: DVP_PROGRAM, data: [B64(record().data)] },
+      [CASH]: mintAccount(),
+      [String(await cashEscrow())]: tokenAccount(250_000n),
+    });
+    const cashIx = await buildFundTradeIx(cashRpc, shown, "buyer", signer);
+    expect(cashIx!.accounts ?? []).toHaveLength(4); // plain cash transfer — no hook on the cash mint
   });
 });

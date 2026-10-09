@@ -5,6 +5,7 @@
  */
 import {
   TOKEN_2022_PROGRAM_ADDRESS,
+  fetchMaybeMint,
   findAssociatedTokenPda,
   getTransferCheckedInstruction,
 } from "@solana-program/token-2022";
@@ -18,6 +19,7 @@ import {
   getBase64Encoder,
   getU64Decoder,
 } from "@solana/kit";
+import { mintIsHooked, withHookExtras } from "@qupon/client/src/lib/hook";
 import { type Amount, apiGet } from "./api";
 import { BoError } from "./boClient";
 import type { PortalRpc } from "./walletSigner";
@@ -171,17 +173,15 @@ export async function buildFundTradeIx(
     owner.address,
   );
   const mint = address(side === "seller" ? shown.bondMint : shown.cashMint);
-  const mintAccount = await read(mint);
+  const mintAccount = await fetchMaybeMint(rpc, mint);
   if (
-    mintAccount === null ||
-    (mintAccount.owner !== TOKEN_2022_PROGRAM_ADDRESS &&
-      mintAccount.owner !== TOKEN_PROGRAM)
+    !mintAccount.exists ||
+    (mintAccount.programAddress !== TOKEN_2022_PROGRAM_ADDRESS &&
+      mintAccount.programAddress !== TOKEN_PROGRAM)
   )
     throw new Error(`mint ${mint} is not a token mint`);
-  const tokenProgram = mintAccount.owner;
-  // Mint layout (both token programs): authority option 36 bytes, supply u64, then decimals.
-  const decimals = getBase64Encoder().encode(mintAccount.data[0])[44];
-  if (decimals === undefined) throw new Error(`mint ${mint} is not a mint`);
+  const tokenProgram = mintAccount.programAddress;
+  const decimals = mintAccount.data.decimals;
   const [source] = await findAssociatedTokenPda({
     owner: owner.address,
     tokenProgram,
@@ -200,7 +200,7 @@ export async function buildFundTradeIx(
     : 0n;
   const remaining = (side === "seller" ? shown.units : shown.cash) - funded;
   if (remaining <= 0n) return null; // escrow already holds the whole leg
-  return getTransferCheckedInstruction(
+  const transfer = getTransferCheckedInstruction(
     {
       source,
       mint,
@@ -211,4 +211,9 @@ export async function buildFundTradeIx(
     },
     { programAddress: tokenProgram },
   );
+  // Hooked bond mint (plan 15 D1'): the seller's bonds cross the transfer-hook gate —
+  // Token-2022 resolves the extra metas and invokes our `execute`; append them (read-only).
+  return side === "seller" && mintIsHooked(mintAccount.data)
+    ? await withHookExtras(transfer, mint, owner.address, swapDvp)
+    : transfer;
 }

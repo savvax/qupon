@@ -112,9 +112,17 @@ function expectFailure(name: string, args: string[], reason?: RegExp): void {
   throw new Error(`${name}: expected the program to refuse it, but it succeeded`);
 }
 
-/** Wait for the record date, then strike (retry while the cluster clock catches up). */
+/** Wait for the record date, then strike. Legacy series pause the mint; hooked series (plan 15 D1') need
+ *  no strike — the transfer-hook gate arms itself at `record_at` and the market keeps trading. */
 async function strikeWhenDue(series: string): Promise<void> {
+  const state = exec(CLI, ["state:dump", "--series", series, "--no-entitlements"], "pipe") as { series?: { data?: { hook?: number } } };
+  const hooked = state.series?.data?.hook === 1;
   await sleep(50_000);
+  if (hooked) {
+    log("record date reached — transfer-hook gate armed (no strike: the register never pauses)");
+    current().rows.push({ step: "record date — transfer-hook gate armed (no strike: the register never pauses)", signatures: [], status: "ok" });
+    return;
+  }
   for (let attempt = 1; ; attempt++) {
     try {
       const res = exec(CLI, ["action:strike", "--series", series, ...as(REGISTRAR)]);
@@ -206,19 +214,6 @@ async function issue(name: string, units: bigint[], issueDate: string, maturityD
 
 const DVP_PROGRAM = "dvp34bdbcEm4f4FCUjGV4mDAkDshaQR4LkK8fdcsyZq";
 
-/** After the record date: the strike must be refused because a trade is admitted (retry while the cluster clock catches up). */
-async function expectStrikeRefused(series: string): Promise<void> {
-  await sleep(50_000);
-  for (let attempt = 1; ; attempt++) {
-    try {
-      expectFailure("action:strike with a trade admitted — refused with TradesInFlight", ["action:strike", "--series", series, ...as(REGISTRAR)], /TradesInFlight/);
-      return;
-    } catch (e) {
-      if (attempt >= 8 || !/TooEarly/.test(String((e as Error).message))) throw e;
-      await sleep(8_000);
-    }
-  }
-}
 
 /** S5: investor3 sells 5 bonds at par to investor1 through Solana DvP; a second trade meets a record date; coupon on 15 / 25 / 60. */
 async function tradeScenario(c: Ctx, bondMint: Address, short: string): Promise<void> {
@@ -254,19 +249,18 @@ async function tradeScenario(c: Ctx, bondMint: Address, short: string): Promise<
   );
 
   section("S5 (cont.) — A trade in flight cannot cross a record date", [
-    "A second trade is admitted and funded by the seller only. A paused mint would trap those bonds in the escrow with no holder to snapshot, so `strike_record` refuses until the registrar unwinds the trade; the seller is then the holder of record and the coupon is paid on 15 / 25 / 60 bonds.",
+    "A second trade is admitted and funded by the seller only. On the hooked series the register is never paused: an admitted trade may not be released once the gate is armed at the record date (`RecordPending`), so the registrar unwinds it before `record_at`; the seller is then the holder of record and the coupon is paid on 15 / 25 / 60 bonds.",
   ]);
   const t2 = create("trade:create — second trade, 5 more bonds");
   fund(t2, "seller", "trade:fund seller — 5 bonds in the escrow, buyer has not paid");
   const action = await cashAction(c, ["--kind", "INTR"], "INTR #1 on the post-trade register (2026-07-03 → 2027-01-03, 180 days, 10%)", `Q${short}-INTR-0001`, 5_000n, async () => {
-    await expectStrikeRefused(c.series);
-    step("trade:cancel — CancelDvp returns the bonds to the seller + release_trade", ["trade:cancel", "--series", c.series, "--trade", t2, ...as(REGISTRAR)]);
+    step("trade:cancel — CancelDvp returns the bonds to the seller + release_trade (before record_at: the hook gate is not armed yet)", ["trade:cancel", "--series", c.series, "--trade", t2, ...as(REGISTRAR)]);
   });
   const snapshot = new Map((await listEntitlements(rpc, action)).map(e => [e.owner as string, e.units]));
   const record = c.investors.map(i => snapshot.get(i.address));
   if (String(record) !== String([15n, 25n, 60n])) throw new Error(`record date: snapshot ${record}, expected 15,25,60`);
 
-  writeReport("secondary trade settled through Solana DvP ✓ · record date refused while a trade was admitted ✓ · coupon paid on the post-trade register (15 / 25 / 60) ✓");
+  writeReport("secondary trade settled through Solana DvP ✓ · trade unwound before the record date armed the transfer-hook gate ✓ · coupon paid on the post-trade register (15 / 25 / 60) ✓");
   log(`report written to ${REPORT}`);
   console.log(JSON.stringify({ ok: true, series: [c.series], report: REPORT, transactions: sections.flatMap(s => s.rows).reduce((n, r) => n + r.signatures.length, 0) }));
 }
