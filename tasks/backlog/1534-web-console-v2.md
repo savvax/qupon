@@ -28,5 +28,9 @@ Implement task 1534 of plan 15 exactly as written below (the plan section is cop
 
 **Acceptance:** specs green; Opus design score ≥ 8.
 
+## Lead notes (after 1512–1515, 1519, 1531)
+- `declare_default` exists on-chain since 1512 (permissionless; due at `max(payment_at, record_at + finalize_delay) + one series day`, see docs/02-architecture.md "Security review of the plan-15 wave"). 1531 deliberately left it out of `apps/web/src/lib/actionFlow.ts` `nextStep`; add it as a real step (actor "anyone") once the API exposes `defaultedAt`/`inDefault` (1521/1522), with a test in `actionFlow.test.ts`.
+- `confirm_bank` is already a StepId (1531); wire it to `payout:confirm-bank` through the API (1522).
+
 ## Finish
 `make verify` green, commits carry `task: 1534`, `reports/worklog/1534.md` written. Print `DONE:1534` or `BLOCKED:1534 <reason>`.
