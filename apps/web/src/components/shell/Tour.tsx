@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TourStep } from "@/components/ui/TourStep";
-import { TOURS, type TourRole } from "@/lib/tours";
+import { TOURS, type TourRole, tourKey } from "@/lib/tours";
 
 /** The help menu restarts a tour with this window event (detail = the role). */
 export const TOUR_RESTART = "qupon:tour-restart";
@@ -30,7 +30,7 @@ export function Tour({ role }: { role: TourRole }) {
   const [step, setStep] = useState<number | null>(null);
   const card = useRef<HTMLDivElement>(null);
   const focusCard = useRef(false);
-  const key = `qupon.tour.${role}`;
+  const key = tourKey(role);
 
   const save = useCallback(
     (v: string) => {

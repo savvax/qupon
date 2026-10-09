@@ -14,3 +14,6 @@ export const TOURS = {
 } as const;
 
 export type TourRole = keyof typeof TOURS;
+
+/** localStorage key of a tour's progress: the step index, or "done" once finished or skipped. */
+export const tourKey = (role: TourRole) => `qupon.tour.${role}`;
