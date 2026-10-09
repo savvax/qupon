@@ -163,7 +163,7 @@ export function MoneyFlow({
       {/* phones: the issuer sits above the escrow */}
       <div className="mt-4 flex items-center gap-3 md:hidden">
         <div className="min-w-0 flex-1 rounded-btn border border-n200 bg-n50 px-3 py-2">
-          <div className="text-xs text-n500">{t("issuer")}</div>
+          <div className="text-xs text-n600">{t("issuer")}</div>
           <div className="truncate text-sm font-bold">{issuer.label}</div>
         </div>
         <div className="shrink-0 text-right text-xs">
@@ -184,7 +184,7 @@ export function MoneyFlow({
       >
         {/* issuer (≥ 768 px) */}
         <div className="hidden self-center rounded-btn border border-n200 bg-n50 p-3 md:block">
-          <div className="text-xs text-n500">{t("issuer")}</div>
+          <div className="text-xs text-n600">{t("issuer")}</div>
           <div className="mt-0.5 text-sm font-bold break-words">{issuer.label}</div>
           {issuer.address && (
             <div className="mt-1 text-micro">

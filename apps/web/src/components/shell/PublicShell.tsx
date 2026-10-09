@@ -28,7 +28,7 @@ async function ViewAs({ demo, compact = false }: { demo: boolean; compact?: bool
     "inline-flex h-8 items-center rounded-sm px-2.5 text-xs font-bold whitespace-nowrap transition-colors";
   return (
     <div className={cx("flex items-center gap-2", compact && "flex-col items-stretch")}>
-      <span className="text-xs font-semibold text-n500">
+      <span className="text-xs font-semibold text-n600">
         <StableLabel align="start">{t("viewAs")}</StableLabel>
       </span>
       <div

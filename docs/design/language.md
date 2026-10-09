@@ -59,7 +59,11 @@ for the docked NowBar.
 Brand (kept from v1): KASE green `g600 #028a29` for the primary action and "done/paid"; deep ink `p900 #071d25`
 for the hero, the escrow node and "Now" pills; neutrals `n0…n900` with a green cast; page `n50`.
 
-**Status semantics** (each pair ≥ 4.5:1 for 12 px bold text):
+Small text on the `n50` page background uses `n600` or darker (`n500` there is 4.28:1, below AA); `n500` is for
+white cards only (4.56:1).
+
+**Status semantics** (each pair ≥ 4.5:1 for 12 px bold text; measured: demo 7.8, bank 6.8, cure 6.6, Defaulted
+white-on-red 6.8, simulated 5.9, on-chain 5.8, verified white-on-green 4.5):
 
 | State | Tokens | Where |
 |---|---|---|

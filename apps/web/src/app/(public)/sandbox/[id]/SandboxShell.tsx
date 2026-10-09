@@ -49,7 +49,7 @@ function Segmented<T extends string>({
 }) {
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2">
-      <span className="text-xs font-semibold text-n500">{label}</span>
+      <span className="text-xs font-semibold text-n600">{label}</span>
       <div role="group" aria-label={label} className="inline-flex max-w-full flex-wrap gap-0.5 rounded-btn border border-n200 bg-n0 p-0.5">
         {options.map((o) => (
           <button
