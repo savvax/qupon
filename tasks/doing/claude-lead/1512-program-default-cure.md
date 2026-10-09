@@ -1,7 +1,7 @@
 ---
 id: 1512
 title: program — default and cure
-agent: glm
+agent: claude
 tier: T0
 depends_on: [1511]
 verify: make verify
