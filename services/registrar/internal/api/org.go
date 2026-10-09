@@ -82,7 +82,8 @@ func mountOrg(r chi.Router, deps Deps, st *store.Store) {
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "bin must be at most 12 and website 200 characters")
 			return
 		}
-		if !validWebsite(o.Website) {
+		// only a website sent in this request is checked: a legacy stored value must not block a name/BIN change
+		if req.Website != nil && !validWebsite(o.Website) {
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "website must start with http:// or https://")
 			return
 		}

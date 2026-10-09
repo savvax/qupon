@@ -201,6 +201,18 @@ func TestOrgProfileAndMembers(t *testing.T) {
 	if code, out2 := patchJSON(t, e.srv.URL, "/org", `{"website":""}`, e.issuerA); code != http.StatusOK {
 		t.Fatalf("empty website clears: %d %v", code, out2)
 	}
+	// A legacy stored website without a scheme does not block other edits (task 1424).
+	legacy, err := e.st.GetOrganization(t.Context(), e.orgA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	legacy.Website = "kaziron.kz"
+	if err := e.st.UpdateOrganization(t.Context(), legacy); err != nil {
+		t.Fatal(err)
+	}
+	if code, out2 := patchJSON(t, e.srv.URL, "/org", `{"name":"KazIron Holding JSC"}`, e.issuerA); code != http.StatusOK {
+		t.Fatalf("name change with a legacy website: %d %v", code, out2)
+	}
 
 	// Members: the issuer sees their organisation only.
 	code, out2 = getJSONAuth(t, e.srv.URL, "/org/members", e.issuerA)
