@@ -313,3 +313,117 @@ pub fn rounding_within_tolerance(
     let drift2 = paid.abs_diff(exact).checked_mul(2).ok_or(Error::Overflow)?;
     Ok(drift2 <= u128::from(holders) * den)
 }
+
+impl Ymd {
+    /// Civil date from days since 1970-01-01.
+    pub fn from_days(days: i64) -> Result<Ymd, Error> {
+        Ymd::from_unix_utc(days.checked_mul(86_400).ok_or(Error::Overflow)?)
+    }
+}
+
+/// Maps civil dates to timestamps. Real: Almaty midnights (day = 86 400 s, offset from UTC). Demo: day = `day_secs`
+/// seconds counted from the issue timestamp, so a whole bond life fits in minutes with the same civil-day math
+/// (plan 15 D7).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CivilClock {
+    /// Length of one civil day in seconds (86 400 = real clock).
+    pub day_secs: i64,
+    /// Timestamp of the `anchor_days` civil date's midnight.
+    pub anchor_ts: i64,
+    /// Days since 1970-01-01 of the anchor civil date.
+    pub anchor_days: i64,
+}
+
+impl CivilClock {
+    /// Real clock for a UTC offset in seconds (Asia/Almaty = 5 × 3600).
+    pub fn real(utc_offset_secs: i64) -> CivilClock {
+        CivilClock {
+            day_secs: 86_400,
+            anchor_ts: -utc_offset_secs,
+            anchor_days: 0,
+        }
+    }
+
+    /// Demo clock: `day_secs` seconds per civil day, anchored at the issue timestamp.
+    pub fn demo(day_secs: u32, issue_ts: i64, issue: Ymd) -> Result<CivilClock, Error> {
+        if day_secs == 0 || day_secs >= 86_400 {
+            return Err(Error::InvalidPeriod);
+        }
+        Ok(CivilClock {
+            day_secs: i64::from(day_secs),
+            anchor_ts: issue_ts,
+            anchor_days: issue.days_from_epoch(),
+        })
+    }
+
+    /// True when this clock runs on compressed days.
+    pub fn is_demo(&self) -> bool {
+        self.day_secs != 86_400
+    }
+
+    /// True iff `ts` is a midnight of this clock.
+    pub fn is_midnight(&self, ts: i64) -> bool {
+        ts.checked_sub(self.anchor_ts)
+            .is_some_and(|d| d.rem_euclid(self.day_secs) == 0)
+    }
+
+    /// Civil date of a midnight timestamp (error if `ts` is not a midnight of this clock).
+    pub fn civil(&self, ts: i64) -> Result<Ymd, Error> {
+        if !self.is_midnight(ts) {
+            return Err(Error::InvalidDate);
+        }
+        self.floor_civil(ts)
+    }
+
+    /// Civil date containing `ts` (any time of day).
+    pub fn floor_civil(&self, ts: i64) -> Result<Ymd, Error> {
+        let d = ts
+            .checked_sub(self.anchor_ts)
+            .ok_or(Error::Overflow)?
+            .div_euclid(self.day_secs);
+        Ymd::from_days(self.anchor_days.checked_add(d).ok_or(Error::Overflow)?)
+    }
+
+    /// Midnight timestamp of civil date `d`.
+    pub fn ts(&self, d: Ymd) -> Result<i64, Error> {
+        d.days_from_epoch()
+            .checked_sub(self.anchor_days)
+            .and_then(|n| n.checked_mul(self.day_secs))
+            .and_then(|x| x.checked_add(self.anchor_ts))
+            .ok_or(Error::Overflow)
+    }
+
+    /// Midnight timestamp `months` months after the midnight `ts` (clamped to month end).
+    pub fn add_months(&self, ts: i64, months: u32) -> Result<i64, Error> {
+        self.ts(self.civil(ts)?.add_months(months)?)
+    }
+}
+
+/// Accrued interest for `units` from `start` to `settle` (negative when `settle` precedes `start`: ex-coupon window).
+/// Half-up on the magnitude, once per position — the same convention as coupons (§2).
+pub fn accrued_signed(
+    units: u64,
+    face: u64,
+    rate_bps: u32,
+    dc: DayCount,
+    start: Ymd,
+    settle: Ymd,
+) -> Result<(i64, i32), Error> {
+    let (a, b, sign) = if settle >= start {
+        (start, settle, 1i64)
+    } else {
+        (settle, start, -1i64)
+    };
+    let days = if a == b { 0 } else { accrual_days(dc, a, b)? };
+    let num = u128::from(units)
+        .checked_mul(u128::from(face))
+        .and_then(|x| x.checked_mul(u128::from(rate_bps)))
+        .and_then(|x| x.checked_mul(u128::from(days)))
+        .ok_or(Error::Overflow)?;
+    let amount = round_half_up(num, BPS * u128::from(dc.basis()?));
+    let amount = i64::try_from(amount).map_err(|_| Error::Overflow)?;
+    Ok((
+        sign * amount,
+        (sign as i32) * i32::try_from(days).map_err(|_| Error::Overflow)?,
+    ))
+}

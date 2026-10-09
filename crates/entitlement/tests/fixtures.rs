@@ -1,6 +1,6 @@
 use entitlement::{
-    accrual_days, entitlement, per_unit_gross, round_half_up, rounding_within_tolerance, DayCount,
-    Error, Kind, Ymd,
+    accrual_days, accrued_signed, entitlement, per_unit_gross, round_half_up,
+    rounding_within_tolerance, CivilClock, DayCount, Error, Kind, Ymd,
 };
 use proptest::prelude::*;
 use serde::Deserialize;
@@ -9,7 +9,35 @@ use serde::Deserialize;
 struct Fixtures {
     day_count_cases: Vec<DayCase>,
     cases: Vec<Case>,
+    clock_cases: Vec<ClockCase>,
+    accrued_cases: Vec<AccruedCase>,
     totals_check: Totals,
+}
+
+#[derive(Deserialize)]
+struct ClockCase {
+    id: String,
+    /// 0 = real clock (Asia/Almaty); otherwise demo clock with this many seconds per civil day.
+    day_secs: u32,
+    issue_ts: Option<i64>,
+    issue_ymd: Option<u32>,
+    ymd: u32,
+    ts: i64,
+    plus_months: u32,
+    plus_months_ts: i64,
+}
+
+#[derive(Deserialize)]
+struct AccruedCase {
+    id: String,
+    units: u64,
+    face: u64,
+    rate_bps: u32,
+    day_count: String,
+    start: String,
+    settle: String,
+    days: i64,
+    accrued: i64,
 }
 
 #[derive(Deserialize)]
@@ -252,4 +280,45 @@ fn add_months_schedule() {
     assert_eq!(ymd("2028-01-31").add_months(1), Ok(ymd("2028-02-29")));
     assert_eq!(ymd("2026-11-15").add_months(3), Ok(ymd("2027-02-15")));
     assert_eq!(ymd("2026-07-03").add_months(24), Ok(ymd("2028-07-03")));
+}
+
+#[test]
+fn clock_cases_match() {
+    for c in load().clock_cases {
+        let clock = if c.day_secs == 0 {
+            CivilClock::real(5 * 3600)
+        } else {
+            CivilClock::demo(
+                c.day_secs,
+                c.issue_ts.unwrap(),
+                Ymd::from_packed(c.issue_ymd.unwrap()).unwrap(),
+            )
+            .unwrap()
+        };
+        let d = Ymd::from_packed(c.ymd).unwrap();
+        assert_eq!(clock.ts(d).unwrap(), c.ts, "{}", c.id);
+        assert_eq!(clock.civil(c.ts).unwrap(), d, "{}", c.id);
+        assert_eq!(
+            clock.add_months(c.ts, c.plus_months).unwrap(),
+            c.plus_months_ts,
+            "{}",
+            c.id
+        );
+    }
+}
+
+#[test]
+fn accrued_cases_match() {
+    for c in load().accrued_cases {
+        let (amount, days) = accrued_signed(
+            c.units,
+            c.face,
+            c.rate_bps,
+            dc(&c.day_count),
+            ymd(&c.start),
+            ymd(&c.settle),
+        )
+        .unwrap();
+        assert_eq!((amount, days), (c.accrued, c.days as i32), "{}", c.id);
+    }
 }

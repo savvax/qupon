@@ -27,6 +27,19 @@
     {"id": "zero_units", "kind": "INTR", "units": 0, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 0, "tax": 0, "net": 0, "principal": 0},
     {"id": "large_holder_u128_safe", "kind": "REDM", "units": 50000000, "face": 100000, "rate_bps": 1595, "day_count": "THIRTY_360", "days": 180, "tax_bps": 0, "gross": 398750000000, "tax": 0, "net": 398750000000, "principal": 5000000000000}
   ],
+  "clock_cases": [
+    {"id": "real_coupon_date", "day_secs": 0, "ymd": 20270103, "ts": 1798916400, "plus_months": 6, "plus_months_ts": 1814554800},
+    {"id": "real_eom_clamp", "day_secs": 0, "ymd": 20260831, "ts": 1788116400, "plus_months": 6, "plus_months_ts": 1803754800},
+    {"id": "demo_1s_issue", "day_secs": 1, "issue_ts": 1791000000, "issue_ymd": 20261009, "ymd": 20261009, "ts": 1791000000, "plus_months": 6, "plus_months_ts": 1791000182},
+    {"id": "demo_1s_maturity", "day_secs": 1, "issue_ts": 1791000000, "issue_ymd": 20261009, "ymd": 20271009, "ts": 1791000365, "plus_months": 0, "plus_months_ts": 1791000365},
+    {"id": "demo_2s_eom", "day_secs": 2, "issue_ts": 1791000000, "issue_ymd": 20260831, "ymd": 20260831, "ts": 1791000000, "plus_months": 6, "plus_months_ts": 1791000362}
+  ],
+  "accrued_cases": [
+    {"id": "trade_5_bonds_30_days", "units": 5, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "start": "2026-10-03", "settle": "2026-11-03", "days": 30, "accrued": 4167},
+    {"id": "ex_coupon_negative_1_day", "units": 10, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "start": "2027-01-03", "settle": "2027-01-02", "days": -1, "accrued": -278},
+    {"id": "settle_on_period_start", "units": 65, "face": 100000, "rate_bps": 1000, "day_count": "THIRTY_360", "start": "2027-01-03", "settle": "2027-01-03", "days": 0, "accrued": 0},
+    {"id": "act365_btrk_47_days", "units": 1000, "face": 1000000, "rate_bps": 1595, "day_count": "ACT_365", "start": "2026-08-23", "settle": "2026-10-09", "days": 47, "accrued": 20538356}
+  ],
   "totals_check": {
     "description": "Sum over brief holders must equal supply * per_unit; here supply=100, per_unit_gross=5000",
     "supply": 100,
