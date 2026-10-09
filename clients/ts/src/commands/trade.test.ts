@@ -180,9 +180,9 @@ describe("tradeAccrued (plan 15, task 1515; fixtures accrued_cases)", () => {
 		expect(tradeAccrued(series, null, 5n, at(2026, 11, 3))).toEqual({ amount: 4_167n, days: 30 });
 	});
 	it("ex_coupon_negative_1_day: from the open coupon's period end", () => {
-		const coupon = { kind: 0, status: 2, periodEnd: BigInt(Date.UTC(2027, 0, 2, 19) / 1_000) };
+		const coupon = { kind: 0, recordAt: BigInt(at(2027, 1, 2) - 60), periodEnd: BigInt(Date.UTC(2027, 0, 2, 19) / 1_000) };
 		expect(tradeAccrued(series, coupon, 10n, at(2027, 1, 2))).toEqual({ amount: -278n, days: -1 });
-		// Before the record date (Announced) the bond still trades cum-coupon.
-		expect(tradeAccrued(series, { ...coupon, status: 0 }, 10n, at(2027, 1, 2)).amount > 0n).toBe(true);
+		// Before the record time the bond still trades cum-coupon.
+		expect(tradeAccrued(series, { ...coupon, recordAt: BigInt(at(2027, 1, 2) + 60) }, 10n, at(2027, 1, 2)).amount > 0n).toBe(true);
 	});
 });

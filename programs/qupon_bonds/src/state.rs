@@ -206,7 +206,10 @@ pub struct CorporateAction {
     pub bank_pending: u32,
     /// sha256 of the action's official notification (seev.031 XML), anchored once by the registrar (plan 15 D9).
     pub disclosure_hash: [u8; 32],
-    pub reserved: [u8; 7],
+    /// Seconds from `record_at` to `finalize_snapshot` (saturating): funding opens only then, so the default
+    /// deadline is `max(payment_at, record_at + finalize_delay) + grace` (review of 1519).
+    pub finalize_delay: u32,
+    pub reserved: [u8; 3],
 }
 
 /// Seeds `["entitlement", action, owner]`.

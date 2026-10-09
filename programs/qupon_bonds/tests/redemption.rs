@@ -268,8 +268,10 @@ fn fund_takes_only_the_shortfall_and_sweep_returns_strays() {
     env.send(&[ix], &[&issuer]).expect("over-fund");
     assert_eq!(env.balance(&escrow), required, "only the shortfall moved");
     assert_eq!(env.balance(&issuer_cash), 500);
+    // Already covered: accepted, nothing moves (a pre-funded escrow must still reach Funded — review of 1519).
     let ix = env.fund_ix(&b, &issuer.pubkey(), 0, 1);
-    assert_err(env.send(&[ix], &[&issuer]), QuponError::NothingToDo);
+    env.send(&[ix], &[&issuer]).expect("idempotent");
+    assert_eq!(env.balance(&issuer_cash), 500);
 
     // Not finished yet: nothing can be swept.
     let ix = env.sweep_ix(&b, 0);

@@ -22,8 +22,8 @@ use crate::{
     events::{TradeAccrued, TradeAdmitted, TradeReleased},
     instructions::subscribe::require_active,
     state::{
-        ActionKind, ActionStatus, Checkpoint, CorporateAction, Investor, InvestorStatus, Series,
-        SeriesStatus, TradeAdmission,
+        ActionKind, Checkpoint, CorporateAction, Investor, InvestorStatus, Series, SeriesStatus,
+        TradeAdmission,
     },
     utils::{mint_paused, require_operator},
 };
@@ -239,17 +239,9 @@ pub fn handle_admit_trade(ctx: Context<AdmitTrade>) -> Result<()> {
             s.open_action.is_none() || ctx.accounts.open_action.is_some(),
             QuponError::InvalidParams
         );
+        // Ex from the record time, whatever the status (a hooked series strikes lazily, review of 1519).
         let ex_coupon_end = ctx.accounts.open_action.as_ref().and_then(|a| {
-            let ex = a.kind == ActionKind::Interest as u8
-                && [
-                    ActionStatus::RecordStruck,
-                    ActionStatus::SnapshotComplete,
-                    ActionStatus::Funded,
-                    ActionStatus::Settling,
-                    ActionStatus::Defaulted,
-                ]
-                .iter()
-                .any(|st| a.status == *st as u8);
+            let ex = a.kind == ActionKind::Interest as u8 && clock.unix_timestamp >= a.record_at;
             ex.then_some(a.period_end)
         });
         let clock_s = SeriesClock::of(s)?;

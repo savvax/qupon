@@ -206,3 +206,10 @@ Scheduler (Go) notices `next_coupon_date − 5d` → creates announcement via ex
 - `attach_disclosure(hash)` (registrar, once per action, any status but Cancelled): `CorporateAction.disclosure_hash` = sha256 of the action's seev.031 XML; `AlreadyAttached` on a second call; event `DisclosureAttached`. CLI `disclosure:attach --file`.
 - `admit_trade` takes the series' open action as an optional last account (required when `series.open_action` is set, must match) and emits `TradeAccrued {units, cash_amount, settle_ymd, accrued_days, accrued, clean}`: accrual from `series.period_start`, or from an open INTR action's `period_end` once its record date is struck (RecordStruck … Settling, Defaulted) — negative accrued, the seller keeps the coupon. Event only; `clean = cash_amount − accrued`. `trade:create` prints the same split (`tradeAccrued`).
 - `CorporateAction.reserved` is now 7 bytes (`bank_pending` u32 + `disclosure_hash` 32 taken from it); account size unchanged.
+
+### Security review of the plan-15 wave (task 1519)
+- `fund_action` with the escrow already covered (cash sent to the ATA directly) moves nothing but still advances to `Funded` / cures — a pre-funded escrow can no longer brick an action.
+- `CorporateAction.finalize_delay: u32` (reserved 7 → 3) = seconds from `record_at` to `finalize_snapshot`; `declare_default` is due at `max(payment_at, record_at + finalize_delay) + grace`, so a late snapshot still leaves the issuer a full grace to fund.
+- `pay_batch`: a holder whose destination does not match the route (route flipped after the crank read it, or a substituted account) is skipped — nothing moves, the entitlement stays `Snapshotted` — instead of failing the whole batch.
+- `TradeAccrued` treats a trade as ex-coupon from the open coupon's `record_at` whatever its status (hooked series strike lazily).
+- Trust assumption: bank-routed payouts complete only when the paying agent confirms them (`bank_pending`).

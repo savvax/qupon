@@ -167,14 +167,19 @@ fn a_bank_routed_payout_cannot_go_anywhere_else() {
     let owners: Vec<Pubkey> = h.iter().map(|k| k.pubkey()).collect();
     env.send(&[set_route_ix(&b, &owners[0], BANK, [7; 32])], &[&h[0]])
         .unwrap();
-    // The holder's own wallet account is no longer valid, nor is a stranger's.
-    assert_err(
-        env.send(&[env.pay_ix(&b, 0, &owners)], &[]),
-        QuponError::AccountOwnerMismatch,
-    );
+    // The holder's own wallet account is no longer valid, nor is a stranger's: that holder is skipped (nothing
+    // moves, still Snapshotted) and the rest of the batch is paid — a route flip cannot fail other holders.
     let stranger = Keypair::new().pubkey();
     let ix = pay_with_dest(&env, &b, &owners, 0, ata(&stranger, &b.cash, &b.cash_tp));
-    assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
+    env.send(&[ix], &[]).expect("batch goes through");
+    env.send(&[env.pay_ix(&b, 0, &owners)], &[])
+        .expect("again with the wallet account");
+    let action = action_pda(&b.series, 0);
+    let e: Entitlement = env.account(&entitlement_pda(&action, &owners[0]));
+    assert_eq!(e.status, EntitlementStatus::Snapshotted as u8);
+    assert_eq!(env.balance(&ata(&owners[0], &b.cash, &b.cash_tp)), 0);
+    let e1: Entitlement = env.account(&entitlement_pda(&action, &owners[1]));
+    assert_eq!(e1.status, EntitlementStatus::Paid as u8);
 }
 
 #[test]

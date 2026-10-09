@@ -81,23 +81,25 @@ pub fn handle_fund_action(ctx: Context<FundAction>, amount: u64) -> Result<()> {
     // Never take more than the shortfall: a surplus would sit under the action PDA (sweep_escrow returns strays).
     let shortfall =
         required_funding(&ctx.accounts.action)?.saturating_sub(ctx.accounts.escrow.amount);
+    // Zero when the escrow is already covered (cash sent to the ATA directly): no transfer, but the status still
+    // advances — otherwise a pre-funded escrow could never reach Funded (review of 1519).
     let amount = amount.min(shortfall);
-    require!(amount > 0, QuponError::NothingToDo);
-
-    transfer_checked(
-        CpiContext::new(
-            ctx.accounts.cash_token_program.key(),
-            TransferChecked {
-                from: ctx.accounts.funder_cash.to_account_info(),
-                mint: ctx.accounts.cash_mint.to_account_info(),
-                to: ctx.accounts.escrow.to_account_info(),
-                authority: ctx.accounts.funder.to_account_info(),
-            },
-        ),
-        amount,
-        ctx.accounts.cash_mint.decimals,
-    )?;
-    ctx.accounts.escrow.reload()?;
+    if amount > 0 {
+        transfer_checked(
+            CpiContext::new(
+                ctx.accounts.cash_token_program.key(),
+                TransferChecked {
+                    from: ctx.accounts.funder_cash.to_account_info(),
+                    mint: ctx.accounts.cash_mint.to_account_info(),
+                    to: ctx.accounts.escrow.to_account_info(),
+                    authority: ctx.accounts.funder.to_account_info(),
+                },
+            ),
+            amount,
+            ctx.accounts.cash_mint.decimals,
+        )?;
+        ctx.accounts.escrow.reload()?;
+    }
 
     let action = &mut ctx.accounts.action;
     let required = required_funding(action)?;
@@ -235,7 +237,11 @@ pub fn handle_pay_batch<'info>(ctx: Context<'info, PayBatch<'info>>) -> Result<(
         } else {
             investor.cash_ata
         };
-        require_keys_eq!(t[3].key(), destination, QuponError::AccountOwnerMismatch);
+        // A route flipped after the crank read it (or any other account) skips this holder instead of failing the
+        // batch: nothing moves, the entitlement stays Snapshotted for the next pass (review of 1519).
+        if t[3].key() != destination {
+            continue;
+        }
         require_keys_eq!(
             t[4].key(),
             investor.bond_ata,

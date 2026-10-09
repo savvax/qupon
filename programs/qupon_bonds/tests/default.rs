@@ -186,3 +186,72 @@ fn sizes_unchanged() {
     assert_eq!(8 + Series::INIT_SPACE, 389);
     assert_eq!(8 + CorporateAction::INIT_SPACE, 435);
 }
+
+// ---- Review of 1519 ----
+
+#[test]
+fn a_late_snapshot_still_leaves_the_issuer_a_full_grace() {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let owners: Vec<Pubkey> = env
+        .holders(&b, &[10, 25, 65])
+        .into_iter()
+        .map(|(k, _)| k.pubkey())
+        .collect();
+    let now = env.now();
+    let ix = env.announce_ix(&b, &env.registrar.pubkey(), intr_args(now));
+    env.send(&[ix], &[]).unwrap();
+    let a: CorporateAction = env.account(&action_pda(&b.series, 0));
+    // The crank finishes the snapshot two days after the payment date: funding only opens now.
+    let finalized = a.payment_at + 2 * DAY;
+    env.set_clock(finalized);
+    for ix in [
+        env.strike_ix(&b, &env.registrar.pubkey(), 0),
+        env.snapshot_ix(&b, 0, &owners),
+        env.finalize_snapshot_ix(&b, 0),
+    ] {
+        env.send(&[ix], &[]).unwrap();
+    }
+    let outsider = Keypair::new();
+    env.svm.airdrop(&outsider.pubkey(), 1_000_000_000).unwrap();
+    assert_err(
+        env.send(
+            &[declare_default_ix(&b, 0, &outsider.pubkey())],
+            &[&outsider],
+        ),
+        QuponError::NotOverdue,
+    );
+    env.set_clock(finalized + DAY);
+    env.send(
+        &[declare_default_ix(&b, 0, &outsider.pubkey())],
+        &[&outsider],
+    )
+    .expect("overdue one series day after funding opened");
+}
+
+#[test]
+fn an_escrow_filled_by_a_plain_transfer_still_reaches_funded() {
+    let (mut env, b, _h, a, outsider) = unfunded();
+    let required = a.total_net + a.total_tax + a.total_principal;
+    let ix = anchor_spl::token::spl_token::instruction::mint_to(
+        &anchor_spl::token::spl_token::ID,
+        &b.cash,
+        &a.escrow,
+        &env.issuer.pubkey(),
+        &[],
+        required,
+    )
+    .unwrap();
+    let issuer = env.issuer.insecure_clone();
+    env.send(&[ix], &[&issuer]).unwrap();
+    fund(&mut env, &b, 1); // nothing left to take: no transfer, status advances
+    assert_eq!(status(&env, &b), ActionStatus::Funded as u8);
+    env.set_clock(a.payment_at + DAY);
+    assert_err(
+        env.send(
+            &[declare_default_ix(&b, 0, &outsider.pubkey())],
+            &[&outsider],
+        ),
+        QuponError::WrongStatus,
+    );
+}

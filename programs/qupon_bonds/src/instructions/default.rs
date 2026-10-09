@@ -39,8 +39,14 @@ pub fn handle_declare_default(ctx: Context<DeclareDefault>) -> Result<()> {
         QuponError::WrongStatus
     );
     let grace = SeriesClock::of(&ctx.accounts.series)?.grace();
+    // Funding opens at finalize: a snapshot finished after the payment date still leaves the issuer a full grace.
+    let funding_opened = action
+        .record_at
+        .checked_add(i64::from(action.finalize_delay))
+        .ok_or(QuponError::MathOverflow)?;
     let due = action
         .payment_at
+        .max(funding_opened)
         .checked_add(grace)
         .ok_or(QuponError::MathOverflow)?;
     require!(clock.unix_timestamp >= due, QuponError::NotOverdue);

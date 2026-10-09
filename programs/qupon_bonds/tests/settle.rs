@@ -192,7 +192,15 @@ fn pay_batch_rejects_substituted_accounts() {
     ix.accounts[10].pubkey = investor_pda(&b2.series, &y.pubkey());
     assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
 
-    // Cash ATA of an attacker instead of the holder's registered one.
+    // Nobody was paid while the substitutions were refused.
+    assert_eq!(
+        env.balance(&ata(&action_pda(&b.series, 0), &b.cash, &b.cash_tp)),
+        500_000,
+        "escrow untouched"
+    );
+
+    // Cash ATA of an attacker instead of the holder's registered one: that holder is skipped (still Snapshotted,
+    // attacker gets nothing), the others are paid (review of 1519: a bad destination never fails the batch).
     let attacker = Keypair::new();
     let create = anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent(
         &env.registrar.pubkey(), &attacker.pubkey(), &b.cash, &b.cash_tp,
@@ -200,14 +208,14 @@ fn pay_batch_rejects_substituted_accounts() {
     env.send(&[create], &[]).expect("attacker cash ATA");
     let mut ix = env.pay_ix(&b, 0, &owners);
     ix.accounts[12].pubkey = ata(&attacker.pubkey(), &b.cash, &b.cash_tp);
-    assert_err(env.send(&[ix], &[]), QuponError::AccountOwnerMismatch);
-
-    // Nobody was paid while the substitutions were refused.
+    env.send(&[ix], &[]).expect("batch goes through");
     assert_eq!(
-        env.balance(&ata(&action_pda(&b.series, 0), &b.cash, &b.cash_tp)),
-        500_000,
-        "escrow untouched"
+        env.balance(&ata(&attacker.pubkey(), &b.cash, &b.cash_tp)),
+        0
     );
+    let e: qupon_bonds::Entitlement =
+        env.account(&entitlement_pda(&action_pda(&b.series, 0), &owners[0]));
+    assert_eq!(e.status, qupon_bonds::EntitlementStatus::Snapshotted as u8);
 }
 
 #[test]

@@ -267,22 +267,19 @@ async function runCreate(opts: CreateOpts, cmd: Command): Promise<void> {
 	});
 }
 
-/** ActionStatus codes in which an open coupon makes the bond trade ex-coupon (RecordStruck … Settling, Defaulted). */
-const EX_COUPON_STATUSES = new Set([1, 2, 3, 4, 10]);
-
 /**
  * Accrued interest of a trade settling at `nowSecs` — mirrors `admit_trade`'s `TradeAccrued` (plan 15, task 1515):
- * from the running period start, or, once an open coupon's record date has passed, from that coupon's period end
+ * from the running period start, or, once an open coupon's record time has passed, from that coupon's period end
  * (negative: the seller keeps the coupon).
  */
 export function tradeAccrued(
 	series: Pick<Series, "periodStart" | "dayCount" | "faceValue" | "couponRateBps" | "daySecs" | "issueDate" | "issueYmd">,
-	openAction: Pick<CorporateAction, "kind" | "status" | "periodEnd"> | null,
+	openAction: Pick<CorporateAction, "kind" | "recordAt" | "periodEnd"> | null,
 	units: bigint,
 	nowSecs: number,
 ): Accrued {
 	const clock = seriesClock(series);
-	const ex = openAction !== null && openAction.kind === 0 && EX_COUPON_STATUSES.has(openAction.status);
+	const ex = openAction !== null && openAction.kind === 0 && BigInt(nowSecs) >= openAction.recordAt;
 	const start = clock.civil(Number(ex ? openAction.periodEnd : series.periodStart));
 	return accruedSigned(units, series.faceValue, series.couponRateBps, dayCountFromCode(series.dayCount), start, clock.floorCivil(nowSecs));
 }

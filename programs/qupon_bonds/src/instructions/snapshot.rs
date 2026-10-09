@@ -560,6 +560,9 @@ pub fn handle_finalize_snapshot(ctx: Context<FinalizeSnapshot>) -> Result<()> {
         ActionStatus::SnapshotComplete
     } as u8;
     let clock = Clock::get()?;
+    action.finalize_delay =
+        u32::try_from(clock.unix_timestamp.saturating_sub(action.record_at).max(0))
+            .unwrap_or(u32::MAX);
     emit!(SnapshotFinalized {
         series: action.series,
         action: action.key(),
