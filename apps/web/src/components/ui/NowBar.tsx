@@ -20,7 +20,7 @@ const PILL = {
 /**
  * "Now": the one thing that happens next on this page, who may do it, and one primary button. Inline at the top
  * of the content from 768 px; docked to the bottom of the screen on phones (above the cabinet tab bar with
- * `dock="tabbar"`), with a spacer so it never covers the last row.
+ * `dock="tabbar"`); globals.css pads the page bottom while one is docked, so it never covers the last row.
  */
 export function NowBar({
   title,
@@ -51,6 +51,7 @@ export function NowBar({
     <>
       <section
         aria-label={t("now.label")}
+        data-nowbar={dock}
         className={cx(
           "z-30 flex flex-col gap-3 border p-3 sm:p-4 md:flex-row md:items-center md:gap-5 md:rounded-card",
           // phones: docked bar, full width, raised above the content
@@ -98,8 +99,6 @@ export function NowBar({
           {action && <span className="shrink-0">{action}</span>}
         </div>
       </section>
-      {/* reserves the docked bar's height on phones */}
-      {dock !== "none" && <div aria-hidden className="h-28 md:hidden" />}
     </>
   );
 }

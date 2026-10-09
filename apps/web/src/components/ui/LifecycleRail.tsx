@@ -112,7 +112,7 @@ export function LifecycleRail({
             <>
               <div className="flex items-center gap-2">
                 <Mark status={n.status} />
-                <span className="min-w-0 truncate font-bold text-n900">
+                <span className="min-w-0 font-bold leading-tight text-balance text-n900">
                   {n.title}
                 </span>
                 {i === next && n.status !== "live" && (

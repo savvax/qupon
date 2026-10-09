@@ -457,6 +457,14 @@
   );
 }
 
+/* A docked NowBar (phones) must never cover the end of the page: pad the body while one is present. */
+@media (width < 48rem) {
+  body:has([data-nowbar="page"]),
+  body:has([data-nowbar="tabbar"]) {
+    padding-bottom: 8rem;
+  }
+}
+
 /* Tour target highlight (TourStep): an outline ring that does not shift layout. */
 [data-tour-active="true"] {
   outline: 2px solid var(--color-g400);

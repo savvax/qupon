@@ -465,3 +465,28 @@ function payloadOwner(ev: ActivityLike): string | undefined {
   const owner = p?.owner;
   return typeof owner === "string" ? owner : undefined;
 }
+
+/**
+ * Who may push each step on the deployed program: the crank steps need the registrar or paying agent
+ * (`require_operator`), funding the issuer or paying agent, votes the holders. Task 1510 (trustless servicing, D2)
+ * makes strike/snapshot/finalize/pay/complete/retire/sweep permissionless — flip them to "anyone" with it, and the
+ * console shows the "Anyone can push" badge.
+ */
+export const STEP_ACTOR: Record<
+  StepId,
+  "anyone" | "issuer" | "registrar" | "holder" | "payingAgent"
+> = {
+  announce: "registrar",
+  strike: "registrar",
+  snapshot: "registrar",
+  finalize: "registrar",
+  fund: "issuer",
+  pay: "registrar",
+  complete: "registrar",
+  retire: "registrar",
+  close: "registrar",
+  sweep: "registrar",
+  votes: "holder",
+  meet_finalize: "registrar",
+  apply: "registrar",
+};

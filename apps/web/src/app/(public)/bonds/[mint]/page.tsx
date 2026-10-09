@@ -8,19 +8,35 @@ import { Badge } from "@/components/ui/Badge";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Kpi } from "@/components/ui/Kpi";
 import { Stagger, StaggerItem } from "@/components/motion/Stagger";
+import { DemoAsButton } from "@/components/shell/DemoAsButton";
+import { CountdownClock } from "@/components/ui/CountdownClock";
+import { LifecycleRail, type RailNode } from "@/components/ui/LifecycleRail";
+import { MoneyFlow } from "@/components/ui/MoneyFlow";
+import { NowBar } from "@/components/ui/NowBar";
+import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import { Tabs } from "@/components/ui/Tabs";
+import { almatyToday, couponGross, days30E360 } from "@/lib/accrual";
+import { nextStep, paidTxByOwner, STEP_ACTOR } from "@/lib/actionFlow";
 import {
   getSchedule,
   getSeries,
   listActions,
+  listActivity,
+  listEntitlements,
   listSeriesDocuments,
   seriesDocumentUrl,
   type ActionDTO,
+  type EntitlementDTO,
   type ScheduleItem,
 } from "@/lib/api";
-import { bpsToPercent, formatDate } from "@/lib/format";
+import { bpsToPercent, formatDate, formatDateTime, shortKey } from "@/lib/format";
 import { getKaseSeriesTicker } from "@/lib/kase";
+import { moneyFlowOf } from "@/lib/moneyFlow";
+import { getNetwork } from "@/lib/network";
+import { type AuditRow, ExportAuditButton } from "./ExportAuditButton";
 import { KasePanel } from "./KasePanel";
+import { type RegisterSet, RegisterPanel } from "./RegisterPanel";
+import { YieldBlock } from "./YieldBlock";
 
 export const dynamic = "force-dynamic";
 
@@ -54,30 +70,42 @@ export default async function BondPage({
   searchParams,
 }: {
   params: Promise<{ mint: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; rec?: string }>;
 }) {
   const { mint } = await params;
-  // ?tab=actions|terms opens that tab (links from the issuer cabinet)
-  const { tab } = await searchParams;
+  // ?tab=actions|terms opens that tab (links from the issuer cabinet); ?rec=<action> picks the register date
+  const { tab, rec } = await searchParams;
   const series = await getSeries(mint).catch((e: unknown) => {
     // Unknown or malformed mint → 404 (ApiError in production, Api404 in mock mode: both carry .status).
     const status = (e as { status?: number } | null)?.status;
     if (status === 404 || status === 400) notFound();
     throw e;
   });
-  const [schedule, actions, documents] = await Promise.all([
+  const [schedule, actions, documents, allActivity, network] = await Promise.all([
     getSchedule(mint).catch(() => [] as ScheduleItem[]),
     listActions(mint).catch(() => [] as ActionDTO[]),
     listSeriesDocuments(mint),
+    listActivity(200),
+    getNetwork(),
   ]);
+  // entitlements of every action that has a snapshot: the register per record date and the money flow
+  const snapped = actions.filter((a) => (a.holdersSnapshotted ?? 0) > 0);
+  const ents = new Map<string, EntitlementDTO[]>(
+    await Promise.all(
+      snapped.map(
+        async (a) => [a.pda, await listEntitlements(a.pda).catch(() => [])] as const,
+      ),
+    ),
+  );
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
   // Series linked in series_settings to a KASE ticker get the market panel; failures never block the page.
   const kaseTicker = await getKaseSeriesTicker(mint);
-  const [t, ts, tk, tDoc] = await Promise.all([
+  const [t, ts, tk, tDoc, tm] = await Promise.all([
     getTranslations("bond"),
     getTranslations("status"),
     getTranslations("landing.kinds"),
     getTranslations("org.publicDocs"),
+    getTranslations("kit.money"),
   ]);
   const freq = FREQ_KEY[series.frequency]
     ? t(FREQ_KEY[series.frequency]!)
@@ -249,8 +277,235 @@ export default async function BondPage({
       : []),
   ];
 
+  // ── the bond's life story ──
+  const CASH = ["INTR", "REDM", "MCAL", "PCAL"];
+  const pdas = new Set(actions.map((a) => a.pda));
+  const activity = allActivity
+    .filter((ev) => pdas.has(ev.actionPda ?? ev.action_pda ?? ""))
+    .sort((a, b) => b.ts - a.ts);
+  const txCount = (pda: string) =>
+    new Set(
+      activity
+        .filter((ev) => (ev.actionPda ?? ev.action_pda) === pda)
+        .map((ev) => ev.sig),
+    ).size;
+  const day = (ymd: string) => (ymd.length > 10 ? ymd : `${ymd}T00:00:00+05:00`);
+  const railStatus = (a?: ActionDTO): RailNode["status"] | undefined =>
+    !a
+      ? undefined
+      : a.status === "Completed" || a.status === "Finalized"
+        ? "done"
+        : a.status === "Cancelled"
+          ? "cancelled"
+          : "live";
+  const matured = series.maturityDate.slice(0, 10);
+  const rail: RailNode[] = [
+    {
+      id: "issue",
+      kind: "issue" as const,
+      title: t("rail.issue"),
+      date: day(series.issueDate),
+      status: "done" as const,
+      statusLabel: t("rail.placed"),
+    },
+    ...schedule.map((item, i): RailNode => {
+      const a =
+        actions.find((x) => x.pda === item.actionPda) ??
+        actions.find(
+          (x) => CASH.includes(x.kind) && x.periodEnd && x.periodEnd === item.periodEnd,
+        );
+      const last = i === schedule.length - 1 && item.paymentDate.slice(0, 10) === matured;
+      return {
+        id: `c${item.couponNumber}`,
+        kind: last ? "maturity" : "coupon",
+        title: t(last ? "rail.couponMaturity" : "rail.coupon", { n: item.couponNumber }),
+        date: item.paymentDate,
+        status: railStatus(a) ?? (item.status === "Completed" ? "done" : "upcoming"),
+        amount: item.amountPerUnit,
+        txCount: a ? txCount(a.pda) : undefined,
+        href: a && (a.holdersSnapshotted ?? 0) > 0 ? `?rec=${a.pda}#register` : undefined,
+      };
+    }),
+    ...actions
+      .filter((a) => a.kind === "BMET" || a.kind === "CHAN")
+      .map((a): RailNode => ({
+        id: a.pda,
+        kind: "meeting",
+        title: t("rail.meeting"),
+        date: a.recordAt,
+        status: railStatus(a)!,
+        statusLabel: ts.has(a.status) ? ts(a.status) : a.status,
+        note:
+          a.proposalNewRateBps != null
+            ? `${bpsToPercent(series.couponRateBps, locale)} → ${bpsToPercent(a.proposalNewRateBps, locale)}`
+            : undefined,
+        txCount: txCount(a.pda),
+        href: `?rec=${a.pda}#register`,
+      })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
+
+  // ── Now: the one thing that happens next ──
+  const live = actions.find(
+    (a) => !["Completed", "Cancelled", "Finalized"].includes(a.status),
+  );
+  const upcoming = schedule.find(
+    (s) => s.status === "Projected" && new Date(s.recordDate).getTime() > Date.now(),
+  );
+  const kindName = (k: string) => (tk.has(k) ? tk(k) : k);
+  const demo = network.demoLogin;
+  let now: React.ReactNode;
+  if (live?.kind === "BMET" && live.status === "VotingOpen") {
+    now = (
+      <NowBar
+        title={t("now.voting", {
+          proposal:
+            live.proposalNewRateBps != null
+              ? `${bpsToPercent(series.couponRateBps, locale)} → ${bpsToPercent(live.proposalNewRateBps, locale)}`
+              : live.corpId,
+        })}
+        detail={t("now.who")}
+        clock={
+          live.votingEndsAt ? (
+            <CountdownClock to={live.votingEndsAt} label={t("now.clockVote")} />
+          ) : undefined
+        }
+        actors={["holder"]}
+        action={
+          demo ? (
+            <DemoAsButton role="investor" next="/investor/meetings">
+              {t("now.voteAs")}
+            </DemoAsButton>
+          ) : undefined
+        }
+      />
+    );
+  } else if (live) {
+    const step = nextStep(live, Date.now(), BigInt(series.totalIssued)).step;
+    now = (
+      <NowBar
+        title={t("now.inProgress", {
+          title: `${kindName(live.kind)} ${live.corpId}`,
+          status: ts.has(live.status) ? ts(live.status) : live.status,
+        })}
+        detail={t("now.who")}
+        actors={step ? [STEP_ACTOR[step]] : []}
+        action={
+          demo ? (
+            <DemoAsButton role="registrar" next={`/registrar/actions/${live.pda}`}>
+              {t("now.runAs")}
+            </DemoAsButton>
+          ) : undefined
+        }
+      />
+    );
+  } else if (upcoming) {
+    now = (
+      <NowBar
+        title={t("now.next", {
+          title: t("rail.coupon", { n: upcoming.couponNumber }),
+          record: formatDate(upcoming.recordDate, locale),
+          payment: formatDate(upcoming.paymentDate, locale),
+        })}
+        clock={<CountdownClock to={upcoming.recordDate} label={t("now.clockRecord")} />}
+        actors={["registrar"]}
+        action={
+          demo ? (
+            <DemoAsButton role="registrar" next="/registrar/actions">
+              {t("now.runAs")}
+            </DemoAsButton>
+          ) : undefined
+        }
+      />
+    );
+  } else {
+    now = (
+      <NowBar
+        tone="done"
+        title={series.status === "Closed" ? t("now.matured") : t("now.none")}
+      />
+    );
+  }
+
+  // ── money, register, journal, yield ──
+  const lastPaid = actions
+    .filter((a) => CASH.includes(a.kind) && a.status === "Completed" && ents.get(a.pda)?.length)
+    .sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""))[0];
+  const flow = lastPaid
+    ? moneyFlowOf(lastPaid, ents.get(lastPaid.pda) ?? [], activity, (u) => tm("holderSub", { units: u }))
+    : null;
+  const paidToHolders = actions
+    .filter((a) => CASH.includes(a.kind))
+    .reduce((acc, a) => acc + BigInt(a.totalPaid?.minor ?? "0"), 0n);
+  const registerSets: RegisterSet[] = snapped
+    .filter((a) => ents.get(a.pda)?.length)
+    .sort((a, b) => b.recordAt.localeCompare(a.recordAt))
+    .map((a) => {
+      const paidTx = paidTxByOwner(activity, a.pda);
+      return {
+        pda: a.pda,
+        label: kindName(a.kind),
+        recordAt: a.recordAt,
+        cash: CASH.includes(a.kind),
+        faceMinor: series.faceValue.minor,
+        rateBps: a.kind === "INTR" ? (a.rateBps ?? null) : null,
+        days: a.kind === "INTR" ? (a.accrualDays ?? null) : null,
+        rows: (ents.get(a.pda) ?? []).map((e) => {
+          const zero = { minor: "0", currency: series.faceValue.currency };
+          return {
+            owner: e.owner,
+            units: e.units,
+            gross: e.gross ?? zero,
+            tax: e.tax ?? zero,
+            net: e.net ?? zero,
+            principal: e.principal ?? zero,
+            status: e.status,
+            tx: paidTx.get(e.owner) ?? null,
+          };
+        }),
+      };
+    });
+  const audit: AuditRow[] = activity.map((ev) => {
+    const a = actions.find((x) => x.pda === (ev.actionPda ?? ev.action_pda));
+    return {
+      at: formatDateTime(new Date(ev.ts * 1000).toISOString()),
+      shown: formatDateTime(new Date(ev.ts * 1000).toISOString(), locale),
+      event: ts.has(ev.kind) ? ts(ev.kind) : ev.kind,
+      action: a?.corpId ?? "",
+      slot: ev.slot,
+      sig: ev.sig,
+      url: `https://explorer.solana.com/tx/${ev.sig}${network.explorerCluster ? `?cluster=${network.explorerCluster}` : ""}`,
+    };
+  });
+  const SHOWN = 8;
+  // accrued interest today: face × rate × 30E/360 days since the current period started
+  const today = almatyToday();
+  const period = schedule.find(
+    (s) => s.periodStart && s.periodEnd && s.periodStart <= today && today < s.periodEnd,
+  );
+  const accrued = period?.periodStart
+    ? {
+        minor: couponGross(
+          1n,
+          BigInt(series.faceValue.minor),
+          series.couponRateBps,
+          days30E360(period.periodStart, today),
+        ).toString(),
+        currency: series.faceValue.currency,
+      }
+    : null;
+  const journalRow = (r: AuditRow, i: number) => (
+    <li key={`${r.sig}-${i}`} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-0.5 py-2.5 text-dense sm:grid-cols-[11rem_minmax(0,1fr)_auto]">
+      <span className="num text-n500 max-sm:col-span-2 max-sm:text-xs">{r.shown}</span>
+      <span className="min-w-0">
+        <span className="font-semibold text-n900">{r.event}</span>
+        {r.action && <span className="num ml-2 text-n500">{r.action}</span>}
+      </span>
+      <Address value={r.sig} kind="tx" />
+    </li>
+  );
+
   return (
-    <div className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6 sm:py-12">
+    <div className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6 sm:py-10">
       <Link
         href="/bonds"
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-g700 hover:underline"
@@ -258,32 +513,39 @@ export default async function BondPage({
         <Icon name="arrowLeft" className="size-4" />
         {t("back")}
       </Link>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <h1 className="text-[28px] leading-tight font-extrabold tracking-tight">
-          {series.ticker}
-        </h1>
-        {status(series.status)}
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-title font-extrabold tracking-tight">{series.ticker}</h1>
+            {status(series.status)}
+            <ProvenanceChip
+              kind="onchain"
+              href={`https://explorer.solana.com/address/${series.mint}${network.explorerCluster ? `?cluster=${network.explorerCluster}` : ""}`}
+            />
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-n600">
+            <span className="num">{series.isin}</span>
+            <Address value={series.mint} />
+            <span className="num">
+              {bpsToPercent(series.couponRateBps, locale)} · {freq} ·{" "}
+              {DAY_COUNT[series.dayCount] ?? series.dayCount}
+            </span>
+          </div>
+        </div>
+        <ExportAuditButton
+          rows={audit}
+          filename={`${series.ticker}-audit.csv`}
+          label={t("journal.export")}
+        />
       </div>
-      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-n600">
-        <span className="num">{series.isin}</span>
-        <Address value={series.mint} />
-      </div>
+
+      <div className="mt-6">{now}</div>
+
+      <LifecycleRail className="mt-6" nodes={rail} locale={locale} />
 
       <Stagger className="mt-6 grid grid-cols-2 overflow-hidden rounded-card border border-n200 bg-n0 [&>*]:border-n100 max-lg:[&>*:nth-child(-n+2)]:border-b [&>*:nth-child(odd)]:border-r lg:grid-cols-4 lg:[&>*:not(:last-child)]:border-r">
         <StaggerItem className="min-w-0">
           <Kpi plain label={t("kpi.face")} value={money(series.faceValue)} />
-        </StaggerItem>
-        <StaggerItem className="min-w-0">
-          <Kpi
-            plain
-            label={t("kpi.coupon")}
-            value={
-              <span className="num">
-                {bpsToPercent(series.couponRateBps, locale)}
-              </span>
-            }
-            hint={freq}
-          />
         </StaggerItem>
         <StaggerItem className="min-w-0">
           <Kpi
@@ -299,7 +561,7 @@ export default async function BondPage({
         <StaggerItem className="min-w-0">
           <Kpi
             plain
-            label={t("kpi.issued")}
+            label={t("kpi.outstanding")}
             value={
               <span className="num">
                 {Number(series.totalIssued).toLocaleString(
@@ -309,7 +571,63 @@ export default async function BondPage({
             }
           />
         </StaggerItem>
+        <StaggerItem className="min-w-0">
+          <Kpi
+            plain
+            label={t("kpi.paid")}
+            value={money({ minor: paidToHolders.toString(), currency: series.faceValue.currency })}
+          />
+        </StaggerItem>
       </Stagger>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        {flow && lastPaid ? (
+          <MoneyFlow
+            currency={flow.currency}
+            locale={locale}
+            issuer={{ label: series.ticker, address: series.issuer ?? undefined }}
+            escrow={flow.escrow}
+            recipients={flow.recipients}
+            title={t("money.title", { id: lastPaid.corpId })}
+          />
+        ) : (
+          <div className="rounded-card border border-dashed border-n300 bg-n0 p-6 text-sm text-n600">
+            {t("register.empty")}
+          </div>
+        )}
+        <YieldBlock accrued={accrued} asOf={`${today}T12:00:00+05:00`} locale={locale} />
+      </div>
+
+      <section id="register" className="mt-10 scroll-mt-32">
+        <h2 className="text-lg font-bold">{t("register.title")}</h2>
+        <p className="mt-0.5 mb-3 max-w-2xl text-sm text-n600">{t("register.lead")}</p>
+        <RegisterPanel sets={registerSets} initial={rec} locale={locale} />
+      </section>
+
+      <section id="journal" className="mt-10">
+        <h2 className="text-lg font-bold">{t("journal.title")}</h2>
+        <p className="mt-0.5 mb-3 text-sm text-n600">{t("journal.lead")}</p>
+        <div className="rounded-card border border-n200 bg-n0 px-4">
+          {audit.length === 0 ? (
+            <p className="py-6 text-center text-sm text-n600">{t("journal.empty")}</p>
+          ) : (
+            <>
+              <ol className="divide-y divide-n100">{audit.slice(0, SHOWN).map(journalRow)}</ol>
+              {audit.length > SHOWN && (
+                <details className="border-t border-n100">
+                  <summary className="cursor-pointer py-2.5 text-sm font-semibold text-g700">
+                    {t("journal.more", { count: audit.length - SHOWN })}
+                  </summary>
+                  <ol className="divide-y divide-n100">
+                    {audit.slice(SHOWN).map((r, i) => journalRow(r, i + SHOWN))}
+                  </ol>
+                </details>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
       <div className="mt-10">
         <Tabs
           defaultValue={tab === "actions" || tab === "terms" ? tab : "schedule"}

@@ -287,7 +287,9 @@
       "face": "Face value",
       "coupon": "Coupon",
       "next": "Next coupon",
-      "issued": "Bonds issued"
+      "issued": "Bonds issued",
+      "outstanding": "Outstanding",
+      "paid": "Paid to holders"
     },
     "tabs": {
       "schedule": "Schedule",
@@ -319,6 +321,69 @@
       "approval": "Meeting approval",
       "issuer": "Issuer",
       "registrar": "Registrar"
+    },
+    "now": {
+      "next": "Next: {title} — record date {record}, payment {payment}.",
+      "inProgress": "{title} is in progress: {status}.",
+      "voting": "Bondholder meeting: holders are voting on {proposal}.",
+      "matured": "This bond has matured and is closed.",
+      "none": "No upcoming events on the schedule.",
+      "who": "Every step is a transaction you can open below.",
+      "runAs": "Run it as registrar",
+      "voteAs": "Vote as investor",
+      "clockRecord": "Record date",
+      "clockVote": "Voting ends"
+    },
+    "rail": {
+      "issue": "Issue",
+      "placed": "Placed",
+      "coupon": "Coupon {n}",
+      "couponMaturity": "Coupon {n} + maturity",
+      "meeting": "Bondholder meeting"
+    },
+    "money": {
+      "title": "Last payout: {id}"
+    },
+    "register": {
+      "title": "Register on the record date",
+      "lead": "Who held the bond when it counted and what each holder got. Open a holder for the calculation.",
+      "holder": "Holder",
+      "units": "Bonds",
+      "share": "Share",
+      "gross": "Gross",
+      "tax": "Tax",
+      "net": "Net",
+      "status": "Status",
+      "unitsShare": "{units} bonds · {share}%",
+      "total": "{units} bonds across {holders} holders, equal to the supply in the",
+      "snapshotLink": "snapshot",
+      "empty": "No snapshot yet: the register appears here once a record date passes.",
+      "calc": {
+        "title": "Calculation for {who}",
+        "formula": "{units} bonds × {face} × {rate} × {days}/360",
+        "tax": "Tax withheld ({rate})",
+        "principal": "Principal",
+        "matches": "Matches the amount on-chain",
+        "differs": "Differs from the on-chain amount",
+        "rounding": "Rounded half-up once per holder.",
+        "tx": "Payment transaction"
+      }
+    },
+    "journal": {
+      "title": "Journal",
+      "lead": "Every row is a Solana transaction.",
+      "more": "Show {count} older",
+      "export": "Export issue audit (CSV)",
+      "empty": "No transactions yet."
+    },
+    "yield": {
+      "title": "Price and yield",
+      "asOf": "as of {date}",
+      "accrued": "Accrued interest per bond",
+      "clean": "Clean price",
+      "dirty": "Dirty price per bond",
+      "ytm": "Yield to maturity",
+      "noTrades": "Prices and yield appear after the first secondary trade."
     }
   },
   "login": {
