@@ -26,3 +26,9 @@ export function isAllowedUpload(path: string): boolean {
     ) && SAFE(path)
   );
 }
+
+/** The judge sandbox (task 1532): the one write and read a visitor may make without signing in. */
+export const isPublicWrite = (path: string) =>
+  /^demo\/sandbox(\/[\w-]{1,40}\/scenario)?$/.test(path);
+export const isPublicRead = (path: string) =>
+  /^demo\/sandbox\/[\w-]{1,40}$/.test(path);

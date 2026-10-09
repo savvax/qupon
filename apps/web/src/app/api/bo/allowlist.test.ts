@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isAllowedRead, isAllowedUpload, isAllowedWrite } from "./allowlist";
+import {
+  isAllowedRead,
+  isAllowedUpload,
+  isAllowedWrite,
+  isPublicRead,
+  isPublicWrite,
+} from "./allowlist";
 
 describe("isAllowedWrite", () => {
   it.each([
@@ -59,5 +65,22 @@ describe("isAllowedUpload", () => {
     "admin/documents",
   ])("rejects %s", (p) => {
     expect(isAllowedUpload(p)).toBe(false);
+  });
+});
+
+describe("isPublicWrite / isPublicRead (sandbox, no session)", () => {
+  it("allows only the sandbox create, its scenarios and its read", () => {
+    expect(isPublicWrite("demo/sandbox")).toBe(true);
+    expect(isPublicWrite("demo/sandbox/ab12-x/scenario")).toBe(true);
+    expect(isPublicRead("demo/sandbox/ab12-x")).toBe(true);
+    for (const p of [
+      "demo/investor/vote",
+      "demo/sandbox/a/../../admin",
+      "demo/sandbox/a/scenario/x",
+      "demo/sandboxes",
+    ])
+      expect(isPublicWrite(p), p).toBe(false);
+    for (const p of ["demo/sandbox", "demo/sandbox/a/scenario", "demo/sandbox/../x"])
+      expect(isPublicRead(p), p).toBe(false);
   });
 });

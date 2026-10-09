@@ -110,6 +110,7 @@ const EVENT_TO_STEP: Record<string, StepId> = {
   SnapshotFinalized: "finalize",
   ActionFunded: "fund",
   EntitlementPaid: "pay",
+  PaidToAgent: "pay", // plan 15 D6: a bank-routed holder is paid to the paying agent
   ActionCompleted: "complete",
   EscrowSwept: "sweep",
   UnitsRetired: "retire",
@@ -487,7 +488,7 @@ export function paidTxByOwner(
 ): Map<string, string> {
   const out = new Map<string, string>();
   for (const ev of activity) {
-    if (ev.kind !== "EntitlementPaid") continue;
+    if (ev.kind !== "EntitlementPaid" && ev.kind !== "PaidToAgent") continue;
     const pda = ev.actionPda ?? ev.action_pda;
     if (pda !== actionPda) continue;
     const owner = payloadOwner(ev);
