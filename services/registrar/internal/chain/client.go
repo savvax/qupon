@@ -436,3 +436,80 @@ func (c *Client) FetchPayoutRoutesBySeries(ctx context.Context, series solana.Pu
 	}
 	return out, nil
 }
+
+// PayoutRoutePDA derives ["route", investor] under the program (plan 15 D6).
+func (c *Client) PayoutRoutePDA(investor solana.PublicKey) (solana.PublicKey, error) {
+	pda, _, err := solana.FindProgramAddress([][]byte{[]byte("route"), investor[:]}, c.program)
+	return pda, err
+}
+
+// FetchPayoutRoute decodes the investor's PayoutRoute account; nil when the holder never set one
+// (payouts then go to the registered wallet cash account).
+func (c *Client) FetchPayoutRoute(ctx context.Context, investor solana.PublicKey) (*PayoutRoute, error) {
+	pda, err := c.PayoutRoutePDA(investor)
+	if err != nil {
+		return nil, err
+	}
+	data, err := c.GetAccount(ctx, pda)
+	if err != nil {
+		return nil, fmt.Errorf("fetch payout route %s: %w", pda, err)
+	}
+	if data == nil {
+		return nil, nil
+	}
+	body, err := stripDiscriminator(data, "PayoutRoute")
+	if err != nil {
+		return nil, fmt.Errorf("fetch payout route %s: %w", pda, err)
+	}
+	return DecodePayoutRoute(body)
+}
+
+// FetchInvestorsByOwner lists an owner's Investor accounts across every series (public holder lookup,
+// task 1525), sorted by series pubkey ascending. memcmp offset 41 = discriminator + bump + series.
+func (c *Client) FetchInvestorsByOwner(ctx context.Context, owner solana.PublicKey) ([]InvestorRecord, error) {
+	recs, err := c.GetProgramAccounts(ctx, mustDiscriminator("Investor"),
+		[]rpc.RPCFilterMemcmp{{Offset: 41, Bytes: solana.Base58(owner[:])}})
+	if err != nil {
+		return nil, fmt.Errorf("scan investors of %s: %w", owner, err)
+	}
+	out := make([]InvestorRecord, 0, len(recs))
+	for _, rec := range recs {
+		body, err := stripDiscriminator(rec.Data, "Investor")
+		if err != nil {
+			return nil, fmt.Errorf("scan investors %s: %w", rec.Pubkey, err)
+		}
+		inv, err := DecodeInvestor(body)
+		if err != nil {
+			return nil, fmt.Errorf("scan investors %s: %w", rec.Pubkey, err)
+		}
+		out = append(out, InvestorRecord{PDA: rec.Pubkey, Investor: inv})
+	}
+	slices.SortFunc(out, func(a, b InvestorRecord) int { return bytes.Compare(a.Investor.Series[:], b.Investor.Series[:]) })
+	return out, nil
+}
+
+// FetchEntitlementsByOwner lists an owner's Entitlement accounts across every action (public holder
+// lookup, task 1525), sorted by action pubkey ascending. memcmp offset 41 = discriminator + bump + action.
+func (c *Client) FetchEntitlementsByOwner(ctx context.Context, owner solana.PublicKey) ([]EntitlementRecord, error) {
+	recs, err := c.GetProgramAccounts(ctx, mustDiscriminator("Entitlement"),
+		[]rpc.RPCFilterMemcmp{{Offset: 41, Bytes: solana.Base58(owner[:])}})
+	if err != nil {
+		return nil, fmt.Errorf("scan entitlements of %s: %w", owner, err)
+	}
+	out := make([]EntitlementRecord, 0, len(recs))
+	for _, rec := range recs {
+		body, err := stripDiscriminator(rec.Data, "Entitlement")
+		if err != nil {
+			return nil, fmt.Errorf("scan entitlements %s: %w", rec.Pubkey, err)
+		}
+		e, err := DecodeEntitlement(body)
+		if err != nil {
+			return nil, fmt.Errorf("scan entitlements %s: %w", rec.Pubkey, err)
+		}
+		out = append(out, EntitlementRecord{PDA: rec.Pubkey, Entitlement: e})
+	}
+	slices.SortFunc(out, func(a, b EntitlementRecord) int {
+		return bytes.Compare(a.Entitlement.Action[:], b.Entitlement.Action[:])
+	})
+	return out, nil
+}

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -39,6 +40,10 @@ type ReadModel interface {
 	// Holder-chosen payout routes (plan 15 D6, payout.go): bank-routed payouts awaiting the paying agent.
 	FetchPayoutRoutesBySeries(ctx context.Context, series solana.PublicKey) ([]chain.PayoutRouteRecord, error)
 	GetAccountWithOwner(ctx context.Context, key solana.PublicKey) (*chain.AccountData, error)
+	// Public holder lookup (holders.go, task 1525): an owner's registrations, entitlements and payout routes.
+	FetchInvestorsByOwner(ctx context.Context, owner solana.PublicKey) ([]chain.InvestorRecord, error)
+	FetchEntitlementsByOwner(ctx context.Context, owner solana.PublicKey) ([]chain.EntitlementRecord, error)
+	FetchPayoutRoute(ctx context.Context, investor solana.PublicKey) (*chain.PayoutRoute, error)
 }
 
 var almaty = time.FixedZone("Asia/Almaty", 5*3600)
@@ -162,6 +167,7 @@ type SeriesDTO struct {
 	InDefault     bool          `json:"inDefault"`
 	DefaultsCount uint16        `json:"defaultsCount"`
 	DemoClock     *DemoClockDTO `json:"demoClock"`
+	Featured      bool          `json:"featured"` // admin-curated (platform v2 §5.2); featured series list first
 	ExplorerURL   string        `json:"explorerUrl"`
 }
 
@@ -173,7 +179,7 @@ type DemoClockDTO struct {
 	IssueDate string `json:"issueDate"`
 }
 
-func seriesDTO(pda solana.PublicKey, s *chain.Series, m money) SeriesDTO {
+func seriesDTO(pda solana.PublicKey, s *chain.Series, m money, featured bool) SeriesDTO {
 	var open *string
 	if s.OpenAction != nil {
 		v := s.OpenAction.String()
@@ -185,7 +191,7 @@ func seriesDTO(pda solana.PublicKey, s *chain.Series, m money) SeriesDTO {
 		demo = &DemoClockDTO{DaySecs: s.DaySecs, IssueTs: s.IssueDate, IssueDate: fmt.Sprintf("%04d-%02d-%02d", y, mo, d)}
 	}
 	return SeriesDTO{
-		HookGate: s.Hook == 1, InDefault: s.InDefault == 1, DefaultsCount: s.DefaultsCount, DemoClock: demo,
+		HookGate: s.Hook == 1, InDefault: s.InDefault == 1, DefaultsCount: s.DefaultsCount, DemoClock: demo, Featured: featured,
 		PDA:  pda.String(),
 		Mint: s.Mint.String(), CashMint: s.CashMint.String(), Registrar: s.Registrar.String(),
 		Issuer: s.Issuer.String(), PayingAgent: s.PayingAgent.String(),
@@ -462,12 +468,14 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 	}
 
 	r.Get("/series", func(w http.ResponseWriter, r *http.Request) {
-		// Series an admin hid (platform v2 §5.2) stay on-chain but leave every public list.
+		// Series an admin hid (platform v2 §5.2) stay on-chain but leave every public list; ?featured=1 keeps
+		// only admin-curated series, and featured ones always list first (task 1525).
 		settings, err := st.ListSeriesSettings(r.Context())
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
+		featuredOnly := r.URL.Query().Get("featured") == "1"
 		if rm == nil { // no chain reader: serve the mirror indexed at startup
 			rows, err := st.ListSeries(r.Context())
 			if err != nil {
@@ -476,7 +484,7 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			}
 			out := make([]json.RawMessage, 0, len(rows))
 			for _, row := range rows {
-				if settings[row.Mint].Hidden {
+				if settings[row.Mint].Hidden || (featuredOnly && !settings[row.Mint].Featured) {
 					continue
 				}
 				out = append(out, row.Data)
@@ -489,9 +497,10 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			fail(w, err)
 			return
 		}
-		out := make([]SeriesDTO, 0, len(recs))
+		kept := make([]SeriesDTO, 0, len(recs))
 		for _, rec := range recs {
-			if settings[rec.Series.Mint.String()].Hidden {
+			set := settings[rec.Series.Mint.String()]
+			if set.Hidden || (featuredOnly && !set.Featured) {
 				continue
 			}
 			m, err := cashMoney(r.Context(), rm, st, rec.Series.CashMint)
@@ -499,14 +508,29 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 				fail(w, err)
 				return
 			}
-			out = append(out, seriesDTO(rec.PDA, rec.Series, m))
+			kept = append(kept, seriesDTO(rec.PDA, rec.Series, m, set.Featured))
 		}
-		writeJSON(w, http.StatusOK, out)
+		slices.SortStableFunc(kept, func(a, b SeriesDTO) int {
+			switch { // featured first; scan order stays stable within each group
+			case a.Featured == b.Featured:
+				return 0
+			case b.Featured:
+				return 1
+			default:
+				return -1
+			}
+		})
+		writeJSON(w, http.StatusOK, kept)
 	})
 
 	r.Get("/series/{mint}", need(func(w http.ResponseWriter, r *http.Request) {
 		if pda, s, m, ok := loadSeries(w, r); ok {
-			writeJSON(w, http.StatusOK, seriesDTO(pda, s, m))
+			set, err := st.GetSeriesSettings(r.Context(), s.Mint.String())
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			writeJSON(w, http.StatusOK, seriesDTO(pda, s, m, set.Featured))
 		}
 	}))
 

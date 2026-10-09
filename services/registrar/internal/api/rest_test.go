@@ -101,6 +101,36 @@ func (fakeRead) FetchMint(context.Context, solana.PublicKey) (*chain.Mint, error
 	return &chain.Mint{Decimals: 2}, nil
 }
 
+// fInvestorA is ownerA's registration in the brief series (holders.go tests key off its PDA).
+var fInvestorA = solana.PublicKey{8: 8}
+
+func (fakeRead) FetchInvestorsByOwner(_ context.Context, owner solana.PublicKey) ([]chain.InvestorRecord, error) {
+	if owner != fOwnerA {
+		return nil, nil
+	}
+	inv := &chain.Investor{Series: fSeries, Owner: fOwnerA, BondATA: fBondATAA, InvestorType: 1, Residency: 1, TaxRateBps: 1200}
+	copy(inv.KYCRef[:], fAction[:])
+	return []chain.InvestorRecord{{PDA: fInvestorA, Investor: inv}}, nil
+}
+
+func (fakeRead) FetchEntitlementsByOwner(_ context.Context, owner solana.PublicKey) ([]chain.EntitlementRecord, error) {
+	if owner != fOwnerA {
+		return nil, nil
+	}
+	return []chain.EntitlementRecord{
+		{PDA: solana.PublicKey{10: 1}, Entitlement: &chain.Entitlement{Action: fAction, Owner: fOwnerA, Units: 10, Gross: 50_000, Net: 50_000}},
+	}, nil
+}
+
+func (fakeRead) FetchPayoutRoute(_ context.Context, investor solana.PublicKey) (*chain.PayoutRoute, error) {
+	if investor != fInvestorA {
+		return nil, nil
+	}
+	r := &chain.PayoutRoute{Investor: investor, Route: 1, UpdatedAt: tsCoupon}
+	copy(r.BankRefHash[:], []byte("bank-ref"))
+	return r, nil
+}
+
 func restServer(t *testing.T, rm ReadModel) *httptest.Server {
 	t.Helper()
 	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "rest.db"))
@@ -261,12 +291,12 @@ func TestServedOpenAPIIsTheSpec(t *testing.T) {
 func TestDTOsExposePlan15Fields(t *testing.T) {
 	m := money{decimals: 2, currency: "tKZT"}
 	s := &chain.Series{Hook: 1, InDefault: 1, DefaultsCount: 2, DaySecs: 2, IssueYmd: 20_261_009, IssueDate: 1_791_000_000}
-	sd := seriesDTO(solana.PublicKey{1: 1}, s, m)
+	sd := seriesDTO(solana.PublicKey{1: 1}, s, m, false)
 	if !sd.HookGate || !sd.InDefault || sd.DefaultsCount != 2 || sd.DemoClock == nil ||
 		*sd.DemoClock != (DemoClockDTO{DaySecs: 2, IssueTs: 1_791_000_000, IssueDate: "2026-10-09"}) {
 		t.Fatalf("series dto %+v demo %+v", sd, sd.DemoClock)
 	}
-	if real := seriesDTO(solana.PublicKey{1: 1}, &chain.Series{}, m); real.DemoClock != nil || real.HookGate {
+	if real := seriesDTO(solana.PublicKey{1: 1}, &chain.Series{}, m, false); real.DemoClock != nil || real.HookGate {
 		t.Fatalf("real-clock series: %+v", real)
 	}
 	a := &chain.CorporateAction{Status: 10, RecordAt: 1_800_000_000, FinalizeDelay: 120, DefaultedAt: 1_800_090_000,

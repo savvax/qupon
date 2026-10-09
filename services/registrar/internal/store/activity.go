@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // Activity is one decoded on-chain event. SeriesMint holds the series PDA and
@@ -85,6 +86,47 @@ func (s *Store) ActionSignatures(ctx context.Context, pda string) ([]string, err
 			return nil, fmt.Errorf("scan action signature: %w", err)
 		}
 		out = append(out, sig)
+	}
+	return out, rows.Err()
+}
+
+// HolderPaidTx maps action PDA → the transaction signature that moved this holder's payout: the first
+// EntitlementPaid or PaidToAgent row (id order) whose decoded payload names the owner (task 1525).
+// Best effort — the feed only holds what the poller ingested; a missing row just means no tx shown.
+func (s *Store) HolderPaidTx(ctx context.Context, owner string, actions []string) (map[string]string, error) {
+	out := map[string]string{}
+	if len(actions) == 0 {
+		return out, nil
+	}
+	qs := make([]string, len(actions))
+	args := make([]any, len(actions))
+	for i, a := range actions {
+		qs[i] = "?"
+		args[i] = a
+	}
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT action_pda, payload, sig FROM activity
+		 WHERE kind IN ('EntitlementPaid', 'PaidToAgent') AND action_pda IN (`+strings.Join(qs, ",")+`)
+		 ORDER BY id`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("holder paid tx: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var action, sig string
+		var payload []byte
+		if err := rows.Scan(&action, &payload, &sig); err != nil {
+			return nil, fmt.Errorf("scan holder paid tx: %w", err)
+		}
+		var ev struct {
+			Owner string `json:"owner"`
+		}
+		if json.Unmarshal(payload, &ev) != nil || ev.Owner != owner {
+			continue
+		}
+		if _, done := out[action]; !done { // first row = the payout itself, not a later retry
+			out[action] = sig
+		}
 	}
 	return out, rows.Err()
 }

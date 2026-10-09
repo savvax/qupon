@@ -45,7 +45,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List series */
+        /** List series (featured first; ?featured=1 keeps only admin-curated ones) */
         get: operations["listSeries"];
         put?: never;
         post?: never;
@@ -166,6 +166,26 @@ export interface paths {
         };
         /** Entitlements of an action */
         get: operations["listEntitlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/holders/{owner}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public holder lookup by wallet (task 1525)
+         * @description Cached 15 s. Positions come from the owner's Investor accounts (units, KYC, payout route); entitlements carry the tx that paid them when the activity feed holds it; upcoming payouts show the open action's dates or the projected next coupon (record = period end, payment = +2 civil days on the series clock - real or demo, plan 15 D7).
+         */
+        get: operations["getHolder"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1689,10 +1709,12 @@ export interface components {
             defaultsCount?: number;
             /** @description plan 15 D7 — null on the real Almaty clock */
             demoClock?: components["schemas"]["DemoClockDTO"] | null;
+            /** @description admin-curated by admins (platform v2 §5.2); these series always list first */
+            featured?: boolean;
             /** @description devnet explorer link for the mint */
             explorerUrl: string;
         };
-        /** @description DEMO clock (plan 15 D7) — one civil day lasts daySecs seconds from issueTs, whose civil date is issueDate. */
+        /** @description DEMO clock (plan 15 D7) - one civil day lasts daySecs seconds from issueTs, whose civil date is issueDate. */
         DemoClockDTO: {
             daySecs: number;
             /** Format: int64 */
@@ -1861,6 +1883,67 @@ export interface components {
             votedAt?: string | null;
             /** @description devnet explorer link for the entitlement PDA */
             explorerUrl?: string;
+        };
+        /** @description KYC state of a registration (the SAS attestation is SIMULATED by the vendor stub). */
+        HolderKycDTO: {
+            attested: boolean;
+            /** @description attestation PDA (base58); empty when registered before KYC was enforced */
+            ref: string;
+        };
+        /** @description Where this holder asked payouts to go (plan 15 D6); set only by the holder's signature. */
+        PayoutRouteDTO: {
+            /** @enum {string} */
+            route: "wallet" | "bank";
+            /** @description hex sha256 of the bank details (bank route only) */
+            bankRefHash?: string | null;
+            /** Format: date-time */
+            updatedAt?: string | null;
+        };
+        /** @description One series the wallet is registered in. */
+        HolderPositionDTO: {
+            /** @description Series PDA */
+            series: string;
+            mint: string;
+            ticker: string;
+            isin: string;
+            bondAta: string;
+            cashAta: string;
+            /** @description live bond balance, decimal string */
+            units: string;
+            /** @enum {string} */
+            status: "Active" | "Suspended";
+            kyc: components["schemas"]["HolderKycDTO"];
+            /** @description null when the holder never set one — payouts go to the registered cash account */
+            payoutRoute?: components["schemas"]["PayoutRouteDTO"] | null;
+            explorerUrl: string;
+        };
+        /** @description One entitlement with the action kind and the paying tx. */
+        HolderEntitlementDTO: components["schemas"]["EntitlementDTO"] & {
+            /** @enum {string} */
+            kind: "INTR" | "REDM" | "MCAL" | "PCAL" | "BMET" | "CHAN";
+            /** @description tx signature that moved this payout (EntitlementPaid or PaidToAgent), when the feed holds it */
+            paidTx?: string | null;
+            /** @description devnet explorer link for paidTx */
+            paidTxUrl?: string | null;
+        };
+        /** @description Next payout of a series — the open action when one runs, else the projected next coupon through the series clock. */
+        UpcomingPayoutDTO: {
+            mint: string;
+            ticker: string;
+            /** @description action kind, or "INTR (projected)" when unannounced */
+            kind: string;
+            actionPda?: string | null;
+            /** Format: date-time */
+            recordAt: string;
+            /** Format: date-time */
+            paymentAt: string;
+        };
+        /** @description The public holder lookup answer for one wallet. */
+        HolderLookupDTO: {
+            owner: string;
+            positions: components["schemas"]["HolderPositionDTO"][];
+            entitlements: components["schemas"]["HolderEntitlementDTO"][];
+            upcomingPayouts: components["schemas"]["UpcomingPayoutDTO"][];
         };
         /** @description One projected coupon (or redemption) on the series schedule. */
         ScheduleItem: {
@@ -2242,6 +2325,8 @@ export interface components {
     parameters: {
         /** @description Bond mint pubkey (base58) */
         Mint: string;
+        /** @description Holder wallet pubkey (base58) */
+        Owner: string;
         /** @description The trade's SwapDvp record on the Solana DvP program (base58) */
         SwapDvp: string;
         /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
@@ -2304,7 +2389,10 @@ export interface operations {
     };
     listSeries: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 1 = only admin-featured series (platform v2 §5.2); without it every visible series lists, featured ones first every visible series lists, featured ones first */
+                featured?: "1";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2519,6 +2607,43 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["EntitlementDTO"][];
                 };
+            };
+        };
+    };
+    getHolder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Holder wallet pubkey (base58) */
+                owner: components["parameters"]["Owner"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description positions, entitlements and upcoming payouts (empty arrays for an unknown wallet) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HolderLookupDTO"];
+                };
+            };
+            /** @description owner must be a base58 pubkey */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain reader not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

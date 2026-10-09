@@ -302,3 +302,69 @@ func TestFetchActionMissingYieldsNil(t *testing.T) {
 		t.Fatalf("FetchEntitlement = (%v, %v), want (nil, nil)", ent, err)
 	}
 }
+
+// Task 1525: the by-owner scans filter on the owner pubkey at offset 41 (discriminator + bump +
+// series/action) and keep a deterministic order.
+func TestFetchByOwnerMemcmpAndSort(t *testing.T) {
+	owner := pk(t, "6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC")
+	invDisc, err := AccountDiscriminator("Investor")
+	if err != nil {
+		t.Fatal(err)
+	}
+	entDisc, err := AccountDiscriminator("Entitlement")
+	if err != nil {
+		t.Fatal(err)
+	}
+	actLo := pk(t, "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM") // 0x39… sorts before 0x44…
+	actHi := pk(t, "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo")
+	var gotFilters []rpc.RPCFilter
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Params []json.RawMessage `json:"params"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		var opts struct {
+			Filters []rpc.RPCFilter `json:"filters"`
+		}
+		_ = json.Unmarshal(req.Params[1], &opts)
+		gotFilters = opts.Filters
+		rows := []map[string]any{}
+		switch string(opts.Filters[0].Memcmp.Bytes) { // JSON round-trips Bytes back to the raw discriminator
+		case string(invDisc[:]):
+			rows = append(rows,
+				accountJSON(t, pk(t, "AVMoJ7VrsMQ8tPjxWZYeDb9nXZuVhxzXb2S2QZKtcHq"),
+					append(append([]byte{}, invDisc[:]...), encodeInvestor(&Investor{Series: actHi, Owner: owner})...)))
+		case string(entDisc[:]):
+			rows = append(rows,
+				accountJSON(t, pk(t, "AVMoJ7VrsMQ8tPjxWZYeDb9nXZuVhxzXb2S2QZKtcHq"),
+					append(append([]byte{}, entDisc[:]...), encodeEntitlement(&Entitlement{Action: actHi, Owner: owner, Units: 65})...)),
+				accountJSON(t, pk(t, "EiAZ7r9tVciGeibwdFmjbhhZVeSGXxY2CMuqP71MaN6g"),
+					append(append([]byte{}, entDisc[:]...), encodeEntitlement(&Entitlement{Action: actLo, Owner: owner, Units: 10})...)))
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": 1, "result": rows})
+	}))
+	defer srv.Close()
+
+	cl := testClient(t, srv.URL)
+	ents, err := cl.FetchEntitlementsByOwner(t.Context(), owner)
+	if err != nil {
+		t.Fatalf("FetchEntitlementsByOwner: %v", err)
+	}
+	if len(ents) != 2 || ents[0].Entitlement.Action != actLo || ents[1].Entitlement.Action != actHi {
+		t.Fatalf("entitlements not action-sorted: %+v", ents)
+	}
+	if m := gotFilters[1].Memcmp; m == nil || m.Offset != 41 || solana.PublicKey(m.Bytes) != owner {
+		t.Errorf("owner memcmp = %+v, want offset 41 key %s", gotFilters[1].Memcmp, owner)
+	}
+
+	invs, err := cl.FetchInvestorsByOwner(t.Context(), owner)
+	if err != nil {
+		t.Fatalf("FetchInvestorsByOwner: %v", err)
+	}
+	if len(invs) != 1 || invs[0].Investor.Owner != owner {
+		t.Fatalf("investors = %+v", invs)
+	}
+	if m := gotFilters[1].Memcmp; m == nil || m.Offset != 41 || solana.PublicKey(m.Bytes) != owner {
+		t.Errorf("owner memcmp = %+v, want offset 41 key %s", gotFilters[1].Memcmp, owner)
+	}
+}

@@ -65,6 +65,17 @@ func (f *fakeChain) FetchMint(context.Context, solana.PublicKey) (*chain.Mint, e
 	return &chain.Mint{Decimals: 2, Supply: 100}, nil
 }
 
+// Holder-lookup reads (task 1525) are not exercised by the advance tests.
+func (f *fakeChain) FetchInvestorsByOwner(context.Context, solana.PublicKey) ([]chain.InvestorRecord, error) {
+	return nil, nil
+}
+func (f *fakeChain) FetchEntitlementsByOwner(context.Context, solana.PublicKey) ([]chain.EntitlementRecord, error) {
+	return nil, nil
+}
+func (f *fakeChain) FetchPayoutRoute(context.Context, solana.PublicKey) (*chain.PayoutRoute, error) {
+	return nil, nil
+}
+
 // advanceServer builds the API with a fake chain and the fake CLI.
 func advanceServer(t *testing.T, fc *fakeChain) (*httptest.Server, *store.Store, string) {
 	t.Helper()

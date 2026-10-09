@@ -35,12 +35,12 @@ const maxEntries = 1000
 // grow it or force chain reads through it.
 func cacheable(r *http.Request) bool {
 	path := r.URL.Path
-	readModel := strings.HasPrefix(path, "/series") || strings.HasPrefix(path, "/actions/")
+	readModel := strings.HasPrefix(path, "/series") || strings.HasPrefix(path, "/actions/") || strings.HasPrefix(path, "/holders/")
 	if !readModel || strings.HasSuffix(path, "/reconcile") {
 		return false
 	}
 	for k := range r.URL.Query() {
-		if k != "lang" {
+		if k != "lang" && k != "featured" { // ?featured=1 on /series (task 1525); anything else bypasses
 			return false
 		}
 	}
@@ -65,6 +65,15 @@ func (r *recorder) Write(b []byte) (int, error) {
 	}
 	r.buf.Write(b)
 	return r.ResponseWriter.Write(b)
+}
+
+// ttlFor is the cache lifetime of a path: the public holder lookup holds 15 s (task 1525),
+// everything else the configured read TTL.
+func (c *readCache) ttlFor(path string) time.Duration {
+	if strings.HasPrefix(path, "/holders/") {
+		return 15 * time.Second
+	}
+	return c.ttl
 }
 
 func (c *readCache) middleware(next http.Handler) http.Handler {
@@ -105,7 +114,7 @@ func (c *readCache) middleware(next http.Handler) http.Handler {
 				}
 			}
 			if len(c.entries) < maxEntries {
-				c.entries[key] = cachedResponse{body: rec.buf.Bytes(), contentType: w.Header().Get("Content-Type"), expires: c.now().Add(c.ttl)}
+				c.entries[key] = cachedResponse{body: rec.buf.Bytes(), contentType: w.Header().Get("Content-Type"), expires: c.now().Add(c.ttlFor(r.URL.Path))}
 			}
 			c.mu.Unlock()
 		}

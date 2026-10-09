@@ -88,3 +88,32 @@ func TestReadCache(t *testing.T) {
 		t.Fatalf("entry served after its TTL")
 	}
 }
+
+// Task 1525: the public holder lookup caches 15 s — past the default 10 s TTL, expiring on its own.
+func TestReadCacheHoldersTTL(t *testing.T) {
+	now := time.Unix(1_000, 0)
+	calls := 0
+	h := newReadCache(10*time.Second, func() time.Time { return now })(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	do := func() *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest("GET", "/holders/owner", nil))
+		return rec
+	}
+
+	do()
+	if rec := do(); rec.Header().Get("X-Cache") != "hit" {
+		t.Fatal("second GET not served from cache")
+	}
+	now = now.Add(11 * time.Second) // past the default TTL, still inside the holder TTL
+	if rec := do(); rec.Header().Get("X-Cache") != "hit" || calls != 1 {
+		t.Fatalf("holder entry expired before 15 s: calls=%d", calls)
+	}
+	now = now.Add(5 * time.Second) // 16 s > 15 s
+	if rec := do(); rec.Header().Get("X-Cache") == "hit" || calls != 2 {
+		t.Fatalf("holder entry served after 15 s: calls=%d", calls)
+	}
+}

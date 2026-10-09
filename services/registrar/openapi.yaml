@@ -50,8 +50,20 @@ paths:
                 type: string
   /series:
     get:
-      summary: List series
+      summary: List series (featured first; ?featured=1 keeps only
+        admin-curated ones)
       operationId: listSeries
+      parameters:
+        - name: featured
+          in: query
+          required: false
+          description: 1 = only admin-featured series (platform v2 §5.2);
+            without it every visible series lists, featured ones first
+            every visible series lists, featured ones first
+          schema:
+            type: string
+            enum:
+              - '1'
       responses:
         "200":
           description: series list
@@ -203,6 +215,29 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EntitlementDTO'
+  /holders/{owner}:
+    get:
+      summary: Public holder lookup by wallet (task 1525)
+      description: Cached 15 s. Positions come from the owner's Investor
+        accounts (units, KYC, payout route); entitlements carry the tx that
+        paid them when the activity feed holds it; upcoming payouts show the
+        open action's dates or the projected next coupon (record = period end,
+        payment = +2 civil days on the series clock - real or demo, plan 15 D7).
+      operationId: getHolder
+      parameters:
+        - $ref: '#/components/parameters/Owner'
+      responses:
+        "200":
+          description: positions, entitlements and upcoming payouts (empty
+            arrays for an unknown wallet)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HolderLookupDTO'
+        "400":
+          description: owner must be a base58 pubkey
+        "503":
+          description: chain reader not configured
   /actions/{pda}/reconcile:
     get:
       summary: Reconciliation report (chain totals vs recomputed math)
@@ -3354,6 +3389,13 @@ components:
       description: Bond mint pubkey (base58)
       schema:
         type: string
+    Owner:
+      name: owner
+      in: path
+      required: true
+      description: Holder wallet pubkey (base58)
+      schema:
+        type: string
     SwapDvp:
       name: swapDvp
       in: path
@@ -3634,11 +3676,15 @@ components:
             - $ref: '#/components/schemas/DemoClockDTO'
             - type: "null"
           description: plan 15 D7 — null on the real Almaty clock
+        featured:
+          type: boolean
+          description: admin-curated by admins (platform v2 §5.2); these
+            series always list first
         explorerUrl:
           type: string
           description: devnet explorer link for the mint
     DemoClockDTO:
-      description: DEMO clock (plan 15 D7) — one civil day lasts daySecs seconds from issueTs, whose civil date is issueDate.
+      description: DEMO clock (plan 15 D7) - one civil day lasts daySecs seconds from issueTs, whose civil date is issueDate.
       type: object
       required: [daySecs, issueTs, issueDate]
       properties:
@@ -4028,6 +4074,135 @@ components:
         explorerUrl:
           type: string
           description: devnet explorer link for the entitlement PDA
+    HolderKycDTO:
+      description: KYC state of a registration (the SAS attestation is
+        SIMULATED by the vendor stub).
+      type: object
+      required: [attested, ref]
+      properties:
+        attested:
+          type: boolean
+        ref:
+          type: string
+          description: attestation PDA (base58); empty when registered before
+            KYC was enforced
+    PayoutRouteDTO:
+      description: Where this holder asked payouts to go (plan 15 D6); set
+        only by the holder's signature.
+      type: object
+      required: [route]
+      properties:
+        route:
+          type: string
+          enum: [wallet, bank]
+        bankRefHash:
+          type:
+            - string
+            - "null"
+          description: hex sha256 of the bank details (bank route only)
+        updatedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+    HolderPositionDTO:
+      description: One series the wallet is registered in.
+      type: object
+      required: [series, mint, ticker, isin, bondAta, cashAta, units,
+        status, kyc, explorerUrl]
+      properties:
+        series:
+          type: string
+          description: Series PDA
+        mint:
+          type: string
+        ticker:
+          type: string
+        isin:
+          type: string
+        bondAta:
+          type: string
+        cashAta:
+          type: string
+        units:
+          type: string
+          description: live bond balance, decimal string
+        status:
+          type: string
+          enum: [Active, Suspended]
+        kyc:
+          $ref: '#/components/schemas/HolderKycDTO'
+        payoutRoute:
+          oneOf:
+            - $ref: '#/components/schemas/PayoutRouteDTO'
+            - type: "null"
+          description: null when the holder never set one — payouts go to the
+            registered cash account
+        explorerUrl:
+          type: string
+    HolderEntitlementDTO:
+      description: One entitlement with the action kind and the paying tx.
+      allOf:
+        - $ref: '#/components/schemas/EntitlementDTO'
+        - type: object
+          required: [kind]
+          properties:
+            kind:
+              type: string
+              enum: [INTR, REDM, MCAL, PCAL, BMET, CHAN]
+            paidTx:
+              type:
+                - string
+                - "null"
+              description: tx signature that moved this payout
+                (EntitlementPaid or PaidToAgent), when the feed holds it
+            paidTxUrl:
+              type:
+                - string
+                - "null"
+              description: devnet explorer link for paidTx
+    UpcomingPayoutDTO:
+      description: Next payout of a series — the open action when one runs,
+        else the projected next coupon through the series clock.
+      type: object
+      required: [mint, ticker, kind, recordAt, paymentAt]
+      properties:
+        mint:
+          type: string
+        ticker:
+          type: string
+        kind:
+          type: string
+          description: action kind, or "INTR (projected)" when unannounced
+        actionPda:
+          type:
+            - string
+            - "null"
+        recordAt:
+          type: string
+          format: date-time
+        paymentAt:
+          type: string
+          format: date-time
+    HolderLookupDTO:
+      description: The public holder lookup answer for one wallet.
+      type: object
+      required: [owner, positions, entitlements, upcomingPayouts]
+      properties:
+        owner:
+          type: string
+        positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/HolderPositionDTO'
+        entitlements:
+          type: array
+          items:
+            $ref: '#/components/schemas/HolderEntitlementDTO'
+        upcomingPayouts:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpcomingPayoutDTO'
     ScheduleItem:
       description: One projected coupon (or redemption) on the series schedule.
       type: object
