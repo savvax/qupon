@@ -1,7 +1,7 @@
 ---
 id: 1521
 title: Go chain layer for plan 15
-agent: glm
+agent: claude
 tier: T0
 depends_on: [1515]
 verify: make verify

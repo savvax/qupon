@@ -1,7 +1,7 @@
 ---
 id: 1532
 title: sandbox UI
-agent: glm
+agent: claude
 tier: T0
 depends_on: [1530, 1531]
 verify: make verify
