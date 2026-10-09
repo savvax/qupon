@@ -30,5 +30,10 @@ Implement task 1520 of plan 15 exactly as written below (the plan section is cop
 
 **Acceptance:** `pnpm --filter @qupon/client test` covers each new command's builder; `make verify` green.
 
+## Already on main (lead, tasks 1514/1515) — do not redo
+- `payout:route` and `payout:confirm-bank` exist in `clients/ts/src/commands/payout.ts` (registered); `disclosure:attach` in `commands/disclosure.ts`. Only add builder unit tests for them if missing.
+- `action:pay` already reads each holder's PayoutRoute (`payoutRouteIsBank`) and routes bank holders to the paying agent's cash ATA; `trade:create` passes the open action and prints `accrued`/`clean` (`tradeAccrued`).
+- Remaining for you: role `any` for the crank commands, `action:claim`, demo-clock `action:announce` dates, tests.
+
 ## Finish
 `make verify` green, commits carry `task: 1520`, `reports/worklog/1520.md` written. Print `DONE:1520` or `BLOCKED:1520 <reason>`.

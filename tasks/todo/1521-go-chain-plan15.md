@@ -27,5 +27,8 @@ Implement task 1521 of plan 15 exactly as written below (the plan section is cop
 
 **Acceptance:** `go test ./services/registrar/...` green incl. real-fixture decode; `/series` and `/actions/{pda}` expose the new fields (openapi updated in both files, `apps/web/src/lib/api-schema.d.ts` regenerated); `make verify` green.
 
+## Already on main (lead, tasks 1512–1515) — do not redo
+- `internal/ingest/events.go` layouts for ActionDefaulted, DefaultCured, PayoutRouteSet, PaidToAgent, BankPayoutConfirmed, DisclosureAttached, TradeAccrued (new `i32` kind) are in; `events_test.go` expects 28 events; `chain.ActionStatusName` knows Defaulted. Check StrikeTiming is covered, then do the account decoders, reconcile, notify and REST parts.
+
 ## Finish
 `make verify` green, commits carry `task: 1521`, `reports/worklog/1521.md` written. Print `DONE:1521` or `BLOCKED:1521 <reason>`.
