@@ -6,8 +6,8 @@ use anchor_spl::{
             extension::{
                 default_account_state::DefaultAccountState, metadata_pointer::MetadataPointer,
                 mint_close_authority::MintCloseAuthority, pausable::PausableConfig,
-                permanent_delegate::PermanentDelegate, BaseStateWithExtensions, ExtensionType,
-                StateWithExtensions,
+                permanent_delegate::PermanentDelegate, transfer_hook::TransferHook,
+                BaseStateWithExtensions, ExtensionType, StateWithExtensions,
             },
             state::{AccountState, Mint as MintState},
         },
@@ -189,9 +189,22 @@ fn validate_bond_mint(mint: &AccountInfo, series: &Pubkey, registrar: &Pubkey) -
                 | ExtensionType::PermanentDelegate
                 | ExtensionType::Pausable
                 | ExtensionType::MintCloseAuthority
+                | ExtensionType::TransferHook
         )),
         QuponError::InvalidMintExtensions
     );
+    // A transfer hook is allowed only if it is this program (the record-date gate) and nobody but the series can
+    // re-point it.
+    if let Ok(hook) = state.get_extension::<TransferHook>() {
+        require!(
+            Option::<Pubkey>::from(hook.program_id) == Some(crate::ID),
+            QuponError::InvalidMintExtensions
+        );
+        require!(
+            Option::<Pubkey>::from(hook.authority).is_none_or(|k| k == *series),
+            QuponError::InvalidAuthority
+        );
+    }
 
     let pointer = state.get_extension::<MetadataPointer>().map_err(missing)?;
     require!(

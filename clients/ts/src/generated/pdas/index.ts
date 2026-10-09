@@ -7,6 +7,8 @@
  */
 
 export * from './admission.js';
+export * from './checkpoint.js';
 export * from './entitlement.js';
+export * from './extraAccountMetaList.js';
 export * from './investor.js';
 export * from './series.js';

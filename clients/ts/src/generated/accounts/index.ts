@@ -6,6 +6,7 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from './checkpoint.js';
 export * from './corporateAction.js';
 export * from './entitlement.js';
 export * from './investor.js';

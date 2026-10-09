@@ -5,6 +5,9 @@ pub const INVESTOR_SEED: &[u8] = b"investor";
 pub const ACTION_SEED: &[u8] = b"action";
 pub const ENTITLEMENT_SEED: &[u8] = b"entitlement";
 pub const TRADE_SEED: &[u8] = b"trade";
+pub const CHECKPOINT_SEED: &[u8] = b"ckpt";
+/// Standard seed of the transfer-hook validation account (spl-transfer-hook-interface).
+pub const EXTRA_METAS_SEED: &[u8] = b"extra-account-metas";
 
 /// Asia/Almaty is UTC+5 all year; period boundaries are Almaty midnights (03-domain §1, §3).
 pub const ALMATY_UTC_OFFSET_SECS: i64 = 5 * 3600;

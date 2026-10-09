@@ -73,6 +73,12 @@ pub enum QuponError {
     TradeStillOpen,
     #[msg("Not a Solana DvP trade of this series between its registered investors under our settlement authority")]
     InvalidTrade,
+    #[msg("Transfer-hook execute called outside a Token-2022 transfer")]
+    NotTransferring,
+    #[msg("Record date passed: snapshot this holder's position before moving bonds")]
+    HolderNotSnapshotted,
+    #[msg("Record date of a redemption passed: the register is locked")]
+    RecordLocked,
 }
 
 /// Map the pure math crate's errors onto program errors (orphan rule forbids `From`).

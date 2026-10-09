@@ -31,7 +31,18 @@ openAction: Option<Address>;
  * Admitted Solana DvP trades not yet released; `strike_record` requires 0. Carved from `reserved`
  * (64 zero bytes before), so the account size is unchanged and older series read 0.
  */
-openTrades: number; reserved: ReadonlyUint8Array;  };
+openTrades: number; 
+/**
+ * 1 = the mint's transfer hook is this program: the record date is enforced by the hook gate (plan 15 D1'),
+ * not by pausing the mint. Carved from `reserved`, like everything below.
+ */
+hook: number; 
+/** Hooked series: [`ActionKind`] of the pending record; redemptions lock the register from `record_at` on. */
+recordKind: number; 
+/** Hooked series: sequence of the pending (or last) record = action index + 1; 0 = never. */
+recordSeq: number; 
+/** Hooked series: `record_at` of the pending record; 0 = none pending (cleared when the snapshot is final). */
+recordAt: bigint; reserved: ReadonlyUint8Array;  };
 
 export type SeriesArgs = { bump: number; mint: Address; cashMint: Address; registrar: Address; issuer: Address; payingAgent: Address; isin: ReadonlyUint8Array; 
 /** Zero-padded ASCII. */
@@ -52,16 +63,27 @@ openAction: OptionOrNullable<Address>;
  * Admitted Solana DvP trades not yet released; `strike_record` requires 0. Carved from `reserved`
  * (64 zero bytes before), so the account size is unchanged and older series read 0.
  */
-openTrades: number; reserved: ReadonlyUint8Array;  };
+openTrades: number; 
+/**
+ * 1 = the mint's transfer hook is this program: the record date is enforced by the hook gate (plan 15 D1'),
+ * not by pausing the mint. Carved from `reserved`, like everything below.
+ */
+hook: number; 
+/** Hooked series: [`ActionKind`] of the pending record; redemptions lock the register from `record_at` on. */
+recordKind: number; 
+/** Hooked series: sequence of the pending (or last) record = action index + 1; 0 = never. */
+recordSeq: number; 
+/** Hooked series: `record_at` of the pending record; 0 = none pending (cleared when the snapshot is final). */
+recordAt: number | bigint; reserved: ReadonlyUint8Array;  };
 
 /** Gets the encoder for {@link SeriesArgs} account data. */
 export function getSeriesEncoder(): Encoder<SeriesArgs> {
-    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['bump', getU8Encoder()], ['mint', getAddressEncoder()], ['cashMint', getAddressEncoder()], ['registrar', getAddressEncoder()], ['issuer', getAddressEncoder()], ['payingAgent', getAddressEncoder()], ['isin', fixEncoderSize(getBytesEncoder(), 12)], ['ticker', fixEncoderSize(getBytesEncoder(), 16)], ['faceValue', getU64Encoder()], ['couponRateBps', getU32Encoder()], ['frequency', getU8Encoder()], ['dayCount', getU8Encoder()], ['issueDate', getI64Encoder()], ['maturityDate', getI64Encoder()], ['nextCouponDate', getI64Encoder()], ['periodStart', getI64Encoder()], ['status', getU8Encoder()], ['totalIssued', getU64Encoder()], ['actionCount', getU32Encoder()], ['quorumBps', getU16Encoder()], ['approvalBps', getU16Encoder()], ['taxVault', getAddressEncoder()], ['openAction', getOptionEncoder(getAddressEncoder())], ['openTrades', getU32Encoder()], ['reserved', fixEncoderSize(getBytesEncoder(), 60)]]), (value) => ({ ...value, discriminator: SERIES_DISCRIMINATOR }));
+    return transformEncoder(getStructEncoder([['discriminator', fixEncoderSize(getBytesEncoder(), 8)], ['bump', getU8Encoder()], ['mint', getAddressEncoder()], ['cashMint', getAddressEncoder()], ['registrar', getAddressEncoder()], ['issuer', getAddressEncoder()], ['payingAgent', getAddressEncoder()], ['isin', fixEncoderSize(getBytesEncoder(), 12)], ['ticker', fixEncoderSize(getBytesEncoder(), 16)], ['faceValue', getU64Encoder()], ['couponRateBps', getU32Encoder()], ['frequency', getU8Encoder()], ['dayCount', getU8Encoder()], ['issueDate', getI64Encoder()], ['maturityDate', getI64Encoder()], ['nextCouponDate', getI64Encoder()], ['periodStart', getI64Encoder()], ['status', getU8Encoder()], ['totalIssued', getU64Encoder()], ['actionCount', getU32Encoder()], ['quorumBps', getU16Encoder()], ['approvalBps', getU16Encoder()], ['taxVault', getAddressEncoder()], ['openAction', getOptionEncoder(getAddressEncoder())], ['openTrades', getU32Encoder()], ['hook', getU8Encoder()], ['recordKind', getU8Encoder()], ['recordSeq', getU32Encoder()], ['recordAt', getI64Encoder()], ['reserved', fixEncoderSize(getBytesEncoder(), 46)]]), (value) => ({ ...value, discriminator: SERIES_DISCRIMINATOR }));
 }
 
 /** Gets the decoder for {@link Series} account data. */
 export function getSeriesDecoder(): Decoder<Series> {
-    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['bump', getU8Decoder()], ['mint', getAddressDecoder()], ['cashMint', getAddressDecoder()], ['registrar', getAddressDecoder()], ['issuer', getAddressDecoder()], ['payingAgent', getAddressDecoder()], ['isin', fixDecoderSize(getBytesDecoder(), 12)], ['ticker', fixDecoderSize(getBytesDecoder(), 16)], ['faceValue', getU64Decoder()], ['couponRateBps', getU32Decoder()], ['frequency', getU8Decoder()], ['dayCount', getU8Decoder()], ['issueDate', getI64Decoder()], ['maturityDate', getI64Decoder()], ['nextCouponDate', getI64Decoder()], ['periodStart', getI64Decoder()], ['status', getU8Decoder()], ['totalIssued', getU64Decoder()], ['actionCount', getU32Decoder()], ['quorumBps', getU16Decoder()], ['approvalBps', getU16Decoder()], ['taxVault', getAddressDecoder()], ['openAction', getOptionDecoder(getAddressDecoder())], ['openTrades', getU32Decoder()], ['reserved', fixDecoderSize(getBytesDecoder(), 60)]]);
+    return getStructDecoder([['discriminator', fixDecoderSize(getBytesDecoder(), 8)], ['bump', getU8Decoder()], ['mint', getAddressDecoder()], ['cashMint', getAddressDecoder()], ['registrar', getAddressDecoder()], ['issuer', getAddressDecoder()], ['payingAgent', getAddressDecoder()], ['isin', fixDecoderSize(getBytesDecoder(), 12)], ['ticker', fixDecoderSize(getBytesDecoder(), 16)], ['faceValue', getU64Decoder()], ['couponRateBps', getU32Decoder()], ['frequency', getU8Decoder()], ['dayCount', getU8Decoder()], ['issueDate', getI64Decoder()], ['maturityDate', getI64Decoder()], ['nextCouponDate', getI64Decoder()], ['periodStart', getI64Decoder()], ['status', getU8Decoder()], ['totalIssued', getU64Decoder()], ['actionCount', getU32Decoder()], ['quorumBps', getU16Decoder()], ['approvalBps', getU16Decoder()], ['taxVault', getAddressDecoder()], ['openAction', getOptionDecoder(getAddressDecoder())], ['openTrades', getU32Decoder()], ['hook', getU8Decoder()], ['recordKind', getU8Decoder()], ['recordSeq', getU32Decoder()], ['recordAt', getI64Decoder()], ['reserved', fixDecoderSize(getBytesDecoder(), 46)]]);
 }
 
 /** Gets the codec for {@link Series} account data. */

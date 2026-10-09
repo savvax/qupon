@@ -209,6 +209,12 @@ pub fn handle_announce_action(ctx: Context<AnnounceAction>, a: AnnounceArgs) -> 
         .checked_add(1)
         .ok_or(QuponError::MathOverflow)?;
     series.open_action = Some(action_key);
+    if series.hook == 1 {
+        // Hooked series: arm the transfer-hook gate for this record (plan 15 D1').
+        series.record_kind = act.kind;
+        series.record_seq = act.index.checked_add(1).ok_or(QuponError::MathOverflow)?;
+        series.record_at = act.record_at;
+    }
 
     let clock = Clock::get()?;
     emit!(ActionAnnounced {

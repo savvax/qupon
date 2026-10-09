@@ -88,7 +88,16 @@ pub struct Series {
     /// Admitted Solana DvP trades not yet released; `strike_record` requires 0. Carved from `reserved`
     /// (64 zero bytes before), so the account size is unchanged and older series read 0.
     pub open_trades: u32,
-    pub reserved: [u8; 60],
+    /// 1 = the mint's transfer hook is this program: the record date is enforced by the hook gate (plan 15 D1'),
+    /// not by pausing the mint. Carved from `reserved`, like everything below.
+    pub hook: u8,
+    /// Hooked series: [`ActionKind`] of the pending record; redemptions lock the register from `record_at` on.
+    pub record_kind: u8,
+    /// Hooked series: sequence of the pending (or last) record = action index + 1; 0 = never.
+    pub record_seq: u32,
+    /// Hooked series: `record_at` of the pending record; 0 = none pending (cleared when the snapshot is final).
+    pub record_at: i64,
+    pub reserved: [u8; 46],
 }
 
 /// Seeds `["investor", series, owner]`.
@@ -206,4 +215,15 @@ pub struct TradeAdmission {
     pub units: u64,
     pub cash_amount: u64,
     pub admitted_at: i64,
+}
+
+/// Seeds `["ckpt", series, owner]` — hooked series: the last record this owner's position was snapshotted for. The
+/// transfer hook lets the owner's bonds move after a `record_at` only once `last_seq` reached that record.
+#[account]
+#[derive(InitSpace)]
+pub struct Checkpoint {
+    pub bump: u8,
+    pub series: Pubkey,
+    pub owner: Pubkey,
+    pub last_seq: u32,
 }

@@ -13,7 +13,9 @@ use anchor_spl::{
     token::spl_token,
     token_2022::spl_token_2022::{
         self,
-        extension::{default_account_state, metadata_pointer, pausable, ExtensionType},
+        extension::{
+            default_account_state, metadata_pointer, pausable, transfer_hook, ExtensionType,
+        },
         instruction::AuthorityType,
         state::{AccountState, Mint},
     },
@@ -193,6 +195,19 @@ impl Env {
                 .unwrap(),
             );
         }
+        if opts.transfer_hook {
+            // Plan 15 D1': the record-date gate is this program; only the series could re-point it.
+            exts.push(ExtensionType::TransferHook);
+            ixs.push(
+                transfer_hook::instruction::initialize(
+                    &tp,
+                    &m,
+                    Some(series),
+                    Some(qupon_bonds::id()),
+                )
+                .unwrap(),
+            );
+        }
         if opts.non_transferable {
             exts.push(ExtensionType::NonTransferable);
             ixs.push(
@@ -307,6 +322,7 @@ pub struct BondMintOpts {
     pub non_transferable: bool,
     pub keep_registrar_mint_authority: bool,
     pub pointer_authority: Option<Pubkey>,
+    pub transfer_hook: bool,
 }
 
 pub fn series_pda(mint: &Pubkey) -> Pubkey {

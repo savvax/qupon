@@ -6,6 +6,8 @@ pub mod state;
 pub mod utils;
 
 use anchor_lang::prelude::*;
+use spl_discriminator::SplDiscriminate;
+use spl_transfer_hook_interface::instruction::ExecuteInstruction;
 
 pub use instructions::*;
 pub use state::*;
@@ -126,5 +128,26 @@ pub mod qupon_bonds {
     /// Apply an approved proposal to the series and its token metadata (registrar; ARDFM registration SIMULATED).
     pub fn apply_terms_change(ctx: Context<ApplyTermsChange>) -> Result<()> {
         instructions::meeting::handle_apply_terms_change(ctx)
+    }
+
+    /// Write the transfer-hook validation account and switch the series to the hook gate (registrar).
+    pub fn init_hook(ctx: Context<InitHook>) -> Result<()> {
+        instructions::hook::handle_init_hook(ctx)
+    }
+
+    /// Create an owner's checkpoint for a hooked series (anyone pays).
+    pub fn init_checkpoint(ctx: Context<InitCheckpoint>, owner: Pubkey) -> Result<()> {
+        instructions::hook::handle_init_checkpoint(ctx, owner)
+    }
+
+    /// SPIKE 1509: mark a position snapshotted for the pending record (anyone, after `record_at`).
+    pub fn mark_snapshotted(ctx: Context<MarkSnapshotted>) -> Result<()> {
+        instructions::hook::handle_mark_snapshotted(ctx)
+    }
+
+    /// Token-2022 transfer hook (spl-transfer-hook-interface `Execute`): the record-date gate.
+    #[instruction(discriminator = ExecuteInstruction::SPL_DISCRIMINATOR_SLICE)]
+    pub fn execute(ctx: Context<Execute>, amount: u64) -> Result<()> {
+        instructions::hook::handle_execute(ctx, amount)
     }
 }
