@@ -22,13 +22,15 @@ export default async function InvestorPortfolioPage() {
       {/* one onboarding block above the identity (a signed-up investor without a wallet still sees the next
           step): the devnet checklist, or the KYC banner where there is none */}
       <OnboardingChecklist />
-      <InvestorIdentity
-        title={(await getTranslations("cabinet.menu"))("portfolio")}
-        demoOwner={demoOwner}
-        selfRegistered={s?.role === "investor"}
-      >
-        <PortfolioView />
-      </InvestorIdentity>
+      <div data-tour="portfolio">
+        <InvestorIdentity
+          title={(await getTranslations("cabinet.menu"))("portfolio")}
+          demoOwner={demoOwner}
+          selfRegistered={s?.role === "investor"}
+        >
+          <PortfolioView />
+        </InvestorIdentity>
+      </div>
     </>
   );
 }

@@ -10,6 +10,8 @@ import { NetworkChip } from "@/components/ui/NetworkChip";
 import { NowBar } from "@/components/ui/NowBar";
 import { type Provenance, ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import { TourStep } from "@/components/ui/TourStep";
+import { StepNowBar } from "@/components/shell/StepNowBar";
+import type { FlowAction } from "@/lib/actionFlow";
 import {
   CURRENCY,
   ESCROW_REQUIRED,
@@ -67,6 +69,38 @@ const flow = (
   }));
 
 const units = (u: string) => `${u} bonds`;
+
+/** One coupon of QPNb1 (the brief's numbers) in every status the NowBar handles, Defaulted/PaidToAgent included. */
+function statusFixtures(now: number): [string, FlowAction][] {
+  const at = (days: number) => new Date(now + days * 86_400_000).toISOString();
+  const a: FlowAction = {
+    pda: "ActnINTR0002Fixture111111111111111111111111111",
+    seriesMint: "QpNb1Dem0BondMint1111111111111111111111111111",
+    kind: "INTR",
+    mandatory: "MAND",
+    corpId: "QPNb1-INTR-0002",
+    recordAt: at(2),
+    paymentAt: at(3),
+    perUnitGross: { minor: "5000", display: "50.00 KZT", currency: CURRENCY },
+    perUnitPrincipal: { minor: "0", display: "0.00 KZT", currency: CURRENCY },
+    cashMint: "Cash111111111111111111111111111111111111111",
+    escrow: "Escrow11111111111111111111111111111111111111",
+    status: "Announced",
+    explorerUrl: "https://explorer.solana.com/address/x?cluster=devnet",
+  };
+  const past = { recordAt: at(-3), paymentAt: at(-2) };
+  return [
+    ["Announced", a],
+    ["RecordStruck", { ...a, ...past, status: "RecordStruck", holdersSnapshotted: 1, unitsSnapshotted: "10" }],
+    ["SnapshotComplete", { ...a, recordAt: at(-1), status: "SnapshotComplete" }],
+    ["Defaulted", { ...a, ...past, status: "Defaulted" }],
+    ["Funded", { ...a, ...past, status: "Funded" }],
+    ["Settling", { ...a, ...past, status: "Settling", holdersSnapshotted: 3, holdersPaid: 3, bankPending: 1 }],
+    ["Retiring", { ...a, ...past, kind: "REDM", status: "Retiring", holdersSnapshotted: 3, holdersRetired: 1 }],
+    ["VotingOpen", { ...a, ...past, kind: "BMET", status: "VotingOpen", unitsSnapshotted: "100", votingEndsAt: at(1) }],
+    ["Completed", { ...a, ...past, status: "Completed" }],
+  ];
+}
 
 /** Task 1530 primitives in every state (fixture data; EN gallery). */
 export function PrimitivesGallery() {
@@ -171,6 +205,22 @@ export function PrimitivesGallery() {
             action={<Button>Fund and cure</Button>}
           />
           <NowBar dock="none" tone="done" title="Coupon 2 paid: 5,000.00 ₸ to 3 holders." />
+        </div>
+      </Section>
+
+      <Section title="StepNowBar · the next step for each action status (actionFlow.nextStep; e2e/guidance.spec)">
+        <div className="space-y-3">
+          {statusFixtures(Date.now()).map(([status, action]) => (
+            <div key={status} data-fixture={status}>
+              <StepNowBar
+                dock="none"
+                action={action}
+                ticker="QPNb1"
+                supply={100n}
+                button={status === "Completed" ? undefined : <Button size="sm">Open action</Button>}
+              />
+            </div>
+          ))}
         </div>
       </Section>
 

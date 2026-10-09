@@ -75,7 +75,8 @@
     "TermsChanged": "Terms changed",
     "NoQuorum": "No quorum",
     "Pending": "Pending",
-    "None": "Not voted"
+    "None": "Not voted",
+    "Defaulted": "In default"
   },
   "landing": {
     "hero": {
@@ -800,7 +801,8 @@
       "close": "Close series",
       "votes": "Collect votes",
       "meet_finalize": "Count the votes",
-      "apply": "Apply terms change"
+      "apply": "Apply terms change",
+      "confirm_bank": "Confirm bank payout"
     },
     "done": {
       "announce": "Announced",

@@ -9,11 +9,14 @@ import { cx } from "@/lib/ui/cx";
 import { activeHref } from "@/lib/ui/nav";
 import { StableLabel } from "@/components/i18n/StableLabel";
 import { Drawer } from "@/components/ui/Dialog";
+import type { TourRole } from "@/lib/tours";
 import { Icon } from "./icons";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { Logo } from "./Logo";
+import { HelpItems, HelpMenu } from "./HelpMenu";
 import { NotificationBell } from "./NotificationBell";
 import { SignOutButton } from "./SignOutButton";
+import { Tour } from "./Tour";
 
 export type CabinetRole =
   "issuer" | "registrar" | "investor_demo" | "investor" | "admin";
@@ -30,6 +33,7 @@ export function CabinetShell({
   user,
   breadcrumb,
   topbar,
+  now,
   children,
 }: {
   role: CabinetRole;
@@ -38,8 +42,17 @@ export function CabinetShell({
   breadcrumb?: ReactNode;
   /** Server-rendered top-bar items (network badge, notification bell): <TopbarExtras />. */
   topbar?: ReactNode;
+  /** The cabinet NowBar (task 1531), above the page content; a page with its own NowBar hides it (one per page). */
+  now?: ReactNode;
   children: ReactNode;
 }) {
+  // which coach-mark tour belongs to this cabinet (admin has none)
+  const tour: TourRole | null =
+    role === "registrar" || role === "issuer"
+      ? role
+      : role === "investor" || role === "investor_demo"
+        ? "investor"
+        : null;
   const t = useTranslations("cabinet");
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -58,7 +71,7 @@ export function CabinetShell({
         <div className="px-5 pb-2 text-xs font-bold tracking-wider text-n500 uppercase">
           {t(`roles.${role}`)}
         </div>
-        <nav aria-label={t("nav")} className="flex flex-col gap-0.5 px-3">
+        <nav aria-label={t("nav")} data-tour="nav" className="flex flex-col gap-0.5 px-3">
           {nav.map((n) => (
             <Link
               key={n.href}
@@ -102,6 +115,8 @@ export function CabinetShell({
             </span>
           )}
           {topbar}
+          {/* phones: the header is full; help lives in the "More" sheet */}
+          {tour && <HelpMenu role={tour} className="max-sm:hidden" />}
           <LocaleSwitch />
           {user && (
             <>
@@ -134,6 +149,7 @@ export function CabinetShell({
           )}
         </header>
         <main className="overflow-x-clip p-4 pb-24 sm:p-8 md:pb-8">
+          {now}
           {children}
         </main>
       </div>
@@ -141,6 +157,7 @@ export function CabinetShell({
       {/* Phones: up to five tabs; with more sections the fifth is "More", a sheet with the rest (spec §5.8). */}
       <nav
         aria-label={t("nav")}
+        data-tour="nav"
         className="fixed inset-x-0 bottom-0 z-30 grid h-16 border-t border-n200 bg-n0/95 backdrop-blur md:hidden"
         style={{
           gridTemplateColumns: `repeat(${Math.min(nav.length, 5)}, minmax(0, 1fr))`,
@@ -168,6 +185,7 @@ export function CabinetShell({
             type="button"
             onClick={() => setMoreOpen(true)}
             aria-haspopup="dialog"
+            data-tour="help"
             className={cx(
               "flex flex-col items-center justify-center gap-0.5 px-1 text-[11px] leading-tight font-semibold",
               nav.slice(4).some((n) => n.href === active)
@@ -202,8 +220,14 @@ export function CabinetShell({
               </li>
             ))}
           </ul>
+          {tour && (
+            <div className="mt-3 grid gap-1 border-t border-n100 pt-3">
+              <HelpItems role={tour} onDone={() => setMoreOpen(false)} />
+            </div>
+          )}
         </Drawer>
       )}
+      {tour && <Tour role={tour} />}
     </div>
   );
 }

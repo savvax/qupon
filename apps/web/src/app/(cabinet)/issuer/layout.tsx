@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { CabinetShell } from "@/components/shell/CabinetShell";
+import { CabinetNow } from "../CabinetNow";
 import { TopbarExtras } from "@/components/shell/TopbarExtras";
 import { requireRole } from "@/lib/session";
 import { issuerNav } from "../nav";
@@ -18,6 +19,7 @@ export default async function IssuerLayout({
       user={user}
       topbar={<TopbarExtras />}
       nav={issuerNav((k) => t(k))}
+      now={<CabinetNow role="issuer" />}
     >
       {children}
     </CabinetShell>

@@ -72,6 +72,7 @@ export async function OnboardingChecklist() {
 
   return (
     <section
+      data-tour="checklist"
       aria-labelledby="onboarding-checklist"
       className="mb-6 overflow-hidden rounded-card border border-g200 bg-g50"
     >

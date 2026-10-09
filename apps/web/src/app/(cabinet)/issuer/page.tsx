@@ -104,7 +104,7 @@ export default async function IssuerDashboard() {
         </Button>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <div data-tour="kpi" className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Kpi
           label={t("dashboard.kpiSeries")}
           value={<span className="num">{active.length}</span>}
@@ -144,7 +144,7 @@ export default async function IssuerDashboard() {
         />
       </div>
 
-      <section className="mt-8">
+      <section data-tour="todo" className="mt-8">
         <h2 className="mb-3 text-lg font-bold">{t("dashboard.todo")}</h2>
         {toFund.length === 0 && approvedMeetings.length === 0 ? (
           <EmptyState
@@ -198,7 +198,7 @@ export default async function IssuerDashboard() {
         )}
       </section>
 
-      <section className="mt-8">
+      <section data-tour="latest" className="mt-8">
         <h2 className="mb-3 text-lg font-bold">{t("dashboard.latest")}</h2>
         <DataTable
           columns={cols}

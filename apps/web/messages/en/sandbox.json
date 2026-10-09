@@ -88,23 +88,5 @@
     "complete": "Complete coupon 2",
     "default": "Record default on coupon 2",
     "cure": "Issuer cures: funds 3,000.00 ₸"
-  },
-  "tour": {
-    "now": {
-      "title": "What happens now",
-      "body": "This bar names the next step, who may take it and gives you the one button. Switch the role above to see it from each side."
-    },
-    "rail": {
-      "title": "The bond's life",
-      "body": "Every coupon is a stub on the sheet. Paid ones carry their transactions; the ringing one is in progress."
-    },
-    "flow": {
-      "title": "Follow the money",
-      "body": "Bands are proportional to amounts: escrow to each holder, tax to the tax vault, the bank leg through the paying agent. Step through it."
-    },
-    "feed": {
-      "title": "Every step is a transaction",
-      "body": "Each line is one transaction. On a live series the link opens it in the Solana explorer."
-    }
   }
 }

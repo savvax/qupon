@@ -21,6 +21,7 @@ export const NAMESPACES = [
   "termsheet",
   "kit",
   "sandbox",
+  "learn",
 ] as const;
 
 /** All messages of a locale: the base file plus every feature namespace file. */

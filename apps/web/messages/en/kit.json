@@ -31,7 +31,27 @@
   },
   "now": {
     "label": "Now",
-    "done": "Done"
+    "done": "Done",
+    "next": "Next: {step} · {ticker}",
+    "anyone": "Anyone can push this step: the program checks every rule.",
+    "defaulted": "In default: the issuer cures it by funding the escrow; the record-date holders keep their claim.",
+    "trades": "{ticker}: settle or cancel the open trades before the record date",
+    "voting": "{ticker}: holders are voting",
+    "notApproved": "{ticker}: the meeting did not approve the change",
+    "cancelled": "{ticker}: the action was cancelled",
+    "completed": "{ticker}: every step is on-chain",
+    "idle": "{ticker}: nothing to run right now",
+    "open": "Open action",
+    "openSeries": "Open series",
+    "gate": {
+      "record": "Record date",
+      "payment": "Payment date",
+      "vote": "Voting ends"
+    },
+    "investorVote": "{ticker} bondholder meeting: holders vote until the deadline",
+    "investorRecord": "{ticker} coupon: whoever holds the bond on the record date is paid",
+    "vote": "Vote",
+    "viewBond": "View the bond"
   },
   "clock": {
     "in": "in {time}",

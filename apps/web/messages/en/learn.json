@@ -1,0 +1,192 @@
+{
+  "meta": {
+    "title": "How a bond lives on Qupon"
+  },
+  "hero": {
+    "lead1": "A bond is a sequence of dated events. This page follows one coupon from announcement to payout, in plain language: the same life Qupon runs on devnet. It starts with the",
+    "termRecordDate": "record date",
+    "lead2": ": the moment that decides who gets paid.",
+    "railTitle": "The life of QPNb1: a coupon every six months, then redemption",
+    "issue": "Issue",
+    "coupon": "Coupon {n}",
+    "maturity": "Coupon 4 + maturity",
+    "issued": "Issued"
+  },
+  "steps": {
+    "title": "One coupon in six steps",
+    "s1": {
+      "title": "1 · The issue",
+      "body": "The issuer creates the series on-chain: 100 bonds of 1,000 ₸ at 10% a year, placed with three holders of 10, 25 and 65 bonds. Every holder's wallet carries a KYC attestation; the register is the token ledger itself."
+    },
+    "s2": {
+      "title": "2 · The announcement",
+      "body": "The registrar announces the coupon as a corporate action: the period, the record date, the payment date and 50.00 ₸ per bond. Custodians and banks get it as a seev.031 notice."
+    },
+    "s3": {
+      "title": "3 · The record date",
+      "body": "Whoever holds the bond at the record date is paid, even if they sell a second later. Trading never stops: each holder is copied into the on-chain snapshot before their first transfer after the record date, and the snapshot must add up to every bond outstanding."
+    },
+    "s4": {
+      "title": "4 · The escrow",
+      "body": "The issuer funds a program-owned escrow with the full amount: 5,000 ₸ for this coupon. From then on nobody can redirect the money: it can only reach the snapshotted holders, the tax vault or the paying agent."
+    },
+    "s5": {
+      "title": "5 · The payout",
+      "body": "Any wallet can push the payout: the step is permissionless, so a funded coupon cannot be stalled. Wallet holders receive tKZT directly; bank-routed holders are paid through the paying agent (the bank transfer is simulated). Each holder gets a seev.036 confirmation."
+    },
+    "s6": {
+      "title": "6 · Default, cure, redemption",
+      "body": "If the escrow is still short one grace day after the payment date, anyone can record the default on-chain. The issuer cures it by funding late, and the money still goes to the record-date holders. At maturity the principal is paid and the bonds are burned in one instruction."
+    }
+  },
+  "money": {
+    "lead": "The example coupon: 100 bonds × 50.00 ₸ = 5,000 ₸ from the escrow to three holders: 500, 1,250 and 3,250 ₸.",
+    "holderSub": "{units} bonds",
+    "holder": "Holder {name}"
+  },
+  "gloss": {
+    "title": "Glossary",
+    "lead": "Every term of art Qupon uses, in plain language. The same definitions open from the dotted terms across the app."
+  },
+  "cta": {
+    "lead": "Rather watch it? The sandbox plays this whole life on a demo clock (coupon, default, cure) in a few minutes.",
+    "sandbox": "Open the sandbox",
+    "bonds": "Browse the bonds"
+  },
+  "help": {
+    "label": "Help",
+    "restart": "Restart the tour",
+    "learn": "How a bond lives on Qupon",
+    "glossary": "Glossary"
+  },
+  "tour": {
+    "registrar": {
+      "welcome": {
+        "title": "Welcome, registrar",
+        "body": "Your back office for every corporate action. Seven quick pointers; skip any time."
+      },
+      "now": {
+        "title": "The Now bar",
+        "body": "The next step of the most urgent action, who may push it and the one button. Steps marked \"Anyone\" are permissionless: any wallet can push them and the program checks every rule."
+      },
+      "kpi": {
+        "title": "The numbers",
+        "body": "Active series, open actions, registered investors and this month's payouts at a glance."
+      },
+      "pipeline": {
+        "title": "The pipeline",
+        "body": "Every open action by stage. Open one to run its next step in the action console."
+      },
+      "alerts": {
+        "title": "Alerts",
+        "body": "What needs you: a record date that passed without a snapshot, an escrow below what the snapshot requires, a cancelled action."
+      },
+      "nav": {
+        "title": "Sections",
+        "body": "Actions, investors, trades, KYC, reports, activity and autopilot: the register's daily work."
+      },
+      "help": {
+        "title": "Help",
+        "body": "Restart this tour, read how a bond lives on Qupon, or open the glossary."
+      }
+    },
+    "issuer": {
+      "welcome": {
+        "title": "Welcome, issuer",
+        "body": "Your desk: what to fund, what is coming and how your series are doing."
+      },
+      "now": {
+        "title": "The Now bar",
+        "body": "The one thing that needs you, usually funding an escrow. The clock counts down to the payment date."
+      },
+      "kpi": {
+        "title": "The numbers",
+        "body": "Active series, the next coupon, the escrow still to fund and every corporate action."
+      },
+      "todo": {
+        "title": "To do",
+        "body": "Actions waiting on you: fund an escrow, see an approved meeting through."
+      },
+      "latest": {
+        "title": "Latest actions",
+        "body": "Every action across your series, newest first."
+      },
+      "nav": {
+        "title": "Sections",
+        "body": "Your series, a new issue, the organization, the team and documents."
+      },
+      "help": {
+        "title": "Help",
+        "body": "Restart this tour, read how a bond lives on Qupon, or open the glossary."
+      }
+    },
+    "investor": {
+      "welcome": {
+        "title": "Welcome",
+        "body": "Your portfolio on Qupon: what you hold, what is coming and what to do next."
+      },
+      "now": {
+        "title": "The Now bar",
+        "body": "The next thing that touches your bonds: a meeting to vote in, or the record date that decides who is paid."
+      },
+      "checklist": {
+        "title": "Getting started",
+        "body": "Devnet funds, a KYC attestation and a wallet: each item links to its next step."
+      },
+      "portfolio": {
+        "title": "Your portfolio",
+        "body": "Your positions with their value, accrued interest and the next coupon."
+      },
+      "holdings": {
+        "title": "Holdings and payouts",
+        "body": "Every position and every payout you received, each with its transaction."
+      },
+      "nav": {
+        "title": "Sections",
+        "body": "Portfolio, placement, meetings, KYC, statements and reports."
+      },
+      "help": {
+        "title": "Help",
+        "body": "Restart this tour, read how a bond lives on Qupon, or open the glossary."
+      }
+    },
+    "sandbox": {
+      "welcome": {
+        "title": "The judge sandbox",
+        "body": "A whole bond life on a demo clock: one bond day lasts two seconds. Step through it yourself."
+      },
+      "now": {
+        "title": "What happens now",
+        "body": "This bar names the next step, who may take it and gives you the one button. Switch the role above to see it from each side."
+      },
+      "roles": {
+        "title": "View as",
+        "body": "Public, issuer, registrar or investor: the same events from each chair. Permissionless steps work from any role."
+      },
+      "scenario": {
+        "title": "Scenarios",
+        "body": "The coupon scenario pays on time; the default scenario misses the funding, defaults, then cures. Restart any time."
+      },
+      "rail": {
+        "title": "The bond's life",
+        "body": "Every coupon is a stub on the sheet. Paid ones carry their transactions; the ringing one is in progress."
+      },
+      "steps": {
+        "title": "The steps",
+        "body": "Each step of the coupon: who may push it, when it happened and the files it produced."
+      },
+      "money": {
+        "title": "Follow the money",
+        "body": "Bands are proportional to amounts: escrow to each holder, tax to the tax vault, the bank leg through the paying agent. Step through it."
+      },
+      "feed": {
+        "title": "Every step is a transaction",
+        "body": "Each line is one transaction. On a live series the link opens it in the Solana explorer."
+      },
+      "help": {
+        "title": "Help",
+        "body": "Restart this tour, read how a bond lives on Qupon, or open the glossary."
+      }
+    }
+  }
+}

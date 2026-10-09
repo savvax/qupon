@@ -12,6 +12,8 @@ import { Kpi } from "@/components/ui/Kpi";
 import { ActionFlow, type FlowStep } from "@/components/ui/ActionFlow";
 import { MoneyFlow } from "@/components/ui/MoneyFlow";
 import { NowBar } from "@/components/ui/NowBar";
+import { CountdownClock } from "@/components/ui/CountdownClock";
+import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import {
   buildTimeline,
@@ -105,13 +107,14 @@ export default async function RegistrarActionPage({
       getKaseCheck(pda).catch(() => null),
     ]);
   const locale = toLocale(await getLocale());
-  const [t, ts, tk, tstep, tt, tm] = await Promise.all([
+  const [t, ts, tk, tstep, tt, tm, tnow] = await Promise.all([
     getTranslations("action"),
     getTranslations("status"),
     getTranslations("landing.kinds"),
     getTranslations("steps"),
     getTranslations("trades"),
     getTranslations("kit.money"),
+    getTranslations("kit.now"),
   ]);
 
   const timeline = buildTimeline(action, activity, series?.status === "Closed");
@@ -178,7 +181,7 @@ export default async function RegistrarActionPage({
   };
   const snapUnits = BigInt(action.unitsSnapshotted ?? "0");
 
-  const facts: [string, ReactNode][] = [
+  const facts: [ReactNode, ReactNode][] = [
     [
       t("facts.corpId"),
       <span key="c" className="num">
@@ -192,7 +195,7 @@ export default async function RegistrarActionPage({
       </span>,
     ],
     [
-      t("facts.record"),
+      <GlossaryTerm key="r" term="recordDate">{t("facts.record")}</GlossaryTerm>,
       <span key="r" className="num">
         {formatDateTime(action.recordAt, locale)}
       </span>,
@@ -216,7 +219,7 @@ export default async function RegistrarActionPage({
     ]);
   if (action.snapshotSlot != null)
     facts.push([
-      t("facts.snapshot"),
+      <GlossaryTerm key="s" term="snapshot">{t("facts.snapshot")}</GlossaryTerm>,
       <span key="s" className="num">
         {t("facts.snapshotValue", {
           slot: action.snapshotSlot,
@@ -398,8 +401,9 @@ export default async function RegistrarActionPage({
     <div className="grid gap-6 xl:grid-cols-2">
       <Panel title={t("facts.title")}>
         <dl className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-1">
-          {facts.map(([k, v]) => (
-            <div key={k} className="min-w-0">
+          {facts.map(([k, v], i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static positional rows
+            <div key={i} className="min-w-0">
               <dt className="text-xs font-semibold text-n500">{k}</dt>
               <dd className="text-sm break-words text-n900">{v}</dd>
             </div>
@@ -461,7 +465,9 @@ export default async function RegistrarActionPage({
           title={nowTitle}
           detail={nowDetail}
           clock={
-            action.status === "VotingOpen" && action.votingEndsAt ? (
+            next.gate ? (
+              <CountdownClock label={tnow(`gate.${next.gate.kind}`)} to={next.gate.at} />
+            ) : action.status === "VotingOpen" && action.votingEndsAt ? (
               <Countdown endsAt={action.votingEndsAt} />
             ) : undefined
           }
@@ -518,7 +524,7 @@ export default async function RegistrarActionPage({
         )}
         {isCash ? (
           <Kpi
-            label={t("kpi.escrow")}
+            label={<GlossaryTerm term="escrow">{t("kpi.escrow")}</GlossaryTerm>}
             value={money(action.escrowBalance)}
             hint={
               funded
@@ -579,7 +585,11 @@ export default async function RegistrarActionPage({
       )}
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-bold">
-          {action.kind === "BMET" ? t("ent.holders") : t("ent.title")}{" "}
+          {action.kind === "BMET" ? (
+            t("ent.holders")
+          ) : (
+            <GlossaryTerm term="entitlement">{t("ent.title")}</GlossaryTerm>
+          )}{" "}
           <span className="text-n500">({entitlements.length})</span>
         </h2>
         <DataTable

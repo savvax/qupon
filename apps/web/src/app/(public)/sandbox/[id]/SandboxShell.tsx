@@ -1,7 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { HelpMenu } from "@/components/shell/HelpMenu";
+import { Tour } from "@/components/shell/Tour";
 import { ActionFlow } from "@/components/ui/ActionFlow";
 import { Amount } from "@/components/ui/Amount";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +13,6 @@ import { LifecycleRail } from "@/components/ui/LifecycleRail";
 import { MoneyFlow } from "@/components/ui/MoneyFlow";
 import { NowBar } from "@/components/ui/NowBar";
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
-import { TourStep } from "@/components/ui/TourStep";
 import { cx } from "@/lib/ui/cx";
 import {
   CURRENCY,
@@ -31,9 +32,6 @@ import {
 
 type Scenario = keyof typeof SCENARIOS;
 type FeedRow = { key: string; values?: Record<string, string>; sig: string; at: number };
-
-const TOUR = ["now", "rail", "flow", "feed"] as const;
-const TOUR_KEY = "qupon.tour.sandbox";
 
 /** Segmented control (role, scenario): one row of buttons, the chosen one filled. */
 function Segmented<T extends string>({
@@ -72,7 +70,7 @@ function Segmented<T extends string>({
 
 /**
  * The judge sandbox, shell only (task 1530): a demo-clock series played frame by frame from a local fixture —
- * role switcher, Now bar, coupon sheet, the coupon's steps and money, a transaction feed and a 4-step tour.
+ * role switcher, Now bar, coupon sheet, the coupon's steps and money, a transaction feed and the sandbox tour.
  * Buttons advance the fixture; nothing is sent anywhere (the engine arrives with task 1532).
  */
 export function SandboxShell({ locale }: { locale: "en" | "ru" }) {
@@ -85,8 +83,6 @@ export function SandboxShell({ locale }: { locale: "en" | "ru" }) {
   const [frameAt, setFrameAt] = useState<number | null>(null);
   const [feed, setFeed] = useState<FeedRow[]>([]);
   const [now, setNow] = useState<number | null>(null);
-  const [tour, setTour] = useState<number | null>(null);
-  const started = useRef(false);
 
   useEffect(() => {
     const t0 = Date.now();
@@ -94,36 +90,9 @@ export function SandboxShell({ locale }: { locale: "en" | "ru" }) {
     setFrameAt(t0);
     setNow(t0);
     setFeed(HISTORY.map((h) => ({ ...h, at: t0 - h.ago * 1000 })));
-    let step = 0;
-    try {
-      const saved = localStorage.getItem(TOUR_KEY);
-      step = saved === "done" ? -1 : Number(saved ?? 0) || 0;
-    } catch {
-      // storage blocked: the tour simply starts at the beginning
-    }
-    setTour(step >= 0 && step < TOUR.length ? step : null);
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
-
-  // The tour target gets the ring; the card stays docked, so nothing jumps.
-  useEffect(() => {
-    if (tour === null) return;
-    const el = document.querySelector(`[data-tour="${TOUR[tour]}"]`);
-    el?.setAttribute("data-tour-active", "true");
-    if (started.current) el?.scrollIntoView({ block: "center", behavior: "smooth" });
-    started.current = true;
-    try {
-      localStorage.setItem(TOUR_KEY, String(tour));
-    } catch {}
-    return () => el?.removeAttribute("data-tour-active");
-  }, [tour]);
-  const endTour = () => {
-    setTour(null);
-    try {
-      localStorage.setItem(TOUR_KEY, "done");
-    } catch {}
-  };
 
   const frames = SCENARIOS[scenario];
   const frame = frames[Math.min(i, frames.length - 1)]!;
@@ -201,13 +170,15 @@ export function SandboxShell({ locale }: { locale: "en" | "ru" }) {
       </p>
 
       <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <Segmented
-          label={t("viewAs")}
-          value={role}
-          options={ROLES.map((r) => ({ value: r, label: roleName(r) }))}
-          onChange={setRole}
-        />
-        <div className="flex flex-wrap items-center gap-2">
+        <div data-tour="roles" className="min-w-0">
+          <Segmented
+            label={t("viewAs")}
+            value={role}
+            options={ROLES.map((r) => ({ value: r, label: roleName(r) }))}
+            onChange={setRole}
+          />
+        </div>
+        <div data-tour="scenario" className="flex flex-wrap items-center gap-2">
           <Segmented
             label={t("scenario")}
             value={scenario}
@@ -220,6 +191,7 @@ export function SandboxShell({ locale }: { locale: "en" | "ru" }) {
           <Button size="sm" variant="ghost" onClick={() => reset(scenario)}>
             {t("restart")}
           </Button>
+          <HelpMenu role="sandbox" />
         </div>
       </div>
 
@@ -276,11 +248,11 @@ export function SandboxShell({ locale }: { locale: "en" | "ru" }) {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-6">
-          <section className="rounded-card border border-n200 bg-n0 p-4 sm:p-5">
+          <section data-tour="steps" className="rounded-card border border-n200 bg-n0 p-4 sm:p-5">
             <h2 className="mb-4 text-base font-bold">{t("flowTitle")}</h2>
             <ActionFlow steps={flow} locale={locale} />
           </section>
-          <div data-tour="flow">
+          <div data-tour="money">
             <MoneyFlow
               currency={CURRENCY}
               locale={locale}
@@ -311,20 +283,7 @@ export function SandboxShell({ locale }: { locale: "en" | "ru" }) {
         </aside>
       </div>
 
-      {tour !== null && (
-        <div className="fixed right-4 bottom-32 left-4 z-40 flex justify-end md:bottom-6 md:left-auto">
-          <TourStep
-            step={tour + 1}
-            total={TOUR.length}
-            title={t(`tour.${TOUR[tour]}.title`)}
-            onBack={() => setTour(Math.max(0, tour - 1))}
-            onNext={() => (tour + 1 >= TOUR.length ? endTour() : setTour(tour + 1))}
-            onSkip={endTour}
-          >
-            {t(`tour.${TOUR[tour]}.body`)}
-          </TourStep>
-        </div>
-      )}
+      <Tour role="sandbox" />
     </div>
   );
 }

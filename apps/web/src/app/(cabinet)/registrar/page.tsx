@@ -77,7 +77,7 @@ export default async function RegistrarDashboard() {
         <EmptyState title={t("unavailable")} body={t("unavailableBody")} />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div data-tour="kpi" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Kpi label={t("activeSeries")} value={counts.series} />
             <Kpi
               label={t("openActions")}
@@ -100,9 +100,11 @@ export default async function RegistrarDashboard() {
             />
           </div>
 
-          <Pipeline actions={actions} series={series ?? emptySeries} />
+          <div data-tour="pipeline">
+            <Pipeline actions={actions} series={series ?? emptySeries} />
+          </div>
 
-          <Card>
+          <Card data-tour="alerts">
             <h2 className="text-base font-bold">{t("alerts")}</h2>
             <div className="mt-3">
               <Alerts alerts={deriveAlerts(actions)} />

@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { CabinetShell } from "@/components/shell/CabinetShell";
+import { CabinetNow } from "../CabinetNow";
 import { TopbarExtras } from "@/components/shell/TopbarExtras";
 import { getSession } from "@/lib/session";
 import { investorNav } from "../nav";
@@ -24,6 +25,7 @@ export default async function InvestorLayout({
       user={user}
       topbar={<TopbarExtras />}
       nav={investorNav((k) => t(k))}
+      now={<CabinetNow role="investor" />}
     >
       {children}
     </CabinetShell>

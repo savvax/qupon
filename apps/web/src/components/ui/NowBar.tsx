@@ -1,5 +1,6 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { StableLabel } from "@/components/i18n/StableLabel";
 import { cx } from "@/lib/ui/cx";
 import { type Actor, ActorChip } from "./ActorChip";
 
@@ -71,14 +72,16 @@ export function NowBar({
               PILL[tone],
             )}
           >
-            {tone === "done" ? t("now.done") : t("now.label")}
+            <StableLabel>{tone === "done" ? t("now.done") : t("now.label")}</StableLabel>
           </span>
-          <div className="min-w-0">
+          {/* flex-1: the title's box is the space left, not its text, so it keeps its size in every language */}
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-n900 sm:text-base">
               {title}
             </p>
             {(detail || clock) && (
-              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-n600 sm:text-sm">
+              // phones: detail and clock on their own lines, so the docked bar keeps one height in every language
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-n600 max-sm:flex-col max-sm:items-start sm:text-sm">
                 {detail && <span className="min-w-0">{detail}</span>}
                 {clock}
               </div>
@@ -89,7 +92,7 @@ export function NowBar({
           {actors.length > 0 && (
             <span className="flex flex-wrap items-center gap-1.5">
               <span className="text-xs text-n500 max-sm:sr-only">
-                {t("actor.label")}
+                <StableLabel align="end">{t("actor.label")}</StableLabel>
               </span>
               {actors.map((a) => (
                 <ActorChip key={a} actor={a} />
