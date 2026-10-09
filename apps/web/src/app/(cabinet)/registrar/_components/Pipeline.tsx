@@ -18,34 +18,11 @@ const COLUMNS: ReadonlyArray<{ key: string; statuses: readonly string[] }> = [
   { key: "Completed", statuses: ["Completed", "Finalized"] },
 ];
 
-export type AlertKind = "recordDatePassed" | "escrowShort" | "cancelled";
-
-export type ActionAlert = { kind: AlertKind; action: ActionDTO };
-
-/** Conditions the registrar must react to (Plan 3 Task 3 alerts list). */
-export function deriveAlerts(
-  actions: ActionDTO[],
-  now = new Date(),
-): ActionAlert[] {
-  const out: ActionAlert[] = [];
-  for (const a of actions) {
-    if (a.status === "Announced" && new Date(a.recordAt) < now)
-      out.push({ kind: "recordDatePassed", action: a });
-    // Required = Σ net + withheld tax (principal is per-unit only until redemption totals land).
-    if (
-      a.status === "SnapshotComplete" &&
-      a.escrowBalance &&
-      a.totalNet &&
-      a.totalTax
-    ) {
-      const required = BigInt(a.totalNet.minor) + BigInt(a.totalTax.minor);
-      if (BigInt(a.escrowBalance.minor) < required)
-        out.push({ kind: "escrowShort", action: a });
-    }
-    if (a.status === "Cancelled") out.push({ kind: "cancelled", action: a });
-  }
-  return out;
-}
+// Alert logic (deriveAlerts) lives in ./alerts so vitest can import it — a .tsx
+// module is not transformable from a .ts test under this repo's vitest config.
+export { deriveAlerts } from "./alerts";
+import type { ActionAlert } from "./alerts";
+export type { ActionAlert, AlertKind } from "./alerts";
 
 function ActionCard({
   action,

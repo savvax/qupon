@@ -193,6 +193,15 @@ func TestOrgProfileAndMembers(t *testing.T) {
 		t.Fatalf("short name: %d %v", code, out2)
 	}
 
+	// A website without an http(s) scheme is refused: the value is rendered as a link
+	// in the admin console (task 1419).
+	if code, out2 := patchJSON(t, e.srv.URL, "/org", `{"website":"javascript:alert(1)"}`, e.issuerA); code != http.StatusBadRequest || out2["code"] != "invalid_params" {
+		t.Fatalf("website scheme: %d %v", code, out2)
+	}
+	if code, out2 := patchJSON(t, e.srv.URL, "/org", `{"website":""}`, e.issuerA); code != http.StatusOK {
+		t.Fatalf("empty website clears: %d %v", code, out2)
+	}
+
 	// Members: the issuer sees their organisation only.
 	code, out2 = getJSONAuth(t, e.srv.URL, "/org/members", e.issuerA)
 	if code != 200 {

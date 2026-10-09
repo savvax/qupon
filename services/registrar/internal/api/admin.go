@@ -290,6 +290,11 @@ func adminCreateOrg(st *store.Store) http.HandlerFunc {
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "need a name and kind issuer or registrar")
 			return
 		}
+		req.Website = strings.TrimSpace(req.Website)
+		if !validWebsite(req.Website) {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "website must start with http:// or https://")
+			return
+		}
 		org, err := st.CreateOrganization(r.Context(), req)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
@@ -321,6 +326,10 @@ func adminPatchOrg(st *store.Store) http.HandlerFunc {
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "kind must be issuer or registrar, name non-empty")
 			return
 		}
+		if req.Website != nil && !validWebsite(strings.TrimSpace(*req.Website)) {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "website must start with http:// or https://")
+			return
+		}
 		org, err := st.GetOrganization(r.Context(), id)
 		if errors.Is(err, store.ErrNotFound) {
 			writeErrorCode(w, http.StatusNotFound, "not_found", "no such organization")
@@ -339,7 +348,7 @@ func adminPatchOrg(st *store.Store) http.HandlerFunc {
 			org.BIN = *req.BIN
 		}
 		if req.Website != nil {
-			org.Website = *req.Website
+			org.Website = strings.TrimSpace(*req.Website)
 		}
 		if err := st.UpdateOrganization(r.Context(), org); err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())

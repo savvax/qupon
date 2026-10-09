@@ -82,6 +82,10 @@ func mountOrg(r chi.Router, deps Deps, st *store.Store) {
 			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "bin must be at most 12 and website 200 characters")
 			return
 		}
+		if !validWebsite(o.Website) {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_params", "website must start with http:// or https://")
+			return
+		}
 		if err := st.UpdateOrganization(r.Context(), o); err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -298,6 +302,12 @@ func mountOrg(r chi.Router, deps Deps, st *store.Store) {
 
 // seriesDocKinds are the document kinds that may be published on a series (never personal ones).
 var seriesDocKinds = map[string]bool{"prospectus": true, "decision": true, "other": true}
+
+// validWebsite: an org website is rendered as a link in the admin console, so only plain
+// http(s) URLs may be stored — javascript: and friends are refused at the boundary (empty clears it).
+func validWebsite(w string) bool {
+	return w == "" || strings.HasPrefix(w, "http://") || strings.HasPrefix(w, "https://")
+}
 
 func orgMembers(st *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

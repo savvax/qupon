@@ -22,7 +22,6 @@ import {
   getKaseCheck,
   getNoticeText,
   getSeries,
-  listInvestors,
   listActivity,
   listEntitlements,
   seev031Url,
@@ -91,24 +90,16 @@ export default async function RegistrarActionPage({
     if (status === 404 || status === 400) notFound();
     throw e;
   });
-  const [
-    series,
-    entitlements,
-    activity,
-    noticeEn,
-    noticeRu,
-    investors,
-    kaseCheck,
-  ] = await Promise.all([
-    getSeries(action.seriesMint).catch(() => null),
-    listEntitlements(pda).catch(() => [] as EntitlementDTO[]),
-    listActivity(200),
-    getNoticeText(pda, "en").catch(() => "notice unavailable"),
-    getNoticeText(pda, "ru").catch(() => "уведомление недоступно"),
-    listInvestors(action.seriesMint).catch(() => undefined),
-    // kase.kz outages degrade the card, never the page
-    getKaseCheck(pda).catch(() => null),
-  ]);
+  const [series, entitlements, activity, noticeEn, noticeRu, kaseCheck] =
+    await Promise.all([
+      getSeries(action.seriesMint).catch(() => null),
+      listEntitlements(pda).catch(() => [] as EntitlementDTO[]),
+      listActivity(200),
+      getNoticeText(pda, "en").catch(() => "notice unavailable"),
+      getNoticeText(pda, "ru").catch(() => "уведомление недоступно"),
+      // kase.kz outages degrade the card, never the page
+      getKaseCheck(pda).catch(() => null),
+    ]);
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
   const [t, ts, tk, tstep, tt] = await Promise.all([
     getTranslations("action"),
@@ -123,8 +114,9 @@ export default async function RegistrarActionPage({
   const next = nextStep(
     action,
     Date.now(),
-    // holders with bonds: zero-balance investors are never snapshotted (executor.NextStep compares units with supply)
-    investors?.filter((i) => BigInt(i.units) > 0n).length,
+    // finalize_snapshot needs units == supply, not a holder count (executor.NextStep):
+    // zero-balance investors are skipped by the snapshot, so counting them never settles
+    series ? BigInt(series.totalIssued) : undefined,
     series?.openTrades ?? 0,
   );
   // open secondary trades block the record date (TradesInFlight): say so and link the page that clears them

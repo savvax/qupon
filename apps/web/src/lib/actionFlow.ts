@@ -287,8 +287,8 @@ export type NextStep = { step: StepId | null; label?: string; wait?: string };
 export function nextStep(
   a: ActionDTO,
   now = Date.now(),
-  /** investors holding bonds — once every one is snapshotted, finalize (executor.NextStep: units == supply) */
-  investors?: number,
+  /** bond mint supply (series.totalIssued): once units_snapshotted reaches it, finalize (executor.NextStep) */
+  supply?: bigint,
   /** the series' open secondary trades: strike_record fails with TradesInFlight while any is admitted */
   openTrades = 0,
 ): NextStep {
@@ -301,10 +301,22 @@ export function nextStep(
           wait: `open secondary trades: settle or cancel them first (${openTrades})`,
         };
       return { step: "strike", label: STEP_LABELS.strike };
-    case "RecordStruck":
-      if (investors !== undefined && hs > 0 && hs >= investors)
-        return { step: "finalize", label: STEP_LABELS.finalize };
+    case "RecordStruck": {
+      // finalize_snapshot needs every outstanding unit in the snapshot (executor.NextStep:
+      // units_snapshotted == mint supply). Zero-balance investors are never snapshotted, so
+      // counting holders never settles; supply 0 means nothing can be snapshotted at all.
+      const units = BigInt(a.unitsSnapshotted ?? "0");
+      if (supply !== undefined) {
+        if (supply <= 0n)
+          return {
+            step: null,
+            wait: "no bonds outstanding — nothing to snapshot",
+          };
+        if (units >= supply)
+          return { step: "finalize", label: STEP_LABELS.finalize };
+      }
       return { step: "snapshot", label: STEP_LABELS.snapshot };
+    }
     case "SnapshotComplete":
       return { step: "fund", label: STEP_LABELS.fund };
     case "Funded": // Go executor: always pay (idempotent batches → Settling)

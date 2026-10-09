@@ -59,14 +59,14 @@ describe("stepsForKind", () => {
 describe("nextStep (mirror of Go executor.NextStep)", () => {
   it("offers no strike while the series has open secondary trades", () => {
     const a = { ...base, status: "Announced" as const };
-    expect(nextStep(a, Date.now(), 3, 2)).toEqual({
+    expect(nextStep(a, Date.now(), 100n, 2)).toEqual({
       step: null,
       wait: "open secondary trades: settle or cancel them first (2)",
     });
-    expect(nextStep(a, Date.now(), 3, 0)).toMatchObject({ step: "strike" });
+    expect(nextStep(a, Date.now(), 100n, 0)).toMatchObject({ step: "strike" });
     // only the strike is gated: later steps run with the mint already paused
     expect(
-      nextStep({ ...base, status: "RecordStruck" }, Date.now(), 3, 2),
+      nextStep({ ...base, status: "RecordStruck" }, Date.now(), 100n, 2),
     ).toMatchObject({ step: "snapshot" });
   });
   it("walks the coupon lifecycle", () => {
@@ -76,21 +76,29 @@ describe("nextStep (mirror of Go executor.NextStep)", () => {
     expect(nextStep({ ...base, status: "RecordStruck" })).toMatchObject({
       step: "snapshot",
     });
-    // every registered investor snapshotted → finalize (executor.NextStep), not another snapshot
+    // units == supply → finalize (executor.NextStep) — no holder list needed,
+    // so listInvestors being down must not block the console
     expect(
       nextStep(
-        { ...base, status: "RecordStruck", holdersSnapshotted: 3 },
+        { ...base, status: "RecordStruck", unitsSnapshotted: "100" },
         Date.now(),
-        3,
+        100n,
       ),
     ).toMatchObject({ step: "finalize" });
     expect(
       nextStep(
-        { ...base, status: "RecordStruck", holdersSnapshotted: 2 },
+        { ...base, status: "RecordStruck", unitsSnapshotted: "99" },
         Date.now(),
-        3,
+        100n,
       ),
     ).toMatchObject({ step: "snapshot" });
+    // supply 0 → nothing can be snapshotted: waiting, not another snapshot
+    expect(
+      nextStep({ ...base, status: "RecordStruck" }, Date.now(), 0n),
+    ).toMatchObject({
+      step: null,
+      wait: "no bonds outstanding — nothing to snapshot",
+    });
     expect(nextStep({ ...base, status: "SnapshotComplete" })).toMatchObject({
       step: "fund",
     });

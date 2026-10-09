@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { boFetch } from "@/lib/bo";
 import { formatDate } from "@/lib/format";
 import { metaTitle } from "@/lib/meta";
+import { httpHref } from "@/lib/httpUrl";
 import { OrgControls, type OrgDTO } from "./OrgControls";
 
 export async function generateMetadata() {
@@ -50,10 +51,13 @@ export default async function AdminOrganizationsPage() {
       key: "website",
       header: t("colWebsite"),
       hideBelow: "lg",
-      render: (o) =>
-        o.website ? (
+      render: (o) => {
+        if (!o.website) return <span className="text-n400">—</span>;
+        // legacy values that predate the http(s) check render as inert text, never a link
+        const href = httpHref(o.website);
+        return href ? (
           <a
-            href={o.website}
+            href={href}
             target="_blank"
             rel="noreferrer"
             className="text-p700 underline"
@@ -61,8 +65,9 @@ export default async function AdminOrganizationsPage() {
             {o.website}
           </a>
         ) : (
-          <span className="text-n400">—</span>
-        ),
+          <span className="text-n700">{o.website}</span>
+        );
+      },
     },
     {
       key: "createdAt",
