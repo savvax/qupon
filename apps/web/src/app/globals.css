@@ -46,6 +46,40 @@
   --radius-btn: 10px;
   --radius-card: 16px;
   --radius-hero: 24px;
+
+  /* ── Tokens v2 (task 1530, docs/design/language.md). Additive: v1 names above stay. ── */
+
+  /* Status semantics beyond success/warn/danger: each pair passes AA (≥ 4.5:1) for 12 px bold text. */
+  --color-demo-bg: #f1edff; /* demo clock: time is accelerated */
+  --color-demo-fg: #4b2fb0;
+  --color-demo-bd: #d9cffc;
+  --color-bank-bg: #eaf1fd; /* paid to the paying agent / bank route */
+  --color-bank-fg: #1f4fa8;
+  --color-bank-bd: #c4d6f6;
+  --color-default: #b4171d; /* Defaulted: solid, the loudest state in the system */
+  --color-cure-bg: #e6f4f3; /* Cured: recovered, teal rather than plain green */
+  --color-cure-fg: #0f5f5a;
+  --color-cure-bd: #b8dfdb;
+
+  /* Data-viz roles (money flow, register shares, votes). Distinct in hue and lightness; never alone (labels too). */
+  --color-viz-holder: #179647;
+  --color-viz-tax: #c28a1c;
+  --color-viz-bank: #2f64c9;
+  --color-viz-escrow: #0b2f3a;
+  --color-viz-short: #c2262d;
+  --color-viz-pending: #cbd4cf;
+
+  /* Type scale (Manrope, ratio ≈ 1.2 from 14 px body; display clamps on the landing only). */
+  --text-micro: 0.6875rem; /* 11 px: chips, axis ticks */
+  --text-micro--line-height: 1rem;
+  --text-dense: 0.8125rem; /* 13 px: operator tables and flows */
+  --text-dense--line-height: 1.25rem;
+  --text-title: 1.75rem; /* 28 px: page h1 in cabinets and the dossier */
+  --text-title--line-height: 2.125rem;
+
+  /* Elevation: one soft brand-tinted shadow for raised surfaces, one for docked bars. */
+  --shadow-raise: 0 1px 2px rgba(7, 29, 37, 0.06), 0 8px 24px -12px rgba(7, 29, 37, 0.18);
+  --shadow-dock: 0 -8px 24px -12px rgba(7, 29, 37, 0.28);
 }
 
 @layer base {
@@ -299,11 +333,11 @@
         scale: 0 1;
       }
     }
+    /* Transform only (task 1530): content is never at opacity 0, so full-page screenshots, print and slow
+       devices always show the whole page. */
     @keyframes qp-reveal {
       from {
-        opacity: 0;
-        translate: 0 24px;
-        scale: 0.985;
+        translate: 0 16px;
       }
     }
   }
@@ -320,6 +354,116 @@
   }
 }
 
+
+/* ── v2 primitives (task 1530) ── */
+
+/* GlossaryTerm: a native popover. Anchored under its term where CSS anchor positioning exists; elsewhere the
+   browser centres it (still readable, still dismissable with Esc or a tap outside). */
+.qp-term {
+  text-decoration: underline dotted;
+  text-decoration-color: var(--color-n400);
+  text-underline-offset: 3px;
+  cursor: help;
+  border-radius: 4px;
+}
+.qp-term:hover {
+  text-decoration-color: var(--color-g600);
+}
+.qp-gloss {
+  width: min(20rem, calc(100vw - 2rem));
+  border: 1px solid var(--color-n200);
+  border-radius: var(--radius-btn);
+  background: var(--color-n0);
+  color: var(--color-n900);
+  padding: 0.75rem 0.875rem;
+  box-shadow: var(--shadow-raise);
+  font-size: 0.8125rem;
+  line-height: 1.35rem;
+  text-align: left;
+}
+@supports (position-area: bottom) {
+  .qp-gloss {
+    margin: 6px 0 0;
+    position-area: bottom span-right;
+    position-try-fallbacks: flip-inline, flip-block;
+  }
+}
+
+/* LifecycleRail: the coupon sheet. Stubs are divided by a perforation (dashes plus two punched notches), the
+   way bearer-bond coupons were clipped off the sheet. */
+.qp-perf {
+  position: relative;
+  border-color: var(--color-n300);
+  border-style: dashed;
+  border-width: 1.5px 0 0;
+}
+.qp-perf::before,
+.qp-perf::after {
+  content: "";
+  position: absolute;
+  top: -6.5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--qp-sheet-bg, var(--color-n50));
+  border: 1px solid var(--color-n200);
+}
+/* phone: a horizontal perforation, notches punched into the left and right edge of the sheet */
+.qp-perf::before {
+  left: -6px;
+}
+.qp-perf::after {
+  right: -6px;
+}
+/* ≥ 640 px: a vertical perforation, notches at the top and bottom edge */
+@media (min-width: 40rem) {
+  .qp-perf {
+    border-width: 0 0 0 1.5px;
+  }
+  .qp-perf::before,
+  .qp-perf::after {
+    left: -6.5px;
+    right: auto;
+  }
+  .qp-perf::before {
+    top: -6px;
+  }
+  .qp-perf::after {
+    top: auto;
+    bottom: -6px;
+  }
+}
+
+/* "Live" ring for the current step/stub: box-shadow only, the element itself never fades. */
+.qp-live {
+  animation: qp-live 2.4s var(--ease-qp-out) infinite;
+}
+@keyframes qp-live {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-g400) 45%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
+/* Simulated surfaces are drawn with a dashed edge and a faint hatch: "not real money" at a glance. */
+.qp-hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 6px,
+    color-mix(in oklab, currentColor 10%, transparent) 6px 7px
+  );
+}
+
+/* Tour target highlight (TourStep): an outline ring that does not shift layout. */
+[data-tour-active="true"] {
+  outline: 2px solid var(--color-g400);
+  outline-offset: 4px;
+  border-radius: var(--radius-card);
+  scroll-margin: 96px;
+}
 
 /* Printable reports (task 902): a clean A4 sheet — the browser's "Save as PDF" is the PDF engine. */
 @media print {
