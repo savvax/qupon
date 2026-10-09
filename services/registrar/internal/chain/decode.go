@@ -101,8 +101,10 @@ func DecodeSeries(data []byte) (*Series, error) {
 	// Plan 15 D7 carve (after the hook fields): reserved[22:26] = day_secs, [26:30] = issue_ymd.
 	s.DaySecs = binary.LittleEndian.Uint32(s.Reserved[22:26])
 	s.IssueYmd = binary.LittleEndian.Uint32(s.Reserved[26:30])
-	// The account is allocated at max size (open_action Some = 33 bytes); a None leaves 32 zero bytes at the end.
-	if !r.Done() && (s.OpenAction != nil || r.Remaining() != 32 || !r.RestIsZero()) {
+	// The account is allocated at max size (open_action Some = 33 bytes). With None, Borsh writes everything 32 bytes
+	// earlier and leaves the last 32 bytes as they were: zero on a fresh series, but the old tail (non-zero carved
+	// fields: hook, record_at, day_secs, …) once an action has opened and closed. Their content is meaningless.
+	if !r.Done() && (s.OpenAction != nil || r.Remaining() != 32) {
 		return nil, fmt.Errorf("series: %d trailing bytes", r.Remaining())
 	}
 	return &s, nil

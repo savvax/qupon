@@ -434,10 +434,34 @@ func TestDecodeSeriesAllocatedPadding(t *testing.T) {
 	if _, err := DecodeSeries(append(encodeSeries(&in), make([]byte, 33)...)); err == nil {
 		t.Fatal("33 trailing bytes must still be rejected")
 	}
-	junk := append(encodeSeries(&in), make([]byte, 32)...)
-	junk[len(junk)-1] = 7
-	if _, err := DecodeSeries(junk); err == nil {
-		t.Fatal("non-zero padding must be rejected")
+	// After an action opened and closed, the 32-byte tail keeps the shifted bytes of the Some layout (a hooked series'
+	// carved fields): stale, not padding — the live registrar returned 502 on /series for such a series.
+	stale := append(encodeSeries(&in), make([]byte, 32)...)
+	stale[len(stale)-1] = 7
+	if _, err := DecodeSeries(stale); err != nil {
+		t.Fatalf("stale tail after None: %v", err)
+	}
+	withSome := in
+	oa := pk(t, "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd")
+	withSome.OpenAction = &oa
+	if _, err := DecodeSeries(append(encodeSeries(&withSome), 0)); err == nil {
+		t.Fatal("a trailing byte after a Some open_action must be rejected")
+	}
+}
+
+// Devnet regression (2026-10-09): hooked demo-clock series ufDVk… after its coupon closed — open_action None and a
+// non-zero 32-byte stale tail. It must decode with the hook and demo-clock fields intact.
+func TestDecodeSeriesLiveStaleTail(t *testing.T) {
+	raw, err := base64.StdEncoding.DecodeString("8GEIt4tN+qL+vPdfBRpqYeIP9gB96rXP6EUGmHyGVjmeuMWfLV0sBv/zwLree4+P4DDT0zx18hGkQlTf+R663zuVH0dhNr9soqBSTKNlFrwKsL96t81BhBIi5eqWh2+mMER1+uGg67VKdtKNssstLewgYM1A65tPMR4Em4hv3ESvQ5+A/YiFRBlcqaIdGUvHClgK/s7DLYe46jG4zBf7YF9ISkySZymBU0taMkMwUVVQT04wMVFQTmIxLXRtbmJndQAAAACghgEAAAAAALAEAAACADC1RmoAAAAAsG0KbgAAAACwfBptAAAAALDoJ2wAAAAAAGQAAAAAAAAAAwAAAIgTCxq7bq6ghNDJRmGDSBdUzm2LWACMmsrrv7kB35wkUHZTmwAAAAAAAQADAAAAAAAAAAAAAAADAAAAAAAAAAAAAABfJzUBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANQEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := DecodeSeries(raw[8:])
+	if err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if s.OpenAction != nil || s.FaceValue == 0 {
+		t.Fatalf("decoded %+v", s)
 	}
 }
 
