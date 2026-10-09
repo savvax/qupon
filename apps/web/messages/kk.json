@@ -28,7 +28,8 @@
       "issuer": "Эмитент",
       "registrar": "Тіркеуші",
       "investor": "Инвестор"
-    }
+    },
+    "learn": "Анықтама"
   },
   "status": {
     "Active": "Белсенді",
@@ -505,7 +506,8 @@
     "adminAudit": "Аудит ізі",
     "adminUsers": "Пайдаланушылар",
     "adminOrganizations": "Ұйымдар",
-    "resetPassword": "Жаңа құпиясөз орнату"
+    "resetPassword": "Жаңа құпиясөз орнату",
+    "learn": "Qupon-да облигация қалай өмір сүреді"
   },
   "errors": {
     "failed": "Бірдеңе дұрыс болмады",

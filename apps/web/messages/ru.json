@@ -28,7 +28,8 @@
       "issuer": "Эмитент",
       "registrar": "Регистратор",
       "investor": "Инвестор"
-    }
+    },
+    "learn": "Справка"
   },
   "status": {
     "Active": "Активен",
@@ -505,7 +506,8 @@
     "adminAudit": "Журнал действий",
     "adminUsers": "Пользователи",
     "adminOrganizations": "Организации",
-    "resetPassword": "Новый пароль"
+    "resetPassword": "Новый пароль",
+    "learn": "Как живёт облигация на Qupon"
   },
   "errors": {
     "failed": "Что-то пошло не так",

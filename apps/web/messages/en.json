@@ -28,7 +28,8 @@
       "issuer": "Issuer",
       "registrar": "Registrar",
       "investor": "Investor"
-    }
+    },
+    "learn": "Guide"
   },
   "status": {
     "Active": "Active",
@@ -505,7 +506,8 @@
     "adminAudit": "Audit log",
     "adminUsers": "Users",
     "adminOrganizations": "Organizations",
-    "resetPassword": "Set a new password"
+    "resetPassword": "Set a new password",
+    "learn": "How a bond lives on Qupon"
   },
   "errors": {
     "failed": "Something went wrong",

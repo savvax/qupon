@@ -70,6 +70,7 @@ export async function PublicShell({ children }: { children: ReactNode }) {
   ]);
   const links = [
     { href: "/bonds", label: t("bonds") },
+    { href: "/learn", label: t("learn") },
     { href: "/#how", label: t("howItWorks") },
     { href: "/sandbox/demo", label: t("sandbox") },
   ];
