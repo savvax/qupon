@@ -1,7 +1,7 @@
 ---
 id: 1535
 title: bond dossier v2 + board
-agent: claude
+agent: glm
 tier: T1
 depends_on: [1530, 1502, 1525]
 verify: make verify

@@ -1,7 +1,7 @@
 ---
 id: 1524
 title: sandbox API — a judge's own bond on a demo clock
-agent: claude
+agent: glm
 tier: T0
 depends_on: [1520, 1522]
 verify: make verify
@@ -54,6 +54,14 @@ Implement task 1524 of plan 15 exactly as written below (the plan section is cop
 - Send the `non_kyc_transfer` attempt with skipPreflight so the refusal has a signature + logs.
 - When a visitor wallet joined, leave that holder's payout unpaid for ~60 s after funding so the page's Claim button has a
   window (the autopilot pays everyone else immediately).
+
+## Resume notes (lead, 2026-10-10 00:27)
+- The resume patch `logs/1524-go-sandbox-api.20261010-002639.wip.patch` (applied automatically) holds most of the
+  implementation: `internal/sandbox`, `internal/api/sandbox.go` + tests, `store/sandboxes.go`, migration
+  `009_sandboxes.sql` (008 is taken by 91522 — keep 009), network guard, scheduler hooks, CLI helpers. It was stopped
+  while writing the openapi additions. Finish: openapi (both copies identical) → `cd apps/web && pnpm gen`; make every
+  package compile; `go test ./services/registrar/...`; golangci-lint; then `make verify`. Rebase on main first if the
+  patch does not apply cleanly (91522 and 1525 changed api.go, rest.go, openapi.yaml).
 
 ## Finish
 `make verify` green, commits carry `task: 1524`, `reports/worklog/1524.md` written. Print `DONE:1524` or `BLOCKED:1524 <reason>`.
