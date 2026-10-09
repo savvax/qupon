@@ -1,7 +1,7 @@
 ---
 id: 1515
 title: program — disclosure anchoring and accrued interest on DvP trades
-agent: glm
+agent: claude
 tier: T1
 depends_on: [1514]
 verify: make verify
