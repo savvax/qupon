@@ -66,9 +66,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        // Loading keeps the variant colour (unlike disabled) but blocks clicks.
+        // Loading keeps the variant colour (unlike disabled) but blocks all activation, Enter/Space included (task 1418).
         className={cx(classes, loading && "pointer-events-none")}
-        disabled={disabled}
+        disabled={disabled || loading}
         aria-busy={loading || undefined}
         aria-disabled={loading || undefined}
         {...rest}

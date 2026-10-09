@@ -33,7 +33,7 @@ import {
   walletTransactionSigner,
 } from "@/lib/walletSigner";
 import { useInvestor } from "./InvestorIdentity";
-import { useWalletWrite } from "../_lib/useWalletWrite";
+import { useWalletWrite, walletLegSent } from "../_lib/useWalletWrite";
 import { usePortalRows } from "../_lib/usePortalRows";
 
 type DemoWriteResult = {
@@ -50,10 +50,13 @@ const CHOICES: VoteChoiceName[] = ["For", "Against", "Abstain"];
 function MeetingCard({
   meeting,
   busy,
+  sentVote,
   onVote,
 }: {
   meeting: ReturnType<typeof openMeetings>[number];
   busy: boolean;
+  /** Vote cast in this session — the chain read lags the confirmation on devnet (task 1418). */
+  sentVote?: VoteChoiceName;
   onVote: (choice: VoteChoiceName) => void;
 }) {
   const t = useTranslations("investor.meetings");
@@ -70,8 +73,10 @@ function MeetingCard({
       : action.proposalNewMaturity
         ? t("proposalMaturity", { date: action.proposalNewMaturity })
         : t("proposalOther");
-  const voted =
+  const chainVote =
     mine?.vote && mine.vote !== "None" ? (mine.vote as VoteChoiceName) : null;
+  // the chain read lags the vote tx: a vote cast in this session counts immediately (task 1418)
+  const voted = sentVote ?? chainVote;
   const totalUnits = Number(action.unitsSnapshotted ?? "0");
 
   return (
@@ -124,7 +129,7 @@ function MeetingCard({
               key={c}
               variant="secondary"
               block
-              disabled={busy || voted !== null}
+              disabled={busy || !mine || voted !== null}
               onClick={() => onVote(c)}
               iconLeft={
                 <span
@@ -174,14 +179,19 @@ export function VotePanel() {
     choice: VoteChoiceName;
   } | null>(null);
   const [busy, setBusy] = useState(false);
+  // votes cast in this session, keyed by action PDA: the chain read lags the confirmation on devnet
+  const [sentVotes, setSentVotes] = useState<
+    Partial<Record<string, VoteChoiceName>>
+  >({});
 
   const castVote = async () => {
     if (!confirm || busy) return;
     setBusy(true);
     const { pda, choice } = confirm;
-    const done = () => {
+    const done = (sent: boolean) => {
       setBusy(false);
       setConfirm(null);
+      if (sent) setSentVotes((v) => ({ ...v, [pda]: choice }));
       reload();
     };
     if (mode === "watch") {
@@ -190,7 +200,7 @@ export function VotePanel() {
       return;
     }
     if (mode === "demo") {
-      await runWrite({
+      const res = await runWrite<DemoWriteResult>({
         pending: t("toasts.voting", { choice: t(`choice.${choice}`) }),
         success: () => t("toasts.voted", { choice: t(`choice.${choice}`) }),
         call: () =>
@@ -200,7 +210,7 @@ export function VotePanel() {
           }),
         txs: txsOf,
       });
-      done();
+      done(!!res);
       return;
     }
     const meeting = rows
@@ -212,7 +222,7 @@ export function VotePanel() {
       return;
     }
     const signer = walletTransactionSigner(wallet.adapter, address(owner));
-    await runWalletWrite({
+    const res = await runWalletWrite({
       pending: t("toasts.voting", { choice: t(`choice.${choice}`) }),
       success: () => t("toasts.voted", { choice: t(`choice.${choice}`) }),
       call: async () => {
@@ -225,7 +235,7 @@ export function VotePanel() {
         return signAndSendWithWallet(signer, portalRpc(), [ix]);
       },
     });
-    done();
+    done(walletLegSent(res));
   };
 
   if (error) return <EmptyState title={t("loadFailed")} body={error} />;
@@ -242,6 +252,7 @@ export function VotePanel() {
           key={m.action.pda}
           meeting={m}
           busy={busy}
+          sentVote={sentVotes[m.action.pda]}
           onVote={(choice) => setConfirm({ pda: m.action.pda, choice })}
         />
       ))}

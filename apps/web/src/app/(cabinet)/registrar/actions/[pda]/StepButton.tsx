@@ -14,8 +14,9 @@ type AdvanceResult = {
 
 /**
  * Runs the action's next step (POST /api/bo/registrar/actions/{pda}/advance), then refreshes the server tree
- * every 2.5 s (≤ 60 s) until the on-chain status moves — devnet reads lag the confirmation. Errors stay
- * visible under the button; a series outside the executor registry turns the panel read-only.
+ * every 2.5 s (≤ 60 s) until the on-chain status moves — devnet reads lag the confirmation. The button stays
+ * loading for that whole wait. Errors stay visible under the button; a series outside the executor registry
+ * turns the panel read-only.
  */
 export function StepButton({
   pda,
@@ -43,8 +44,11 @@ export function StepButton({
     polledFrom.current = null;
   };
   useEffect(() => {
-    if (polledFrom.current !== null && polledFrom.current !== status)
+    // the chain reader caught up: end the wait and re-enable the button
+    if (polledFrom.current !== null && polledFrom.current !== status) {
       stopPolling();
+      setBusy(false);
+    }
   }, [status]);
   useEffect(() => stopPolling, []);
 
@@ -74,13 +78,25 @@ export function StepButton({
         else setError(text);
       },
     });
-    setBusy(false);
-    if (res) {
-      stopPolling();
-      polledFrom.current = status;
-      for (let i = 1; i <= 24; i++)
-        timers.current.push(setTimeout(() => router.refresh(), i * 2500));
+    if (!res) {
+      setBusy(false);
+      return;
     }
+    // Success: the button stays loading until polling sees the new status or the 60 s budget ends —
+    // devnet reads lag the confirmation, so re-enabling now would allow a double submit (task 1418).
+    stopPolling();
+    polledFrom.current = status;
+    for (let i = 1; i <= 24; i++)
+      timers.current.push(setTimeout(() => router.refresh(), i * 2500));
+    timers.current.push(
+      setTimeout(
+        () => {
+          stopPolling();
+          setBusy(false);
+        },
+        24 * 2500 + 50,
+      ),
+    );
   };
 
   return (
