@@ -236,7 +236,7 @@ func TestRunActionNotFound(t *testing.T) {
 // the hash is the order-independent set hash — XOR of sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units_le).
 func TestRunHookedSeriesSetHash(t *testing.T) {
 	fc := newFixture(t)
-	fc.series.Reserved[0] = 1 // hook
+	fc.series.Hook = 1 // hook
 	fc.action.Reserved[0] = 1
 	fc.action.HashScheme = 1
 	var want [32]byte
@@ -266,5 +266,32 @@ func TestRunHookedSeriesSetHash(t *testing.T) {
 	}
 	if rep.ExpectedTotals.Gross != 500_000 {
 		t.Errorf("gross = %d, want 500000", rep.ExpectedTotals.Gross)
+	}
+}
+
+// Plan 15 D4/D6: a defaulted action reports its escrow shortfall; bank-pending payouts are surfaced.
+func TestRunReportsDefaultShortfallAndBankPending(t *testing.T) {
+	fc := newFixture(t)
+	escrow := solana.PublicKey{6: 6}
+	fc.action.Escrow = escrow
+	fc.action.DefaultedAt = 1_800_000_000
+	fc.action.BankPending = 1
+	required := fc.action.TotalNet + fc.action.TotalTax + fc.action.TotalPrincipal
+	fc.atas[escrow] = &chain.TokenAccount{Amount: required - 1_000}
+	rep, err := Run(t.Context(), fc, actionPDA)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if rep.Default == nil || rep.Default.Shortfall != 1_000 || rep.Default.Required != required || rep.BankPending != 1 {
+		t.Fatalf("default %+v bankPending %d", rep.Default, rep.BankPending)
+	}
+	fc.action.CuredAt = 1_800_000_100
+	fc.atas[escrow] = &chain.TokenAccount{Amount: required}
+	rep, err = Run(t.Context(), fc, actionPDA)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if rep.Default == nil || rep.Default.Shortfall != 0 || rep.Default.CuredAt == 0 {
+		t.Fatalf("cured: %+v", rep.Default)
 	}
 }

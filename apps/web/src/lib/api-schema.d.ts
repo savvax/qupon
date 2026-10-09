@@ -1647,8 +1647,24 @@ export interface components {
             openAction?: string | null;
             /** @description admitted secondary trades (Solana DvP) not yet released; the record date is refused while above 0 */
             openTrades?: number;
+            /** @description plan 15 D1' — the record date is the transfer-hook gate (the register never pauses) */
+            hookGate?: boolean;
+            /** @description plan 15 D4 — an action of this series is in default and not yet cured */
+            inDefault?: boolean;
+            /** @description defaults ever declared on this series (public credit signal) */
+            defaultsCount?: number;
+            /** @description plan 15 D7 — null on the real Almaty clock */
+            demoClock?: components["schemas"]["DemoClockDTO"] | null;
             /** @description devnet explorer link for the mint */
             explorerUrl: string;
+        };
+        /** @description DEMO clock (plan 15 D7) — one civil day lasts daySecs seconds from issueTs, whose civil date is issueDate. */
+        DemoClockDTO: {
+            daySecs: number;
+            /** Format: int64 */
+            issueTs: number;
+            /** Format: date */
+            issueDate: string;
         };
         /** @description One admitted secondary trade with the funding of both legs (same field names as the CLI's trade:list). */
         TradeDTO: {
@@ -1744,7 +1760,7 @@ export interface components {
             /** @description live escrow token balance (0 before funding) */
             escrowBalance?: components["schemas"]["Amount"];
             /** @enum {string} */
-            status: "Announced" | "RecordStruck" | "SnapshotComplete" | "Funded" | "Settling" | "Completed" | "Retiring" | "Cancelled" | "VotingOpen" | "Finalized";
+            status: "Announced" | "RecordStruck" | "SnapshotComplete" | "Funded" | "Settling" | "Completed" | "Retiring" | "Cancelled" | "VotingOpen" | "Finalized" | "Defaulted";
             snapshotSlot?: number | null;
             /** @description hex sha256 */
             snapshotHash?: string | null;
@@ -1770,6 +1786,25 @@ export interface components {
             /** Format: date-time */
             completedAt?: string | null;
             factorBps?: number | null;
+            /**
+             * Format: date-time
+             * @description plan 15 D4 — when declare_default ran
+             */
+            defaultedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description plan 15 D4 — when late funding cured the default
+             */
+            curedAt?: string | null;
+            /** @description plan 15 D6 — bank-routed payouts awaiting the paying agent's confirmation (complete needs 0) */
+            bankPending?: number;
+            /** @description plan 15 D9 — hex sha256 of the official notice (seev.031), anchored once */
+            disclosureHash?: string | null;
+            /**
+             * Format: date-time
+             * @description when the snapshot was finalized; a default is due one series day after max(paymentAt, finalizedAt)
+             */
+            finalizedAt?: string | null;
             /** @description devnet explorer link for the action PDA */
             explorerUrl: string;
         };
@@ -1783,7 +1818,7 @@ export interface components {
             net?: components["schemas"]["Amount"];
             principal?: components["schemas"]["Amount"];
             /** @enum {string} */
-            status: "Snapshotted" | "Paid" | "Retired";
+            status: "Snapshotted" | "Paid" | "Retired" | "PaidToAgent";
             /** Format: date-time */
             paidAt?: string | null;
             /** @enum {string} */

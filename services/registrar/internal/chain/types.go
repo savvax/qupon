@@ -36,10 +36,21 @@ type Series struct {
 	OpenAction     *solana.PublicKey // nil = Borsh None; the one non-final action, if any
 	OpenTrades     uint32            // admitted Solana DvP trades not yet released (carved from reserved: older series read 0)
 	Reserved       [60]byte
-	// DaySecs/IssueYmd are carved from Reserved (plan 15 D7, after the hook fields): 0 = real Almaty
-	// clock, 1..86 399 s per civil day = demo clock anchored at IssueDate/IssueYmd (label the series DEMO).
-	DaySecs  uint32
-	IssueYmd uint32
+	// Carved from Reserved (plan 15; the account size is unchanged and older series read 0):
+	// [0] hook, [1] record_kind, [2:6] record_seq, [6:14] record_at, [14:18] ckpt_count, [18:22] ckpt_late,
+	// [22:26] day_secs, [26:30] issue_ymd, [30] in_default, [31:33] defaults_count, [33:60] still reserved.
+	Hook       uint8  // 1 = the record date is the transfer-hook gate (D1'); 0 = legacy pause
+	RecordKind uint8  // hooked: ActionKind of the pending record
+	RecordSeq  uint32 // hooked: action index + 1 of the pending (or last) record
+	RecordAt   int64  // hooked: record_at of the pending record; 0 = none pending
+	CkptCount  uint32 // hooked: holder checkpoints (positions) registered
+	CkptLate   uint32 // hooked: checkpoints registered after the pending record_at
+	// DaySecs/IssueYmd: 0 = real Almaty clock, 1..86 399 s per civil day = demo clock anchored at
+	// IssueDate/IssueYmd (plan 15 D7; label the series DEMO).
+	DaySecs       uint32
+	IssueYmd      uint32
+	InDefault     uint8  // 1 while an action is Defaulted and not cured (D4)
+	DefaultsCount uint16 // defaults ever declared on this series (public credit signal)
 }
 
 // TradeAdmission mirrors the on-chain `TradeAdmission` account (seeds ["trade", series, swap_dvp]):
@@ -121,9 +132,17 @@ type CorporateAction struct {
 	FactorBps           uint16 // PCAL only: share of face redeemed, bps
 	TotalPrincipal      uint64 // Σ holder principal (REDM/MCAL/PCAL)
 	Reserved            [64]byte
-	// HashScheme is reserved[0] (plan 15 D3): 0 = rolling sha256 over owner-sorted holders, 1 = order-independent
-	// set hash (XOR of sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units_le)).
-	HashScheme uint8
+	// Carved from Reserved (plan 15): [0] hash_scheme, [1:5] positions_done, [5:13] defaulted_at, [13:21] cured_at,
+	// [21:25] bank_pending, [25:57] disclosure_hash, [57:61] finalize_delay, [61:64] still reserved.
+	// HashScheme (D3): 0 = rolling sha256 over owner-sorted holders, 1 = order-independent set hash
+	// (XOR of sha256("qupon:snap:v1" ‖ action ‖ owner ‖ units_le)).
+	HashScheme     uint8
+	PositionsDone  uint32   // hooked snapshot: positions processed
+	DefaultedAt    int64    // D4: when declare_default ran; 0 = never
+	CuredAt        int64    // D4: when late funding cured the default; 0 = not cured
+	BankPending    uint32   // D6: bank-routed payouts awaiting the paying agent's confirmation
+	DisclosureHash [32]byte // D9: sha256 of the official notice (seev.031); zero = not anchored
+	FinalizeDelay  uint32   // seconds from record_at to finalize_snapshot (default deadline base)
 }
 
 // Entitlement mirrors the on-chain `Entitlement` account
@@ -137,10 +156,35 @@ type Entitlement struct {
 	Tax       uint64
 	Net       uint64
 	Principal uint64
-	Status    uint8 // 0 Snapshotted, 1 Paid, 2 Retired
+	Status    uint8 // 0 Snapshotted, 1 Paid, 2 Retired, 3 PaidToAgent (bank route, awaiting confirmation)
 	PaidAt    int64
 	Vote      uint8 // 0 None, 1 For, 2 Against, 3 Abstain
 	VotedAt   int64
+}
+
+// PayoutRoute mirrors the on-chain `PayoutRoute` account (seeds ["route", investor], plan 15 D6): where the
+// holder asked payouts to go. Set only by the holder's signature; absent = the registered wallet cash account.
+type PayoutRoute struct {
+	Bump        uint8
+	Investor    solana.PublicKey // the Investor PDA
+	Route       uint8            // 0 wallet, 1 bank (payout to the paying agent; bank transfer SIMULATED)
+	BankRefHash [32]byte         // sha256 of the bank details; zero for the wallet route
+	UpdatedAt   int64
+}
+
+// PayoutRouteRecord pairs a PayoutRoute account with its PDA.
+type PayoutRouteRecord struct {
+	PDA   solana.PublicKey
+	Route *PayoutRoute
+}
+
+// EntitlementStatusName maps an EntitlementStatus code (state.rs) to its name.
+func EntitlementStatusName(code uint8) string {
+	names := [...]string{"Snapshotted", "Paid", "Retired", "PaidToAgent"}
+	if int(code) < len(names) {
+		return names[code]
+	}
+	return "Unknown"
 }
 
 // ActionStatusName maps an ActionStatus code (state.rs) to its name.

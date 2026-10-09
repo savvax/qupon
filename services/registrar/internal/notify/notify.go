@@ -39,17 +39,37 @@ func FromEvent(ctx context.Context, st *store.Store, a store.Activity) error {
 		payload["result"] = f["result"]
 		return toHolders(ctx, st, deref(a.SeriesMint), "meeting_finalized", payload, key("meeting_finalized"))
 	case "EntitlementPaid":
-		owner, _ := f["owner"].(string)
-		uid, err := st.WalletOwner(ctx, owner)
-		if errors.Is(err, store.ErrNotFound) {
-			return nil // the holder has no account here: nothing to notify
-		} else if err != nil {
-			return err
-		}
-		payload["net"], payload["principal"], payload["owner"] = f["net"], f["principal"], owner
-		return st.Notify(ctx, uid, "entitlement_paid", payload, key("entitlement_paid"))
+		payload["net"], payload["principal"] = f["net"], f["principal"]
+		return toOwner(ctx, st, f, payload, "entitlement_paid", key("entitlement_paid"))
+	// Plan 15 D4: the record-date holders learn about a default and its cure.
+	case "ActionDefaulted":
+		payload["shortfall"], payload["required"] = f["shortfall"], f["required"]
+		return toHolders(ctx, st, deref(a.SeriesMint), "action_defaulted", payload, key("action_defaulted"))
+	case "DefaultCured":
+		payload["lateSecs"] = f["late_secs"]
+		return toHolders(ctx, st, deref(a.SeriesMint), "default_cured", payload, key("default_cured"))
+	// Plan 15 D6: bank-routed payouts (the bank transfer itself is SIMULATED).
+	case "PaidToAgent":
+		payload["amount"] = f["amount"]
+		return toOwner(ctx, st, f, payload, "paid_to_bank_agent", key("paid_to_bank_agent"))
+	case "BankPayoutConfirmed":
+		payload["referenceHash"] = f["reference_hash"]
+		return toOwner(ctx, st, f, payload, "bank_payout_confirmed", key("bank_payout_confirmed"))
 	}
 	return nil
+}
+
+// toOwner notifies the account linked to the event's `owner` wallet, if any.
+func toOwner(ctx context.Context, st *store.Store, f, payload map[string]any, kind, dedup string) error {
+	owner, _ := f["owner"].(string)
+	uid, err := st.WalletOwner(ctx, owner)
+	if errors.Is(err, store.ErrNotFound) {
+		return nil // the holder has no account here: nothing to notify
+	} else if err != nil {
+		return err
+	}
+	payload["owner"] = owner
+	return st.Notify(ctx, uid, kind, payload, dedup)
 }
 
 func toHolders(ctx context.Context, st *store.Store, series, kind string, payload map[string]any, dedup string) error {

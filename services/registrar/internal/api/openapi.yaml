@@ -3530,9 +3530,36 @@ components:
         openTrades:
           type: integer
           description: admitted secondary trades (Solana DvP) not yet released; the record date is refused while above 0
+        hookGate:
+          type: boolean
+          description: plan 15 D1' — the record date is the transfer-hook gate (the register never pauses)
+        inDefault:
+          type: boolean
+          description: plan 15 D4 — an action of this series is in default and not yet cured
+        defaultsCount:
+          type: integer
+          description: defaults ever declared on this series (public credit signal)
+        demoClock:
+          oneOf:
+            - $ref: '#/components/schemas/DemoClockDTO'
+            - type: "null"
+          description: plan 15 D7 — null on the real Almaty clock
         explorerUrl:
           type: string
           description: devnet explorer link for the mint
+    DemoClockDTO:
+      description: DEMO clock (plan 15 D7) — one civil day lasts daySecs seconds from issueTs, whose civil date is issueDate.
+      type: object
+      required: [daySecs, issueTs, issueDate]
+      properties:
+        daySecs:
+          type: integer
+        issueTs:
+          type: integer
+          format: int64
+        issueDate:
+          type: string
+          format: date
     TradeDTO:
       description: One admitted secondary trade with the funding of both legs (same field names as the CLI's trade:list).
       type: object
@@ -3756,6 +3783,7 @@ components:
             - Cancelled
             - VotingOpen
             - Finalized
+            - Defaulted
         snapshotSlot:
           type:
             - integer
@@ -3837,6 +3865,24 @@ components:
           type:
             - integer
             - "null"
+        defaultedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: plan 15 D4 — when declare_default ran
+        curedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: plan 15 D4 — when late funding cured the default
+        bankPending:
+          type: integer
+          description: plan 15 D6 — bank-routed payouts awaiting the paying agent's confirmation (complete needs 0)
+        disclosureHash:
+          type: ["string", "null"]
+          description: plan 15 D9 — hex sha256 of the official notice (seev.031), anchored once
+        finalizedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: when the snapshot was finalized; a default is due one series day after max(paymentAt, finalizedAt)
         explorerUrl:
           type: string
           description: devnet explorer link for the action PDA
@@ -3871,6 +3917,7 @@ components:
             - Snapshotted
             - Paid
             - Retired
+            - PaidToAgent
         paidAt:
           type:
             - string

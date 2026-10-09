@@ -113,3 +113,36 @@ func TestFanOut(t *testing.T) {
 		t.Fatalf("mark all: %v, unread %d", err, count(t, st, holder))
 	}
 }
+
+// Plan 15 D4/D6: a default and its cure reach every holder; bank-route payouts reach only the paid owner.
+func TestFanOutDefaultAndBankRoute(t *testing.T) {
+	st := open(t)
+	holder := investor(t, st, "holder@test.kz", "HolderWallet111")
+	other := investor(t, st, "other@test.kz", "OtherWallet1111")
+	event(t, st, "InvestorRegistered", "sig-reg", 0, map[string]any{"series": series, "owner": "HolderWallet111"})
+	event(t, st, "InvestorRegistered", "sig-reg2", 0, map[string]any{"series": series, "owner": "OtherWallet1111"})
+	event(t, st, "ActionDefaulted", "sig-def", 0, map[string]any{"series": series, "shortfall": "1000", "required": "5000"})
+	event(t, st, "DefaultCured", "sig-cure", 0, map[string]any{"series": series, "late_secs": 90})
+	event(t, st, "PaidToAgent", "sig-agent", 1, map[string]any{"series": series, "owner": "HolderWallet111", "amount": "450000"})
+	event(t, st, "BankPayoutConfirmed", "sig-conf", 0, map[string]any{"series": series, "owner": "HolderWallet111"})
+	kindsOf := func(uid int64) map[string]bool {
+		list, err := st.ListNotifications(t.Context(), uid, false, 20)
+		if err != nil {
+			t.Fatal(err)
+		}
+		out := map[string]bool{}
+		for _, n := range list {
+			out[n.Kind] = true
+		}
+		return out
+	}
+	h, o := kindsOf(holder), kindsOf(other)
+	for _, k := range []string{"action_defaulted", "default_cured", "paid_to_bank_agent", "bank_payout_confirmed"} {
+		if !h[k] {
+			t.Fatalf("holder notifications %v miss %s", h, k)
+		}
+	}
+	if !o["action_defaulted"] || !o["default_cured"] || o["paid_to_bank_agent"] || o["bank_payout_confirmed"] {
+		t.Fatalf("other holder notifications %v", o)
+	}
+}

@@ -72,8 +72,16 @@ fn series_json(s: &Series) -> String {
     let _ = writeln!(j, "  \"approval_bps\": {},", s.approval_bps);
     let _ = writeln!(j, "  \"tax_vault\": \"{}\",", s.tax_vault);
     let _ = writeln!(j, "  \"open_action\": {open},");
+    let _ = writeln!(j, "  \"hook\": {},", s.hook);
+    let _ = writeln!(j, "  \"record_kind\": {},", s.record_kind);
+    let _ = writeln!(j, "  \"record_seq\": {},", s.record_seq);
+    let _ = writeln!(j, "  \"record_at\": {},", s.record_at);
+    let _ = writeln!(j, "  \"ckpt_count\": {},", s.ckpt_count);
+    let _ = writeln!(j, "  \"ckpt_late\": {},", s.ckpt_late);
     let _ = writeln!(j, "  \"day_secs\": {},", s.day_secs);
     let _ = writeln!(j, "  \"issue_ymd\": {},", s.issue_ymd);
+    let _ = writeln!(j, "  \"in_default\": {},", s.in_default);
+    let _ = writeln!(j, "  \"defaults_count\": {},", s.defaults_count);
     let _ = writeln!(j, "  \"reserved\": \"{}\"", hex(&s.reserved));
     j.push('}');
     j
@@ -147,6 +155,12 @@ fn action_json(a: &CorporateAction) -> String {
     let _ = writeln!(j, "  \"factor_bps\": {},", a.factor_bps);
     let _ = writeln!(j, "  \"total_principal\": {},", a.total_principal);
     let _ = writeln!(j, "  \"hash_scheme\": {},", a.hash_scheme);
+    let _ = writeln!(j, "  \"positions_done\": {},", a.positions_done);
+    let _ = writeln!(j, "  \"defaulted_at\": {},", a.defaulted_at);
+    let _ = writeln!(j, "  \"cured_at\": {},", a.cured_at);
+    let _ = writeln!(j, "  \"bank_pending\": {},", a.bank_pending);
+    let _ = writeln!(j, "  \"disclosure_hash\": \"{}\",", hex(&a.disclosure_hash));
+    let _ = writeln!(j, "  \"finalize_delay\": {},", a.finalize_delay);
     let _ = writeln!(j, "  \"reserved\": \"{}\"", hex(&a.reserved));
     j.push('}');
     j

@@ -404,3 +404,35 @@ func CashCurrency(mint solana.PublicKey) string {
 	}
 	return "tKZT"
 }
+
+// FetchPayoutRoutesBySeries returns the payout routes chosen by the series' investors (plan 15 D6). Routes are keyed
+// by investor PDA only, so this scans every PayoutRoute and keeps the series' own; holders without a route are absent.
+func (c *Client) FetchPayoutRoutesBySeries(ctx context.Context, series solana.PublicKey) ([]PayoutRouteRecord, error) {
+	investors, err := c.FetchInvestorsBySeries(ctx, series)
+	if err != nil {
+		return nil, err
+	}
+	mine := make(map[solana.PublicKey]bool, len(investors))
+	for _, inv := range investors {
+		mine[inv.PDA] = true
+	}
+	disc, err := AccountDiscriminator("PayoutRoute")
+	if err != nil {
+		return nil, err
+	}
+	recs, err := c.GetProgramAccounts(ctx, disc, nil)
+	if err != nil {
+		return nil, fmt.Errorf("scan payout routes: %w", err)
+	}
+	out := make([]PayoutRouteRecord, 0, len(recs))
+	for _, rec := range recs {
+		p, err := DecodePayoutRoute(rec.Data[8:])
+		if err != nil {
+			return nil, fmt.Errorf("decode payout route %s: %w", rec.Pubkey, err)
+		}
+		if mine[p.Investor] {
+			out = append(out, PayoutRouteRecord{PDA: rec.Pubkey, Route: p})
+		}
+	}
+	return out, nil
+}

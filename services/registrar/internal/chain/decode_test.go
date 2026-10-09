@@ -463,6 +463,10 @@ func TestDecodeSeriesLiveStaleTail(t *testing.T) {
 	if s.OpenAction != nil || s.FaceValue == 0 {
 		t.Fatalf("decoded %+v", s)
 	}
+	// A hooked series after one record: the carved fields sit at the offsets documented in types.go.
+	if s.Hook != 1 || s.RecordSeq == 0 || s.RecordAt != 0 || s.CkptCount < 3 {
+		t.Fatalf("carved fields: hook %d record_seq %d record_at %d ckpt_count %d", s.Hook, s.RecordSeq, s.RecordAt, s.CkptCount)
+	}
 }
 
 // Task 1511 (plan 15 D7): DaySecs/IssueYmd are carved from Reserved after the hook fields.

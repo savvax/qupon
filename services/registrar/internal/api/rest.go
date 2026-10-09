@@ -123,9 +123,9 @@ var (
 	kindNames         = []string{"INTR", "REDM", "MCAL", "PCAL", "BMET", "CHAN"}
 	mandatoryNames    = []string{"MAND", "VOLU", "CHOS"}
 	actionStatusNames = []string{"Announced", "RecordStruck", "SnapshotComplete", "Funded", "Settling",
-		"Completed", "Retiring", "Cancelled", "VotingOpen", "Finalized"}
+		"Completed", "Retiring", "Cancelled", "VotingOpen", "Finalized", "Defaulted"}
 	resultNames            = []string{"Pending", "Approved", "Rejected", "NoQuorum"}
-	entitlementStatusNames = []string{"Snapshotted", "Paid", "Retired"}
+	entitlementStatusNames = []string{"Snapshotted", "Paid", "Retired", "PaidToAgent"}
 	voteNames              = []string{"None", "For", "Against", "Abstain"}
 	investorStatusNames    = []string{"Active", "Suspended"}
 	investorTypeNames      = []string{"individual", "legal_entity"}
@@ -155,7 +155,20 @@ type SeriesDTO struct {
 	ApprovalBps    uint16  `json:"approvalBps"`
 	OpenAction     *string `json:"openAction"`
 	OpenTrades     uint32  `json:"openTrades"` // admitted secondary trades not yet released; > 0 blocks the record date
-	ExplorerURL    string  `json:"explorerUrl"`
+	// Plan 15: the record date is the transfer-hook gate (D1'); default state (D4); demo clock (D7, nil = real clock).
+	HookGate      bool          `json:"hookGate"`
+	InDefault     bool          `json:"inDefault"`
+	DefaultsCount uint16        `json:"defaultsCount"`
+	DemoClock     *DemoClockDTO `json:"demoClock"`
+	ExplorerURL   string        `json:"explorerUrl"`
+}
+
+// DemoClockDTO is openapi.yaml#/components/schemas/DemoClockDTO: one civil day lasts DaySecs seconds from IssueTs,
+// whose civil date is IssueDate (plan 15 D7; label the series DEMO).
+type DemoClockDTO struct {
+	DaySecs   uint32 `json:"daySecs"`
+	IssueTs   int64  `json:"issueTs"`
+	IssueDate string `json:"issueDate"`
 }
 
 func seriesDTO(pda solana.PublicKey, s *chain.Series, m money) SeriesDTO {
@@ -164,7 +177,13 @@ func seriesDTO(pda solana.PublicKey, s *chain.Series, m money) SeriesDTO {
 		v := s.OpenAction.String()
 		open = &v
 	}
+	var demo *DemoClockDTO
+	if s.DaySecs > 0 {
+		y, mo, d := s.IssueYmd/10_000, s.IssueYmd/100%100, s.IssueYmd%100
+		demo = &DemoClockDTO{DaySecs: s.DaySecs, IssueTs: s.IssueDate, IssueDate: fmt.Sprintf("%04d-%02d-%02d", y, mo, d)}
+	}
 	return SeriesDTO{
+		HookGate: s.Hook == 1, InDefault: s.InDefault == 1, DefaultsCount: s.DefaultsCount, DemoClock: demo,
 		PDA:  pda.String(),
 		Mint: s.Mint.String(), CashMint: s.CashMint.String(), Registrar: s.Registrar.String(),
 		Issuer: s.Issuer.String(), PayingAgent: s.PayingAgent.String(),
@@ -231,7 +250,14 @@ type ActionDTO struct {
 	Result              *string `json:"result"`
 	CompletedAt         *string `json:"completedAt"`
 	FactorBps           *uint16 `json:"factorBps"`
-	ExplorerURL         string  `json:"explorerUrl"`
+	// Plan 15: default/cure (D4), bank-routed payouts awaiting confirmation (D6), anchored notice hash (D9), and when
+	// the snapshot was finalized (funding opens; a default is due one series day after max(payment, finalize)).
+	DefaultedAt    *string `json:"defaultedAt"`
+	CuredAt        *string `json:"curedAt"`
+	BankPending    uint32  `json:"bankPending"`
+	DisclosureHash *string `json:"disclosureHash"`
+	FinalizedAt    *string `json:"finalizedAt"`
+	ExplorerURL    string  `json:"explorerUrl"`
 }
 
 func actionDTO(pda solana.PublicKey, a *chain.CorporateAction, seriesMint solana.PublicKey, m money) ActionDTO {
@@ -247,7 +273,15 @@ func actionDTO(pda solana.PublicKey, a *chain.CorporateAction, seriesMint solana
 		TotalPaid: m.amount(a.TotalPaid), TotalRetired: u(a.TotalRetired), HoldersRetired: a.HoldersRetired,
 		VotesFor: u(a.VotesFor), VotesAgainst: u(a.VotesAgainst), VotesAbstain: u(a.VotesAbstain),
 		CompletedAt: optDateTime(a.CompletedAt), VotingEndsAt: optDateTime(a.VotingEndsAt),
+		DefaultedAt: optDateTime(a.DefaultedAt), CuredAt: optDateTime(a.CuredAt), BankPending: a.BankPending,
 		ExplorerURL: explorer(pda),
+	}
+	if a.DisclosureHash != [32]byte{} {
+		h := hex.EncodeToString(a.DisclosureHash[:])
+		d.DisclosureHash = &h
+	}
+	if a.FinalizeDelay > 0 {
+		d.FinalizedAt = optDateTime(a.RecordAt + int64(a.FinalizeDelay))
 	}
 	if id := trimBytes(a.OfficialID[:]); id != "" {
 		d.OfficialID = &id

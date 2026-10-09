@@ -256,3 +256,25 @@ func TestServedOpenAPIIsTheSpec(t *testing.T) {
 		t.Fatal("internal/api/openapi.yaml drifted from services/registrar/openapi.yaml — cp ../../openapi.yaml internal/api/")
 	}
 }
+
+// Plan 15 (task 1521): the REST projections expose the carved fields.
+func TestDTOsExposePlan15Fields(t *testing.T) {
+	m := money{decimals: 2, currency: "tKZT"}
+	s := &chain.Series{Hook: 1, InDefault: 1, DefaultsCount: 2, DaySecs: 2, IssueYmd: 20_261_009, IssueDate: 1_791_000_000}
+	sd := seriesDTO(solana.PublicKey{1: 1}, s, m)
+	if !sd.HookGate || !sd.InDefault || sd.DefaultsCount != 2 || sd.DemoClock == nil ||
+		*sd.DemoClock != (DemoClockDTO{DaySecs: 2, IssueTs: 1_791_000_000, IssueDate: "2026-10-09"}) {
+		t.Fatalf("series dto %+v demo %+v", sd, sd.DemoClock)
+	}
+	if real := seriesDTO(solana.PublicKey{1: 1}, &chain.Series{}, m); real.DemoClock != nil || real.HookGate {
+		t.Fatalf("real-clock series: %+v", real)
+	}
+	a := &chain.CorporateAction{Status: 10, RecordAt: 1_800_000_000, FinalizeDelay: 120, DefaultedAt: 1_800_090_000,
+		BankPending: 1, DisclosureHash: [32]byte{0: 0xab}}
+	ad := actionDTO(solana.PublicKey{2: 2}, a, solana.PublicKey{3: 3}, m)
+	if ad.Status != "Defaulted" || ad.BankPending != 1 || ad.DefaultedAt == nil || ad.CuredAt != nil ||
+		ad.DisclosureHash == nil || (*ad.DisclosureHash)[:2] != "ab" || ad.FinalizedAt == nil ||
+		*ad.FinalizedAt != *optDateTime(1_800_000_120) {
+		t.Fatalf("action dto %+v", ad)
+	}
+}

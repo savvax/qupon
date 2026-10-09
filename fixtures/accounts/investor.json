@@ -1,17 +1,17 @@
 {
   "kind": "investor",
-  "pubkey": "9d5hqTBUfodVbDHh7TmAiGGYZJqp9koJM9xmRm5acgD6",
+  "pubkey": "8WJHKDUuSyDvccTBNaH2VKRy8rDZpYbLzXbqmPvSey24",
   "expected": {
   "bump": 255,
-  "series": "4agB8vWRiDmGUepf9nNSndviGJ6f2ficCoBbne7J5qKF",
-  "owner": "Biauq58WW9duj3FpHFdvvRztFVVdsKk2oNVYdAUmE7Bt",
-  "bond_ata": "EWkvyAynuY9qVvTEz8MhbxpsmkLvxzP1zBDMMFns2x6P",
-  "cash_ata": "qhbjiTa4XQ7sKW7yN2EEbwLdkinofGsMUCZ3T2EtV4M",
+  "series": "Aq3jCv4HZR94ktTMBAF8kWgS5oPPhLcosRAgEvzmPaqA",
+  "owner": "5JFa7xNXXByssE5yn9iae8aME1WjAYqxgcWay7LU4qLZ",
+  "bond_ata": "9ZC4WXfdyHBuzfGUwWnan449KacEAXpeuWFMDEHp2Gfb",
+  "cash_ata": "qnM2zDzBsLYz3xpzc2MsX288zAVYTSZF6Z43L34vx9e",
   "investor_type": 0,
   "residency": 0,
   "tax_rate_bps": 1000,
   "status": 0,
-  "kyc_ref": "0b1fbc87f0955dff06cf70739566f115d8993aa7666844cae8bc1e9e4b662b33",
+  "kyc_ref": "482dd5c2ebb8a3298df54a277f6227d932a8035fb95bb9197d75b52b7f1d4365",
   "registered_at": 1782932400
 }
 }

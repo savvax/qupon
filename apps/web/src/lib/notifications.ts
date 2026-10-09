@@ -38,6 +38,10 @@ const KNOWN = [
   "meeting_finalized",
   "entitlement_paid",
   "kyc_decision",
+  "action_defaulted",
+  "default_cured",
+  "paid_to_bank_agent",
+  "bank_payout_confirmed",
 ];
 
 /** What a notification says and where it leads; texts live in messages/notify.json. */
@@ -66,6 +70,16 @@ export function notice(
         href: "/investor/statements",
         tone: "success",
       };
+    // plan 15 D4: a default and its cure reach every holder of the series
+    case "action_defaulted":
+      return { kind: n.kind, values, href: bond, tone: "danger" };
+    case "default_cured":
+      return { kind: n.kind, values, href: bond, tone: "success" };
+    // plan 15 D6: bank-routed payouts (the bank transfer is SIMULATED)
+    case "paid_to_bank_agent":
+      return { kind: n.kind, values, href: "/investor/statements", tone: "info" };
+    case "bank_payout_confirmed":
+      return { kind: n.kind, values, href: "/investor/statements", tone: "success" };
     case "kyc_decision":
       return {
         kind: p.status === "approved" ? "kyc_approved" : "kyc_rejected",

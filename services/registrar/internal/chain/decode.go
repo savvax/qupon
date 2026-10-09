@@ -98,9 +98,17 @@ func DecodeSeries(data []byte) (*Series, error) {
 		return nil, fmt.Errorf("series: reserved: %w", err)
 	}
 	copy(s.Reserved[:], reserved)
-	// Plan 15 D7 carve (after the hook fields): reserved[22:26] = day_secs, [26:30] = issue_ymd.
-	s.DaySecs = binary.LittleEndian.Uint32(s.Reserved[22:26])
-	s.IssueYmd = binary.LittleEndian.Uint32(s.Reserved[26:30])
+	// Plan 15 carve (layout in types.go).
+	rs := s.Reserved[:]
+	s.Hook, s.RecordKind = rs[0], rs[1]
+	s.RecordSeq = binary.LittleEndian.Uint32(rs[2:6])
+	s.RecordAt = int64(binary.LittleEndian.Uint64(rs[6:14]))
+	s.CkptCount = binary.LittleEndian.Uint32(rs[14:18])
+	s.CkptLate = binary.LittleEndian.Uint32(rs[18:22])
+	s.DaySecs = binary.LittleEndian.Uint32(rs[22:26])
+	s.IssueYmd = binary.LittleEndian.Uint32(rs[26:30])
+	s.InDefault = rs[30]
+	s.DefaultsCount = binary.LittleEndian.Uint16(rs[31:33])
 	// The account is allocated at max size (open_action Some = 33 bytes). With None, Borsh writes everything 32 bytes
 	// earlier and leaves the last 32 bytes as they were: zero on a fresh series, but the old tail (non-zero carved
 	// fields: hook, record_at, day_secs, …) once an action has opened and closed. Their content is meaningless.
@@ -313,7 +321,15 @@ func DecodeCorporateAction(data []byte) (*CorporateAction, error) {
 	if a.Reserved, err = fixed64(r); err != nil {
 		return nil, fmt.Errorf("action: reserved: %w", err)
 	}
-	a.HashScheme = a.Reserved[0]
+	// Plan 15 carve (layout in types.go).
+	ra := a.Reserved[:]
+	a.HashScheme = ra[0]
+	a.PositionsDone = binary.LittleEndian.Uint32(ra[1:5])
+	a.DefaultedAt = int64(binary.LittleEndian.Uint64(ra[5:13]))
+	a.CuredAt = int64(binary.LittleEndian.Uint64(ra[13:21]))
+	a.BankPending = binary.LittleEndian.Uint32(ra[21:25])
+	copy(a.DisclosureHash[:], ra[25:57])
+	a.FinalizeDelay = binary.LittleEndian.Uint32(ra[57:61])
 	if !r.Done() {
 		return nil, fmt.Errorf("action: %d trailing bytes", r.Remaining())
 	}
@@ -386,4 +402,32 @@ func fixed64(r *borsh.Reader) ([64]byte, error) {
 	var out [64]byte
 	copy(out[:], b)
 	return out, err
+}
+
+// DecodePayoutRoute decodes a PayoutRoute account body (discriminator stripped).
+func DecodePayoutRoute(data []byte) (*PayoutRoute, error) {
+	r := borsh.NewReader(data)
+	var p PayoutRoute
+	var err error
+	if p.Bump, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("payout route: bump: %w", err)
+	}
+	if p.Investor, err = r.Pubkey(); err != nil {
+		return nil, fmt.Errorf("payout route: investor: %w", err)
+	}
+	if p.Route, err = r.U8(); err != nil {
+		return nil, fmt.Errorf("payout route: route: %w", err)
+	}
+	b, err := r.Bytes(32)
+	if err != nil {
+		return nil, fmt.Errorf("payout route: bank_ref_hash: %w", err)
+	}
+	copy(p.BankRefHash[:], b)
+	if p.UpdatedAt, err = r.I64(); err != nil {
+		return nil, fmt.Errorf("payout route: updated_at: %w", err)
+	}
+	if !r.Done() {
+		return nil, fmt.Errorf("payout route: %d trailing bytes", r.Remaining())
+	}
+	return &p, nil
 }

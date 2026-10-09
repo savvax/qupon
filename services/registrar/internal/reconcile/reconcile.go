@@ -36,6 +36,15 @@ type Reader interface {
 // ErrActionNotFound: no CorporateAction account at the given address.
 var ErrActionNotFound = errors.New("reconcile: corporate action not found")
 
+// DefaultReport describes a defaulted action: the escrow shortfall while uncured, the cure time once funded.
+type DefaultReport struct {
+	DefaultedAt   int64  `json:"defaultedAt"`
+	CuredAt       int64  `json:"curedAt,omitempty"` // 0 = still in default
+	Required      uint64 `json:"required"`          // net + tax + principal
+	EscrowBalance uint64 `json:"escrowBalance"`
+	Shortfall     uint64 `json:"shortfall"` // required − escrow (0 once cured)
+}
+
 // Mismatch reasons.
 const (
 	ReasonMissingEntitlement    = "missing_entitlement"    // holder with balance, no Entitlement PDA
@@ -127,6 +136,11 @@ type Report struct {
 	OnchainTotals    Totals     `json:"onchainTotals"`
 	TotalsMatch      bool       `json:"totalsMatch"`
 	CheckedAt        int64      `json:"checkedAt"` // unix seconds
+	// BankPending: bank-routed payouts handed to the paying agent, not yet confirmed (plan 15 D6); the action cannot
+	// complete while it is non-zero.
+	BankPending uint32 `json:"bankPending"`
+	// Default is set once the action was declared in default (plan 15 D4).
+	Default *DefaultReport `json:"default,omitempty"`
 }
 
 // Run reconciles the action at pda against independently recomputed math.
@@ -200,14 +214,33 @@ func Run(ctx context.Context, rd Reader, actionPDA solana.PublicKey) (*Report, e
 			Net:       action.TotalNet,
 			Principal: action.TotalPrincipal,
 		},
-		CheckedAt: time.Now().Unix(),
+		CheckedAt:   time.Now().Unix(),
+		BankPending: action.BankPending,
+	}
+	if action.DefaultedAt != 0 {
+		d := &DefaultReport{
+			DefaultedAt: action.DefaultedAt,
+			CuredAt:     action.CuredAt,
+			Required:    action.TotalNet + action.TotalTax + action.TotalPrincipal,
+		}
+		esc, err := rd.FetchTokenAccountAt(ctx, action.Escrow, 0)
+		if err != nil {
+			return nil, fmt.Errorf("reconcile %s: escrow: %w", actionPDA, err)
+		}
+		if esc != nil {
+			d.EscrowBalance = esc.Amount
+		}
+		if action.CuredAt == 0 && d.EscrowBalance < d.Required {
+			d.Shortfall = d.Required - d.EscrowBalance
+		}
+		rep.Default = d
 	}
 
 	var hash [32]byte // starts zeroed, like a fresh CorporateAction
 	// Hooked series (plan 15 D1'): the transfer-hook gate guarantees each snapshotted position equals its balance at
 	// record_at, and positions move again after their snapshot, so units come from the entitlements; amounts, totals
 	// and the hash are still recomputed independently. Legacy series read the ATAs at the snapshot slot.
-	hooked := series.Reserved[0] == 1
+	hooked := series.Hook == 1
 	seen := make(map[solana.PublicKey]bool, len(investors))
 	for _, ir := range investors {
 		inv := ir.Investor

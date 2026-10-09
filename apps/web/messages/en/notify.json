@@ -34,6 +34,22 @@
       "title": "Verification rejected",
       "body": "Reason: {reason}. Fix it and apply again."
     },
+    "action_defaulted": {
+      "title": "{ticker}: payment in default",
+      "body": "The issuer did not fund the payment in time. Your claim as a holder of record stays on-chain until it is cured."
+    },
+    "default_cured": {
+      "title": "{ticker}: default cured",
+      "body": "The issuer funded the payment late; the holders of record are being paid."
+    },
+    "paid_to_bank_agent": {
+      "title": "{ticker}: payout sent to the paying agent",
+      "body": "You chose the bank route: the paying agent received your payout and will confirm the bank transfer (SIMULATED)."
+    },
+    "bank_payout_confirmed": {
+      "title": "{ticker}: bank transfer confirmed",
+      "body": "The paying agent confirmed your bank transfer; its reference is anchored on-chain."
+    },
     "other": {
       "title": "Update",
       "body": "Something changed in your account."

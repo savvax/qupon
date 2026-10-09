@@ -121,8 +121,16 @@ func TestRealSeriesFixture(t *testing.T) {
 		ApprovalBps    uint16  `json:"approval_bps"`
 		TaxVault       string  `json:"tax_vault"`
 		OpenAction     *string `json:"open_action"`
+		Hook           uint8   `json:"hook"`
+		RecordKind     uint8   `json:"record_kind"`
+		RecordSeq      uint32  `json:"record_seq"`
+		RecordAt       int64   `json:"record_at"`
+		CkptCount      uint32  `json:"ckpt_count"`
+		CkptLate       uint32  `json:"ckpt_late"`
 		DaySecs        uint32  `json:"day_secs"`
 		IssueYmd       uint32  `json:"issue_ymd"`
+		InDefault      uint8   `json:"in_default"`
+		DefaultsCount  uint16  `json:"defaults_count"`
 		Reserved       string  `json:"reserved"`
 	}
 	if err := json.Unmarshal(f.Expected, &want); err != nil {
@@ -158,11 +166,18 @@ func TestRealSeriesFixture(t *testing.T) {
 	default:
 		eqPk(t, "open_action", *got.OpenAction, *want.OpenAction)
 	}
-	// Plan 15 carve: Go's Reserved[60] = hook/record fields (22 B) + day_secs/issue_ymd (8 B) + the raw tail;
-	// the fixture pins the clock fields and the 30-byte tail separately.
+	// Plan 15 carve: Go's Reserved[60] = the carved fields (33 B, layout in types.go) + the raw 27-byte tail.
+	eq(t, "hook", got.Hook, want.Hook)
+	eq(t, "record_kind", got.RecordKind, want.RecordKind)
+	eq(t, "record_seq", got.RecordSeq, want.RecordSeq)
+	eq(t, "record_at", got.RecordAt, want.RecordAt)
+	eq(t, "ckpt_count", got.CkptCount, want.CkptCount)
+	eq(t, "ckpt_late", got.CkptLate, want.CkptLate)
 	eq(t, "day_secs", got.DaySecs, want.DaySecs)
 	eq(t, "issue_ymd", got.IssueYmd, want.IssueYmd)
-	eqHex(t, "reserved", got.Reserved[30:], want.Reserved)
+	eq(t, "in_default", got.InDefault, want.InDefault)
+	eq(t, "defaults_count", got.DefaultsCount, want.DefaultsCount)
+	eqHex(t, "reserved", got.Reserved[33:], want.Reserved)
 	// Cross-check: the open action PDA is the action fixture itself.
 	if want.OpenAction != nil {
 		eqPk(t, "open_action→action fixture", *got.OpenAction, fixturePubkey(t, "action"))
@@ -255,6 +270,12 @@ func TestRealActionFixture(t *testing.T) {
 		FactorBps           uint16 `json:"factor_bps"`
 		TotalPrincipal      uint64 `json:"total_principal"`
 		HashScheme          uint8  `json:"hash_scheme"`
+		PositionsDone       uint32 `json:"positions_done"`
+		DefaultedAt         int64  `json:"defaulted_at"`
+		CuredAt             int64  `json:"cured_at"`
+		BankPending         uint32 `json:"bank_pending"`
+		DisclosureHash      string `json:"disclosure_hash"`
+		FinalizeDelay       uint32 `json:"finalize_delay"`
 		Reserved            string `json:"reserved"`
 	}
 	if err := json.Unmarshal(f.Expected, &want); err != nil {
@@ -300,9 +321,15 @@ func TestRealActionFixture(t *testing.T) {
 	eq(t, "completed_at", got.CompletedAt, want.CompletedAt)
 	eq(t, "factor_bps", got.FactorBps, want.FactorBps)
 	eq(t, "total_principal", got.TotalPrincipal, want.TotalPrincipal)
-	// Reserved[64] = hash_scheme (1) + positions_done (4, plan 15 D1') + the raw tail; pinned separately.
+	// Reserved[64] = the carved fields (61 B, layout in types.go) + the raw 3-byte tail; pinned separately.
 	eq(t, "hash_scheme", got.HashScheme, want.HashScheme)
-	eqHex(t, "reserved", got.Reserved[5:], want.Reserved)
+	eq(t, "positions_done", got.PositionsDone, want.PositionsDone)
+	eq(t, "defaulted_at", got.DefaultedAt, want.DefaultedAt)
+	eq(t, "cured_at", got.CuredAt, want.CuredAt)
+	eq(t, "bank_pending", got.BankPending, want.BankPending)
+	eqHex(t, "disclosure_hash", got.DisclosureHash[:], want.DisclosureHash)
+	eq(t, "finalize_delay", got.FinalizeDelay, want.FinalizeDelay)
+	eqHex(t, "reserved", got.Reserved[61:], want.Reserved)
 	eq(t, "series→series fixture", got.Series.String(), fixturePubkey(t, "series"))
 }
 
