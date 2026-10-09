@@ -44,6 +44,10 @@ const (
 	StepMeetFinal  = "meeting_finalize"
 	StepApplyTerms = "apply_terms_change"
 	StepSweep      = "sweep_escrow"
+	// Plan 15: anyone declares a default once it is due (D4); the paying agent confirms a bank payout (D6) —
+	// an operator action from the console (it needs the transfer reference), never taken by the autopilot.
+	StepDefault     = "declare_default"
+	StepConfirmBank = "confirm_bank_payout"
 )
 
 // cliCommand maps a step to its `qupon` CLI command (clients/ts/src/cli.ts).
@@ -59,6 +63,9 @@ var cliCommand = map[string]string{
 	StepMeetFinal:  "meeting:finalize",
 	StepApplyTerms: "meeting:apply",
 	StepSweep:      "action:sweep",
+	StepDefault:    "action:default",
+	// payout:confirm-bank also needs --owner and --reference (the console adds them).
+	StepConfirmBank: "payout:confirm-bank",
 }
 
 // Args builds the CLI argv for a step. Every lifecycle command takes
@@ -284,31 +291,45 @@ func (e *Executor) SeriesName(mint string) (string, error) {
 //
 // openTrades is Series.open_trades: strike_record fails with TradesInFlight while a secondary trade is admitted
 // (docs/03-domain.md §4a). The operator settles or cancels them; nothing here does it for them.
-func NextStep(a *chain.CorporateAction, supply uint64, openTrades uint32, now time.Time, autofund bool) (step, wait string) {
+func NextStep(a *chain.CorporateAction, s *chain.Series, supply uint64, now time.Time, autofund bool) (step, wait string) {
 	switch a.Status {
 	case 0: // Announced
-		if openTrades > 0 {
-			return "", fmt.Sprintf("open secondary trades: settle or cancel them first (%d)", openTrades)
+		if s.Hook == 1 {
+			// Plan 15 D1': no strike — the transfer-hook gate arms itself at record_at and the first snapshot batch
+			// strikes lazily; trades in flight are handled by the gate, not by the operator.
+			if now.Unix() < a.RecordAt {
+				return "", "record date not reached (the transfer-hook gate arms at record_at)"
+			}
+			return snapshotOrFinalize(a, s, supply)
+		}
+		if s.OpenTrades > 0 {
+			return "", fmt.Sprintf("open secondary trades: settle or cancel them first (%d)", s.OpenTrades)
 		}
 		return StepStrike, ""
 	case 1: // RecordStruck: snapshot until every outstanding unit is in the snapshot
-		if supply == 0 {
-			return "", "no bonds outstanding — nothing to snapshot"
+		return snapshotOrFinalize(a, s, supply)
+	case 2: // SnapshotComplete: issuer funds; autofund drives the demo; past the deadline anyone declares a default
+		if autofund {
+			return StepFund, ""
 		}
-		if a.UnitsSnapshotted < supply {
-			return StepSnapshot, ""
+		if due := DefaultDue(a, s); now.Unix() >= due {
+			return StepDefault, ""
 		}
-		return StepFinalize, ""
-	case 2: // SnapshotComplete: issuer funds; autofund drives the demo
-		if !autofund {
-			return "", "waiting for issuer funding (re-run with autofund:true)"
+		return "", "waiting for issuer funding (re-run with autofund:true); a default is due at " +
+			time.Unix(DefaultDue(a, s), 0).UTC().Format(time.RFC3339)
+	case 10: // Defaulted (plan 15 D4): the issuer's late funding cures it
+		if autofund {
+			return StepFund, ""
 		}
-		return StepFund, ""
+		return "", "in default: the issuer's late funding cures it (re-run with autofund:true)"
 	case 3: // Funded
 		return StepPay, ""
 	case 4: // Settling: pay until every holder is paid, then complete
 		if a.HoldersPaid < a.HoldersSnapshotted {
 			return StepPay, ""
+		}
+		if a.BankPending > 0 { // plan 15 D6: complete_action refuses while bank payouts await confirmation
+			return "", fmt.Sprintf("%d bank payout(s) await the paying agent's confirmation", a.BankPending)
 		}
 		return StepComplete, ""
 	case 5: // Completed: the escrow goes back to the issuer (idempotent — a re-run is a skip)
@@ -334,4 +355,27 @@ func NextStep(a *chain.CorporateAction, supply uint64, openTrades uint32, now ti
 	default:
 		return "", fmt.Sprintf("unknown action status %d", a.Status)
 	}
+}
+
+// snapshotOrFinalize: snapshot until every outstanding unit (and, on a hooked series, every registered position) is
+// in the snapshot, then finalize.
+func snapshotOrFinalize(a *chain.CorporateAction, s *chain.Series, supply uint64) (string, string) {
+	if supply == 0 {
+		return "", "no bonds outstanding — nothing to snapshot"
+	}
+	if a.UnitsSnapshotted < supply || (s.Hook == 1 && a.PositionsDone+s.CkptLate < s.CkptCount) {
+		return StepSnapshot, ""
+	}
+	return StepFinalize, ""
+}
+
+// DefaultDue is when declare_default becomes valid (plan 15 D4, program default.rs): one series day after the later
+// of the payment date and the snapshot's finalization (funding only opens then). A series day is day_secs on a demo
+// clock, 86 400 s otherwise.
+func DefaultDue(a *chain.CorporateAction, s *chain.Series) int64 {
+	grace := int64(86_400)
+	if s.DaySecs > 0 {
+		grace = int64(s.DaySecs)
+	}
+	return max(a.PaymentAt, a.RecordAt+int64(a.FinalizeDelay)) + grace
 }

@@ -136,6 +136,7 @@ func postAdvance(t *testing.T, url string, body string) (int, map[string]any) {
 func TestAdvanceLifecycle(t *testing.T) {
 	fc := &fakeChain{action: &chain.CorporateAction{
 		Series: fSeries, Kind: 0, Status: 0, CashMint: fCash, Index: 0,
+		PaymentAt: time.Now().Add(time.Hour).Unix(), // unfunded before the default deadline: the issuer is awaited
 	}}
 	srv, st, log := advanceServer(t, fc)
 
@@ -342,13 +343,13 @@ func TestNextStepAfterSweepRecorded(t *testing.T) {
 	for _, status := range []uint8{5, 7} { // Completed, Cancelled
 		a := &chain.CorporateAction{Status: status}
 		// before any sweep: the escrow follow-up is the step
-		if step, _ := nextStepAfter(t.Context(), open(), fAction, a, 0, 0, false); step != executor.StepSweep {
+		if step, _ := nextStepAfter(t.Context(), open(), fAction, a, &chain.Series{}, 0, false); step != executor.StepSweep {
 			t.Fatalf("status %d: step = %q, want %s", status, step, executor.StepSweep)
 		}
 		for _, kind := range []string{"advance:" + executor.StepSweep, "scheduler:" + executor.StepSweep, "EscrowSwept"} {
 			st := open()
 			insert(st, kind)
-			if step, wait := nextStepAfter(t.Context(), st, fAction, a, 0, 0, false); step != "" || wait == "" {
+			if step, wait := nextStepAfter(t.Context(), st, fAction, a, &chain.Series{}, 0, false); step != "" || wait == "" {
 				t.Fatalf("status %d after %s: step = %q wait = %q, want no step", status, kind, step, wait)
 			}
 		}

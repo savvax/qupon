@@ -83,3 +83,33 @@ func (s *Store) HideSeriesIfUnset(ctx context.Context, mint string) error {
 	}
 	return nil
 }
+
+// SetSeriesNoAutofund sets the per-series scenario flag (plan 15, task 1522): true keeps the autopilot from funding
+// the escrow even when the registrar runs with autofund, so the coupon defaults (sandbox "skip funding").
+func (s *Store) SetSeriesNoAutofund(ctx context.Context, mint string, on bool) error {
+	if _, err := s.db.ExecContext(ctx,
+		`INSERT INTO series_settings (series_mint, no_autofund, updated_at) VALUES (?, ?, unixepoch())
+		 ON CONFLICT(series_mint) DO UPDATE SET no_autofund = excluded.no_autofund, updated_at = excluded.updated_at`,
+		mint, on); err != nil {
+		return fmt.Errorf("set no_autofund %s: %w", mint, err)
+	}
+	return nil
+}
+
+// NoAutofundSeries returns the mints whose autopilot must not fund (no_autofund = 1).
+func (s *Store) NoAutofundSeries(ctx context.Context) (map[string]bool, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT series_mint FROM series_settings WHERE no_autofund = 1`)
+	if err != nil {
+		return nil, fmt.Errorf("list no_autofund: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[string]bool{}
+	for rows.Next() {
+		var m string
+		if err := rows.Scan(&m); err != nil {
+			return nil, fmt.Errorf("scan no_autofund: %w", err)
+		}
+		out[m] = true
+	}
+	return out, rows.Err()
+}

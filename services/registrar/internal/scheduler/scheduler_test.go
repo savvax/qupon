@@ -137,7 +137,18 @@ func TestDecide(t *testing.T) {
 			supply: 2,
 			now:    now0,
 			cfg:    Config{Lead: cfg.Lead},
-			want:   Decision{Kind: KindWait, Reason: "waiting for issuer funding (re-run with autofund:true)"},
+			want: Decision{Kind: KindWait, Reason: "waiting for issuer funding (re-run with autofund:true); a default is due at " +
+				now0.Add(70*time.Second+24*time.Hour).UTC().Format(time.RFC3339)},
+		},
+		{
+			// plan 15 D4: past payment + one day without funding, the autopilot declares the default (anyone may)
+			name:   "snapshot complete, autofund off, past the deadline → declare default",
+			series: series(now0.Unix(), maturity),
+			open:   action(2),
+			supply: 2,
+			now:    now0.Add(70*time.Second + 24*time.Hour),
+			cfg:    Config{Lead: cfg.Lead},
+			want:   Decision{Kind: KindStep, Action: executor.StepDefault},
 		},
 		{
 			name:   "snapshot complete, autofund on → fund",
@@ -645,4 +656,36 @@ func TestTickSpeedsUpForDemoSeries(t *testing.T) {
 	s.tick = time.NewTicker(time.Minute)
 	defer s.tick.Stop()
 	s.Tick(t.Context())
+}
+
+// TestTickNoAutofundSeriesDefaults (plan 15, task 1522): with the global autofund on, a series flagged no_autofund
+// is never funded; once payment + one series day passed the autopilot declares the default instead.
+func TestTickNoAutofundSeriesDefaults(t *testing.T) {
+	fc := settlingChain()
+	fc.series.DaySecs = 2 // demo clock: grace = 2 s
+	fc.action = action(2)
+	s, st, log := newScheduler(t, fc, cfg)
+	if err := st.SetSeriesNoAutofund(t.Context(), kMint.String(), true); err != nil {
+		t.Fatal(err)
+	}
+	s.Now = func() time.Time { return now0.Add(60 * time.Second) } // before payment (+70 s) + grace
+	s.Tick(t.Context())
+	if raw, _ := os.ReadFile(log); len(strings.TrimSpace(string(raw))) != 0 {
+		t.Fatalf("no_autofund series ran %q before the deadline, want nothing", raw)
+	}
+	s.Now = func() time.Time { return now0.Add(72 * time.Second) }
+	s.Tick(t.Context())
+	raw, _ := os.ReadFile(log)
+	if want := "--json action:default --series QPNb1 --index 3"; strings.TrimSpace(string(raw)) != want {
+		t.Fatalf("cli log = %q, want %q", raw, want)
+	}
+	// Without the flag the same series is funded (the demo cadence).
+	if err := st.SetSeriesNoAutofund(t.Context(), kMint.String(), false); err != nil {
+		t.Fatal(err)
+	}
+	s.Tick(t.Context())
+	raw, _ = os.ReadFile(log)
+	if !strings.HasSuffix(strings.TrimSpace(string(raw)), "--json action:fund --series QPNb1 --index 3") {
+		t.Fatalf("cli log = %q, want a fund step last", raw)
+	}
 }

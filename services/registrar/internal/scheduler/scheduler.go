@@ -85,7 +85,7 @@ func Decide(s *chain.Series, open *chain.CorporateAction, supply uint64, now tim
 		if open.Status == 3 && now.Unix() < open.PaymentAt { // Funded → pay at the payment date
 			return waitf("payment date not reached until %s", time.Unix(open.PaymentAt, 0).In(almaty).Format(time.RFC3339))
 		}
-		step, wait := executor.NextStep(open, supply, s.OpenTrades, now, cfg.AutoFund)
+		step, wait := executor.NextStep(open, s, supply, now, cfg.AutoFund)
 		if step == "" {
 			return waitf("%s", wait)
 		}
@@ -178,11 +178,18 @@ func (s *Scheduler) Tick(ctx context.Context) {
 	if s.tick != nil && s.Cfg.Tick > demoTick && anyDemoSeriesOpen(recs) {
 		s.tick.Reset(demoTick) // stays fast until the service restarts; harmless when no demo series remains
 	}
+	// Per-series scenario (plan 15, task 1522): no_autofund series never get funded by the autopilot, so they default.
+	var noFund map[string]bool
+	if s.Store != nil {
+		if noFund, err = s.Store.NoAutofundSeries(ctx); err != nil {
+			s.Log.Error("scheduler: series scenarios", "err", err) // fall back to the global autofund
+		}
+	}
 	for _, rec := range recs {
 		if ctx.Err() != nil {
 			return
 		}
-		s.handleSeries(ctx, rec)
+		s.handleSeries(ctx, rec, noFund[rec.Series.Mint.String()])
 	}
 }
 
@@ -196,7 +203,7 @@ func anyDemoSeriesOpen(recs []chain.SeriesRecord) bool {
 	return false
 }
 
-func (s *Scheduler) handleSeries(ctx context.Context, rec chain.SeriesRecord) {
+func (s *Scheduler) handleSeries(ctx context.Context, rec chain.SeriesRecord, noAutofund bool) {
 	series := rec.Series
 	now := s.now()
 	var open *chain.CorporateAction
@@ -215,7 +222,11 @@ func (s *Scheduler) handleSeries(ctx context.Context, rec chain.SeriesRecord) {
 		}
 		supply = mint.Supply
 	}
-	d := Decide(series, open, supply, now, s.Cfg)
+	cfg := s.Cfg
+	if noAutofund {
+		cfg.AutoFund = false
+	}
+	d := Decide(series, open, supply, now, cfg)
 	if d.Kind == KindWait {
 		s.Log.Debug("scheduler wait", "series", series.Mint.String(), "reason", d.Reason)
 		return

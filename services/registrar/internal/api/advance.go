@@ -53,8 +53,8 @@ func txExplorer(sig string) *string {
 // EscrowSwept event — there is no step left, so the response carries no
 // nextStep and the console hides the button. A store error falls through to
 // the pure mapping: the sweep CLI is idempotent (a re-run is a skip).
-func nextStepAfter(ctx context.Context, st *store.Store, pda solana.PublicKey, a *chain.CorporateAction, supply uint64, openTrades uint32, autofund bool) (step, wait string) {
-	step, wait = executor.NextStep(a, supply, openTrades, time.Now(), autofund)
+func nextStepAfter(ctx context.Context, st *store.Store, pda solana.PublicKey, a *chain.CorporateAction, s *chain.Series, supply uint64, autofund bool) (step, wait string) {
+	step, wait = executor.NextStep(a, s, supply, time.Now(), autofund)
 	if step != executor.StepSweep {
 		return step, wait
 	}
@@ -116,7 +116,7 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 			return
 		}
 
-		step, wait := nextStepAfter(r.Context(), st, pda, action, mint.Supply, series.OpenTrades, req.AutoFund)
+		step, wait := nextStepAfter(r.Context(), st, pda, action, series, mint.Supply, req.AutoFund)
 		if step == "" {
 			writeError(w, http.StatusBadRequest, wait)
 			return
@@ -167,7 +167,7 @@ func advanceAction(deps Deps, st *store.Store, logger *slog.Logger) http.Handler
 			Step: step, OK: true, Status: chain.ActionStatusName(fresh.Status),
 			Signature: sigPtr(res), Slot: slotPtr(res), ExplorerURL: txExplorer(res.Signature),
 		}
-		if next, wait := nextStepAfter(r.Context(), st, pda, fresh, mint.Supply, series.OpenTrades, req.AutoFund); next != "" {
+		if next, wait := nextStepAfter(r.Context(), st, pda, fresh, series, mint.Supply, req.AutoFund); next != "" {
 			resp.NextStep = &next
 		} else if wait != "" {
 			resp.NextStep = nil

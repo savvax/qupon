@@ -208,7 +208,7 @@ func TestNextStep(t *testing.T) {
 		name       string
 		action     chain.CorporateAction
 		supply     uint64
-		openTrades uint32
+		series     chain.Series
 		now        time.Time
 		autofund   bool
 		wantStep   string
@@ -217,10 +217,10 @@ func TestNextStep(t *testing.T) {
 		{name: "announced strikes", action: chain.CorporateAction{Status: 0},
 			wantStep: StepStrike},
 		{name: "announced with open trades waits", action: chain.CorporateAction{Status: 0},
-			openTrades: 2, wantWaitIn: "open secondary trades: settle or cancel them first (2)"},
+			series: chain.Series{OpenTrades: 2}, wantWaitIn: "open secondary trades: settle or cancel them first (2)"},
 		// only the strike is gated: once the record is struck the count cannot be non-zero, and must not stall the rest
 		{name: "open trades do not gate later steps", action: chain.CorporateAction{Status: 3},
-			openTrades: 1, wantStep: StepPay},
+			series: chain.Series{OpenTrades: 1}, wantStep: StepPay},
 		{name: "record struck snapshots holders", action: chain.CorporateAction{Status: 1, HoldersSnapshotted: 1, UnitsSnapshotted: 10},
 			supply: 100, wantStep: StepSnapshot},
 		{name: "record struck with every unit snapshotted finalizes", action: chain.CorporateAction{Status: 1, HoldersSnapshotted: 3, UnitsSnapshotted: 100},
@@ -258,12 +258,40 @@ func TestNextStep(t *testing.T) {
 			wantStep: StepApplyTerms},
 		{name: "finalized rejected has nothing to do", action: chain.CorporateAction{Status: 9, Result: 2},
 			wantWaitIn: "not approved"},
+		// Plan 15 (task 1522): hooked record date, default and cure, bank-routed payouts — real and demo clocks.
+		{name: "hooked announced waits for the record date", action: chain.CorporateAction{Status: 0, RecordAt: later.Unix()},
+			series: chain.Series{Hook: 1}, supply: 100, now: now, wantWaitIn: "record date"},
+		{name: "hooked announced snapshots after the record date (no strike)", action: chain.CorporateAction{Status: 0, RecordAt: now.Unix()},
+			series: chain.Series{Hook: 1, OpenTrades: 2, CkptCount: 3}, supply: 100, now: now, wantStep: StepSnapshot},
+		{name: "hooked: every unit but not every position snapshotted", action: chain.CorporateAction{Status: 1, UnitsSnapshotted: 100, PositionsDone: 2},
+			series: chain.Series{Hook: 1, CkptCount: 3}, supply: 100, wantStep: StepSnapshot},
+		{name: "hooked: late positions count as done", action: chain.CorporateAction{Status: 1, UnitsSnapshotted: 100, PositionsDone: 2},
+			series: chain.Series{Hook: 1, CkptCount: 3, CkptLate: 1}, supply: 100, wantStep: StepFinalize},
+		{name: "unfunded before the default deadline waits (real clock: payment + 1 day)",
+			action: chain.CorporateAction{Status: 2, RecordAt: now.Unix() - 120, PaymentAt: now.Unix() - 60},
+			now: now, wantWaitIn: "default is due"},
+		{name: "unfunded past payment + 1 day: anyone declares the default",
+			action: chain.CorporateAction{Status: 2, RecordAt: now.Unix() - 90_000, PaymentAt: now.Unix() - 86_400},
+			now: now, wantStep: StepDefault},
+		{name: "demo clock: the grace is one series day",
+			action: chain.CorporateAction{Status: 2, RecordAt: now.Unix() - 10, PaymentAt: now.Unix() - 2},
+			series: chain.Series{DaySecs: 2}, now: now, wantStep: StepDefault},
+		{name: "a late finalize moves the deadline", action: chain.CorporateAction{Status: 2, RecordAt: now.Unix() - 100,
+			PaymentAt: now.Unix() - 50, FinalizeDelay: 99}, series: chain.Series{DaySecs: 2}, now: now, wantWaitIn: "default is due"},
+		{name: "autofund funds instead of defaulting", action: chain.CorporateAction{Status: 2, PaymentAt: now.Unix() - 90_000},
+			autofund: true, now: now, wantStep: StepFund},
+		{name: "defaulted waits for the cure", action: chain.CorporateAction{Status: 10},
+			wantWaitIn: "cures"},
+		{name: "defaulted with autofund cures", action: chain.CorporateAction{Status: 10},
+			autofund: true, wantStep: StepFund},
+		{name: "settling: bank payouts await the agent, never automatic", action: chain.CorporateAction{Status: 4, HoldersPaid: 3,
+			HoldersSnapshotted: 3, BankPending: 1}, wantWaitIn: "paying agent"},
 		{name: "unknown status", action: chain.CorporateAction{Status: 42},
 			wantWaitIn: "unknown"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			step, wait := NextStep(&tt.action, tt.supply, tt.openTrades, tt.now, tt.autofund)
+			step, wait := NextStep(&tt.action, &tt.series, tt.supply, tt.now, tt.autofund)
 			if tt.wantWaitIn != "" {
 				if step != "" || !strings.Contains(wait, tt.wantWaitIn) {
 					t.Fatalf("NextStep = (%q, %q), want wait containing %q", step, wait, tt.wantWaitIn)
