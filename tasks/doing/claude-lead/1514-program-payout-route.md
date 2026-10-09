@@ -1,7 +1,7 @@
 ---
 id: 1514
 title: program — holder payout route and bank confirmation
-agent: glm
+agent: claude
 tier: T1
 depends_on: [1513]
 verify: make verify
