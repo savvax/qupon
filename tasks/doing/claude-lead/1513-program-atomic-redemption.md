@@ -1,7 +1,7 @@
 ---
 id: 1513
 title: program — atomic pay + burn at redemption; 5-account pay layout
-agent: glm
+agent: claude
 tier: T0
 depends_on: [1512]
 verify: make verify
