@@ -1,7 +1,7 @@
 ---
 id: 1531
 title: guidance system — NowBar, tours, glossary, /learn
-agent: glm
+agent: claude
 tier: T0
 depends_on: [1530, 1504]
 verify: make verify
