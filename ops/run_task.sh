@@ -86,6 +86,16 @@ if [ -n "$CUR" ] && [ "$CUR" != "$BR" ]; then
     echo "BLOCKED:$ID agent committed on branch $CUR instead of $BR (work kept on $CUR)"
   fi
 fi
+# Timed out after finishing (91501 on 2026-10-09: VERIFY OK, commits and worklog in place, but pi never returned): a
+# branch with commits, a clean tree and the task's committed worklog counts as done — the orchestrator's own make verify
+# and the Opus review gate still decide whether it merges.
+if [ "$rc" -eq 124 ] && [ -z "$(git status --porcelain 2>/dev/null)" ] \
+  && [ "$(git rev-list --count main..HEAD 2>/dev/null || echo 0)" -gt 0 ] \
+  && git ls-files --error-unmatch "reports/worklog/$ID.md" >/dev/null 2>&1; then
+  echo "[run_task] agent timed out after committing its work and worklog; handing it to verify + review" >&2
+  echo "DONE:$ID" | tee -a "$LOGP.txt"
+  rc=0
+fi
 # Agents often print DONE and then run gofmt/prettier without committing (023, 9126 were rejected 3× for clean=N).
 # Commit the leftovers on the task branch; the orchestrator's own `make verify` still gates the merge.
 if [ "$rc" -eq 0 ] && grep -qs "DONE:$ID" "$LOGP".txt "$LOGP".json && [ -n "$(git status --porcelain 2>/dev/null)" ] \
