@@ -213,6 +213,11 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r.With(registrar, write).Post("/registrar/actions/{pda}/advance", advanceAction(deps, st, logger))
 	r.With(registrar, write).Post("/actions/{pda}/advance", advanceAction(deps, st, logger))
 
+	// Plan 15 D6: the paying agent confirms a bank-routed payout from the console (bank transfer SIMULATED);
+	// the registrar may do it too. GET /actions/{pda}/bank-pending is the matching public read (rest.go).
+	payAgent := requireRole(deps.Auth, "registrar", "paying_agent")
+	r.With(payAgent, write).Post("/actions/{pda}/confirm-bank", confirmBankPayout(deps, st, logger))
+
 	// Issuer writes (product spec §6): series creation runs the qupon CLI executor. Series-scoped
 	// writes also pass issuerOwnsSeries (task 807): an organisation's issuers act on its series only.
 	issuer := requireRole(deps.Auth, "issuer")

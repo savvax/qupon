@@ -222,6 +222,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /actions/{pda}/bank-pending:
+    get:
+      summary: Bank-routed payouts awaiting the paying agent's confirmation
+        (plan 15 D6; entitlements in status PaidToAgent)
+      operationId: listBankPendingPayouts
+      parameters:
+        - $ref: '#/components/parameters/Pda'
+      responses:
+        "200":
+          description: pending bank payouts with the holders' route reference
+            hashes (the bank transfer itself is SIMULATED off-chain)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - bankPending
+                  - items
+                properties:
+                  bankPending:
+                    type: integer
+                    description: the action's bank_pending counter
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BankPendingPayout'
+        "404":
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "503":
+          description: chain reader not configured
   /actions/{pda}/advance:
     post:
       summary: Run the next action step through the executor (qupon CLI). Same
@@ -268,6 +302,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /actions/{pda}/confirm-bank:
+    post:
+      summary: 'Paying agent: confirm one bank-routed payout with the bank
+        transfer reference — runs `qupon payout:confirm-bank` (bank transfer
+        SIMULATED; only the sha256 of the reference goes on-chain)'
+      operationId: confirmBankPayout
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Pda'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmBankRequest'
+      responses:
+        "200":
+          description: confirmation transaction sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmBankResponse'
+        "400":
+          description: invalid owner or empty reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: no valid back-office session (bearer token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: forbidden - the role is not paying_agent or registrar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "409":
+          description: the owner is not PaidToAgent on this action, or the chain
+            refused the confirmation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "503":
+          description: executor or chain reader not configured
   /actions/{pda}/iso/seev031.xml:
     get:
       summary: ISO 20022 seev.031 agent notification (announcement)
@@ -4194,6 +4284,53 @@ components:
           description: true when the step was not executed (dry run)
         error:
           $ref: '#/components/schemas/Error'
+    BankPendingPayout:
+      type: object
+      required:
+        - owner
+        - entitlementPda
+        - amount
+        - routeBankRefHash
+      properties:
+        owner:
+          type: string
+          description: holder wallet (base58)
+        entitlementPda:
+          type: string
+        amount:
+          # net + principal — what left the escrow to the paying agent
+          $ref: '#/components/schemas/Amount'
+        routeBankRefHash:
+          type: string
+          description: sha256 hex of the holder's bank details - only the
+            hash is public, never the details; empty when no route was found
+            public, never the details; empty when no route account was found
+    ConfirmBankRequest:
+      type: object
+      required:
+        - owner
+        - reference
+      properties:
+        owner:
+          type: string
+          description: the holder whose payout was transferred (base58)
+        reference:
+          type: string
+          description: bank transfer reference (bank transfer SIMULATED); only
+            its sha256 goes on-chain
+    ConfirmBankResponse:
+      type: object
+      required:
+        - ok
+      properties:
+        ok:
+          type: boolean
+        signature:
+          type: string
+          description: tx signature
+        explorerUrl:
+          type: string
+          description: https://explorer.solana.com/tx/<sig>?cluster=devnet
     SeriesCreateRequest:
       type: object
       required:

@@ -36,6 +36,8 @@ type ReadModel interface {
 	// Secondary trades (trades.go): the admissions of a series, and an account with its owning program
 	// (the cash mint's token program decides where the cash escrow lives).
 	FetchTradeAdmissionsBySeries(ctx context.Context, series solana.PublicKey) ([]chain.TradeRecord, error)
+	// Holder-chosen payout routes (plan 15 D6, payout.go): bank-routed payouts awaiting the paying agent.
+	FetchPayoutRoutesBySeries(ctx context.Context, series solana.PublicKey) ([]chain.PayoutRouteRecord, error)
 	GetAccountWithOwner(ctx context.Context, key solana.PublicKey) (*chain.AccountData, error)
 }
 
@@ -693,5 +695,19 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			})
 		}
 		writeJSON(w, http.StatusOK, out)
+	}))
+
+	// GET /actions/{pda}/bank-pending: the bank-routed payouts awaiting the paying agent's confirmation.
+	r.Get("/actions/{pda}/bank-pending", need(func(w http.ResponseWriter, r *http.Request) {
+		pda, a, _, m, ok := loadAction(w, r)
+		if !ok {
+			return
+		}
+		items, err := bankPendingPayouts(r.Context(), rm, pda, a, m)
+		if err != nil {
+			fail(w, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"bankPending": a.BankPending, "items": items})
 	}))
 }

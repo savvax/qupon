@@ -191,6 +191,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/actions/{pda}/bank-pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bank-routed payouts awaiting the paying agent's confirmation (plan 15 D6; entitlements in status PaidToAgent) */
+        get: operations["listBankPendingPayouts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/actions/{pda}/advance": {
         parameters: {
             query?: never;
@@ -202,6 +219,23 @@ export interface paths {
         put?: never;
         /** Run the next action step through the executor (qupon CLI). Same handler as /registrar/actions/{pda}/advance. */
         post: operations["advanceAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actions/{pda}/confirm-bank": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Paying agent: confirm one bank-routed payout with the bank transfer reference — runs `qupon payout:confirm-bank` (bank transfer SIMULATED; only the sha256 of the reference goes on-chain) */
+        post: operations["confirmBankPayout"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1939,6 +1973,27 @@ export interface components {
             preview?: boolean;
             error?: components["schemas"]["Error"];
         };
+        BankPendingPayout: {
+            /** @description holder wallet (base58) */
+            owner: string;
+            entitlementPda: string;
+            amount: components["schemas"]["Amount"];
+            /** @description sha256 hex of the holder's bank details - only the hash is public, never the details; empty when no route was found public, never the details; empty when no route account was found */
+            routeBankRefHash: string;
+        };
+        ConfirmBankRequest: {
+            /** @description the holder whose payout was transferred (base58) */
+            owner: string;
+            /** @description bank transfer reference (bank transfer SIMULATED); only its sha256 goes on-chain */
+            reference: string;
+        };
+        ConfirmBankResponse: {
+            ok: boolean;
+            /** @description tx signature */
+            signature?: string;
+            /** @description https://explorer.solana.com/tx/<sig>?cluster=devnet */
+            explorerUrl?: string;
+        };
         SeriesCreateRequest: {
             /** @description 1-16 characters of A-Z a-z 0-9 - */
             name: string;
@@ -2499,6 +2554,49 @@ export interface operations {
             };
         };
     };
+    listBankPendingPayouts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description pending bank payouts with the holders' route reference hashes (the bank transfer itself is SIMULATED off-chain) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description the action's bank_pending counter */
+                        bankPending: number;
+                        items: components["schemas"]["BankPendingPayout"][];
+                    };
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description chain reader not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     advanceAction: {
         parameters: {
             query?: never;
@@ -2559,6 +2657,85 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
+            };
+        };
+    };
+    confirmBankPayout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmBankRequest"];
+            };
+        };
+        responses: {
+            /** @description confirmation transaction sent */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmBankResponse"];
+                };
+            };
+            /** @description invalid owner or empty reference */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description no valid back-office session (bearer token) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description forbidden - the role is not paying_agent or registrar */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description the owner is not PaidToAgent on this action, or the chain refused the confirmation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description executor or chain reader not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
