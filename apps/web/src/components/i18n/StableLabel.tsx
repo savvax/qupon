@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, createContext, useContext } from "react";
-import { type AltLabelMap, fill } from "@/i18n/altLabels";
+import { ALT_SEP, type AltLabelMap, fill } from "@/i18n/altLabels";
 
 const Ctx = createContext<AltLabelMap>({});
 
@@ -17,6 +17,12 @@ export function AltLabelsProvider({
 }
 
 export const useAltLabels = () => useContext(Ctx);
+
+/** The other locales' versions of `text` (up to two: ::after and ::before reserve them), template filled. */
+function alternates(map: AltLabelMap, text: string, template?: string, values?: Record<string, string | number>) {
+  const raw = template && map[template] ? fill(map[template], values) : map[text];
+  return (raw ?? "").split(ALT_SEP).filter((a) => a && a !== text);
+}
 
 /**
  * A label that is as wide as the longer of its EN/RU versions, so switching the language never resizes or moves
@@ -34,12 +40,10 @@ export function StableLabel({
   values?: Record<string, string | number>;
   align?: "center" | "start" | "end";
 }) {
-  const map = useAltLabels();
-  const altTemplate = template ? map[template] : undefined;
-  const alt = altTemplate ? fill(altTemplate, values) : map[children];
-  if (!alt || alt === children) return <>{children}</>;
+  const [alt, alt2] = alternates(useAltLabels(), children, template, values);
+  if (!alt) return <>{children}</>;
   return (
-    <span className="stable-label" data-alt={alt} data-align={align}>
+    <span className="stable-label" data-alt={alt} data-alt2={alt2} data-align={align}>
       <span>{children}</span>
     </span>
   );
@@ -60,17 +64,15 @@ export function StableText({
   values?: Record<string, string | number>;
   className?: string;
 }) {
-  const map = useAltLabels();
-  const altTemplate = template ? map[template] : undefined;
-  const alt = altTemplate ? fill(altTemplate, values) : map[children];
-  if (!alt || alt === children)
+  const [alt, alt2] = alternates(useAltLabels(), children, template, values);
+  if (!alt)
     return className ? (
       <span className={className}>{children}</span>
     ) : (
       <>{children}</>
     );
   return (
-    <span className={`stable-text ${className ?? ""}`} data-alt={alt}>
+    <span className={`stable-text ${className ?? ""}`} data-alt={alt} data-alt2={alt2}>
       <span>{children}</span>
     </span>
   );

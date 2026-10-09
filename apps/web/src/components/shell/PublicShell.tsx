@@ -77,14 +77,15 @@ export async function PublicShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b border-n200 bg-n0/95 backdrop-blur">
         <div className={`${CONTAINER} flex h-16 items-center gap-2 sm:gap-3`}>
-          {/* The tagline lives in the hero and the link title: in the bar it pushed the RU header past 1200 px. */}
+          {/* The tagline lives in the hero and the link title: in the bar it pushed the RU header past 1200 px. Below
+              420 px the wordmark goes too: EN/RU/KZ, the CTA and the menu need the room (no sideways scroll at 390). */}
           <Link
             href="/"
             title={t("tagline")}
             className="mr-1 flex h-10 shrink-0 items-center gap-2.5 rounded-btn"
           >
             <Logo />
-            <span className="text-lg font-extrabold tracking-tight text-n900 max-[379px]:sr-only">
+            <span className="text-lg font-extrabold tracking-tight text-n900 max-[419px]:sr-only">
               Qupon
             </span>
           </Link>

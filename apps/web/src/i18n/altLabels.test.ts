@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { altLabelMap, fill } from "./altLabels";
+import { ALT_SEP, altLabelMap, fill } from "./altLabels";
 
 describe("altLabelMap", () => {
   const en = {
@@ -32,6 +32,13 @@ describe("altLabelMap", () => {
     expect(map["Connect {name}"]).toBe("Подключить {name}");
     expect(Object.keys(map).some((k) => k.includes("plural"))).toBe(false);
     expect(map.Devnet).toBeUndefined();
+  });
+  it("keeps every other locale's text with three locales", () => {
+    const kk = { nav: { signIn: "Кіру", bonds: "Облигациялар", same: "Devnet" } };
+    const three = altLabelMap(en, ru, kk);
+    expect(three["Sign in"]!.split(ALT_SEP)).toEqual(["Войти", "Кіру"]);
+    expect(three.Bonds!.split(ALT_SEP)).toEqual(["Облигации", "Облигациялар"]);
+    expect(three.Devnet).toBeUndefined();
   });
   it("fills placeholders", () => {
     expect(fill("Подключить {name}", { name: "Phantom" })).toBe(
