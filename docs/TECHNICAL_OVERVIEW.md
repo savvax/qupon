@@ -66,7 +66,7 @@ The literal brief figures (500 and 10,000 + 500) are also asserted by the tests 
 
 1. `fund_action` — the issuer (or paying agent) moves cash into an escrow owned by the **action PDA**; the action is `Funded` only when the escrow covers net + tax + principal.
 2. `pay_batch` (crank, idempotent) — pays each holder's **registered** cash account and the tax vault; each entitlement is paid once.
-3. `complete_action` — reconciliation (every holder paid, `total_paid == total_net + total_principal`), then the mint resumes; coupons advance the schedule (computed from the issue date, so month-end dates never drift).
+3. `complete_action` — reconciliation (every holder paid, `total_paid == total_net + total_principal`), then the mint resumes; coupons advance the schedule (computed from the issue date, so month-end dates never drift); a partial call (PCAL) keeps every unit and lowers the outstanding face by the principal repaid. `fund_action` takes at most the shortfall; `sweep_escrow` (operator, finished actions only) returns leftover escrow cash to the issuer and closes the escrow — the registrar runs it after each completion.
 4. Redemptions: `retire_batch` burns every unit through the permanent delegate (suspended holders are thawed first), then `close_series` requires supply 0, writes `status=REDEEMED` to the token metadata and closes the mint.
 5. Bondholder meeting: `cast_vote` weighted by snapshot units → `finalize_meeting` (quorum and approval are series configuration, not asserted as law) → `apply_terms_change` updates the rate on the series and in the token metadata; the registrar's signature stands in for the ARDFM registration (SIMULATED).
 
@@ -87,10 +87,11 @@ Records: 20 event types (one per transition), ISO 20022 `seev.031`/`seev.036` an
 | `strike_record` / `snapshot_batch` / `finalize_snapshot` | registrar or paying agent | record date (pause; refused while a secondary trade is admitted), snapshot, supply check |
 | `fund_action` / `pay_batch` / `complete_action` | issuer or paying agent / operator / operator | escrow, payouts, reconcile + resume |
 | `retire_batch` / `close_series` | operator / registrar | burn via permanent delegate, close the mint |
+| `sweep_escrow` | operator | finished action's leftover escrow → issuer, escrow closed |
 | `cast_vote` / `finalize_meeting` / `apply_terms_change` | investor / registrar / registrar | meeting and terms change |
 | `admit_trade` / `release_trade` | registrar or paying agent | thaw the bond escrow of a Solana DvP trade between two registered investors / drop the admission (forced: return escrowed bonds to the seller) |
 
-Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). Compute: the heaviest batch the CLI sends (retiring 12 frozen holders) uses about 134k compute units, 22% of the 600k limit set on each transaction, and an extra holder costs about 10k in the worst case — [`reports/cu-benchmarks.md`](../reports/cu-benchmarks.md). Tests: 60 program tests (LiteSVM integration + unit) including the brief suite and the secondary-trade suite, which runs the devnet binary of the Solana DvP program; Go and TS mirrors of the math; `make verify` gates every merge.
+Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). Compute: the heaviest batch the CLI sends (retiring 12 frozen holders) uses about 134k compute units, 22% of the 600k limit set on each transaction, and an extra holder costs about 10k in the worst case — [`reports/cu-benchmarks.md`](../reports/cu-benchmarks.md). Tests: 68 program tests (LiteSVM integration + unit) including the brief suite and the secondary-trade suite, which runs the devnet binary of the Solana DvP program; Go and TS mirrors of the math; `make verify` gates every merge.
 
 ## Implemented vs simulated
 
@@ -108,4 +109,4 @@ Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). C
 
 ## Limitations and next steps
 
-Devnet only; time is compressed in the demo (record date ≈ 45 s after announcement, real civil dates in the math); XSD validation of the ISO files is out of scope; tax-vault remittance and escrow refunds are not implemented; single-key registrar. The Solana DvP program is v0.1.0 and upgradeable by the Foundation: Qupon reads its trade record by fixed offsets and refuses to admit a trade if the record's size changes; order matching is out of scope. Next: Token ACL (sRFC-37) for the registry, Squads multisig for issuer/registrar, Solana Attestation Service for KYC, confidential coupon amounts, a regulated cash leg (digital tenge or bank deposit token) for mainnet.
+Devnet only; time is compressed in the demo (record date ≈ 45 s after announcement, real civil dates in the math); XSD validation of the ISO files is out of scope; tax-vault remittance is not implemented; single-key registrar. The Solana DvP program is v0.1.0 and upgradeable by the Foundation: Qupon reads its trade record by fixed offsets and refuses to admit a trade if the record's size changes; order matching is out of scope. Next: Token ACL (sRFC-37) for the registry, Squads multisig for issuer/registrar, Solana Attestation Service for KYC, confidential coupon amounts, a regulated cash leg (digital tenge or bank deposit token) for mainnet.

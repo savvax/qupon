@@ -7,7 +7,7 @@
 - Program: [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet) (Anchor 1.2, Token-2022) — verifiable build, IDL published on-chain
 - One command runs every scenario on devnet and writes a report with a link for every transaction: [`reports/demo-full.md`](reports/demo-full.md) (71 transactions)
 - Secondary trades settle through the Solana Foundation's DvP program with the record date protected — a second devnet run, every transaction linked: [`reports/demo-trade.md`](reports/demo-trade.md) (21 transactions)
-- 60 program tests (LiteSVM integration + unit), the brief's worked example as named tests, shared test vectors checked in Rust, Go and TypeScript
+- 68 program tests (LiteSVM integration + unit), the brief's worked example as named tests, shared test vectors checked in Rust, Go and TypeScript
 
 ## Product tour — every role in the browser
 
@@ -125,13 +125,13 @@ The brief's example — face 1,000, 10% annual, semi-annual, 10 bonds → **500*
 
 ## Settlement flow
 
-`fund_action` (issuer or paying agent) moves cash into an escrow ATA owned by the **action PDA**; the action becomes `Funded` only when the escrow covers net + tax + principal. `pay_batch` (crank, ≤ 10/tx on-chain, 8/tx from the CLI) pays each holder's **registered** cash account and the tax vault, marking entitlements `Paid` (re-sent batches are no-ops). `complete_action` reconciles — every holder paid and `total_paid == total_net + total_principal` — then resumes the register: coupons advance the schedule (computed from the issue date, never by stepping, so end-of-month dates do not drift); redemptions move to `retire_batch` (burn via the permanent delegate, thawing suspended holders first) and `close_series` (supply 0 → metadata `REDEEMED`, mint closed). The Go reconciler recomputes entitlements and the snapshot hash from chain data: `GET /actions/{pda}/reconcile`.
+`fund_action` (issuer or paying agent) moves cash into an escrow ATA owned by the **action PDA**; the action becomes `Funded` only when the escrow covers net + tax + principal. `pay_batch` (crank, ≤ 10/tx on-chain, 8/tx from the CLI) pays each holder's **registered** cash account and the tax vault, marking entitlements `Paid` (re-sent batches are no-ops). `complete_action` reconciles — every holder paid and `total_paid == total_net + total_principal` — then resumes the register: coupons advance the schedule (computed from the issue date, never by stepping, so end-of-month dates do not drift); a partial call (PCAL) pays `factor × face` per unit and keeps every unit: the outstanding face shrinks by what was repaid, so later coupons and the final redemption accrue on the remainder; full redemptions move to `retire_batch` (burn via the permanent delegate, thawing suspended holders first) and `close_series` (supply 0 → metadata `REDEEMED`, mint closed). `fund_action` never takes more than the shortfall, and `sweep_escrow` returns anything left in a finished action's escrow to the issuer and closes it (the registrar runs it after every completion). The Go reconciler recomputes entitlements and the snapshot hash from chain data: `GET /actions/{pda}/reconcile`.
 
 ## Solana components
 
 - **Token-2022 bond mint** (decimals 0, 1 token = 1 bond): `MetadataPointer` + `TokenMetadata` (registrar is update authority), `DefaultAccountState = Frozen`, `PermanentDelegate`, `Pausable`, `MintCloseAuthority`, mint and freeze authority = series PDA. `init_series` rejects any other extension or authority (`docs/SECURITY_NOTES.md`).
 - **PDAs**: `Series ["series", mint]`, `Investor ["investor", series, owner]`, `CorporateAction ["action", series, index]`, `Entitlement ["entitlement", action, owner]`, `TradeAdmission ["trade", series, swap_dvp]`.
-- **Instructions** (21): `init_series`, `register_investor`, `suspend_investor`, `reinstate_investor`, `subscribe` (placement at par: payment and mint in one instruction), `issue_units`, `announce_action`, `cancel_action`, `strike_record`, `snapshot_batch`, `finalize_snapshot`, `fund_action`, `pay_batch`, `complete_action`, `retire_batch`, `close_series`, `cast_vote`, `finalize_meeting`, `apply_terms_change`, `admit_trade`, `release_trade` (secondary trades settled by the Solana DvP program). Full table: [`docs/02-architecture.md`](docs/02-architecture.md).
+- **Instructions** (22): `init_series`, `register_investor`, `suspend_investor`, `reinstate_investor`, `subscribe` (placement at par: payment and mint in one instruction), `issue_units`, `announce_action`, `cancel_action`, `strike_record`, `snapshot_batch`, `finalize_snapshot`, `fund_action`, `pay_batch`, `complete_action`, `retire_batch`, `close_series`, `cast_vote`, `finalize_meeting`, `apply_terms_change`, `admit_trade`, `release_trade` (secondary trades settled by the Solana DvP program), `sweep_escrow`. Full table: [`docs/02-architecture.md`](docs/02-architecture.md).
 - **Events** on every state transition; the Go service ingests them into an activity feed.
 
 ## ISO 20022 and the KASE notice
@@ -228,7 +228,7 @@ The IDL is also readable in the [explorer's IDL tab](https://explorer.solana.com
 
 ## Roadmap
 
-Token ACL (sRFC-37) instead of the custom registry thaw · order matching for secondary trades (their settlement already runs on Solana DvP) · Squads multisig for issuer/registrar · a licensed KYC provider issuing the SAS attestations · confidential coupon amounts · tax-vault remittance and escrow refunds · KASE disclosure publication through an IRIS account · mainnet launch with Evo KZTE (or a bank deposit token) as the cash leg once the official mint and operator wallets are in place.
+Token ACL (sRFC-37) instead of the custom registry thaw · order matching for secondary trades (their settlement already runs on Solana DvP) · Squads multisig for issuer/registrar · a licensed KYC provider issuing the SAS attestations · confidential coupon amounts · tax-vault remittance · KASE disclosure publication through an IRIS account · mainnet launch with Evo KZTE (or a bank deposit token) as the cash leg once the official mint and operator wallets are in place.
 
 ## License
 
