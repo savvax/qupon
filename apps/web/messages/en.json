@@ -779,6 +779,12 @@
       "done": "Completed",
       "all": "All",
       "empty": "No corporate actions here."
+    },
+    "now": {
+      "next": "Next step: {step}",
+      "paidOut": "Paid out",
+      "holders": "{count, plural, one {# holder} other {# holders}}",
+      "done": "Every step is on-chain."
     }
   },
   "steps": {

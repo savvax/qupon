@@ -159,6 +159,11 @@ describe("nextStep (mirror of Go executor.NextStep)", () => {
 });
 
 describe("buildTimeline", () => {
+  it("an announced action shows announce done and the record date next, even before any event", () => {
+    const steps = buildTimeline({ ...base, status: "Announced" }, [], false);
+    expect(steps[0]).toMatchObject({ id: "announce", state: "done" });
+    expect(steps[1]).toMatchObject({ id: "strike", state: "current" });
+  });
   it("marks announce done, strike current, links signatures from events", () => {
     const activity = [
       ev(1, "ActionAnnounced", "SigAnnounce1111111111111111111111111111111111"),

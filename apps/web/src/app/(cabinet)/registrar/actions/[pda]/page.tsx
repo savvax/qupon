@@ -9,13 +9,18 @@ import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Kpi } from "@/components/ui/Kpi";
-import { Stepper } from "@/components/ui/Stepper";
+import { ActionFlow, type FlowStep } from "@/components/ui/ActionFlow";
+import { MoneyFlow } from "@/components/ui/MoneyFlow";
+import { NowBar } from "@/components/ui/NowBar";
+import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import {
   buildTimeline,
   nextStep,
   paidTxByOwner,
+  STEP_ACTOR,
   type StepId,
 } from "@/lib/actionFlow";
+import { moneyFlowOf } from "@/lib/moneyFlow";
 import {
   getAction,
   getKaseCheck,
@@ -100,12 +105,13 @@ export default async function RegistrarActionPage({
       getKaseCheck(pda).catch(() => null),
     ]);
   const locale = (await getLocale()) === "ru" ? "ru" : "en";
-  const [t, ts, tk, tstep, tt] = await Promise.all([
+  const [t, ts, tk, tstep, tt, tm] = await Promise.all([
     getTranslations("action"),
     getTranslations("status"),
     getTranslations("landing.kinds"),
     getTranslations("steps"),
     getTranslations("trades"),
+    getTranslations("kit.money"),
   ]);
 
   const timeline = buildTimeline(action, activity, series?.status === "Closed");
@@ -326,6 +332,66 @@ export default async function RegistrarActionPage({
     },
   ];
 
+  // ActionFlow: the timeline with who may push each step, planned vs effective record time and the ISO files.
+  const flowSteps: FlowStep[] = timeline.map((st, i) => ({
+    id: `${ids[i]}-${i}`,
+    label: tstep(`done.${ids[i]}`),
+    state:
+      st.state === "failed"
+        ? "failed"
+        : st.state === "done"
+          ? "done"
+          : st.state === "current" && action.status !== "Cancelled"
+            ? "current"
+            : action.status === "Cancelled"
+              ? "skipped"
+              : "pending",
+    at: st.at,
+    tx: st.signature,
+    actor: STEP_ACTOR[ids[i]!],
+    detail: st.detail
+      ? tstep(`detail.${st.detail.key}`, st.detail.values)
+      : undefined,
+    record:
+      ids[i] === "strike"
+        ? { planned: action.recordAt, effective: st.state === "done" ? st.at : null }
+        : undefined,
+    downloads:
+      ids[i] === "announce"
+        ? [{ label: "seev.031", href: seev031Url(pda) }]
+        : isCash && ids[i] === "complete" && st.state === "done"
+          ? [{ label: "seev.036", href: seev036ZipUrl(pda) }]
+          : undefined,
+  }));
+  const flow = moneyFlowOf(action, entitlements, activity, (u) =>
+    tm("holderSub", { units: u }),
+  );
+  const nowTitle: ReactNode = next.step ? (
+    t("now.next", { step: label(next.step) })
+  ) : action.status === "Completed" && isCash ? (
+    <>
+      {t("now.paidOut")}{" "}
+      {money(action.totalPaid)} · {t("now.holders", { count: action.holdersPaid ?? holders })}
+    </>
+  ) : action.status === "Completed" ? (
+    t("now.done")
+  ) : (
+    waitText
+  );
+  const nowDetail: ReactNode =
+    tradesWait ? (
+      <Link
+        href={`/registrar/trades?mint=${action.seriesMint}`}
+        className="text-g700 underline underline-offset-2"
+      >
+        {tt("wait.link")}
+      </Link>
+    ) : next.step === "apply" ? (
+      <ProvenanceChip kind="simulated">{t("simulatedArdfm")}</ProvenanceChip>
+    ) : next.step ? (
+      waitText
+    ) : undefined;
+
   const factsAndReconcile = (
     <div className="grid gap-6 xl:grid-cols-2">
       <Panel title={t("facts.title")}>
@@ -378,68 +444,56 @@ export default async function RegistrarActionPage({
             <Address value={action.pda} />
           </div>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start lg:flex-col lg:items-end">
-          {next.step ? (
-            <StepButton
-              pda={pda}
-              label={label(next.step)}
-              status={action.status}
-              progress={progress}
-            />
-          ) : action.status === "Completed" ? null : (
-            // a completed action needs no box: the status pill already says it
-            <p className="rounded-btn bg-n100 px-3 py-2 text-sm font-semibold text-n700">
-              {waitText}
-              {tradesWait && (
-                <>
-                  {" · "}
-                  <Link
-                    href={`/registrar/trades?mint=${action.seriesMint}`}
-                    className="text-g700 underline underline-offset-2"
-                  >
-                    {tt("wait.link")}
-                  </Link>
-                </>
-              )}
-              {action.status === "VotingOpen" && action.votingEndsAt && (
-                <>
-                  {" · "}
-                  <Countdown endsAt={action.votingEndsAt} />
-                </>
-              )}
-            </p>
-          )}
-          {action.status === "RecordStruck" &&
-            holders > 0 &&
-            next.step === "snapshot" && (
-              <StepButton
-                pda={pda}
-                label={label("finalize")}
-                status={action.status}
-                progress={progress}
-                secondary
-              />
-            )}
-          {next.step === "apply" && (
-            <Badge tone="neutral">{t("simulatedArdfm")}</Badge>
-          )}
-        </div>
       </div>
 
-      <div className="mt-6">
-        <Stepper
-          steps={timeline.map((s, i) => ({
-            key: `${i}`,
-            label: tstep(`done.${ids[i]}`),
-            state:
-              s.state === "done"
-                ? "done"
-                : s.state === "current"
-                  ? "current"
-                  : "todo",
-          }))}
+      <div className="mt-5">
+        <NowBar
+          dock="tabbar"
+          tone={
+            action.status === "Completed"
+              ? "done"
+              : action.status === "Cancelled"
+                ? "attention"
+                : "default"
+          }
+          title={nowTitle}
+          detail={nowDetail}
+          clock={
+            action.status === "VotingOpen" && action.votingEndsAt ? (
+              <Countdown endsAt={action.votingEndsAt} />
+            ) : undefined
+          }
+          actors={next.step ? [STEP_ACTOR[next.step]] : []}
+          action={
+            next.step ? (
+              <span className="flex flex-wrap gap-2">
+                {action.status === "RecordStruck" &&
+                  holders > 0 &&
+                  next.step === "snapshot" && (
+                    <StepButton
+                      pda={pda}
+                      label={label("finalize")}
+                      status={action.status}
+                      progress={progress}
+                      secondary
+                    />
+                  )}
+                <StepButton
+                  pda={pda}
+                  label={label(next.step)}
+                  status={action.status}
+                  progress={progress}
+                />
+              </span>
+            ) : undefined
+          }
         />
       </div>
+
+      <section className="mt-5 rounded-card border border-n200 bg-n0 p-4 sm:p-5">
+        <h2 className="mb-4 text-base font-bold">{t("timeline")}</h2>
+        <ActionFlow steps={flowSteps} locale={locale} />
+      </section>
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {action.kind === "BMET" ? (
@@ -508,6 +562,19 @@ export default async function RegistrarActionPage({
         />
       </div>
 
+      {isCash && entitlements.length > 0 && (
+        <MoneyFlow
+          className="mt-8"
+          currency={flow.currency}
+          locale={locale}
+          issuer={{
+            label: series?.ticker ?? "—",
+            address: series?.issuer ?? undefined,
+          }}
+          escrow={flow.escrow}
+          recipients={flow.recipients}
+        />
+      )}
       <section className="mt-8">
         <h2 className="mb-3 text-lg font-bold">
           {action.kind === "BMET" ? t("ent.holders") : t("ent.title")}{" "}
@@ -527,59 +594,6 @@ export default async function RegistrarActionPage({
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
-          <section className="rounded-card border border-n200 bg-n0 p-5">
-            <h2 className="text-lg font-bold">{t("timeline")}</h2>
-            <ol className="mt-4 space-y-0">
-              {timeline.map((s, i) => (
-                <li key={i} className="relative flex gap-3 pb-5 last:pb-0">
-                  {i < timeline.length - 1 && (
-                    <span
-                      aria-hidden
-                      className={cx(
-                        "absolute top-6 left-[9px] h-[calc(100%-16px)] w-0.5",
-                        s.state === "done" ? "bg-g500" : "bg-n200",
-                      )}
-                    />
-                  )}
-                  <span
-                    aria-hidden
-                    className={cx(
-                      "relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
-                      s.state === "done" && "bg-g600 text-white",
-                      s.state === "current" && "border-2 border-g600 bg-n0",
-                      s.state === "pending" && "border-2 border-n300 bg-n0",
-                      s.state === "failed" && "bg-err-fg text-white",
-                    )}
-                  >
-                    {s.state === "done" ? "✓" : ""}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div
-                      className={cx(
-                        "text-sm font-semibold",
-                        s.state === "pending" && "text-n500",
-                      )}
-                    >
-                      {tstep(`done.${ids[i]}`)}
-                    </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-n500">
-                      {s.at && (
-                        <span className="num">
-                          {formatDateTime(s.at, locale)}
-                        </span>
-                      )}
-                      {s.detail && (
-                        <span>
-                          {tstep(`detail.${s.detail.key}`, s.detail.values)}
-                        </span>
-                      )}
-                      {s.signature && <Address value={s.signature} kind="tx" />}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
           {factsAndReconcile}
         </div>
 

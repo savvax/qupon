@@ -118,7 +118,9 @@ const EVENT_TO_STEP: Record<string, StepId> = {
 };
 
 const DONE_STATUSES: Record<StepId, string[]> = {
+  // an Announced action has been announced: the step is done even before its event is indexed
   announce: [
+    "Announced",
     "RecordStruck",
     "SnapshotComplete",
     "Funded",

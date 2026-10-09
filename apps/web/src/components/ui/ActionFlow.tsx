@@ -173,11 +173,15 @@ export function ActionFlow({
                     <Address value={s.tx} kind="tx" />
                   </div>
                 )}
-                {(s.actor || s.downloads?.length) && (
+                {((s.actor && s.state !== "done" && (s.state === "current" || s.actor === "anyone")) ||
+                  !!s.downloads?.length) && (
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    {s.actor && s.state !== "done" && (
-                      <ActorChip actor={s.actor} long />
-                    )}
+                    {/* who may push it: on the next step, and on every permissionless one (the point worth seeing) */}
+                    {s.actor &&
+                      s.state !== "done" &&
+                      (s.state === "current" || s.actor === "anyone") && (
+                        <ActorChip actor={s.actor} long />
+                      )}
                     {s.downloads?.map((d) => (
                       <a
                         key={d.href}
