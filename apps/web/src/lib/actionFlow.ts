@@ -479,13 +479,14 @@ export const STEP_ACTOR: Record<
   "anyone" | "issuer" | "registrar" | "holder" | "payingAgent"
 > = {
   announce: "registrar",
-  strike: "registrar",
-  snapshot: "registrar",
-  finalize: "registrar",
+  // Permissionless crank (plan 15 D2, task 1510): anyone can push these steps; money only goes where the program says.
+  strike: "anyone",
+  snapshot: "anyone",
+  finalize: "anyone",
   fund: "issuer",
-  pay: "registrar",
-  complete: "registrar",
-  retire: "registrar",
+  pay: "anyone",
+  complete: "anyone",
+  retire: "anyone",
   close: "registrar",
   sweep: "registrar",
   votes: "holder",
