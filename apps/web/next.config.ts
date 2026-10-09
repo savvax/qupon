@@ -3,6 +3,11 @@ import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
+// `pnpm build:proof` (task 1536): only the proof page, as plain static files in out-proof/ for any static host.
+// Route files of that build are named *.proof.tsx (src/app/layout.proof.tsx, src/app/proof/…), so the app's own
+// server routes are not part of it. The export still compiles in .next/: do not run it beside `next dev`.
+const proofExport = process.env.QUPON_EXPORT === "proof";
+
 const nextConfig: NextConfig = {
   // The portal builds cast_vote/subscribe with the Kit generated client that
   // lives as TypeScript source in clients/ts — compile it from source. Its
@@ -10,13 +15,19 @@ const nextConfig: NextConfig = {
   // to the neighbouring .ts files.
   transpilePackages: ["@qupon/client"],
   // Self-contained server bundle for the VPS image (apps/web/Dockerfile).
-  output: "standalone",
+  output: proofExport ? "export" : "standalone",
+  ...(proofExport && {
+    distDir: "out-proof",
+    // two entries on purpose: a one-element list reaches Next's app loader as a bare string and loses its dot
+    pageExtensions: ["proof.tsx", "proof.ts"],
+    trailingSlash: true,
+  }),
   // No x-powered-by header on the public site.
   poweredByHeader: false,
   // The dev-tools bubble is English-only and reviewers took it for part of the product (spec §5.8).
   devIndicators: false,
   // The prototype's console and portal live on in the new cabinets; old links (README, reports, bookmarks) still land.
-  async redirects() {
+  redirects: proofExport ? undefined : async () => {
     return [
       { source: "/console", destination: "/registrar", permanent: true },
       { source: "/series/:mint", destination: "/bonds/:mint", permanent: true },

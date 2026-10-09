@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 const compat = new FlatCompat({ baseDirectory: __dirname });
 
 const eslintConfig = [
-  { ignores: [".next/", "node_modules/", "src/lib/api-schema.d.ts", "next-env.d.ts"] },
+  { ignores: [".next/", "out-proof/", "node_modules/", "src/lib/api-schema.d.ts", "next-env.d.ts"] },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 

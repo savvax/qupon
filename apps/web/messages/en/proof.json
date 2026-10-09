@@ -1,0 +1,155 @@
+{
+  "meta": "Proof · {ticker}",
+  "chip": "Verified in your browser",
+  "eyebrow": "Certificate of corporate-action correctness",
+  "lead": "Every number on this page was recomputed here, in your browser, from Solana devnet accounts and transactions. Qupon's servers are not asked anything.",
+  "facts": {
+    "face": "Face value",
+    "coupon": "Coupon",
+    "record": "Record date",
+    "recordHook": "Transfer-hook gate",
+    "recordPause": "Paused mint",
+    "actions": "Corporate actions",
+    "holders": "Holders",
+    "status": "Series"
+  },
+  "demoClock": "Demo clock · 1 day = {secs} s",
+  "source": "Read from {rpc} at slot {slot}. Program {program}.",
+  "seal": {
+    "pass": "All checks pass",
+    "fail": "{n, plural, one {# check failed} other {# checks failed}}",
+    "loading": "Reading devnet…",
+    "progress": "Transactions {done} of {total}",
+    "sub": "{actions, plural, one {# corporate action} other {# corporate actions}} · {txs, plural, one {# transaction} other {# transactions}}",
+    "at": "Verified {when}"
+  },
+  "how": {
+    "title": "How this proof works",
+    "read": "Read",
+    "readText": "Accounts and transactions come straight from a Solana devnet node. Nothing is asked of Qupon.",
+    "recompute": "Recompute",
+    "recomputeText": "Every holder's amount with the program's own integer math (half-up per holder), the snapshot fingerprint and the escrow's money in and out.",
+    "compare": "Compare",
+    "compareText": "Each check shows ✓ or ✗ with the numbers behind it, and every transaction opens in the Solana explorer."
+  },
+  "actionsTitle": "Corporate actions",
+  "actionMeta": "Record date {record} · payment {payment}",
+  "actionRate": "{rate} · {days} days",
+  "verdict": "{passed} of {total} ✓",
+  "notYet": "Checks start once the record date passes and the holders are snapshotted.",
+  "cancelled": "Cancelled before the record date: nothing to verify.",
+  "check": {
+    "waiting": "Reading the transaction history ({done} of {total})…",
+    "entitlements": {
+      "title": "Every holder's amount recomputed",
+      "pass": "{ok} of {total} holders: gross, tax, net and principal match the program to the smallest unit.",
+      "fail": "{bad} of {total} holders differ from the recomputed amounts."
+    },
+    "supply": {
+      "title": "The snapshot covers the whole issue",
+      "pass": "{units} bonds snapshotted = {supply} in circulation at the record date, rebuilt from every mint and burn.",
+      "fail": "{units} bonds snapshotted, but {supply} were in circulation at the record date.",
+      "pending": "The snapshot is not final yet."
+    },
+    "hash": {
+      "title": "Snapshot fingerprint matches",
+      "pass": "The {scheme} recomputed from the holders equals the one the program stored.",
+      "fail": "The {scheme} recomputed from the holders differs from the one the program stored.",
+      "scheme0": "owner-ordered rolling hash",
+      "scheme1": "order-independent set hash",
+      "onchain": "on-chain",
+      "recomputed": "recomputed"
+    },
+    "totals": {
+      "title": "Action totals add up",
+      "pass": "Gross {gross}, tax {tax}, net {net}, principal {principal} across {holders} holders = the sum of the entitlements.",
+      "fail": "The action's totals differ from the sum of its entitlements: {bad}."
+    },
+    "funded": {
+      "title": "Escrow funded in full",
+      "pass": "{deposited} reached the escrow; {required} is owed to holders and the tax vault.",
+      "fail": "Only {deposited} reached the escrow of {required} owed.",
+      "pending": "Not funded yet: {deposited} of {required} in the escrow."
+    },
+    "payouts": {
+      "title": "Payouts match the entitlements",
+      "pass": "{paidOut} left the escrow in pay transactions = net + principal + tax of the {holders} paid holders.",
+      "fail": "{paidOut} left the escrow, but {owed} was owed to the paid holders.",
+      "pending": "No holder has been paid yet."
+    },
+    "default": {
+      "title": "Default and cure",
+      "pass": "Declared with {balance} of {required} in the escrow, cured {late} later by full funding: the record-date holders were paid.",
+      "passOpen": "Declared with {balance} of {required} in the escrow: the issuer missed the payment date.",
+      "fail": "The default does not match the escrow's ledger."
+    },
+    "bank": {
+      "title": "Bank payouts confirmed",
+      "pass": "{confirmed, plural, one {# payout} other {# payouts}} routed to the paying agent confirmed, {pending} pending. The bank transfer itself is simulated.",
+      "fail": "{pending} payouts are pending at the paying agent, which does not match the entitlements."
+    },
+    "disclosure": {
+      "title": "Disclosure anchored",
+      "pass": "The sha256 of the official notice (seev.031) is recorded on-chain: {hash}.",
+      "info": "No notice hash is anchored for this action.",
+      "file": "Check a file",
+      "match": "Your file matches the anchored hash.",
+      "differ": "Your file's sha256 is {hash}: it is not the anchored notice."
+    }
+  },
+  "holders": {
+    "title": "Holders at the record date ({n})",
+    "holder": "Holder",
+    "units": "Bonds",
+    "taxRate": "Tax rate",
+    "gross": "Gross",
+    "tax": "Tax",
+    "net": "Net",
+    "principal": "Principal",
+    "status": "Status",
+    "check": "Recomputed",
+    "ok": "Matches",
+    "bad": "Differs",
+    "expected": "recomputed {gross} / {tax} / {net} / {principal}",
+    "paidToAgent": "Paid to agent"
+  },
+  "txs": {
+    "title": "Transactions ({n})",
+    "seriesTitle": "Issuance, registry and trades",
+    "seriesText": "Transactions of the series that belong to no single corporate action.",
+    "failed": "Failed",
+    "ix": {
+      "AdmitTrade": "Trade admitted",
+      "AttachDisclosure": "Notice hash anchored",
+      "ConfirmBankPayout": "Bank payout confirmed",
+      "DeclareDefault": "Default declared",
+      "Execute": "Transfer, record-date gate checked",
+      "InitHook": "Record-date gate installed",
+      "ReleaseTrade": "Trade released",
+      "SetPayoutRoute": "Payout route set by the holder",
+      "SweepEscrow": "Escrow swept",
+      "other": "Another program"
+    }
+  },
+  "scopeText": "The same split as on the home page: what this page proves runs on devnet; the rest is labelled.",
+  "selfHost": {
+    "title": "Run it yourself",
+    "text": "This page also builds as plain static files that any web host can serve. Point it at your own node to remove us from the picture entirely."
+  },
+  "error": {
+    "title": "Devnet could not be read",
+    "text": "{message}. A public node limits requests per second: try again in a minute, or set NEXT_PUBLIC_RPC_URL to your own node.",
+    "missingTitle": "No Qupon series for this mint",
+    "missingText": "Devnet has no Qupon series for {mint}. Check the address or open one of the demo series.",
+    "badMint": "That is not a Solana address"
+  },
+  "pick": {
+    "title": "Verify a bond series",
+    "text": "Paste a bond mint address. The page reads devnet directly and checks every corporate action of the series.",
+    "label": "Bond mint",
+    "go": "Verify",
+    "demos": "Demo series on devnet",
+    "plan15": "Hook record date, default and cure, bank route, redemption",
+    "legacy": "Paused-mint record date, coupons, meeting, redemption"
+  }
+}

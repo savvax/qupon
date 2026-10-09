@@ -24,6 +24,8 @@
 ## Gotchas
 - Devnet demos share the investor/issuer wallets: never run `make demo`, `make demo-plan15` or `make demo-trade` at the same time — `demo-full` checks each holder's cash delta and a concurrent subscribe/trade breaks it (2026-10-09).
 - A Series with `open_action = None` keeps a stale 32-byte tail (Borsh shifts the fields, the max-size account keeps the old bytes); on hooked series the tail is non-zero — decoders must ignore it, never require zero padding (2026-10-09, task 91519).
+- Public devnet RPC (`api.devnet.solana.com`) allows ~10 `getTransaction` per 10 s per IP (`x-ratelimit-method-limit: 10`), JSON-RPC batches included; the proof page paces itself to ~1/s after the first 429 (a series with 30 transactions takes ~35 s; a keyed `NEXT_PUBLIC_RPC_URL` takes ~2 s) (2026-10-09, task 1536).
+- Next 15 `pageExtensions` with ONE entry reaches the app loader as a bare string and loses its dot (`Can't resolve private-next-app-dir/page`): the proof export uses `["proof.tsx", "proof.ts"]` (2026-10-09, task 1536).
 - `sas-lib` 1.0.10 declares `@solana/kit ^5` but its instructions/PDAs work with kit 8 (cast the instruction to kit 8 `Instruction`). SAS accounts are pinocchio (1-byte discriminator, no Anchor header): Attestation = disc 2 · nonce · credential · schema · u32 len + data · signer · expiry i64 · token_account; expiry is NOT enforced by SAS on read.
 - Anchor 1.2 `anchor deploy` uploads the IDL itself over the `--provider.cluster` RPC and aborts on failure; `ops/deploy.sh` passes `--no-idl` and uploads with retries over `RPC_URL` afterwards.
 - Kit's preflight failure keeps program logs in `error.context.logs` (not `cause.logs`); `clients/ts/src/lib/tx.ts` extracts the Anchor error name from there so the API/console can show it.

@@ -244,6 +244,16 @@ export function ImplementedVsSimulated() {
   const t = useTranslations("landing.simulated");
   return (
     <Section id="simulated" title={t("title")}>
+      <ScopeGrid />
+    </Section>
+  );
+}
+
+/** The implemented-vs-simulated grid; one copy (landing.simulated) shared by the landing and the proof page. */
+export function ScopeGrid() {
+  const t = useTranslations("landing.simulated");
+  return (
+    <>
       <div className="grid gap-4 lg:grid-cols-3">
         {GROUPS.map((g) => (
           <div
@@ -279,9 +289,9 @@ export function ImplementedVsSimulated() {
           </div>
         ))}
       </div>
-      <p className="mt-5 max-w-[65ch] text-sm text-n500">
+      <p className="mt-5 max-w-[65ch] text-sm text-n600">
         <StableText>{t("note")}</StableText>
       </p>
-    </Section>
+    </>
   );
 }

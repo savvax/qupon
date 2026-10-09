@@ -11,13 +11,17 @@ const CHOICES = [
   { locale: "kk", label: "KZ" },
 ] as const;
 
-/** Segmented EN | RU | KZ radio group: persists the choice via /api/locale and refreshes the server tree. */
-export function LocaleSwitch() {
+/**
+ * Segmented EN | RU | KZ radio group: persists the choice via /api/locale and refreshes the server tree. The static
+ * proof export (no server) passes `onChoose` and switches its messages on the client instead.
+ */
+export function LocaleSwitch({ onChoose }: { onChoose?: (locale: string) => void } = {}) {
   const locale = useLocale();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const choose = (next: string) => {
     if (next === locale || pending) return;
+    if (onChoose) return onChoose(next);
     void fetch("/api/locale", {
       method: "POST",
       headers: { "content-type": "application/json" },
