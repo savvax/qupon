@@ -68,3 +68,14 @@ describe("renderDecimals (API-carried decimals beat the table)", () => {
     );
   });
 });
+
+describe("renderDecimals with a mock-style display (task 1421)", () => {
+  it("prefers the API decimals over the display's fraction digits", () => {
+    expect(
+      renderDecimals(
+        { minor: "1000000000", display: "1,000.00 USDC", decimals: 6 },
+        "USDC",
+      ),
+    ).toBe(6);
+  });
+});

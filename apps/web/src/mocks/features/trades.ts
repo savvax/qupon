@@ -41,8 +41,10 @@ function cash(mint: string, units: bigint) {
   const major = Number(minor) / 10 ** f.decimals;
   return {
     minor: minor.toString(),
-    display: `${major.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${f.label}`,
+    // at the asset's own decimals, like the Go API: <Amount> reads them from `decimals` / `display`
+    display: `${major.toLocaleString("en-US", { minimumFractionDigits: f.decimals, maximumFractionDigits: f.decimals })} ${f.label}`,
     currency: f.currency,
+    decimals: f.decimals,
   };
 }
 
