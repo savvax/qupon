@@ -32,7 +32,7 @@ verify: ## THE GATE: build + tests + lint for every existing component (no netwo
 	if [ -n "$(HAS_TS)" ]; then echo "== clients/ts"; (cd clients/ts && pnpm install --frozen-lockfile --silent && pnpm typecheck && pnpm lint && pnpm test); fi; \
 	if [ -n "$(HAS_GO)" ]; then echo "== services/registrar"; (cd services/registrar && go build ./... && go vet ./... && go test ./... && (command -v golangci-lint >/dev/null && golangci-lint run ./... || echo "golangci-lint not installed (skipped)")); fi; \
 	if [ -n "$(HAS_WEB)" ]; then echo "== apps/web"; (cd apps/web && pnpm install --frozen-lockfile --silent && pnpm typecheck && pnpm lint); fi; \
-	if [ -f services/registrar/openapi.yaml ]; then echo "== openapi"; npx --yes @redocly/cli lint services/registrar/openapi.yaml >/dev/null; fi; \
+	if [ -f services/registrar/openapi.yaml ]; then echo "== openapi"; npx --yes @redocly/cli@2.62.0 lint services/registrar/openapi.yaml >/dev/null; fi; \
 	echo "VERIFY OK"
 
 build: ## anchor build + ts build + go build
@@ -81,7 +81,7 @@ api: ## run the Go registrar locally (loads .env, defaults PROGRAM_ID from confi
 	cd services/registrar && PROGRAM_ID="$$PROGRAM_ID" QUPON_CLI="$$QUPON_CLI" QUPON_CONFIG="$$QUPON_CONFIG" EXEC_CONFIG_PATH="$$EXEC_CONFIG_PATH" go run ./cmd/registrar
 
 openapi-lint: ## lint the registrar OpenAPI spec
-	npx --yes @redocly/cli lint services/registrar/openapi.yaml
+	npx --yes @redocly/cli@2.62.0 lint services/registrar/openapi.yaml
 
 web: ## run the web app locally
 	cd apps/web && pnpm dev
