@@ -39,6 +39,8 @@ const ata = async (owner: Parameters<typeof findAssociatedTokenPda>[0]["owner"],
 async function runRefuse(opts: RefuseOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
+	// --keypair is the global option (withGlobals): redeclaring it crashed every CLI command at registration.
+	if (!opts.keypair) throw new Error("--keypair <path> (the sending holder) is required");
 	const holder = await loadKeypairFromPath(opts.keypair);
 	const to = address(opts.to);
 	const units = parseBigInt(opts.units ?? "1", "--units");
@@ -96,7 +98,6 @@ async function runRefuse(opts: RefuseOpts, cmd: Command): Promise<void> {
 export function registerSandboxCommands(program: Command): void {
 	withGlobals(program.command("sandbox:refuse").description("sandbox scenario: transfer to a non-KYC wallet and report the on-chain refusal (skipPreflight)"))
 		.requiredOption("--series <name>", "series name in config/devnet.json")
-		.requiredOption("--keypair <path>", "the sending holder's keypair")
 		.requiredOption("--to <address>", "the unregistered wallet that must be refused")
 		.option("--units <n>", "bonds to attempt (default 1)")
 		.action(runRefuse);
