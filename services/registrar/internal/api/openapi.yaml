@@ -3517,12 +3517,16 @@ paths:
           description: no asset with that mint
   /demo/sandbox:
     post:
-      summary: Create a judge sandbox (task 1524) — a bond series of the visitor's own on a demo clock
-      description: Creates a demo-clock series (1 s per civil day, 1-year semi-annual 10 % bond, ticker
-        SBX-<6>), registers the three custodial demo investors (10 / 25 / 65 bonds, the pension fund bank-routed
-        at 15 % tax) plus the optional visitor wallet (SAS attest + register + faucet + 5 bonds), attaches the
-        visitor via the qupon_sandbox httpOnly cookie (24 h). Idempotent per requestId. Rate limits — 3 per
-        visitor per hour, 30 per day — keyed on the LAST X-Forwarded-For entry. Off on mainnet.
+      summary: Create a judge sandbox (task 1524), a bond series of the
+        visitor's own on a demo clock
+      description: Creates a demo-clock series (1 s per civil day, 1-year
+        semi-annual 10 % bond, ticker SBX-<6>), registers the three custodial
+        demo investors (10 / 25 / 65 bonds, the pension fund bank-routed at
+        15 % tax) plus the optional visitor wallet (SAS attest + register +
+        faucet + 5 bonds), attaches the visitor via the qupon_sandbox httpOnly
+        cookie (24 h). Idempotent per requestId. Rate limits — 3 per visitor
+        per hour, 30 per day — keyed on the LAST X-Forwarded-For entry. Off on
+        mainnet.
       tags: [demo]
       requestBody:
         required: true
@@ -3532,7 +3536,8 @@ paths:
               $ref: '#/components/schemas/SandboxCreateRequest'
       responses:
         "201":
-          description: the sandbox was created (or already existed for this requestId)
+          description: the sandbox was created (or already existed for this
+            requestId)
           content:
             application/json:
               schema:
@@ -3552,7 +3557,7 @@ paths:
           description: sandbox_off (no executor / chain reader / mainnet)
   /demo/sandbox/{id}:
     get:
-      summary: The sandbox page's poll — the bond's live state on the demo clock
+      summary: The sandbox page's poll - the bond's live state on the demo clock
       parameters:
         - name: id
           in: path
@@ -3561,7 +3566,8 @@ paths:
             type: string
       responses:
         "200":
-          description: the sandbox (serverTime lets the client correct its clock)
+          description: the sandbox (serverTime lets the client correct its
+            clock)
           content:
             application/json:
               schema:
@@ -3571,10 +3577,12 @@ paths:
   /demo/sandbox/{id}/scenario:
     post:
       summary: Run a judge scenario against the sandbox
-      description: skip_funding flags the next coupon to default (the autopilot stops funding; cure undoes
-        it), cure funds a defaulted coupon's real shortfall, non_kyc_transfer attempts a bond transfer to an
-        unregistered wallet and reports the on-chain refusal (sent with skipPreflight, so it has a signature
-        and logs), dvp_trade creates + funds + settles a 5-bond trade at clean 100 % + accrued.
+      description: skip_funding flags the next coupon to default (the
+        autopilot stops funding; cure undoes it), cure funds a defaulted
+        coupon's real shortfall, non_kyc_transfer attempts a bond transfer to
+        an unregistered wallet and reports the on-chain refusal (sent with
+        skipPreflight, so it has a signature and logs), dvp_trade creates +
+        funds + settles a 5-bond trade at clean 100 % + accrued.
       parameters:
         - name: id
           in: path
@@ -3595,7 +3603,8 @@ paths:
                   enum: [skip_funding, cure, non_kyc_transfer, dvp_trade]
       responses:
         "200":
-          description: the scenario result (stored and replayed in Sandbox.scenarios)
+          description: the scenario result (stored and replayed in
+            Sandbox.scenarios)
           content:
             application/json:
               schema:
@@ -5253,7 +5262,8 @@ components:
                 enum:
                   - onchain
                   - bank
-                description: how the payout left the escrow (plan 15); bank = via the paying agent
+                description: how the payout left the escrow (plan 15);
+                  bank = via the paying agent
               bankPayoutTx:
                 type: string
                 description: escrow → paying agent transaction (bank route only)
@@ -5263,7 +5273,8 @@ components:
                   while the SIMULATED bank transfer awaits confirmation)
               bankRefHash:
                 type: string
-                description: sha256 hex of the bank transfer reference (bank route, confirmed)
+                description: sha256 hex of the bank transfer reference
+                  (bank route, confirmed)
               paidYear:
                 type:
                   - integer
@@ -5398,17 +5409,20 @@ components:
           type: object
           description: demo throttle usage (writes today, series today)
     SandboxCreateRequest:
-      description: POST /demo/sandbox body — requestId makes the create idempotent.
+      description: POST /demo/sandbox body - requestId makes the create
+        idempotent.
       type: object
       properties:
         wallet:
           type: string
-          description: the visitor's own wallet (base58); SAS-attested, registered, faucet-funded, 5 bonds
+          description: the visitor's own wallet (base58); SAS-attested,
+            registered, faucet-funded, 5 bonds
         requestId:
           type: string
           description: a retried or doubled request returns the same sandbox
     SandboxClock:
-      description: one civil day lasts daySecs seconds from issueTs (the bond's own calendar).
+      description: one civil day lasts daySecs seconds from issueTs (the
+        bond's own calendar).
       type: object
       required: [daySecs, issueTs]
       properties:
@@ -5429,7 +5443,8 @@ components:
           type: string
           description: devnet explorer link of the bond mint
     SandboxCreated:
-      description: POST /demo/sandbox 201 — the cookie qupon_sandbox=id attaches the visitor.
+      description: POST /demo/sandbox 201 - the cookie qupon_sandbox=id
+        attaches the visitor.
       type: object
       required: [id, mint, ticker, clock, schedule, links]
       properties:
@@ -5470,10 +5485,19 @@ components:
           type: string
           enum: [demo, wallet]
     TradeAccrued:
-      description: the program's TradeAccrued event — clean + accrued = the cash leg (accrued is negative
+      description: the program's TradeAccrued event — clean + accrued = the
+        cash leg (accrued is negative in the ex-coupon window).
         in the ex-coupon window).
       type: object
-      required: [units, seller, buyer, clean, accrued, cash, accruedDays, settleDate]
+      required:
+        - units
+        - seller
+        - buyer
+        - clean
+        - accrued
+        - cash
+        - accruedDays
+        - settleDate
       properties:
         units:
           type: string
@@ -5493,7 +5517,8 @@ components:
           type: string
           description: civil settlement date on the bond's calendar, YYYY-MM-DD
     SandboxScenario:
-      description: one judge scenario's result, replayed in Sandbox.scenarios (newest first).
+      description: one judge scenario's result, replayed in Sandbox.scenarios
+        (newest first).
       type: object
       required: [kind, at, signatures]
       properties:
@@ -5507,7 +5532,8 @@ components:
           type: array
           items:
             type: string
-          description: devnet txs it produced; a refusal's failed tx too (skipPreflight)
+          description: devnet txs it produced; a refusal's failed tx too
+            (skipPreflight)
         error:
           type: string
           description: program error name of a refusal (non_kyc_transfer)
@@ -5518,22 +5544,27 @@ components:
         trade:
           $ref: '#/components/schemas/TradeAccrued'
     SandboxNext:
-      description: what the autopilot pushes next; null step when the bond's life is over.
+      description: what the autopilot pushes next; null step when the bond's
+        life is over.
       type: object
       required: [step, actor, at]
       properties:
         step:
-          type: string
-          nullable: true
-          description: announce, strike, snapshot, finalize, fund, pay, complete, close,
+          type:
+            - string
+            - "null"
+          description: announce, strike, snapshot, finalize, fund, pay,
+            complete, close, declare_default, confirm_bank or null
             declare_default, confirm_bank or null
         actor:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
           enum: [registrar, anyone, issuer, payingAgent, null]
         at:
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - "null"
           description: unix ms when it becomes possible; null = now
     SandboxActivity:
       type: object
@@ -5550,13 +5581,15 @@ components:
         slot:
           type: integer
         actionPda:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         payload:
           type: object
         explorerUrl:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
     Sandbox:
       description: GET /demo/sandbox/{id} — the sandbox page's poll.
       type: object
@@ -5588,8 +5621,9 @@ components:
           type: integer
           description: unix ms; after it GET answers 404
         wallet:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         autofund:
           type: boolean
           description: false after skip_funding until a cure
@@ -5611,7 +5645,8 @@ components:
             $ref: '#/components/schemas/SandboxHolder'
         entitlements:
           type: array
-          description: of the open action, else the latest one; status may be PaidToAgent
+          description: of the open action, else the latest one; status may be
+            PaidToAgent
           items:
             $ref: '#/components/schemas/EntitlementDTO'
         next:

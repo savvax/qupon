@@ -1645,7 +1645,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create a judge sandbox (task 1524) — a bond series of the visitor's own on a demo clock
+         * Create a judge sandbox (task 1524), a bond series of the visitor's own on a demo clock
          * @description Creates a demo-clock series (1 s per civil day, 1-year semi-annual 10 % bond, ticker SBX-<6>), registers the three custodial demo investors (10 / 25 / 65 bonds, the pension fund bank-routed at 15 % tax) plus the optional visitor wallet (SAS attest + register + faucet + 5 bonds), attaches the visitor via the qupon_sandbox httpOnly cookie (24 h). Idempotent per requestId. Rate limits — 3 per visitor per hour, 30 per day — keyed on the LAST X-Forwarded-For entry. Off on mainnet.
          */
         post: {
@@ -1715,7 +1715,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The sandbox page's poll — the bond's live state on the demo clock */
+        /** The sandbox page's poll - the bond's live state on the demo clock */
         get: {
             parameters: {
                 query?: never;
@@ -2606,7 +2606,7 @@ export interface components {
             /** @description demo throttle usage (writes today, series today) */
             demo: Record<string, never>;
         };
-        /** @description POST /demo/sandbox body — requestId makes the create idempotent. */
+        /** @description POST /demo/sandbox body - requestId makes the create idempotent. */
         SandboxCreateRequest: {
             /** @description the visitor's own wallet (base58); SAS-attested, registered, faucet-funded, 5 bonds */
             wallet?: string;
@@ -2626,7 +2626,7 @@ export interface components {
             /** @description devnet explorer link of the bond mint */
             explorer: string;
         };
-        /** @description POST /demo/sandbox 201 — the cookie qupon_sandbox=id attaches the visitor. */
+        /** @description POST /demo/sandbox 201 - the cookie qupon_sandbox=id attaches the visitor. */
         SandboxCreated: {
             id: string;
             mint: string;
@@ -2651,7 +2651,7 @@ export interface components {
             /** @enum {string} */
             kind: "demo" | "wallet";
         };
-        /** @description the program's TradeAccrued event — clean + accrued = the cash leg (accrued is negative in the ex-coupon window). */
+        /** @description the program's TradeAccrued event — clean + accrued = the cash leg (accrued is negative in the ex-coupon window). in the ex-coupon window). */
         TradeAccrued: {
             units: string;
             seller: string;
@@ -2678,7 +2678,7 @@ export interface components {
         };
         /** @description what the autopilot pushes next; null step when the bond's life is over. */
         SandboxNext: {
-            /** @description announce, strike, snapshot, finalize, fund, pay, complete, close, declare_default, confirm_bank or null */
+            /** @description announce, strike, snapshot, finalize, fund, pay, complete, close, declare_default, confirm_bank or null declare_default, confirm_bank or null */
             step: string | null;
             /** @enum {string|null} */
             actor: "registrar" | "anyone" | "issuer" | "payingAgent" | null;
