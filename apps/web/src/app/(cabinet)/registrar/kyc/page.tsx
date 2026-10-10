@@ -109,7 +109,7 @@ export default async function RegistrarKycPage({
             href={`/registrar/kyc?status=${s}`}
             aria-current={s === status ? "page" : undefined}
             className={cx(
-              "rounded-sm px-3 py-1.5 text-sm font-semibold transition-colors",
+              "rounded-sm px-3 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors",
               s === status
                 ? "bg-n0 text-n900 shadow-sm"
                 : "text-n600 hover:text-n900",

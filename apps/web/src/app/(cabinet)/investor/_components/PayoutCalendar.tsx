@@ -45,7 +45,8 @@ export function PayoutCalendar({
         {events === 0 ? (
           <p className="py-6 text-center text-sm text-n600">{t("empty")}</p>
         ) : (
-          <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          // auto-rows-fr: every month cell takes the same height, like a calendar (preflight #28)
+          <ol className="grid auto-rows-fr gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {months.map((m) => (
               <li
                 key={m.key}

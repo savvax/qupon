@@ -45,7 +45,10 @@ function ActionCard({
       <div className="num truncate text-xs text-n500">{action.corpId}</div>
       {/* badge and date on their own lines: the card keeps one height in EN and RU */}
       <div className="mt-2">
-        <Badge tone="info">{kindLabel}</Badge>
+        {/* wrap: kk kind labels ("Облигация ұстаушыларының…") exceed a 1/6-wide column — the chip wraps inside the card (preflight #27) */}
+        <Badge tone="info" wrap>
+          {kindLabel}
+        </Badge>
       </div>
       <div className="num mt-1 text-xs whitespace-nowrap text-n500">
         {formatDate(action.recordAt, locale)}

@@ -51,10 +51,11 @@ export const formatBytes = (n: number) =>
       ? `${(n / 1024).toFixed(0)} KB`
       : `${(n / 1024 / 1024).toFixed(1)} MB`;
 
-/** 1500 bps → "15.00%" / "15,00 %" (locale-aware, like bpsToPercent). */
+/** 1500 bps → "15.00%" / "15,00 %" (locale-aware, like bpsToPercent; kk shares ru-RU money format). */
 export const pct = (bps: number, locale: string) =>
-  new Intl.NumberFormat(locale, {
+  new Intl.NumberFormat(locale === "en" ? "en" : "ru-RU", {
     style: "percent",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+    useGrouping: "always",
   }).format(bps / 10000);

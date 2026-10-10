@@ -27,6 +27,8 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   iconRight?: ReactNode;
   /** Render the single child (e.g. a Next <Link>) with button styles. */
   asChild?: boolean;
+  /** Let a long label wrap inside its container instead of forcing one line (buttonClasses swaps nowrap + height). */
+  wrap?: boolean;
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -39,6 +41,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       iconLeft,
       iconRight,
       asChild = false,
+      wrap = false,
       className,
       children,
       disabled,
@@ -46,7 +49,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) {
-    const classes = cx(buttonClasses({ variant, size, block }), className);
+    const classes = cx(
+      buttonClasses({ variant, size, block, wrap }),
+      className,
+    );
     // Labels keep the width of their longer EN/RU version: switching language never moves a button (§5.8).
     if (asChild) {
       const child = isValidElement<{ children?: ReactNode }>(children)

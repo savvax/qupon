@@ -15,9 +15,9 @@ describe("majorToMinor", () => {
     expect(majorToMinor("-1.23", 2)).toBe(-123n);
   });
 
-  it("round-trips totals through formatAmount (RU groups with U+202F)", () => {
+  it("round-trips totals through formatAmount (RU groups with NBSP, like ru-RU Intl)", () => {
     expect(formatAmount(majorToMinor("10000.00", 2), 2, "ru")).toBe(
-      "10\u202f000,00",
+      "10\u00a0000,00",
     );
   });
 

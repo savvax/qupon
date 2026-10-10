@@ -120,8 +120,9 @@ function MeetingCard({
           {t("castYourVote")}
         </span>
         {/* Three equal, neutral choices: none looks pre-selected; the confirm dialog carries the decision. */}
+        {/* One column at phone width: "Воздержаться" cannot fit a third of 390 px (preflight #4) */}
         <div
-          className="grid grid-cols-3 gap-2"
+          className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3"
           role="group"
           aria-label={t("castYourVote")}
         >

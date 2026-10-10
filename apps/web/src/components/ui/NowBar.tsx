@@ -54,7 +54,9 @@ export function NowBar({
         aria-label={t("now.label")}
         data-nowbar={dock}
         className={cx(
-          "z-30 flex flex-col gap-3 border p-3 sm:p-4 md:flex-row md:items-center md:gap-5 md:rounded-card",
+          // Two rows below md (pill+title, then actors+action), one row from 768 px: a single row on phones
+          // squeezed the title into a ~90 px column and the docked bar grew past the body padding (preflight #16).
+          "z-30 flex flex-wrap items-center gap-x-3 gap-y-2 border p-3 sm:p-4 md:flex-nowrap md:gap-5 md:rounded-card",
           // phones: docked bar, full width, raised above the content
           dock !== "none" &&
             "max-md:fixed max-md:inset-x-0 max-md:border-x-0 max-md:border-b-0 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))] max-md:shadow-dock",
@@ -65,30 +67,36 @@ export function NowBar({
           className,
         )}
       >
-        <div className="flex min-w-0 flex-1 items-start gap-3">
+        {/* phones: this block takes the whole first row, so the title keeps the full bar width */}
+        <div className="flex min-w-0 flex-1 items-start gap-3 max-md:basis-full">
           <span
             className={cx(
               "mt-0.5 inline-flex h-6 shrink-0 items-center rounded-full px-2 text-micro font-extrabold",
               PILL[tone],
             )}
           >
-            <StableLabel>{tone === "done" ? t("now.done") : t("now.label")}</StableLabel>
+            <StableLabel>
+              {tone === "done" ? t("now.done") : t("now.label")}
+            </StableLabel>
           </span>
           {/* flex-1: the title's box is the space left, not its text, so it keeps its size in every language */}
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-n900 sm:text-base">
+            <p className="text-sm font-semibold text-n900 max-md:line-clamp-2 sm:text-base">
               {title}
             </p>
             {(detail || clock) && (
-              // phones: detail and clock on their own lines, so the docked bar keeps one height in every language
-              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-n600 max-sm:flex-col max-sm:items-start sm:text-sm">
-                {detail && <span className="min-w-0">{detail}</span>}
+              // phones: only the clock stays (inline, one row) — a wrapping detail made the dock taller than the body padding
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-n600 md:text-sm">
+                {detail && (
+                  <span className="min-w-0 max-md:hidden">{detail}</span>
+                )}
                 {clock}
               </div>
             )}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2 max-md:justify-between">
+        {/* phones: actors and action share the full-width second row */}
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 max-md:w-full max-md:justify-between">
           {actors.length > 0 && (
             <span className="flex flex-wrap items-center gap-1.5">
               <span className="text-xs text-n500 max-sm:sr-only">

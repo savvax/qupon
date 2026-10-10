@@ -90,7 +90,9 @@ export default async function InvestorReportsPage({
       key: "units",
       header: tc("units"),
       align: "right",
-      hideBelow: "md",
+      // units and action drop below 2xl so the kk table fits 1440 px: `tx` (essential) stays the
+      // last column and its copy icon keeps its padding (preflight #15, review round 2; both at 2xl)
+      hideBelow: "2xl",
       render: (p) => <span className="num">{p.units}</span>,
     },
     {
@@ -196,7 +198,7 @@ export default async function InvestorReportsPage({
     {
       key: "action",
       header: tc("action"),
-      hideBelow: "lg",
+      hideBelow: "2xl",
       render: (p) => <Address value={p.action} />,
     },
   ];

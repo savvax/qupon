@@ -103,7 +103,8 @@ export function TermsheetDialog({
 
   return (
     <>
-      <Button type="button" variant="ghost" onClick={() => setOpen(true)}>
+      {/* wrap: the kk/ru label runs past the ~326 px fieldset content width at 390 if forced onto one line (preflight #3) */}
+      <Button type="button" variant="ghost" onClick={() => setOpen(true)} wrap>
         {t("open")}
       </Button>
       <Dialog

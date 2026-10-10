@@ -10,7 +10,8 @@ export function formatAmount(
   const neg = n < 0n;
   const abs = neg ? -n : n;
   const base = 10n ** BigInt(decimals);
-  const sep = locale === "en" ? "," : " "; // kk-KZ groups like ru-RU (NBSP thousands, comma decimal)
+  // NBSP (not the narrow U+202F): it must stay visibly wide, matching ru-RU Intl grouping (preflight #18).
+  const sep = locale === "en" ? "," : "\u00a0";
   const dot = locale === "en" ? "." : ",";
   const whole = (abs / base).toString().replace(/\B(?=(\d{3})+(?!\d))/g, sep);
   // Trailing zeros past the cents are noise (USDC: 1,000.000000 → 1,000.00); significant digits stay.

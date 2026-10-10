@@ -3,7 +3,8 @@ import { StableLabel } from "@/components/i18n/StableLabel";
 import { cx } from "@/lib/ui/cx";
 
 /** Who may perform a step. `anyone` = permissionless (any signer; the program enforces every rule). */
-export type Actor = "anyone" | "issuer" | "registrar" | "holder" | "payingAgent";
+export type Actor =
+  "anyone" | "issuer" | "registrar" | "holder" | "payingAgent";
 
 /** One role pill. "Anyone" is the distinctive one: solid outline in brand green with an open-hand meaning "push". */
 export function ActorChip({
@@ -21,9 +22,10 @@ export function ActorChip({
       title={anyone ? t("anyoneHint") : undefined}
       className={cx(
         "inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-2 text-micro font-bold whitespace-nowrap",
+        // n300/n100/n800: on the near-white NowBar the old n200/n50/n700 pill read pale, as if disabled (preflight #29)
         anyone
           ? "border border-g600 bg-n0 text-g700"
-          : "border border-n200 bg-n50 text-n700",
+          : "border border-n300 bg-n100 text-n800",
       )}
     >
       {anyone && (
@@ -40,7 +42,9 @@ export function ActorChip({
           <path d="M8 5v6M5 8h6" />
         </svg>
       )}
-      <StableLabel align="start">{anyone && long ? t("anyonePush") : t(actor)}</StableLabel>
+      <StableLabel align="start">
+        {anyone && long ? t("anyonePush") : t(actor)}
+      </StableLabel>
     </span>
   );
 }

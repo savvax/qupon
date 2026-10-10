@@ -276,7 +276,8 @@ export function NewSeriesWizard({ assets }: { assets: CashOption[] }) {
             if (valid) setStep(1);
           }}
         >
-          <fieldset className="mb-6 rounded-card border border-n200 bg-n50/60 p-4">
+          {/* min-w-0: a fieldset's intrinsic min-width (min-content) pushed it past the card at 390 px (preflight #3) */}
+          <fieldset className="mb-6 min-w-0 rounded-card border border-n200 bg-n50/60 p-4">
             <legend className="px-1 text-sm font-semibold">
               {tk("title")}
             </legend>

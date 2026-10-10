@@ -475,11 +475,14 @@
   );
 }
 
-/* A docked NowBar (phones) must never cover the end of the page: pad the body while one is present. */
+/* A docked NowBar (phones) must never cover the end of the page: pad the body while one is present.
+   tabbar dock = one-row NowBar (~7rem) + the 4rem bottom nav; page dock has no nav under it (preflight #16). */
 @media (width < 48rem) {
-  body:has([data-nowbar="page"]),
-  body:has([data-nowbar="tabbar"]) {
+  body:has([data-nowbar="page"]) {
     padding-bottom: 8rem;
+  }
+  body:has([data-nowbar="tabbar"]) {
+    padding-bottom: 12rem;
   }
 }
 

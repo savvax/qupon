@@ -20,12 +20,14 @@ export function Tabs({ items, defaultValue }: TabsProps) {
   const pill = useId(); // one sliding pill per Tabs instance
   return (
     <TabsPrimitive.Root value={value} onValueChange={setValue}>
-      <TabsPrimitive.List className="inline-flex rounded-btn bg-n100 p-1">
+      {/* Long locale labels: nowrap keeps every trigger one line; below sm the list snap-scrolls with a right-edge
+          fade, so a half-cut last tab reads as scrollable instead of clipped (preflight #13) */}
+      <TabsPrimitive.List className="inline-flex max-w-full gap-1 overflow-x-auto rounded-btn bg-n100 p-1 snap-x scroll-px-1 max-sm:[mask-image:linear-gradient(to_right,black_85%,transparent)]">
         {items.map((t) => (
           <TabsPrimitive.Trigger
             key={t.value}
             value={t.value}
-            className="relative h-8 rounded-sm px-3 text-sm font-semibold text-n600 transition-colors hover:text-n900 data-[state=active]:text-n900"
+            className="relative h-8 shrink-0 snap-start rounded-sm px-3 text-sm font-semibold whitespace-nowrap text-n600 transition-colors hover:text-n900 data-[state=active]:text-n900"
           >
             {t.value === value && (
               <m.span

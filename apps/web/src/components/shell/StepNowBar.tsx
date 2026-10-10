@@ -33,11 +33,8 @@ export function StepNowBar({
   const t = useTranslations("kit.now");
   const tstep = useTranslations("steps.do");
   const next = nextStep(action, now, supply, openTrades);
-  const actor = next.step
-    ? STEP_ACTOR[next.step]
-    : action.status === "VotingOpen"
-      ? "holder"
-      : undefined;
+  // No chip while no step can be pushed: a waiting vote used to show "Holder" on the issuer's own bar (preflight #29)
+  const actor = next.step ? STEP_ACTOR[next.step] : undefined;
   const s = action.status;
   const [key, values]: [string, Record<string, string>] = next.step
     ? ["next", { step: tstep(next.step), ticker }]
@@ -78,7 +75,11 @@ export function StepNowBar({
       detail={detail}
       clock={
         next.gate ? (
-          <CountdownClock to={next.gate.at} label={t(`gate.${next.gate.kind}`)} daySecs={daySecs} />
+          <CountdownClock
+            to={next.gate.at}
+            label={t(`gate.${next.gate.kind}`)}
+            daySecs={daySecs}
+          />
         ) : undefined
       }
       actors={actor ? [actor] : []}

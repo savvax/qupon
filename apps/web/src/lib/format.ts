@@ -78,6 +78,7 @@ export function bpsToPercent(bps: number, locale: Locale = "en"): string {
   const n = new Intl.NumberFormat(locale === "en" ? "en" : "ru-RU", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+    useGrouping: "always",
   }).format(bps / 100);
   return locale === "en" ? `${n}%` : `${n}\u00a0%`;
 }
