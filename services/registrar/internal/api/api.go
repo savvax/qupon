@@ -24,6 +24,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
+	"github.com/qupon-kz/qupon/services/registrar/internal/sandbox"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 	"github.com/qupon-kz/qupon/services/registrar/internal/termsheet"
 )
@@ -62,6 +63,8 @@ type Deps struct {
 	Kase *kase.Service
 	// Termsheet parses pasted KASE text (task 042); nil → SIMULATED regex fallback only.
 	Termsheet *termsheet.Extractor
+	// Sandbox is the judge sandbox backend (task 1524, /demo/sandbox*); nil → those routes answer 503.
+	Sandbox *sandbox.Service
 }
 
 // New builds the HTTP handler tree.
@@ -296,7 +299,13 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 
 	mountHolders(r, deps.Read, st)
 
+<<<<<<< ours
 	mountShowcase(r, deps, st)
+||||||| base
+=======
+	// mount: sandbox
+	mountSandbox(r, deps, st)
+>>>>>>> theirs
 
 	if deps.TestRoutes {
 		r.With(registrar).Get("/_test/registrar", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, http.StatusOK, map[string]string{}) })

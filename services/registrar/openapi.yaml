@@ -3515,6 +3515,99 @@ paths:
           description: role is not admin
         "404":
           description: no asset with that mint
+  /demo/sandbox:
+    post:
+      summary: Create a judge sandbox (task 1524) — a bond series of the visitor's own on a demo clock
+      description: Creates a demo-clock series (1 s per civil day, 1-year semi-annual 10 % bond, ticker
+        SBX-<6>), registers the three custodial demo investors (10 / 25 / 65 bonds, the pension fund bank-routed
+        at 15 % tax) plus the optional visitor wallet (SAS attest + register + faucet + 5 bonds), attaches the
+        visitor via the qupon_sandbox httpOnly cookie (24 h). Idempotent per requestId. Rate limits — 3 per
+        visitor per hour, 30 per day — keyed on the LAST X-Forwarded-For entry. Off on mainnet.
+      tags: [demo]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SandboxCreateRequest'
+      responses:
+        "201":
+          description: the sandbox was created (or already existed for this requestId)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxCreated'
+          headers:
+            Set-Cookie:
+              description: qupon_sandbox=<id>; HttpOnly; Max-Age=86400
+              schema:
+                type: string
+        "400":
+          description: bad_wallet or invalid_params
+        "429":
+          description: demo_throttled
+        "502":
+          description: executor_failed
+        "503":
+          description: sandbox_off (no executor / chain reader / mainnet)
+  /demo/sandbox/{id}:
+    get:
+      summary: The sandbox page's poll — the bond's live state on the demo clock
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: the sandbox (serverTime lets the client correct its clock)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sandbox'
+        "404":
+          description: sandbox_not_found (unknown or expired after 24 h)
+  /demo/sandbox/{id}/scenario:
+    post:
+      summary: Run a judge scenario against the sandbox
+      description: skip_funding flags the next coupon to default (the autopilot stops funding; cure undoes
+        it), cure funds a defaulted coupon's real shortfall, non_kyc_transfer attempts a bond transfer to an
+        unregistered wallet and reports the on-chain refusal (sent with skipPreflight, so it has a signature
+        and logs), dvp_trade creates + funds + settles a 5-bond trade at clean 100 % + accrued.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - kind
+              properties:
+                kind:
+                  type: string
+                  enum: [skip_funding, cure, non_kyc_transfer, dvp_trade]
+      responses:
+        "200":
+          description: the scenario result (stored and replayed in Sandbox.scenarios)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SandboxScenario'
+        "400":
+          description: bad_kind
+        "404":
+          description: sandbox_not_found
+        "409":
+          description: scenario_unavailable (e.g. cure without a default)
+        "502":
+          description: executor_failed
 components:
   securitySchemes:
     bearerAuth:
@@ -5304,3 +5397,234 @@ components:
         demo:
           type: object
           description: demo throttle usage (writes today, series today)
+    SandboxCreateRequest:
+      description: POST /demo/sandbox body — requestId makes the create idempotent.
+      type: object
+      properties:
+        wallet:
+          type: string
+          description: the visitor's own wallet (base58); SAS-attested, registered, faucet-funded, 5 bonds
+        requestId:
+          type: string
+          description: a retried or doubled request returns the same sandbox
+    SandboxClock:
+      description: one civil day lasts daySecs seconds from issueTs (the bond's own calendar).
+      type: object
+      required: [daySecs, issueTs]
+      properties:
+        daySecs:
+          type: integer
+          example: 1
+        issueTs:
+          type: integer
+          description: unix seconds of the issue date
+    SandboxLinks:
+      type: object
+      required: [bond, explorer]
+      properties:
+        bond:
+          type: string
+          example: /bonds/4zN9…
+        explorer:
+          type: string
+          description: devnet explorer link of the bond mint
+    SandboxCreated:
+      description: POST /demo/sandbox 201 — the cookie qupon_sandbox=id attaches the visitor.
+      type: object
+      required: [id, mint, ticker, clock, schedule, links]
+      properties:
+        id:
+          type: string
+        mint:
+          type: string
+        ticker:
+          type: string
+          example: SBX-4F2KQ1
+        clock:
+          $ref: '#/components/schemas/SandboxClock'
+        schedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleItem'
+        links:
+          $ref: '#/components/schemas/SandboxLinks'
+    SandboxHolder:
+      type: object
+      required: [owner, label, units, route, taxRateBps, kind]
+      properties:
+        owner:
+          type: string
+        label:
+          type: string
+          example: Altyn Capital
+        units:
+          type: string
+          description: bonds held now, decimal string
+        route:
+          type: string
+          enum: [wallet, bank]
+          description: bank pays the paying agent (SIMULATED bank transfer)
+        taxRateBps:
+          type: integer
+        kind:
+          type: string
+          enum: [demo, wallet]
+    TradeAccrued:
+      description: the program's TradeAccrued event — clean + accrued = the cash leg (accrued is negative
+        in the ex-coupon window).
+      type: object
+      required: [units, seller, buyer, clean, accrued, cash, accruedDays, settleDate]
+      properties:
+        units:
+          type: string
+        seller:
+          type: string
+        buyer:
+          type: string
+        clean:
+          $ref: '#/components/schemas/Amount'
+        accrued:
+          $ref: '#/components/schemas/Amount'
+        cash:
+          $ref: '#/components/schemas/Amount'
+        accruedDays:
+          type: integer
+        settleDate:
+          type: string
+          description: civil settlement date on the bond's calendar, YYYY-MM-DD
+    SandboxScenario:
+      description: one judge scenario's result, replayed in Sandbox.scenarios (newest first).
+      type: object
+      required: [kind, at, signatures]
+      properties:
+        kind:
+          type: string
+          enum: [skip_funding, cure, non_kyc_transfer, dvp_trade]
+        at:
+          type: integer
+          description: unix ms
+        signatures:
+          type: array
+          items:
+            type: string
+          description: devnet txs it produced; a refusal's failed tx too (skipPreflight)
+        error:
+          type: string
+          description: program error name of a refusal (non_kyc_transfer)
+        logs:
+          type: array
+          items:
+            type: string
+        trade:
+          $ref: '#/components/schemas/TradeAccrued'
+    SandboxNext:
+      description: what the autopilot pushes next; null step when the bond's life is over.
+      type: object
+      required: [step, actor, at]
+      properties:
+        step:
+          type: string
+          nullable: true
+          description: announce, strike, snapshot, finalize, fund, pay, complete, close,
+            declare_default, confirm_bank or null
+        actor:
+          type: string
+          nullable: true
+          enum: [registrar, anyone, issuer, payingAgent, null]
+        at:
+          type: integer
+          nullable: true
+          description: unix ms when it becomes possible; null = now
+    SandboxActivity:
+      type: object
+      required: [id, ts, kind, sig, slot, payload]
+      properties:
+        id:
+          type: integer
+        ts:
+          type: integer
+        kind:
+          type: string
+        sig:
+          type: string
+        slot:
+          type: integer
+        actionPda:
+          type: string
+          nullable: true
+        payload:
+          type: object
+        explorerUrl:
+          type: string
+          nullable: true
+    Sandbox:
+      description: GET /demo/sandbox/{id} — the sandbox page's poll.
+      type: object
+      required:
+        - id
+        - clock
+        - serverTime
+        - expiresAt
+        - wallet
+        - autofund
+        - series
+        - schedule
+        - actions
+        - holders
+        - entitlements
+        - next
+        - activity
+        - scenarios
+        - links
+      properties:
+        id:
+          type: string
+        clock:
+          $ref: '#/components/schemas/SandboxClock'
+        serverTime:
+          type: integer
+          description: unix ms when the response was built
+        expiresAt:
+          type: integer
+          description: unix ms; after it GET answers 404
+        wallet:
+          type: string
+          nullable: true
+        autofund:
+          type: boolean
+          description: false after skip_funding until a cure
+        series:
+          allOf:
+            - $ref: '#/components/schemas/SeriesDTO'
+        schedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduleItem'
+        actions:
+          type: array
+          description: every action of the series, oldest first
+          items:
+            $ref: '#/components/schemas/ActionDTO'
+        holders:
+          type: array
+          items:
+            $ref: '#/components/schemas/SandboxHolder'
+        entitlements:
+          type: array
+          description: of the open action, else the latest one; status may be PaidToAgent
+          items:
+            $ref: '#/components/schemas/EntitlementDTO'
+        next:
+          $ref: '#/components/schemas/SandboxNext'
+        activity:
+          type: array
+          description: the series' indexed events, newest first
+          items:
+            $ref: '#/components/schemas/SandboxActivity'
+        scenarios:
+          type: array
+          description: scenarios run so far, newest first
+          items:
+            $ref: '#/components/schemas/SandboxScenario'
+        links:
+          $ref: '#/components/schemas/SandboxLinks'

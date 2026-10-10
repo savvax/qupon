@@ -476,6 +476,11 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			return
 		}
 		featuredOnly := r.URL.Query().Get("featured") == "1"
+		// Task 1524: sandboxes stay out of the public listing unless the caller owns them (qupon_sandbox cookie).
+		mine := sandboxCookieID(r)
+		skip := func(set store.SeriesSettings) bool {
+			return set.Hidden || (featuredOnly && !set.Featured) || (set.SandboxID != "" && set.SandboxID != mine)
+		}
 		if rm == nil { // no chain reader: serve the mirror indexed at startup
 			rows, err := st.ListSeries(r.Context())
 			if err != nil {
@@ -484,7 +489,7 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			}
 			out := make([]json.RawMessage, 0, len(rows))
 			for _, row := range rows {
-				if settings[row.Mint].Hidden || (featuredOnly && !settings[row.Mint].Featured) {
+				if skip(settings[row.Mint]) {
 					continue
 				}
 				out = append(out, row.Data)
@@ -500,7 +505,7 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 		kept := make([]SeriesDTO, 0, len(recs))
 		for _, rec := range recs {
 			set := settings[rec.Series.Mint.String()]
-			if set.Hidden || (featuredOnly && !set.Featured) {
+			if skip(set) {
 				continue
 			}
 			m, err := cashMoney(r.Context(), rm, st, rec.Series.CashMint)

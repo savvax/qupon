@@ -15,19 +15,43 @@ type SeriesSettings struct {
 	Hidden     bool   `json:"hidden"`
 	Featured   bool   `json:"featured"`
 	KaseTicker string `json:"kaseTicker"`
+<<<<<<< ours
 	NoAutofund bool   `json:"noAutofund"` // task 91541: read-only here; writes go through SetSeriesNoAutofund
+||||||| base
+=======
+	// Plan 15 (migrations 007): the sandbox scenario flag (task 1522 — the autopilot skips funding) and the
+	// sandbox a mint belongs to (task 1524 — filters the public /series listing, keys the claim window).
+	NoAutofund bool   `json:"noAutofund"`
+	SandboxID  string `json:"sandboxId"`
+>>>>>>> theirs
 	UpdatedAt  int64  `json:"updatedAt"`
 }
 
+<<<<<<< ours
 const settingsCols = `series_mint, org_id, hidden, featured, kase_ticker, no_autofund, updated_at`
+||||||| base
+const settingsCols = `series_mint, org_id, hidden, featured, kase_ticker, updated_at`
+=======
+const settingsCols = `series_mint, org_id, hidden, featured, kase_ticker, no_autofund, sandbox_id, updated_at`
+>>>>>>> theirs
 
 func scanSettings(row interface{ Scan(...any) error }) (SeriesSettings, error) {
 	var x SeriesSettings
 	var org sql.NullInt64
+<<<<<<< ours
 	err := row.Scan(&x.SeriesMint, &org, &x.Hidden, &x.Featured, &x.KaseTicker, &x.NoAutofund, &x.UpdatedAt)
+||||||| base
+	err := row.Scan(&x.SeriesMint, &org, &x.Hidden, &x.Featured, &x.KaseTicker, &x.UpdatedAt)
+=======
+	// Rows created before migration 007 carry NULL in the scenario columns.
+	var noAutofund sql.NullBool
+	var sandboxID sql.NullString
+	err := row.Scan(&x.SeriesMint, &org, &x.Hidden, &x.Featured, &x.KaseTicker, &noAutofund, &sandboxID, &x.UpdatedAt)
+>>>>>>> theirs
 	if org.Valid {
 		x.OrgID = &org.Int64
 	}
+	x.NoAutofund, x.SandboxID = noAutofund.Bool, sandboxID.String
 	return x, err
 }
 

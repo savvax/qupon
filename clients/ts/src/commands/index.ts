@@ -13,6 +13,7 @@ import { registerPayoutCommands } from "./payout.js";
 import { registerSeriesCommands } from "./series.js";
 import { registerSeriesCreateCommand } from "./seriesCreate.js";
 import { registerProofCommands } from "./proof.js";
+import { registerSandboxCommands } from "./sandbox.js";
 import { registerStateCommands } from "./state.js";
 import { registerTradeCommands } from "./trade.js";
 
@@ -28,5 +29,6 @@ export function registerCommands(program: Command): void {
 	registerPayoutCommands(program);
 	registerTradeCommands(program);
 	registerProofCommands(program);
+	registerSandboxCommands(program);
 	registerStateCommands(program);
 }

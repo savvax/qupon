@@ -456,7 +456,11 @@ async function runFund(opts: FundOpts, cmd: Command): Promise<void> {
 	await sendAndReport(rpc, funder, [instruction], "action:fund", { action, amount });
 }
 
-async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
+interface PayOpts extends ActionOpts {
+	skipOwner?: string;
+}
+
+async function runPay(opts: PayOpts, cmd: Command): Promise<void> {
 	const { rpc, cfg } = await initCtx(cmd);
 	const info = await loadSeries(rpc, cfg, opts.series);
 	const authority = await signer(cmd, "any"); // permissionless (plan 15 D2): any keypair pays the fee
@@ -468,6 +472,8 @@ async function runPay(opts: ActionOpts, cmd: Command): Promise<void> {
 	const byOwner = new Map(investors.map(inv => [inv.owner as string, inv]));
 	const unpaid = entitlements
 		.filter(e => e.status === 0) // Snapshotted
+		// --skip-owner (task 1524): the sandbox autopilot leaves the visitor wallet's payout for their own Claim.
+		.filter(e => opts.skipOwner === undefined || e.owner !== address(opts.skipOwner))
 		.map(e => {
 			const investor = byOwner.get(e.owner);
 			if (investor === undefined) throw new Error(`no Investor PDA for entitlement owner ${e.owner}`);
@@ -721,6 +727,7 @@ export function registerActionCommands(program: Command): void {
 	withGlobals(program.command("action:pay").description("pay all holders (auto-batches of 10, idempotent)"))
 		.requiredOption("--series <name>", "series name in config/devnet.json")
 		.option(indexOpt, "action index (default: the open action)")
+		.option("--skip-owner <address>", "leave this holder's payout unpaid (the autopilot's sandbox claim window)")
 		.action(runPay);
 
 	withGlobals(program.command("action:claim").description("holder: claim one holder's own payout (pay_batch for a single owner, bank route honoured)"))

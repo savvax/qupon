@@ -238,6 +238,11 @@ func (s *Scheduler) handleSeries(ctx context.Context, rec chain.SeriesRecord, no
 		s.Log.Error("scheduler: build argv", "series", series.Mint.String(), "err", err)
 		return
 	}
+	// Task 1524 (1532 contract): on a sandbox whose visitor joined with a wallet, leave that holder's payout
+	// unpaid ~60 s so the page's Claim button has a window (the autopilot pays everyone else immediately).
+	if d.Action == executor.StepPay && open != nil {
+		args = s.claimWindow(ctx, series.Mint.String(), open.Index, args)
+	}
 	if s.Cfg.DryRun {
 		s.Log.Info("scheduler dry-run: would run", "series", series.Mint.String(),
 			"decision", fmt.Sprintf("%s:%s", d.Kind, d.Action), "args", args)
@@ -265,6 +270,29 @@ func (s *Scheduler) argv(series *chain.Series, open *chain.CorporateAction, d De
 	}
 	args, err := executor.Args(d.Action, name, open.Index)
 	return args, open.Index, err
+}
+
+// claimWindow appends `--skip-owner <wallet>` to a sandbox's pay step while the visitor's claim window is
+// open. A fresh row (claim_until = 0) or one armed for an earlier action both mean "not armed for this
+// action": action indexes start at 0, so claim_index = 0 alone cannot say "armed" (round-2 review fix).
+// Arming writes now+60, so claim_until is never 0 again once armed.
+func (s *Scheduler) claimWindow(ctx context.Context, mint string, index uint32, args []string) []string {
+	sbx, err := s.Store.SandboxByMint(ctx, mint)
+	if err != nil || sbx == nil || sbx.Wallet == "" {
+		return args
+	}
+	now := s.now().Unix()
+	if sbx.ClaimUntil == 0 || sbx.ClaimIndex != index {
+		if err := s.Store.ArmSandboxClaim(ctx, sbx.ID, index, now+60); err != nil {
+			s.Log.Error("scheduler: arm sandbox claim window", "sandbox", sbx.ID, "err", err)
+			return args
+		}
+		return append(args, "--skip-owner", sbx.Wallet)
+	}
+	if now < sbx.ClaimUntil {
+		return append(args, "--skip-owner", sbx.Wallet)
+	}
+	return args
 }
 
 // propose records the decision as a pending approval (deduped per action+step).

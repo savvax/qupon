@@ -39,6 +39,11 @@ func cacheable(r *http.Request) bool {
 	if !readModel || strings.HasSuffix(path, "/reconcile") {
 		return false
 	}
+	// /series varies by the caller's sandbox cookie (task 1524: a visitor sees their own SBX bond), so a
+	// request carrying it must never enter the shared cache — the cached body would leak between visitors.
+	if _, err := r.Cookie(SandboxCookie); err == nil {
+		return false
+	}
 	for k := range r.URL.Query() {
 		if k != "lang" && k != "featured" { // ?featured=1 on /series (task 1525); anything else bypasses
 			return false

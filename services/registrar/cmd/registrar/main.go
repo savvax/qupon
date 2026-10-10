@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -29,6 +30,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
+	"github.com/qupon-kz/qupon/services/registrar/internal/sandbox"
 	"github.com/qupon-kz/qupon/services/registrar/internal/scheduler"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 	"github.com/qupon-kz/qupon/services/registrar/internal/termsheet"
@@ -218,6 +220,21 @@ func run() error {
 		deps.SystemIngest = poller
 	}
 
+	// Judge sandbox (task 1524): devnet-only, needs the executor and the chain reader; limits from env.
+	if exec != nil && chainClient != nil && !profile.Mainnet {
+		deps.Sandbox = &sandbox.Service{
+			Exec: exec, Store: st, Read: chainClient, BaseConfig: cfg.QuponConfig, Log: logger,
+			Limits: sandbox.Limits{
+				PerIPPerHour: envInt("QUPON_SANDBOX_PER_IP_HOUR", 3),
+				PerDay:       envInt("QUPON_SANDBOX_PER_DAY", 30),
+			},
+			Outsider: os.Getenv("QUPON_SANDBOX_OUTSIDER"),
+		}
+		if !cfg.Scheduler && !cfg.DemoSpeed {
+			logger.Warn("sandbox API enabled but the scheduler is off: a sandbox never advances past its first step (run with --scheduler or --demo-speed)")
+		}
+	}
+
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
 		Handler:           api.New(logger, st, deps),
@@ -245,6 +262,16 @@ func run() error {
 		}
 		return err
 	}
+}
+
+// envInt reads a non-negative int env var with a default (sandbox limits, task 1524).
+func envInt(name string, def int) int {
+	if v := os.Getenv(name); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return def
 }
 
 // readModel avoids a typed-nil interface when no PROGRAM_ID is configured.

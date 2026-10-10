@@ -117,6 +117,14 @@ type Result struct {
 	Series     string   `json:"series"`
 	Mint       string   `json:"mint"`
 	Signatures []string `json:"signatures"`
+	// trade:create prints the admission's economics (task 1515 / sandbox dvp_trade, task 1524): clean + accrued
+	// = the cash leg; accrued is negative in the ex-coupon window. sandbox:refuse prints the refused tx's logs.
+	Units       flexUint64 `json:"units"`
+	Clean       flexUint64 `json:"clean"`
+	Accrued     flexInt64  `json:"accrued"`
+	AccruedDays flexInt64  `json:"accruedDays"`
+	CashAmount  flexUint64 `json:"cashAmount"`
+	Logs        []string   `json:"logs"`
 }
 
 // Executor execs the qupon CLI. Safe for concurrent use (no shared state).
@@ -174,6 +182,20 @@ func (f *flexUint64) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("slot %s: %w", string(b), err)
 	}
 	*f = flexUint64(n)
+	return nil
+}
+
+// flexInt64 is flexUint64's signed sibling (accrued interest is negative in
+// the ex-coupon window).
+type flexInt64 int64
+
+func (f *flexInt64) UnmarshalJSON(b []byte) error {
+	s := strings.Trim(strings.TrimSpace(string(b)), `"`)
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return fmt.Errorf("int %s: %w", string(b), err)
+	}
+	*f = flexInt64(n)
 	return nil
 }
 

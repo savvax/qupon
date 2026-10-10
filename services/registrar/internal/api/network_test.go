@@ -25,6 +25,9 @@ func TestMainnetGuard(t *testing.T) {
 		{main, "GET", "/series", "", http.StatusTeapot, ""},
 		{main, "POST", "/auth/demo", "", http.StatusForbidden, "demo_disabled"},
 		{main, "POST", "/demo/investor/vote", "", http.StatusForbidden, "demo_disabled"},
+		// Task 1524: the sandbox (a series create with daySecs ≠ 0) is demo-only — mainnet refuses it.
+		{main, "POST", "/demo/sandbox", "", http.StatusForbidden, "demo_disabled"},
+		{main, "POST", "/demo/sandbox/abc123/scenario", "", http.StatusForbidden, "demo_disabled"},
 		{main, "POST", "/issuer/series", "", http.StatusPreconditionRequired, "confirmation_required"},
 		{main, "PATCH", "/admin/assets/M", "devnet", http.StatusPreconditionRequired, "confirmation_required"},
 		{main, "POST", "/registrar/actions/A/advance", "mainnet-beta", http.StatusTeapot, ""},

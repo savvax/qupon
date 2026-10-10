@@ -67,6 +67,30 @@ func (s *Store) ListActivity(ctx context.Context, limit int) ([]Activity, error)
 	return out, rows.Err()
 }
 
+// ListSeriesActivity returns a bond mint's newest `limit` events, oldest first (sandbox page feed, task 1524).
+func (s *Store) ListSeriesActivity(ctx context.Context, mint string, limit int) ([]Activity, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT * FROM (
+			SELECT id, ts, series_mint, action_pda, kind, payload, sig, slot, seq
+			FROM activity WHERE series_mint = ? ORDER BY id DESC LIMIT ?
+		) ORDER BY id ASC`, mint, limit)
+	if err != nil {
+		return nil, fmt.Errorf("list series activity: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var out []Activity
+	for rows.Next() {
+		var a Activity
+		if err := rows.Scan(&a.ID, &a.Ts, &a.SeriesMint, &a.ActionPDA, &a.Kind,
+			&a.Payload, &a.Sig, &a.Slot, &a.Seq); err != nil {
+			return nil, fmt.Errorf("scan series activity: %w", err)
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
+
 // ActionSignatures returns the distinct transaction signatures of an action's
 // settlement events (EntitlementPaid, ActionCompleted) in chain order
 // (oldest first, newest last); implements notice.Activity.

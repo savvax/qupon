@@ -1635,6 +1635,200 @@ export interface paths {
         patch: operations["adminPatchAsset"];
         trace?: never;
     };
+    "/demo/sandbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a judge sandbox (task 1524) — a bond series of the visitor's own on a demo clock
+         * @description Creates a demo-clock series (1 s per civil day, 1-year semi-annual 10 % bond, ticker SBX-<6>), registers the three custodial demo investors (10 / 25 / 65 bonds, the pension fund bank-routed at 15 % tax) plus the optional visitor wallet (SAS attest + register + faucet + 5 bonds), attaches the visitor via the qupon_sandbox httpOnly cookie (24 h). Idempotent per requestId. Rate limits — 3 per visitor per hour, 30 per day — keyed on the LAST X-Forwarded-For entry. Off on mainnet.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SandboxCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description the sandbox was created (or already existed for this requestId) */
+                201: {
+                    headers: {
+                        /** @description qupon_sandbox=<id>; HttpOnly; Max-Age=86400 */
+                        "Set-Cookie"?: string;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SandboxCreated"];
+                    };
+                };
+                /** @description bad_wallet or invalid_params */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description demo_throttled */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description executor_failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description sandbox_off (no executor / chain reader / mainnet) */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/demo/sandbox/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The sandbox page's poll — the bond's live state on the demo clock */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description the sandbox (serverTime lets the client correct its clock) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Sandbox"];
+                    };
+                };
+                /** @description sandbox_not_found (unknown or expired after 24 h) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/demo/sandbox/{id}/scenario": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a judge scenario against the sandbox
+         * @description skip_funding flags the next coupon to default (the autopilot stops funding; cure undoes it), cure funds a defaulted coupon's real shortfall, non_kyc_transfer attempts a bond transfer to an unregistered wallet and reports the on-chain refusal (sent with skipPreflight, so it has a signature and logs), dvp_trade creates + funds + settles a 5-bond trade at clean 100 % + accrued.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        kind: "skip_funding" | "cure" | "non_kyc_transfer" | "dvp_trade";
+                    };
+                };
+            };
+            responses: {
+                /** @description the scenario result (stored and replayed in Sandbox.scenarios) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SandboxScenario"];
+                    };
+                };
+                /** @description bad_kind */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description sandbox_not_found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description scenario_unavailable (e.g. cure without a default) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description executor_failed */
+                502: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2411,6 +2605,120 @@ export interface components {
             };
             /** @description demo throttle usage (writes today, series today) */
             demo: Record<string, never>;
+        };
+        /** @description POST /demo/sandbox body — requestId makes the create idempotent. */
+        SandboxCreateRequest: {
+            /** @description the visitor's own wallet (base58); SAS-attested, registered, faucet-funded, 5 bonds */
+            wallet?: string;
+            /** @description a retried or doubled request returns the same sandbox */
+            requestId?: string;
+        };
+        /** @description one civil day lasts daySecs seconds from issueTs (the bond's own calendar). */
+        SandboxClock: {
+            /** @example 1 */
+            daySecs: number;
+            /** @description unix seconds of the issue date */
+            issueTs: number;
+        };
+        SandboxLinks: {
+            /** @example /bonds/4zN9… */
+            bond: string;
+            /** @description devnet explorer link of the bond mint */
+            explorer: string;
+        };
+        /** @description POST /demo/sandbox 201 — the cookie qupon_sandbox=id attaches the visitor. */
+        SandboxCreated: {
+            id: string;
+            mint: string;
+            /** @example SBX-4F2KQ1 */
+            ticker: string;
+            clock: components["schemas"]["SandboxClock"];
+            schedule: components["schemas"]["ScheduleItem"][];
+            links: components["schemas"]["SandboxLinks"];
+        };
+        SandboxHolder: {
+            owner: string;
+            /** @example Altyn Capital */
+            label: string;
+            /** @description bonds held now, decimal string */
+            units: string;
+            /**
+             * @description bank pays the paying agent (SIMULATED bank transfer)
+             * @enum {string}
+             */
+            route: "wallet" | "bank";
+            taxRateBps: number;
+            /** @enum {string} */
+            kind: "demo" | "wallet";
+        };
+        /** @description the program's TradeAccrued event — clean + accrued = the cash leg (accrued is negative in the ex-coupon window). */
+        TradeAccrued: {
+            units: string;
+            seller: string;
+            buyer: string;
+            clean: components["schemas"]["Amount"];
+            accrued: components["schemas"]["Amount"];
+            cash: components["schemas"]["Amount"];
+            accruedDays: number;
+            /** @description civil settlement date on the bond's calendar, YYYY-MM-DD */
+            settleDate: string;
+        };
+        /** @description one judge scenario's result, replayed in Sandbox.scenarios (newest first). */
+        SandboxScenario: {
+            /** @enum {string} */
+            kind: "skip_funding" | "cure" | "non_kyc_transfer" | "dvp_trade";
+            /** @description unix ms */
+            at: number;
+            /** @description devnet txs it produced; a refusal's failed tx too (skipPreflight) */
+            signatures: string[];
+            /** @description program error name of a refusal (non_kyc_transfer) */
+            error?: string;
+            logs?: string[];
+            trade?: components["schemas"]["TradeAccrued"];
+        };
+        /** @description what the autopilot pushes next; null step when the bond's life is over. */
+        SandboxNext: {
+            /** @description announce, strike, snapshot, finalize, fund, pay, complete, close, declare_default, confirm_bank or null */
+            step: string | null;
+            /** @enum {string|null} */
+            actor: "registrar" | "anyone" | "issuer" | "payingAgent" | null;
+            /** @description unix ms when it becomes possible; null = now */
+            at: number | null;
+        };
+        SandboxActivity: {
+            id: number;
+            ts: number;
+            kind: string;
+            sig: string;
+            slot: number;
+            actionPda?: string | null;
+            payload: Record<string, never>;
+            explorerUrl?: string | null;
+        };
+        /** @description GET /demo/sandbox/{id} — the sandbox page's poll. */
+        Sandbox: {
+            id: string;
+            clock: components["schemas"]["SandboxClock"];
+            /** @description unix ms when the response was built */
+            serverTime: number;
+            /** @description unix ms; after it GET answers 404 */
+            expiresAt: number;
+            wallet: string | null;
+            /** @description false after skip_funding until a cure */
+            autofund: boolean;
+            series: components["schemas"]["SeriesDTO"];
+            schedule: components["schemas"]["ScheduleItem"][];
+            /** @description every action of the series, oldest first */
+            actions: components["schemas"]["ActionDTO"][];
+            holders: components["schemas"]["SandboxHolder"][];
+            /** @description of the open action, else the latest one; status may be PaidToAgent */
+            entitlements: components["schemas"]["EntitlementDTO"][];
+            next: components["schemas"]["SandboxNext"];
+            /** @description the series' indexed events, newest first */
+            activity: components["schemas"]["SandboxActivity"][];
+            /** @description scenarios run so far, newest first */
+            scenarios: components["schemas"]["SandboxScenario"][];
+            links: components["schemas"]["SandboxLinks"];
         };
     };
     responses: never;

@@ -707,3 +707,54 @@ func TestTickNoAutofundSeriesDefaults(t *testing.T) {
 		t.Fatalf("cli log = %q, want a fund step last", raw)
 	}
 }
+
+// TestTickPayClaimWindow (task 1524, round-2 fix): on a sandbox whose visitor joined with a wallet, the
+// first pay of an action — action index 0 included — leaves that holder's payout unpaid (--skip-owner) for
+// ~60 s; a tick past the window pays everyone.
+func TestTickPayClaimWindow(t *testing.T) {
+	fc := &fakeChain{series: func() *chain.Series {
+		s := series(now0.Unix(), now0.Add(24*time.Hour).Unix())
+		s.OpenAction = &kAction
+		return s
+	}(), action: &chain.CorporateAction{
+		Series: kSeries, Index: 0, Status: 4, // Settling, one holder unpaid → pay_batch (index 0!)
+		RecordAt: now0.Add(50 * time.Second).Unix(), PaymentAt: now0.Add(70 * time.Second).Unix(),
+		HoldersSnapshotted: 2, UnitsSnapshotted: 2, HoldersPaid: 1,
+	}}
+	s, st, log := newScheduler(t, fc, cfg)
+	wallet := "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
+	sbx := store.Sandbox{ID: "sbxclaim0", Ticker: "SBX-TEST00", Mint: kMint.String(), Wallet: wallet,
+		Holders:   []store.SandboxHolder{{Owner: wallet, Label: "Your wallet", Kind: "wallet"}},
+		CreatedAt: now0.Unix(), ExpiresAt: now0.Add(24 * time.Hour).Unix()}
+	if err := st.InsertSandbox(t.Context(), sbx); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.SetSeriesSandbox(t.Context(), kMint.String(), sbx.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	// First tick (claim_until = 0, claim_index = 0 = open.Index — must still arm: index 0 is a real index).
+	s.Tick(t.Context())
+	raw, _ := os.ReadFile(log)
+	line := strings.TrimSpace(string(raw))
+	if !strings.HasSuffix(line, "--skip-owner "+wallet) {
+		t.Fatalf("first pay argv = %q, want it to end with --skip-owner %s", line, wallet)
+	}
+	armed, err := st.SandboxByMint(t.Context(), kMint.String())
+	if err != nil || armed == nil || armed.ClaimUntil != now0.Add(60*time.Second).Unix() || armed.ClaimIndex != 0 {
+		t.Fatalf("claim window after arming = %+v (err %v)", armed, err)
+	}
+
+	// +2 min: the window is over, the autopilot pays everyone.
+	s.Now = func() time.Time { return now0.Add(2 * time.Minute) }
+	s.Tick(t.Context())
+	raw, _ = os.ReadFile(log)
+	lines := strings.Split(strings.TrimSpace(string(raw)), "\n")
+	last := lines[len(lines)-1]
+	if strings.Contains(last, "--skip-owner") {
+		t.Fatalf("pay argv at +2min = %q, want no --skip-owner", last)
+	}
+	if !strings.Contains(last, "action:pay") {
+		t.Fatalf("pay argv at +2min = %q, want an action:pay step", last)
+	}
+}
