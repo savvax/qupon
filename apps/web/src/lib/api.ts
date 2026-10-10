@@ -226,18 +226,28 @@ export async function postDisclosureSubmit(pda: string): Promise<{
   return boPost(`registrar/actions/${pda}/disclosure/submit`, {});
 }
 
-/** Public lists also skip the series the live e2e issues on every run (tickers `E2E-…`); cabinets still show them. */
+/** Public lists also skip the series the live e2e issues on every run (tickers `E2E-…`) and the judge
+ *  sandboxes (`SBX-…`, whose own pages link them); cabinets still show them. */
+// ponytail: ticker prefix; add a sandbox flag to SeriesDTO if tickers change
 export const listPublicSeries = () =>
-  listSeries().then((all) => all.filter((s) => !s.ticker.startsWith("E2E-")));
+  listSeries().then((all) =>
+    all.filter(
+      (s) => !s.ticker.startsWith("E2E-") && !s.ticker.startsWith("SBX-"),
+    ),
+  );
 
 export async function getReconcile(pda: string): Promise<ReconcileReport> {
   return get<ReconcileReport>(`/actions/${pda}/reconcile`);
 }
 
-export async function listActivity(limit = 200): Promise<ActivityLike[]> {
-  if (MOCK)
-    return (await mockGet(`/activity?limit=${limit}`)) as ActivityLike[];
-  const res = await fetch(`${API_BASE_URL}/activity?limit=${limit}`);
+export async function listActivity(
+  limit = 200,
+  mint?: string,
+): Promise<ActivityLike[]> {
+  // mint narrows the feed server-side (the dossier journal: sandbox runs flood the global window)
+  const qs = `limit=${limit}${mint ? `&mint=${encodeURIComponent(mint)}` : ""}`;
+  if (MOCK) return (await mockGet(`/activity?${qs}`)) as ActivityLike[];
+  const res = await fetch(`${API_BASE_URL}/activity?${qs}`);
   if (!res.ok) return []; // the feed is evidence, not a dependency
   const body = (await res.json()) as { events?: ActivityLike[] };
   return body.events ?? [];

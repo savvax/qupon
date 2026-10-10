@@ -67,13 +67,17 @@ func (s *Store) ListActivity(ctx context.Context, limit int) ([]Activity, error)
 	return out, rows.Err()
 }
 
-// ListSeriesActivity returns a bond mint's newest `limit` events, oldest first (sandbox page feed, task 1524).
+// ListSeriesActivity returns a bond mint's newest `limit` events, oldest first (sandbox page feed, task 1524;
+// public dossier journal, task 91550). Rows name their series either by the bond mint (scheduler/sandbox
+// writes) or by the Series account PDA (ingested on-chain events), so both keys match.
 func (s *Store) ListSeriesActivity(ctx context.Context, mint string, limit int) ([]Activity, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT * FROM (
 			SELECT id, ts, series_mint, action_pda, kind, payload, sig, slot, seq
-			FROM activity WHERE series_mint = ? ORDER BY id DESC LIMIT ?
-		) ORDER BY id ASC`, mint, limit)
+			FROM activity WHERE series_mint = ?
+			   OR series_mint = (SELECT json_extract(data, '$.pda') FROM series WHERE mint = ?)
+			ORDER BY id DESC LIMIT ?
+		) ORDER BY id ASC`, mint, mint, limit)
 	if err != nil {
 		return nil, fmt.Errorf("list series activity: %w", err)
 	}

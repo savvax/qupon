@@ -145,7 +145,15 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
-		events, err := st.ListActivity(ctx, limit)
+		// Optional mint: narrow the feed to one series (the public dossier journal; sandbox floods the
+		// global window). Matches rows keyed by the bond mint or the Series PDA (ListSeriesActivity).
+		var events []store.Activity
+		var err error
+		if mint := r.URL.Query().Get("mint"); mint != "" {
+			events, err = st.ListSeriesActivity(ctx, mint, limit)
+		} else {
+			events, err = st.ListActivity(ctx, limit)
+		}
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return

@@ -101,6 +101,51 @@ func TestActivityLimit(t *testing.T) {
 	}
 }
 
+func TestActivityMint(t *testing.T) {
+	h, st := newTestServer(t)
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+
+	// Rows name their series either by the bond mint (scheduler/sandbox writes)
+	// or by the Series PDA (ingested on-chain events) — both must match the filter.
+	if err := st.UpsertSeries(t.Context(), "MintAAA", []byte(`{"pda":"PdaAAA"}`)); err != nil {
+		t.Fatalf("upsert series: %v", err)
+	}
+	mint, pda, other := "MintAAA", "PdaAAA", "MintBBB"
+	for _, a := range []store.Activity{
+		{Kind: "scheduler:announce", SeriesMint: &mint, Payload: []byte("{}"), Sig: "sigA"},
+		{Kind: "ActionCompleted", SeriesMint: &pda, Payload: []byte("{}"), Sig: "sigB"},
+		{Kind: "ActionCompleted", SeriesMint: &other, Payload: []byte("{}"), Sig: "sigC"},
+	} {
+		if _, err := st.InsertActivity(t.Context(), a); err != nil {
+			t.Fatalf("insert %s: %v", a.Kind, err)
+		}
+	}
+
+	get := func(url string) []store.Activity {
+		t.Helper()
+		resp, err := http.Get(url)
+		if err != nil {
+			t.Fatalf("get activity: %v", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("activity status = %d, want 200", resp.StatusCode)
+		}
+		var out struct {
+			Events []store.Activity `json:"events"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		return out.Events
+	}
+
+	if all, got := get(srv.URL+"/activity"), get(srv.URL+"/activity?mint=MintAAA"); len(all) != 3 || len(got) != 2 {
+		t.Fatalf("mint filter = %d events (feed %d), want 2 of 3", len(got), len(all))
+	}
+}
+
 func TestCORSReadOnly(t *testing.T) {
 	handler, _ := newTestServer(t)
 	srv := httptest.NewServer(handler)

@@ -24,19 +24,12 @@ export async function generateMetadata() {
 
 export const dynamic = "force-dynamic";
 
-const FREQ_KEY: Record<number, string> = {
-  1: "freqAnnual",
-  2: "freqSemiAnnual",
-  4: "freqQuarterly",
-  12: "freqMonthly",
-};
-
 /** The stage chip: a bond's life stage, not the raw chain status. Defaulted is the loudest state. */
 const STAGE_STYLE: Record<BoardStage, string> = {
   inDefault: "bg-default text-white",
   voting: "bg-p50 text-p700",
   paying: "bg-p900 text-white",
-  recordSoon: "bg-warn-bg text-warn-fg",
+  recordSoon: "border border-p900 bg-n0 text-p900",
   redeemed: "bg-n100 text-n600",
   live: "bg-p50 text-p700",
   issued: "bg-n100 text-n600",
@@ -45,10 +38,9 @@ const STAGE_STYLE: Record<BoardStage, string> = {
 /** Public bond board (task 1535): the curated showcase first, then every other public series. */
 export default async function BondsPage() {
   const locale = (await getLocale()) as Locale;
-  const [t, ts, tf] = await Promise.all([
+  const [t, ts] = await Promise.all([
     getTranslations("bonds"),
     getTranslations("status"),
-    getTranslations("bond"),
   ]);
   const series = await listPublicSeries();
   // Featured first (the registrar already sorts this way; sort here too so the board never depends on it).
@@ -79,8 +71,6 @@ export default async function BondsPage() {
   const active = ordered.filter(
     (s) => s.status === "Active" || s.status === "Retiring",
   );
-  const freqLabel = (f: number) =>
-    FREQ_KEY[f] ? tf(FREQ_KEY[f]!) : `${f}×/yr`;
 
   const stageChip = (s: SeriesDTO) => {
     const stage = boardStage(s, openOf.get(s.mint));
@@ -93,6 +83,18 @@ export default async function BondsPage() {
       >
         {t(`stage.${stage}`)}
       </span>
+    );
+  };
+
+  // The open action's next date (record while upcoming, payment once struck) — the scenario cue the
+  // four showcase rows otherwise share (Opus review #12).
+  const stageDate = (s: SeriesDTO) => {
+    const open = openOf.get(s.mint);
+    if (!open) return null;
+    const at =
+      Date.parse(open.recordAt) > Date.now() ? open.recordAt : open.paymentAt;
+    return (
+      <span className="num text-xs text-n600">{formatDate(at, locale)}</span>
     );
   };
 
@@ -133,12 +135,6 @@ export default async function BondsPage() {
       ),
     },
     {
-      key: "frequency",
-      header: t("colFrequency"),
-      hideBelow: "md",
-      render: (s) => freqLabel(s.frequency),
-    },
-    {
       key: "next",
       header: t("colNextCoupon"),
       hideBelow: "md",
@@ -154,10 +150,42 @@ export default async function BondsPage() {
           {stageChip(s)}
           {s.demoClock && <ProvenanceChip kind="demo" />}
           <span className="sr-only">{ts(s.status)}</span>
+          {stageDate(s)}
         </span>
       ),
     },
   ];
+
+  // Phone cards: three compact rows instead of label/value stacks (#12).
+  const phoneRow = (s: SeriesDTO) => (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between gap-4">
+        <Link
+          href={`/bonds/${s.mint}`}
+          className="min-w-0 truncate font-bold text-g700 underline-offset-2 hover:underline after:absolute after:inset-0 after:content-['']"
+        >
+          {s.ticker}
+        </Link>
+        <span className="num shrink-0 text-xs text-n600">{s.isin}</span>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {stageChip(s)}
+        {s.demoClock && <ProvenanceChip kind="demo" />}
+        {stageDate(s)}
+      </div>
+      <div className="num text-sm text-n700">
+        <Amount
+          minor={s.faceValue.minor}
+          currency={s.faceValue.currency}
+          locale={locale}
+        />
+        {" · "}
+        {bpsToPercent(s.couponRateBps, locale)}
+        {" · "}
+        {formatDate(s.nextCouponDate, locale)}
+      </div>
+    </div>
+  );
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6 sm:py-12">
@@ -180,6 +208,7 @@ export default async function BondsPage() {
                   rows={active}
                   rowKey={(s) => s.mint}
                   empty={t("emptyActive")}
+                  phoneRow={phoneRow}
                 />
               ),
             },
@@ -192,6 +221,7 @@ export default async function BondsPage() {
                   rows={ordered}
                   rowKey={(s) => s.mint}
                   empty={t("emptyActive")}
+                  phoneRow={phoneRow}
                 />
               ),
             },

@@ -45,7 +45,7 @@ export function DataTable<T>({
       <div className="hidden overflow-x-auto sm:block">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-n200 bg-n50 text-left text-[11px] font-bold uppercase tracking-[0.06em] text-n500">
+            <tr className="border-b border-n200 bg-n50 text-left text-xs font-semibold text-n600">
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -93,7 +93,9 @@ export function DataTable<T>({
             as="li"
             key={rowKey(row)}
             index={i}
-            className={phoneRow ? "px-4 py-3" : "space-y-1.5 px-4 py-4"}
+            className={
+              phoneRow ? "relative px-4 py-3" : "space-y-1.5 px-4 py-4"
+            }
           >
             {phoneRow
               ? phoneRow(row)
@@ -106,7 +108,7 @@ export function DataTable<T>({
                       key={col.key}
                       className="flex items-baseline justify-between gap-4"
                     >
-                      <span className="shrink-0 text-[11px] font-bold uppercase tracking-[0.06em] text-n500">
+                      <span className="shrink-0 text-xs font-semibold text-n600">
                         {col.header}
                       </span>
                       <span

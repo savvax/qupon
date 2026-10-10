@@ -42,9 +42,20 @@ export type Live = {
 export async function loadLive(): Promise<Live> {
   const [series, activity] = await Promise.all([
     listPublicSeries().catch(() => [] as SeriesDTO[]),
-    listActivity(200).catch(() => []),
+    listActivity(500).catch(() => []),
   ]);
   // The last *payout*: a completed coupon/redemption/call that actually paid someone (a meeting completes with 0).
+  // Ranked so the first number a judge reads is a real tenge coupon, not a 6-decimal test redemption:
+  // featured series first, then a coupon (INTR), then a non-USDC currency; newest only breaks ties (91550 #2).
+  const rank = (
+    e: ActivityLike,
+    s: SeriesDTO,
+  ): [number, number, number, number] => [
+    Number(s.featured ?? false),
+    Number(Number(e.payload?.kind ?? -1) === 0),
+    Number(s.faceValue.currency !== "USDC"),
+    e.ts,
+  ];
   const done = activity
     .filter(
       (e) =>
@@ -52,14 +63,23 @@ export async function loadLive(): Promise<Live> {
         BigInt(String(e.payload?.total_paid ?? "0")) > 0n &&
         Number(e.payload?.holders_paid ?? 0) > 0,
     )
-    .sort((a, b) => b.ts - a.ts)[0];
+    .map((e) => ({ e, s: eventSeries(e, series) }))
+    .filter((d): d is { e: ActivityLike; s: SeriesDTO } => d.s !== undefined)
+    .sort((a, b) => {
+      const ra = rank(a.e, a.s);
+      const rb = rank(b.e, b.s);
+      return rb[0] - ra[0] || rb[1] - ra[1] || rb[2] - ra[2] || rb[3] - ra[3];
+    })[0]?.e;
   const p = done?.payload ?? {};
   const s = done ? eventSeries(done, series) : undefined;
+  const activeOnes = series.filter((x) => x.status === "Active");
+  const featuredActive = activeOnes.filter((x) => x.featured);
   return {
     activity,
-    active: series.filter((x) => x.status === "Active"),
+    // Featured series when any exist (the curated showcase), otherwise every active series.
+    active: featuredActive.length ? featuredActive : activeOnes,
     txCount: new Set(activity.map((e) => e.sig)).size,
-    txMore: activity.length >= 200,
+    txMore: activity.length >= 500,
     last:
       done && s
         ? {

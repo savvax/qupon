@@ -255,12 +255,12 @@ const actions: Record<string, ActionDTO[]> = {
       votesAgainst: null,
       votesAbstain: null,
       result: null,
-      completedAt: "2026-03-01T12:20:00+05:00",
+      completedAt: "2027-03-01T12:20:00+05:00",
       factorBps: null,
       // sha256 of the mock seev.031 XML (mockGetText) — the console's browser-side check shows ✓
       disclosureHash:
         "e69e6726894709998fb8a9c481c0ac2fe99401ed8a93cb0c2ad748a7a4194916",
-      finalizedAt: "2026-02-28T00:10:00+05:00",
+      finalizedAt: "2027-02-28T00:10:00+05:00",
       explorerUrl: explorer(ACTION_PDA_1),
     },
     {
@@ -705,40 +705,41 @@ const ev = (
 });
 
 const activity = [
-  ev(1, 1771908000, "ActionAnnounced", ACTION_PDA_1, SIGS[0]!),
-  { ...ev(2, 1771994400, "RecordStruck", ACTION_PDA_1, SIGS[1]!) },
-  ev(3, 1771994700, "HolderSnapshotted", ACTION_PDA_1, SIGS[2]!, {
+  // QPNb1's coupon 1 mirrors its action: record 2027-02-28, payment 2027-03-01 (completedAt/finalizedAt below).
+  ev(1, 1803099600, "ActionAnnounced", ACTION_PDA_1, SIGS[0]!),
+  { ...ev(2, 1803755100, "RecordStruck", ACTION_PDA_1, SIGS[1]!) },
+  ev(3, 1803755160, "HolderSnapshotted", ACTION_PDA_1, SIGS[2]!, {
     owner: INVESTOR_OWNERS[0],
     units: "10",
   }),
-  ev(4, 1771995000, "HolderSnapshotted", ACTION_PDA_1, SIGS[0]!, {
+  ev(4, 1803755220, "HolderSnapshotted", ACTION_PDA_1, SIGS[0]!, {
     owner: INVESTOR_OWNERS[1],
     units: "25",
   }),
-  ev(5, 1771995300, "HolderSnapshotted", ACTION_PDA_1, SIGS[1]!, {
+  ev(5, 1803755280, "HolderSnapshotted", ACTION_PDA_1, SIGS[1]!, {
     owner: INVESTOR_OWNERS[2],
     units: "65",
   }),
-  ev(6, 1771995600, "SnapshotFinalized", ACTION_PDA_1, SIGS[2]!),
-  ev(7, 1772000000, "ActionFunded", ACTION_PDA_1, SIGS[0]!, {
+  ev(6, 1803755400, "SnapshotFinalized", ACTION_PDA_1, SIGS[2]!),
+  ev(7, 1803798000, "ActionFunded", ACTION_PDA_1, SIGS[0]!, {
     amount: "500000",
     escrow_balance: "500000",
     required: "500000",
     fully_funded: true,
   }),
-  ev(8, 1772080800, "EntitlementPaid", ACTION_PDA_1, SIGS[1]!, {
+  ev(8, 1803884400, "EntitlementPaid", ACTION_PDA_1, SIGS[1]!, {
     owner: INVESTOR_OWNERS[0],
     net: "50000",
   }),
-  ev(9, 1772080801, "EntitlementPaid", ACTION_PDA_1, SIGS[2]!, {
+  ev(9, 1803884460, "EntitlementPaid", ACTION_PDA_1, SIGS[2]!, {
     owner: INVESTOR_OWNERS[1],
     net: "125000",
   }),
-  ev(10, 1772080802, "EntitlementPaid", ACTION_PDA_1, SIGS[0]!, {
+  ev(10, 1803884520, "EntitlementPaid", ACTION_PDA_1, SIGS[0]!, {
     owner: INVESTOR_OWNERS[2],
     net: "325000",
   }),
-  ev(11, 1772084400, "ActionCompleted", ACTION_PDA_1, SIGS[1]!, {
+  ev(11, 1803885600, "ActionCompleted", ACTION_PDA_1, SIGS[1]!, {
     series: MINT_QPNB1,
     kind: 0,
     holders_paid: 3,
@@ -999,7 +1000,13 @@ export function mockGet(path: string): Promise<unknown> {
           (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false),
         ),
     );
-  if (path.startsWith("/activity")) return delay(activity);
+  if (path.startsWith("/activity")) {
+    // ?mint=<bond mint> narrows the feed server-side (mirrors the registrar, task 91550)
+    const mint = decodeURIComponent(/[?&]mint=([^&]+)/.exec(path)?.[1] ?? "");
+    return delay(
+      mint ? activity.filter((e) => e.seriesMint === mint) : activity,
+    );
+  }
   if (path.startsWith("/registrar/audit")) return delay({ items: auditTrail });
   if (path.startsWith("/approvals")) {
     const want = path.includes("executed") ? "executed" : "pending";

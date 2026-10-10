@@ -89,3 +89,16 @@ After-shots: `reports/design/preflight/opus-after/` (`/` × en/ru/kk × 1440/390
 #13 Copy — all strings replaced as given (`proven.plan15`, `beyond.lead` ×3, en `proven.demosLabel`, learn `plan15.lead` ×3, kk `hero.cta`, kk `last.title`, kk kit `prov.simulated` → "Симуляция").
 #14 Beyond a coupon — grid `sm:grid-cols-2 lg:grid-cols-6` with 3×`lg:col-span-2` + 2×`lg:col-span-3` (+ `sm:max-lg:col-span-2` on the last), head `flex items-start gap-3` with `min-w-0 flex-1 pt-2` h3 and the Simulated chip on its own line, tx link is a sentence-case `t("tx") ↗` link (`title` carries the step), Section eyebrow `text-sm font-semibold text-g700`, INTR/REDM codes `num` not `font-mono`. New key `landing.beyond.tx` (en/ru/kk).
 Pre-existing, not this task's scope: `locale-stability` EN↔RU at 390 fails on `/registrar` and `/issuer/series/new` ("Next: Confirm bank payout" wraps to two RU lines) on the clean tree too — cabinet NowBar copy, owned by finding-group 3. This task's landing changes fix the `/` EN↔KK 390 diff that also failed before.
+
+## Opus round (task 91550 — findings 1, 2, 6, 12, 15)
+
+After-shots: `reports/design/preflight/opus-after/` (mock mode; `/`, `/bonds`, both dossiers × en/ru/kk × 1440/390).
+
+#1 — `/activity?mint=` matches rows keyed by the bond mint **or** the Series account PDA (`ListSeriesActivity` gained the second key via the mirrored `series` table): the ingest writes the PDA (`series: series.key()` in every event) while scheduler/sandbox rows write the mint, so filtering on the mint alone — exactly as the review specified — returns zero rows for real bonds on live, the very bug this finding fixes. Documented in both openapi.yaml copies. Also: advance-step audit rows (no series key) no longer reach the public journal — only real on-chain events with explorer links do.
+#1 — the export button now renders only when `audit.length > 0`; a disabled one never appears (showcase dossier verified).
+#2 — hero payout ranking is lexicographic (featured, INTR, non-USDC, newest), implemented as a tuple sort; `active` = featured-then-active, else all active. Mock QPNb1 dates moved to the action's own record/payment 2027-02-28/03-01 (the review's "Notes outside the GLM tasks" item parked for this task).
+#12 — the `frequency` column is gone; `bonds.colFrequency` stays in messages (strict key parity, now unused).
+#12 — `recordSoon` chip is now `border border-p900 bg-n0 text-p900` (outline, not the simulated amber).
+#12 — phone cards: the ticker link's `after:inset-0` cover needed `relative` on the phone `<li>` (DataTable), otherwise the cover escapes the card.
+#15 — no deviations; Announced → `now.next` + countdown, other live statuses → `now.inProgress` with `kindName` only.
+#6 — no deviations; dropped the dashed `money.empty` card, register/journal moved into the 2fr column, YieldBlock docks sticky at `lg:top-24`.

@@ -95,7 +95,8 @@ export default async function BondPage({
       getSchedule(mint).catch(() => [] as ScheduleItem[]),
       listActions(mint).catch(() => [] as ActionDTO[]),
       listSeriesDocuments(mint),
-      listActivity(200),
+      // mint-filtered server-side: sandbox runs flood the global newest-200 window (Opus #1)
+      listActivity(500, mint),
       getNetwork(),
     ]);
   // entitlements of every action that has a snapshot: the register per record date and the money flow
@@ -433,12 +434,38 @@ export default async function BondPage({
         }
       />
     );
+  } else if (live && live.status === "Announced") {
+    // The judge-facing sentence: dates and a countdown, no internal corpId (Opus #15)
+    now = (
+      <NowBar
+        title={t("now.next", {
+          title: kindName(live.kind),
+          record: formatDate(live.recordAt, locale),
+          payment: formatDate(live.paymentAt, locale),
+        })}
+        clock={
+          <CountdownClock to={live.recordAt} label={t("now.clockRecord")} />
+        }
+        detail={t("now.who")}
+        actors={["registrar"]}
+        action={
+          demo ? (
+            <DemoAsButton
+              role="registrar"
+              next={`/registrar/actions/${live.pda}`}
+            >
+              {t("now.runAs")}
+            </DemoAsButton>
+          ) : undefined
+        }
+      />
+    );
   } else if (live) {
     const step = nextStep(live, Date.now(), BigInt(series.totalIssued)).step;
     now = (
       <NowBar
         title={t("now.inProgress", {
-          title: `${kindName(live.kind)} ${live.corpId}`,
+          title: kindName(live.kind),
           status: ts.has(live.status) ? ts(live.status) : live.status,
         })}
         detail={t("now.who")}
@@ -627,11 +654,14 @@ export default async function BondPage({
             <Icon name="shield" className="size-4" />
             {t("verifyOnChain")}
           </Link>
-          <ExportAuditButton
-            rows={audit}
-            filename={`${series.ticker}-audit.csv`}
-            label={t("journal.export")}
-          />
+          {/* Never a disabled export: with no journal rows there is nothing to audit (Opus #1) */}
+          {audit.length > 0 && (
+            <ExportAuditButton
+              rows={audit}
+              filename={`${series.ticker}-audit.csv`}
+              label={t("journal.export")}
+            />
+          )}
         </div>
       </div>
 
@@ -677,79 +707,84 @@ export default async function BondPage({
         </StaggerItem>
       </Stagger>
 
+      {/* MoneyFlow, register and journal fill the wide column; the yield card docks beside them (Opus #6).
+          On phones the order is money → register → journal → yield. No dashed money.empty card: the register's
+          empty state already explains why. */}
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        {flow && lastPaid ? (
-          <MoneyFlow
-            currency={flow.currency}
-            locale={locale}
-            issuer={{
-              label: series.ticker,
-              address: series.issuer ?? undefined,
-            }}
-            escrow={flow.escrow}
-            recipients={flow.recipients}
-            title={t("money.title", { id: lastPaid.corpId })}
-          />
-        ) : (
-          <div className="flex items-center rounded-card border border-dashed border-n300 bg-n0 p-6 text-sm text-n600">
-            {t("money.empty")}
-          </div>
-        )}
-        <YieldBlock
-          face={BigInt(series.faceValue.minor)}
-          rateBps={series.couponRateBps}
-          frequency={series.frequency}
-          dayCount={series.dayCount}
-          currency={series.faceValue.currency}
-          issueDate={series.issueDate}
-          maturityDate={series.maturityDate}
-          periodStart={period?.periodStart ?? null}
-          today={today}
-          redeemed={redeemed}
-          locale={locale}
-        />
-      </div>
-
-      <section id="register" className="mt-10 scroll-mt-32">
-        <h2 className="text-lg font-bold">{t("register.title")}</h2>
-        <p className="mt-0.5 mb-3 max-w-2xl text-sm text-n600">
-          {t("register.lead")}
-        </p>
-        <RegisterPanel
-          sets={registerSets}
-          initial={rec}
-          mint={series.mint}
-          locale={locale}
-        />
-      </section>
-
-      <section id="journal" className="mt-10">
-        <h2 className="text-lg font-bold">{t("journal.title")}</h2>
-        <p className="mt-0.5 mb-3 text-sm text-n600">{t("journal.lead")}</p>
-        <div className="rounded-card border border-n200 bg-n0 px-4">
-          {audit.length === 0 ? (
-            <p className="py-6 text-center text-sm text-n600">
-              {t("journal.empty")}
-            </p>
-          ) : (
-            <>
-              <ol className="divide-y divide-n100">
-                {audit.slice(0, SHOWN).map(journalRow)}
-              </ol>
-              {audit.length > SHOWN && (
-                <details className="border-t border-n100">
-                  <summary className="cursor-pointer py-2.5 text-sm font-semibold text-g700">
-                    {t("journal.more", { count: audit.length - SHOWN })}
-                  </summary>
-                  <ol className="divide-y divide-n100">
-                    {audit.slice(SHOWN).map((r, i) => journalRow(r, i + SHOWN))}
-                  </ol>
-                </details>
-              )}
-            </>
+        <div className="min-w-0 space-y-10">
+          {flow && lastPaid && (
+            <MoneyFlow
+              currency={flow.currency}
+              locale={locale}
+              issuer={{
+                label: series.ticker,
+                address: series.issuer ?? undefined,
+              }}
+              escrow={flow.escrow}
+              recipients={flow.recipients}
+              title={t("money.title", { id: lastPaid.corpId })}
+            />
           )}
+
+          <section id="register" className="scroll-mt-32">
+            <h2 className="text-lg font-bold">{t("register.title")}</h2>
+            <p className="mt-0.5 mb-3 max-w-2xl text-sm text-n600">
+              {t("register.lead")}
+            </p>
+            <RegisterPanel
+              sets={registerSets}
+              initial={rec}
+              mint={series.mint}
+              locale={locale}
+            />
+          </section>
+
+          <section id="journal">
+            <h2 className="text-lg font-bold">{t("journal.title")}</h2>
+            <p className="mt-0.5 mb-3 text-sm text-n600">{t("journal.lead")}</p>
+            <div className="rounded-card border border-n200 bg-n0 px-4">
+              {audit.length === 0 ? (
+                <p className="py-6 text-center text-sm text-n600">
+                  {t("journal.empty")}
+                </p>
+              ) : (
+                <>
+                  <ol className="divide-y divide-n100">
+                    {audit.slice(0, SHOWN).map(journalRow)}
+                  </ol>
+                  {audit.length > SHOWN && (
+                    <details className="border-t border-n100">
+                      <summary className="cursor-pointer py-2.5 text-sm font-semibold text-g700">
+                        {t("journal.more", { count: audit.length - SHOWN })}
+                      </summary>
+                      <ol className="divide-y divide-n100">
+                        {audit
+                          .slice(SHOWN)
+                          .map((r, i) => journalRow(r, i + SHOWN))}
+                      </ol>
+                    </details>
+                  )}
+                </>
+              )}
+            </div>
+          </section>
         </div>
-      </section>
+        <aside className="min-w-0 lg:sticky lg:top-24">
+          <YieldBlock
+            face={BigInt(series.faceValue.minor)}
+            rateBps={series.couponRateBps}
+            frequency={series.frequency}
+            dayCount={series.dayCount}
+            currency={series.faceValue.currency}
+            issueDate={series.issueDate}
+            maturityDate={series.maturityDate}
+            periodStart={period?.periodStart ?? null}
+            today={today}
+            redeemed={redeemed}
+            locale={locale}
+          />
+        </aside>
+      </div>
 
       <div className="mt-10">
         <Tabs
