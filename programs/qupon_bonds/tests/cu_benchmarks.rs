@@ -1,6 +1,6 @@
 //! Compute-unit benchmarks of the batch instructions (docs/02-architecture.md "Batch sizing"): the real program
 //! binary in LiteSVM, one measured transaction per row. `reports/cu-benchmarks.md` is regenerated with
-//! `QUPON_WRITE_CU_REPORT=1 cargo test -p qupon_bonds --test cu_benchmarks`; a normal run only asserts the limits.
+//! `QUPON_CU_REPORT=1 cargo test -p qupon_bonds --test cu_benchmarks`; a normal run only asserts the limits.
 mod common;
 
 use anchor_lang::{
@@ -15,7 +15,7 @@ use anchor_lang::{
 use anchor_spl::{token::spl_token, token_2022::spl_token_2022};
 use common::*;
 use qupon_bonds::{
-    constants::{DVP_PROGRAM_ID, TRADE_SEED},
+    constants::{DVP_PROGRAM_ID, EXTRA_METAS_SEED, TRADE_SEED},
     CorporateAction, PAY_BATCH_MAX, RETIRE_BATCH_MAX, SNAPSHOT_BATCH_MAX,
 };
 use solana_keypair::Keypair;
@@ -161,11 +161,15 @@ fn flow(n: usize, redm: bool, worst: bool) -> Flow {
     }
 }
 
-/// `retire_batch` over `n` redeemed holders in one transaction; `worst` suspends them first, so every frozen
-/// account costs a thaw before the burn.
-fn retire(n: usize, worst: bool) -> u64 {
+/// `retire_batch` over `n` redeemed holders in one transaction, and the redemption `pay_batch` (pay + burn) that
+/// preceded it; `worst` suspends every holder first, so each frozen account costs a thaw before the burn.
+fn retire(n: usize, worst: bool) -> (u64, u64) {
     let Flow {
-        mut env, b, owners, ..
+        mut env,
+        b,
+        owners,
+        pay,
+        ..
     } = flow(n, true, false);
     if worst {
         for o in &owners {
@@ -173,7 +177,7 @@ fn retire(n: usize, worst: bool) -> u64 {
             env.send(&[ix], &[]).expect("suspend");
         }
     }
-    cu(env.retire_ix(&b, 0, &owners), &mut env, &[])
+    (pay, cu(env.retire_ix(&b, 0, &owners), &mut env, &[]))
 }
 
 /// `CreateDvp` on the Solana DvP program (10 bonds against cash, the registrar settles) — the instruction
@@ -232,9 +236,10 @@ fn admission_pda(b: &Bond, swap: &Pubkey) -> Pubkey {
     .0
 }
 
-/// `admit_trade`, a plain `release_trade` (the empty escrow is frozen again) and a forced one that first returns
-/// the seller's 10 units from the escrow.
-fn trades() -> [u64; 3] {
+/// `admit_trade`, a plain `release_trade` (the empty escrow is frozen again), a forced one that first returns
+/// the seller's 10 units from the escrow, and an admission a month into the coupon period, when the
+/// `TradeAccrued` event prices 30 days of accrued interest (the same trade as tests/trade.rs).
+fn trades() -> [u64; 4] {
     let mut env = Env::new();
     env.svm
         .add_program(DVP_PROGRAM_ID, include_bytes!("fixtures/dvp_swap.so"))
@@ -292,7 +297,257 @@ fn trades() -> [u64; 3] {
     env.send(&[bond_transfer(&b, &seller, &swap, 10)], &[&holders[0].0])
         .expect("seller funds the bond leg");
     let forced = cu(release_ix(swap, true), &mut env, &[]);
-    [admit, release, forced]
+
+    env.set_clock(ISSUE_DATE + 31 * 86_400 + 3_600); // 2026-08-03: 30 days of 30E/360 accrual
+    let swap = create_dvp(&mut env, &b, &seller, &buyer, 3);
+    let accrued = cu(admit_ix(swap), &mut env, &[]);
+    [admit, release, forced, accrued]
+}
+
+// ---- Plan-15 instructions (task 91512): one measured scenario per instruction, one budget each ----
+
+/// Budget rule: the measured reference × 1.25, rounded up to the next 1,000 CU.
+fn budget(measured: u64) -> u64 {
+    (measured * 5).div_ceil(4).div_ceil(1_000) * 1_000
+}
+
+/// One plan-15 scenario. `measured` is the reference figure the budget derives from (the constants below,
+/// frozen when the budgets were set); `cu` is the current run's figure — random keys move it a few percent,
+/// which the 1.25 headroom absorbs.
+struct PlanRow {
+    ix: &'static str,
+    scenario: &'static str,
+    cu: u64,
+    measured: u64,
+}
+
+// Reference CU of each plan-15 scenario, the highest figure observed for its statistic across the runs while
+// benchmarking; the budgets derive from these, not from the current run, so a slowdown fails loudly instead of
+// re-baselining itself:
+const REF_SET_ROUTE: u64 = 9_669; // set_payout_route, holder chooses the bank (cheapest of the 5 holders)
+const REF_PAY_WALLET: u64 = 64_197; // pay_batch, 5 holders, wallet route
+const REF_PAY_BANK: u64 = 76_933; // pay_batch, 5 holders, one bank-routed to the agent
+const REF_PAY_REDM: u64 = 91_734; // pay_batch, 5 holders, redemption (pay + burn)
+const REF_CONFIRM: u64 = 11_027; // confirm_bank_payout, agent confirms the bank transfer
+const REF_DEFAULT: u64 = 10_623; // declare_default, unfunded coupon one day past grace
+const REF_ATTACH: u64 = 7_829; // attach_disclosure, registrar anchors the seev.031 hash
+const REF_ADMIT_ACCRUED: u64 = 46_604; // admit_trade, a month into the period (TradeAccrued)
+const REF_HOOK_SNAPSHOT: u64 = 86_085; // snapshot_batch, hooked series, 5 positions
+
+fn set_payout_route_ix(b: &Bond, owner: &Pubkey, route: u8, hash: [u8; 32]) -> Instruction {
+    let investor = investor_pda(&b.series, owner);
+    Instruction::new_with_bytes(
+        qupon_bonds::id(),
+        &qupon_bonds::instruction::SetPayoutRoute {
+            route,
+            bank_ref_hash: hash,
+        }
+        .data(),
+        qupon_bonds::accounts::SetPayoutRoute {
+            owner: *owner,
+            series: b.series,
+            investor,
+            route: route_pda(&investor),
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    )
+}
+
+fn confirm_bank_payout_ix(b: &Bond, agent: &Pubkey, owner: &Pubkey, hash: [u8; 32]) -> Instruction {
+    let action = action_pda(&b.series, 0);
+    Instruction::new_with_bytes(
+        qupon_bonds::id(),
+        &qupon_bonds::instruction::ConfirmBankPayout {
+            reference_hash: hash,
+        }
+        .data(),
+        qupon_bonds::accounts::ConfirmBankPayout {
+            paying_agent: *agent,
+            series: b.series,
+            action,
+            entitlement: entitlement_pda(&action, owner),
+        }
+        .to_account_metas(None),
+    )
+}
+
+/// `pay_ix` with holder `k`'s cash destination replaced (per-holder groups of 5 start at meta 9; the destination
+/// is +3), as the CLI does for a bank-routed holder.
+fn pay_with_dest(env: &Env, b: &Bond, owners: &[Pubkey], k: usize, dest: Pubkey) -> Instruction {
+    let mut ix = env.pay_ix(b, 0, owners);
+    ix.accounts[9 + 5 * k + 3].pubkey = dest;
+    ix
+}
+
+/// Legacy coupon, 5 holders of 10 units, holder 1 bank-routed (plan 15 D6): `set_payout_route` (the PDA-creating
+/// bank choice), `pay_batch` whose bank-routed holder is paid to the paying agent's cash account, and the
+/// agent's `confirm_bank_payout`.
+fn bank_route() -> [u64; 3] {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let h = env.holders(&b, &[10; 5]);
+    let owners: Vec<Pubkey> = h.iter().map(|(k, _)| k.pubkey()).collect();
+    env.intr_snapshotted(&b, &owners);
+    let a: CorporateAction = env.account(&action_pda(&b.series, 0));
+    let required = a.total_net + a.total_tax + a.total_principal;
+    env.issuer_cash(&b);
+    let issuer = env.issuer.insecure_clone();
+    env.fund_cash(&b, &issuer.pubkey(), required);
+    let ix = env.fund_ix(&b, &issuer.pubkey(), 0, required);
+    env.send(&[ix], &[&issuer]).expect("fund");
+    let agent = env.paying_agent.insecure_clone();
+    let create = anchor_spl::associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent(
+        &env.registrar.pubkey(), &agent.pubkey(), &b.cash, &b.cash_tp,
+    );
+    env.send(&[create], &[]).expect("agent cash ata");
+    // The route PDA is paid by its owner, so every holder needs lamports (as tests/payout_route.rs funds them).
+    // `set_payout_route` is measured for every holder, keeping the cheapest: Anchor discovers the route PDA's bump
+    // on-chain, and each extra search step costs ~1.5k CU on random keys — the cheapest of five is the stable
+    // program cost, a single deep draw is key noise (see the Method notes).
+    let mut set_route = u64::MAX;
+    for (owner, holder) in owners.iter().zip(h.iter().map(|(k, _)| k)) {
+        env.svm.airdrop(owner, 1_000_000_000).unwrap();
+        set_route = set_route.min(cu(
+            set_payout_route_ix(&b, owner, 1, [7; 32]),
+            &mut env,
+            &[holder],
+        ));
+    }
+    // Everyone except holder 1 switches back to the wallet: one bank-routed holder in the measured pay batch.
+    for k in [0, 2, 3, 4] {
+        let ix = set_payout_route_ix(&b, &owners[k], 0, [0; 32]);
+        env.send(&[ix], &[&h[k].0]).expect("back to the wallet");
+    }
+    let pay = cu(
+        pay_with_dest(
+            &env,
+            &b,
+            &owners,
+            1,
+            ata(&agent.pubkey(), &b.cash, &b.cash_tp),
+        ),
+        &mut env,
+        &[],
+    );
+    let confirm = cu(
+        confirm_bank_payout_ix(&b, &agent.pubkey(), &owners[1], [9; 32]),
+        &mut env,
+        &[&agent],
+    );
+    [set_route, pay, confirm]
+}
+
+/// Snapshotted but unfunded coupon (plan 15 D4): `attach_disclosure` on the finalized record, then
+/// `declare_default` by an outsider once the payment date plus one series day passed.
+fn unfunded_coupon() -> [u64; 2] {
+    let mut env = Env::new();
+    let b = env.setup_bond();
+    let owners: Vec<Pubkey> = env
+        .holders(&b, &[10, 25, 65])
+        .iter()
+        .map(|(k, _)| k.pubkey())
+        .collect();
+    env.intr_snapshotted(&b, &owners);
+    let attach = cu(
+        Instruction::new_with_bytes(
+            qupon_bonds::id(),
+            &qupon_bonds::instruction::AttachDisclosure { hash: [5; 32] }.data(),
+            qupon_bonds::accounts::AttachDisclosure {
+                registrar: env.registrar.pubkey(),
+                series: b.series,
+                action: action_pda(&b.series, 0),
+            }
+            .to_account_metas(None),
+        ),
+        &mut env,
+        &[],
+    );
+    let a: CorporateAction = env.account(&action_pda(&b.series, 0));
+    env.set_clock(a.payment_at + 86_400);
+    let outsider = Keypair::new();
+    env.svm.airdrop(&outsider.pubkey(), 1_000_000_000).unwrap();
+    let declare = cu(
+        Instruction::new_with_bytes(
+            qupon_bonds::id(),
+            &qupon_bonds::instruction::DeclareDefault {}.data(),
+            qupon_bonds::accounts::DeclareDefault {
+                payer: outsider.pubkey(),
+                series: b.series,
+                action: action_pda(&b.series, 0),
+                escrow: ata(&action_pda(&b.series, 0), &b.cash, &b.cash_tp),
+            }
+            .to_account_metas(None),
+        ),
+        &mut env,
+        &[&outsider],
+    );
+    [attach, declare]
+}
+
+/// `snapshot_batch` over 5 holder positions on a hooked series (plan 15 D1'): every position also writes its
+/// record-date Checkpoint, so this is the expensive variant of the batch (tests/hook.rs's `positions_ix`).
+fn hooked_snapshot() -> u64 {
+    let mut env = Env::new();
+    let cash = env.create_cash_mint(spl_token::ID);
+    let (mint, series) = env.create_bond_mint(BondMintOpts {
+        transfer_hook: true,
+        ..Default::default()
+    });
+    let ix = env.init_series_ix(mint, cash, spl_token::ID, env.params());
+    env.send(&[ix], &[]).expect("init_series");
+    let b = Bond {
+        mint,
+        series,
+        cash,
+        cash_tp: spl_token::ID,
+    };
+    let metas_list =
+        Pubkey::find_program_address(&[EXTRA_METAS_SEED, b.mint.as_ref()], &qupon_bonds::id()).0;
+    let ix = Instruction::new_with_bytes(
+        qupon_bonds::id(),
+        &qupon_bonds::instruction::InitHook {}.data(),
+        qupon_bonds::accounts::InitHook {
+            registrar: env.registrar.pubkey(),
+            series: b.series,
+            mint: b.mint,
+            extra_account_meta_list: metas_list,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+    );
+    env.send(&[ix], &[]).expect("init_hook");
+    let owners: Vec<Pubkey> = env
+        .holders(&b, &[10; 5])
+        .iter()
+        .map(|(k, _)| k.pubkey())
+        .collect();
+    let now = env.now();
+    let ix = env.announce_ix(&b, &env.registrar.pubkey(), intr_args(now));
+    env.send(&[ix], &[]).expect("announce");
+    env.set_clock(now + 61); // past record_at: the hook gate is armed
+    let action = action_pda(&b.series, 0);
+    let mut metas = qupon_bonds::accounts::SnapshotBatch {
+        authority: env.registrar.pubkey(),
+        series: b.series,
+        action,
+        mint: b.mint,
+        system_program: system_program::ID,
+    }
+    .to_account_metas(None);
+    let ro = |k: Pubkey| AccountMeta::new_readonly(k, false);
+    for o in &owners {
+        metas.push(ro(investor_pda(&b.series, o)));
+        metas.push(ro(ata(o, &b.mint, &spl_token_2022::ID)));
+        metas.push(AccountMeta::new(entitlement_pda(&action, o), false));
+        metas.push(AccountMeta::new(checkpoint_pda(&b.series, o), false));
+    }
+    let ix = Instruction::new_with_bytes(
+        qupon_bonds::id(),
+        &qupon_bonds::instruction::SnapshotBatch {}.data(),
+        metas,
+    );
+    cu(ix, &mut env, &[])
 }
 
 /// Highest measured figure for `ix` (plain or worst case) at `holders`.
@@ -308,7 +563,7 @@ fn pct(cu: u64, of: u64) -> String {
     format!("{:.1}%", cu as f64 * 100.0 / of as f64)
 }
 
-fn report(rows: &[Row], spl_token_build: &str) -> String {
+fn report(rows: &[Row], plan: &[PlanRow], spl_token_build: &str) -> String {
     let date = std::process::Command::new("date")
         .args(["-u", "+%F"])
         .output()
@@ -316,7 +571,7 @@ fn report(rows: &[Row], spl_token_build: &str) -> String {
     let date = String::from_utf8_lossy(&date.stdout);
     let mut md = format!(
         "# Compute-unit benchmarks — `qupon_bonds`\n\n\
-         Generated on {} (UTC) by `QUPON_WRITE_CU_REPORT=1 cargo test -p qupon_bonds --test cu_benchmarks` \
+         Generated on {} (UTC) by `QUPON_CU_REPORT=1 cargo test -p qupon_bonds --test cu_benchmarks` \
          (`programs/qupon_bonds/tests/cu_benchmarks.rs`). Every number below comes from that run; do not edit by hand.\n\n\
          ## Measurements\n\n\
          | Instruction | Holders | CU | CU per holder | Marginal CU per holder | Share of the 1.4M limit |\n\
@@ -364,6 +619,26 @@ fn report(rows: &[Row], spl_token_build: &str) -> String {
         )
         .unwrap();
     }
+    md.push_str(
+        "\n## Plan-15 instruction budgets\n\n\
+         Every instruction added in plan 15 (task 91512), one measured scenario each. The budget is the \
+         reference figure × 1.25 rounded up to the next 1,000 CU, and the test asserts the measured transaction \
+         never exceeds it.\n\n\
+         | Instruction | Scenario | CU | Budget | Share of the 1.4M limit |\n\
+         |---|---|---:|---:|---:|\n",
+    );
+    for p in plan {
+        writeln!(
+            md,
+            "| {} | {} | {} | {} | {} |",
+            p.ix,
+            p.scenario,
+            p.cu,
+            budget(p.measured),
+            pct(p.cu, TX_MAX_CU)
+        )
+        .unwrap();
+    }
     write!(
         md,
         "\n\"Highest\" takes the worst-case row where one exists. \"Holders that fit in 600k CU\" extrapolates \
@@ -388,7 +663,13 @@ fn report(rows: &[Row], spl_token_build: &str) -> String {
          most, because it derives each Entitlement PDA on-chain (one bump search per holder).\n\
          - LiteSVM does not enforce the 1232-byte packet size: `pay_batch` with {PAY_BATCH_MAX} holders is a \
          compute figure only; on a cluster that batch needs a v0 transaction with an address lookup table, which \
-         is why the CLI sends {CLI_PAY_BATCH}.\n"
+         is why the CLI sends {CLI_PAY_BATCH}.
+\
+         - The plan-15 table measures `set_payout_route` for all five holders and keeps the cheapest: Anchor \
+         discovers the route PDA's bump on-chain, so one call costs ~1.5k CU more per search step and a single \
+         random-key draw is noise, not program cost. The `pay_batch` rows keep their single draw — the budget's \
+         headroom absorbs the spread.
+"
     )
     .unwrap();
     md
@@ -422,15 +703,22 @@ fn batches_stay_inside_the_compute_limits() {
             .filter(|(n, _)| payable(n))
             .map(|(n, f)| row(PAY_WORST, *n, f.pay)),
     );
+    let mut redemption_pay = 0; // plan-15 row: the redemption `pay_batch` (pay + burn) over 5 holders
     for (name, frozen) in [("retire_batch", false), (RETIRE_WORST, true)] {
-        rows.extend([1, 5, RETIRE_BATCH_MAX].map(|n| row(name, n, retire(n, frozen))));
+        for n in [1, 5, RETIRE_BATCH_MAX] {
+            let (pay, retire_cu) = retire(n, frozen);
+            if n == 5 && !frozen {
+                redemption_pay = pay;
+            }
+            rows.push(row(name, n, retire_cu));
+        }
     }
     let single = &plain
         .iter()
         .find(|(n, _)| *n == CLI_PAY_BATCH)
         .expect("CLI-size coupon")
         .1;
-    let [admit, release, forced] = trades();
+    let [admit, release, forced, admit_accrued] = trades();
     rows.extend(
         [
             ("strike_record", single.strike),
@@ -452,11 +740,88 @@ fn batches_stay_inside_the_compute_limits() {
         }
         _ => "SPL Token 3.5.0, not a devnet dump",
     };
-    let md = report(&rows, spl_token_build);
+    // ---- Plan-15 scenarios (task 91512): budget = reference × 1.25, rounded up to the next 1,000 ----
+    let [set_route, pay_bank, confirm] = bank_route();
+    let [attach, declare] = unfunded_coupon();
+    let plan = [
+        (
+            "set_payout_route",
+            "holder chooses the bank (PDA created, cheapest of 5)",
+            set_route,
+            REF_SET_ROUTE,
+        ),
+        (
+            "pay_batch",
+            "5 holders, wallet route",
+            flow(5, false, false).pay,
+            REF_PAY_WALLET,
+        ),
+        (
+            "pay_batch",
+            "5 holders, one bank-routed to the agent",
+            pay_bank,
+            REF_PAY_BANK,
+        ),
+        (
+            "pay_batch",
+            "5 holders, redemption (pay + burn)",
+            redemption_pay,
+            REF_PAY_REDM,
+        ),
+        (
+            "confirm_bank_payout",
+            "agent confirms the bank transfer",
+            confirm,
+            REF_CONFIRM,
+        ),
+        (
+            "declare_default",
+            "unfunded coupon, one day past grace",
+            declare,
+            REF_DEFAULT,
+        ),
+        (
+            "attach_disclosure",
+            "registrar anchors the seev.031 hash",
+            attach,
+            REF_ATTACH,
+        ),
+        (
+            "admit_trade",
+            "a month into the period (TradeAccrued)",
+            admit_accrued,
+            REF_ADMIT_ACCRUED,
+        ),
+        (
+            "snapshot_batch",
+            "hooked series, 5 positions",
+            hooked_snapshot(),
+            REF_HOOK_SNAPSHOT,
+        ),
+    ]
+    .map(|(ix, scenario, cu, measured)| PlanRow {
+        ix,
+        scenario,
+        cu,
+        measured,
+    });
+
+    let md = report(&rows, &plan, spl_token_build);
     println!("{md}"); // shown when an assertion below fails
 
     for r in &rows {
         assert!(r.cu < TX_MAX_CU, "{} × {}: {} CU", r.name, r.holders, r.cu);
+    }
+    for p in &plan {
+        let b = budget(p.measured);
+        assert!(
+            p.cu <= b,
+            "{} ({}): {} CU exceeds its {} CU budget",
+            p.ix,
+            p.scenario,
+            p.cu,
+            b
+        );
     }
     for (ix, _, _, cli) in BATCHES {
         let sent = at(&rows, ix, cli);
@@ -466,7 +831,10 @@ fn batches_stay_inside_the_compute_limits() {
         );
     }
 
-    if std::env::var("QUPON_WRITE_CU_REPORT").as_deref() == Ok("1") {
+    if ["QUPON_CU_REPORT", "QUPON_WRITE_CU_REPORT"]
+        .iter()
+        .any(|k| std::env::var(k).as_deref() == Ok("1"))
+    {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../reports/cu-benchmarks.md"
