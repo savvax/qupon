@@ -1,7 +1,7 @@
 ---
 id: 1535
 title: bond dossier v2 + board
-agent: glm
+agent: claude
 tier: T1
 depends_on: [1530, 1502, 1525]
 verify: make verify
@@ -81,3 +81,17 @@ Fail. Round 1's server and test items are fixed: the stable comparator, the ISIN
 - Opus design score ≥ 8 — Board about 8. Dossier 6: the yield card contradicts the rest of the page and the ticket is missing.
 
 Design score: 6/10
+
+## Review feedback (round 3, 2026-10-10 12:59) — fix every blocking item first; your previous work is already committed on this branch
+
+### Summary
+Fail on a single item. Both round-2 blockers are fixed exactly as asked. The as-of date is clamped to maturity, and the mock showcase clock is pinned per request. The Almaty Power dossier now reads 'as of Oct 19, 2026' with accrued 2.78 ₸, dirty 1,002.78 ₸ and YTM 9.99%. Its SIMULATED ticket shows 10 bonds → 10,000.00 + 27.78 = 10,027.78 ₸ at both 1440 and 390, and it is coherent with the header, rail, Now bar and KPIs. The register, journal, CSV export, KASE panel, documents and the life-stage board all render correctly in en and ru. vitest boardStage + sandbox: 7/7 pass. The Go tests could not be run here because permission was denied, but the Go code has not changed since round 2 confirmed them green. Design score 8. One blocker: the trade ticket throws during render on a fractional bond count ('1.5') or a clean price below 0.005%, through BigInt(non-integer) and currentYield(0n). When it throws, bonds/error.tsx replaces the whole dossier. The fix is two lines in YieldBlock's useMemo: floor n, and return null when cleanPerUnit ≤ 0.
+
+### Blocking
+- apps/web/src/app/(public)/bonds/[mint]/YieldBlock.tsx:74 — The trade ticket can crash the whole dossier. If you type a fractional bond count such as "1.5" or "0.5", n becomes 1.5 and `BigInt(n)` (lines 80–81) throws a RangeError while useMemo runs during render. Typing a clean price below 0.005% (e.g. "0.001") makes `Math.round(pct*100)` return 0, so cleanPerUnit is 0n and `currentYield()` throws `cleanPrice must be positive` (yield.ts:31). In both cases the render throws, and `(public)/bonds/error.tsx` replaces the entire dossier with the error page. A judge can trigger this with one keystroke in the acceptance-scope ticket on every dossier, including the golden showcase screens.
+  **Fix:** In the useMemo: `const n = Math.max(0, Math.min(Math.floor(Number(units) || 0), 1_000_000));` Then move the cleanPerUnit computation above the guard and return null when it is not positive: `const cleanPerUnit = Number.isFinite(pct) && pct > 0 ? (face * BigInt(Math.round(pct * 100))) / 10_000n : 0n; if (cleanPerUnit <= 0n) return null;`. That shows the existing `ticket.invalid` message instead of throwing. Optionally add `step={1}` to the Bonds TextField.
+
+### Acceptance criteria not met
+- Dossier: header with status incl. IN DEFAULT / DEMO CLOCK, Verify on-chain link, yield block (clean, accrued, dirty, YTM, current yield), LifecycleRail, schedule, terms, KASE panel and documents below the life story, trade ticket accrued split for N bonds — Everything renders: status, Defaulted chip, Demo clock chip, Verify on-chain → /proof/<mint>, the five yield rows, the rail with all actions, the schedule/actions/terms tabs, and KASE plus documents at the bottom (QPNb1 shot). Not met only because the ticket throws on fractional units or a sub-0.005% price, which crashes the page (blocking item).
+
+Design score: 8/10
