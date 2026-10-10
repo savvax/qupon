@@ -1,9 +1,10 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { boFetch } from "@/lib/bo";
 import { formatDate } from "@/lib/format";
+import { toLocale } from "@/i18n/locale";
 import { metaTitle } from "@/lib/meta";
 import { httpHref } from "@/lib/httpUrl";
 import { OrgControls, type OrgDTO } from "./OrgControls";
@@ -16,6 +17,7 @@ export async function generateMetadata() {
  * whose staff share access to their series; create and edit. */
 export default async function AdminOrganizationsPage() {
   const t = await getTranslations("admin.orgs");
+  const locale = toLocale(await getLocale());
   let orgs: OrgDTO[] = [];
   let down = false;
   try {
@@ -75,7 +77,7 @@ export default async function AdminOrganizationsPage() {
       hideBelow: "md",
       render: (o) => (
         <span className="num whitespace-nowrap">
-          {formatDate(new Date(o.createdAt * 1000).toISOString())}
+          {formatDate(new Date(o.createdAt * 1000).toISOString(), locale)}
         </span>
       ),
     },

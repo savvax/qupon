@@ -20,6 +20,15 @@ describe("majorToMinor", () => {
       "10\u202f000,00",
     );
   });
+
+  it("KK groups like RU, never a comma (pre-flight #18/#19)", () => {
+    expect(formatAmount(majorToMinor("10000.00", 2), 2, "kk")).toBe(
+      "10\u202f000,00",
+    );
+    expect(formatAmount(majorToMinor("2034.90", 2), 2, "kk")).toBe(
+      "2\u202f034,90",
+    );
+  });
 });
 
 describe("currencyDecimals (the one table)", () => {

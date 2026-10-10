@@ -108,6 +108,9 @@ const GROUPS: {
   },
 ];
 
+// /ui is the dev-only primitive gallery — intentionally English (design pre-flight #30): shoot en only.
+const EN_ONLY = (route: string) => route === "/ui";
+
 const slug = (route: string) =>
   route
     .replace(/^\//, "")
@@ -243,7 +246,10 @@ for (const group of GROUPS) {
         { name: "NEXT_LOCALE", value: locale, url: baseURL! },
       ]);
       for (const width of [1440, 390]) {
-        for (const route of routes) await check(page, route, locale, width);
+        for (const route of routes) {
+          if (locale !== "en" && EN_ONLY(route)) continue; // #30: the gallery stays English
+          await check(page, route, locale, width);
+        }
       }
     }
   });

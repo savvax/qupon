@@ -1,15 +1,24 @@
 import { Badge } from "@/components/ui/Badge";
+import { bpsToPercent, civilDate, formatDate } from "@/lib/format";
 import { getKaseBond, getKaseNews, type KaseNews } from "@/lib/kase";
 import { getTranslations } from "next-intl/server";
 import { type Locale } from "@/i18n/locale";
 
 /** One last-deals chip: "price × qty" when kase.kz's raw row carries them. */
-function DealChip({ deal }: { deal: Record<string, unknown> }) {
+function DealChip({
+  deal,
+  locale,
+}: {
+  deal: Record<string, unknown>;
+  locale: Locale;
+}) {
   const num = (v: unknown) => (typeof v === "number" ? v : undefined);
   const price = num(deal.price);
   const qty = num(deal.qty) ?? num(deal.quantity);
   const date =
-    typeof deal.date0 === "string" ? deal.date0.slice(0, 10) : undefined;
+    typeof deal.date0 === "string"
+      ? formatDate(civilDate(deal.date0), locale)
+      : undefined;
   const text = [
     price !== undefined ? `${price}%` : undefined,
     qty !== undefined ? `× ${qty}` : undefined,
@@ -81,7 +90,7 @@ export async function KasePanel({
               <dt className="text-xs font-semibold text-n500">{t("price")}</dt>
               <dd className="num mt-0.5 font-bold">
                 {bond.market.price != null
-                  ? `${bond.market.price.toFixed(2)}%`
+                  ? bpsToPercent(Math.round(bond.market.price * 100), locale)
                   : "—"}
               </dd>
             </div>
@@ -91,7 +100,7 @@ export async function KasePanel({
               </dt>
               <dd className="num mt-0.5">
                 {bond.market.bid != null || bond.market.offer != null
-                  ? `${bond.market.bid?.toFixed(2) ?? "—"} / ${bond.market.offer?.toFixed(2) ?? "—"}`
+                  ? `${bond.market.bid != null ? bpsToPercent(Math.round(bond.market.bid * 100), locale) : "—"} / ${bond.market.offer != null ? bpsToPercent(Math.round(bond.market.offer * 100), locale) : "—"}`
                   : "—"}
               </dd>
             </div>
@@ -108,7 +117,11 @@ export async function KasePanel({
             </div>
             <div>
               <dt className="text-xs font-semibold text-n500">{t("date")}</dt>
-              <dd className="num mt-0.5">{bond.market.date || "—"}</dd>
+              <dd className="num mt-0.5">
+                {bond.market.date
+                  ? formatDate(civilDate(bond.market.date), locale)
+                  : "—"}
+              </dd>
             </div>
           </dl>
 
@@ -118,7 +131,7 @@ export async function KasePanel({
               {deals(bond.market.lastDeals)
                 .slice(0, 5)
                 .map((d, i) => (
-                  <DealChip key={i} deal={d} />
+                  <DealChip key={i} deal={d} locale={locale} />
                 ))}
               {deals(bond.market.lastDeals).length === 0 && (
                 <span className="text-xs text-n500">{t("tradesEmpty")}</span>
@@ -133,7 +146,7 @@ export async function KasePanel({
                 {feed.items.slice(0, 3).map((it) => (
                   <li key={it.id} className="text-sm text-n900">
                     <span className="num mr-2 text-xs text-n500">
-                      {it.date.slice(0, 10)}
+                      {formatDate(civilDate(it.date), locale)}
                     </span>
                     {it.subject}
                   </li>

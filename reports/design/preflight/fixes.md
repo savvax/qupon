@@ -1,7 +1,8 @@
-# Design pre-flight fixes (mechanical.md rows)
+# Design pre-flight fixes
 
 One line per fixed row. Task 91545: rows 1, 5, 6, 14, 19, 21, 22, 23, 31 (public pages).
 Task 91546: rows 2, 7, 8, 9, 10, 12, 20, 24, 25, 32 (cabinet/print pages). After-shots: `reports/design/preflight/after/`.
+One line per fixed row. Task 91546: rows 2, 7, 8, 9, 10, 12, 20, 24, 25, 32. Task 91548: rows 17, 18, 19, 20, 30, 32.
 
 ## Task 91545 — public pages
 
@@ -37,3 +38,18 @@ Task 91546: rows 2, 7, 8, 9, 10, 12, 20, 24, 25, 32 (cabinet/print pages). After
 - #22 /sandbox/* — round 1's `whitespace-nowrap` per link was not enough in ru (row still wrapped, "?" alone); fixed per review by grouping restart + HelpMenu in one nowrap inline-flex span (see above) (`apps/web/src/app/(public)/sandbox/[id]/SandboxView.tsx`)
 
 Re-shots: task 91545 used `SWEEP_ROUTES` (env filter in `e2e/sweep.spec.ts`) on /, /bonds, /holder/&lt;addr&gt;, /invite/[token], /proof, /proof/&lt;mint&gt;, /sandbox/fx-{snapshot,defaulted,bank}; round 1 re-shot /holder/&lt;addr&gt; (ru, kk) and /sandbox/fx-{snapshot,defaulted,bank} (ru) at 390, sweep green.
+- #10 /admin/audit, /admin/users — Apply used non-existent `bg-p600` (invisible); both filters now use the shared `<Button>` primary (g600) — verified computed bg `rgb(2,138,41)` at 390 (apps/web/src/app/(cabinet)/admin/{audit,users}/page.tsx)
+- #7 /print/* — scroll hint bumped to `text-[11px] text-n500` (AA on white per language.md §4) (apps/web/src/app/(print)/print/[report]/page.tsx)
+- #7 /print/payouts — payouts `<th>` lost `whitespace-nowrap` (`align-bottom` instead), long ru/kk headers wrap to two lines instead of clipping at the card edge; ru 1440 table now exactly fits the card (apps/web/src/app/(print)/print/[report]/page.tsx)
+## Task 91548 (2026-10-10)
+One line per mechanical.md row fixed. Task 91548 (rows 17, 18, 19, 20, 30 + 32).
+- #17 /admin/audit, /admin/organizations, /issuer/team — audit rows, org table and invite-expiry now render through `formatDate(Time)(iso, locale)`; no ISO strings in the UI (native `<input type="date">` placeholders stay browser-formatted — not controllable per page locale) (`apps/web/src/app/(cabinet)/admin/audit/page.tsx`, `admin/organizations/page.tsx`, `issuer/team/TeamPanel.tsx`)
+- #18 /investor, /bonds/[mint] — amounts already share one grouped path (`lib/ui/amount.ts` via `<Amount>`; verified against rendered ru text: "2 034,90", "10 000,00"); the actual mixed-separator offenders were raw `toFixed` percentages — YTM, current yield, YTM-to-maturity, KASE price/bid/offer and register shares now go through `bpsToPercent(…, locale)` (kk case added to the amount tests) (`HoldingsList.tsx`, `YieldBlock.tsx`, `KasePanel.tsx`, `RegisterPanel.tsx`)
+- #19 footer chip, /admin/system, /bonds/[mint], /registrar/reports — new `formatInt(n, locale)` in `lib/format.ts` (kk groups like ru, never "1,249"); NetworkChip no longer maps kk→en-US, SystemPanel slots/entries no longer use bare `toLocaleString()` (`NetworkChip.tsx`, `SystemPanel.tsx`, `bonds/[mint]/page.tsx`, `registrar/reports/page.tsx`)
+- #20 kk glyph — Manrope now also loads the `cyrillic-ext` subset (Ә Ғ Қ Ң Ө Ү Һ; Ұ and І were already in `cyrillic`): the served CSS carries `U+0460-052F` and kk after-shots render in one face (`apps/web/src/app/layout.tsx`)
+- #30 /ui — dev-only primitive gallery stays English on purpose; excluded from the ru/kk sweep (en shots only) (`apps/web/e2e/sweep.spec.ts`)
+- #32 /admin/system — same root cause as #17: header time already used `formatDateTime(…, locale)`, slots fixed under #19
+## Task 91548 — review round 1 (2026-10-11)
+- #17 /bonds/[mint] — KASE panel quote date, news dates and deal chips render `formatDate(civilDate(…), locale)` — no raw ISO strings remain on the page; the dossier's local `day()` helper now aliases the shared `civilDate` (`KasePanel.tsx`, `bonds/[mint]/page.tsx`, `lib/format.ts`)
+- #17 /admin/users — reset-link expiry is `formatDateTime(link.expiresAt, locale)` (the twin of the fixed TeamPanel invite expiry) (`UserDialog.tsx`)
+- #32 /admin/system — operator SOL balances go through new `formatDecimal(o.sol, 3, locale)`: "4.213" en / "4,213" ru·kk, matching the slot grouping on the same card (`SystemPanel.tsx`, `lib/format.ts`)

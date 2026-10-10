@@ -7,7 +7,7 @@ import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import { TextField } from "@/components/ui/TextField";
 import { cx } from "@/lib/ui/cx";
-import { formatDate } from "@/lib/format";
+import { bpsToPercent, formatDate } from "@/lib/format";
 import { type Locale } from "@/i18n/locale";
 import { accruedSigned } from "@qupon/client/src/lib/accrued";
 import { DayCount, type Ymd, ymd } from "@qupon/client/src/lib/daycount";
@@ -145,14 +145,22 @@ export function YieldBlock({
     ],
     [
       t("current"),
-      calc ? <span className="num">{(calc.cy * 100).toFixed(2)}%</span> : dash,
+      calc ? (
+        <span className="num">
+          {bpsToPercent(Math.round(calc.cy * 10000), locale)}
+        </span>
+      ) : (
+        dash
+      ),
     ],
     [
       <GlossaryTerm key="y" term="ytm">
         {t("ytm")}
       </GlossaryTerm>,
       calc?.y != null && !redeemed ? (
-        <span className="num">{(calc.y * 100).toFixed(2)}%</span>
+        <span className="num">
+          {bpsToPercent(Math.round(calc.y * 10000), locale)}
+        </span>
       ) : (
         dash
       ),

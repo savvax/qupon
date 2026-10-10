@@ -191,7 +191,7 @@ export function RegisterPanel({
                       />
                     </span>
                     <span className="num w-12 text-right text-n600">
-                      {share.toFixed(1)}%
+                      {bpsToPercent(Math.round(share * 10) * 10, locale)}
                     </span>
                   </span>
                 </td>
@@ -238,7 +238,10 @@ export function RegisterPanel({
                 <span className="num">
                   {t("unitsShare", {
                     units: r.units,
-                    share: pct(BigInt(r.units), total).toFixed(1),
+                    share: bpsToPercent(
+                      Math.round(pct(BigInt(r.units), total) * 10) * 10,
+                      locale,
+                    ),
                   })}
                 </span>
                 <Badge status={r.status} />
@@ -318,7 +321,10 @@ export function RegisterPanel({
               <p className="num">
                 {t("unitsShare", {
                   units: open.units,
-                  share: pct(BigInt(open.units), total).toFixed(1),
+                  share: bpsToPercent(
+                    Math.round(pct(BigInt(open.units), total) * 10) * 10,
+                    locale,
+                  ),
                 })}
               </p>
             )}

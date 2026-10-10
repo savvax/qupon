@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { formatDateTime, formatGroupedInt } from "@/lib/format";
+import { formatDateTime, formatDecimal, formatGroupedInt } from "@/lib/format";
 import type { Locale } from "@/i18n/locale";
 
 /** Shape of GET /admin/system (internal/api/system.go); omitted fields are absent. */
@@ -162,7 +162,7 @@ export function SystemPanel() {
                 <span className="ml-auto flex shrink-0 items-center gap-2">
                   {o.low && <Badge tone="danger">{t("ops.low")}</Badge>}
                   <span className="num text-n500 whitespace-nowrap">
-                    {t("ops.sol", { n: o.sol.toFixed(3) })}
+                    {t("ops.sol", { n: formatDecimal(o.sol, 3, locale) })}
                   </span>
                 </span>
               </li>

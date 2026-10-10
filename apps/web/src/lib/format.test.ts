@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   bpsToPercent,
+  civilDate,
   formatAmount,
   formatDate,
   formatDateTime,
+  formatDecimal,
+  formatInt,
   formatMinor,
   frequencyLabel,
   shortKey,
@@ -47,6 +50,32 @@ describe("formatDate / formatDateTime", () => {
     expect(formatDateTime("2027-02-28T18:30:00+05:00")).toBe(
       "2027-02-28 18:30",
     );
+  });
+  it("stamps date-only strings with the Almaty offset (pre-flight #17)", () => {
+    expect(civilDate("2026-10-06")).toBe("2026-10-06T00:00:00+05:00");
+    expect(civilDate("2026-10-06T12:00:00+05:00")).toBe(
+      "2026-10-06T12:00:00+05:00",
+    );
+    expect(formatDate(civilDate("2026-10-06"), "ru")).toBe("06.10.2026");
+  });
+});
+
+describe("formatInt", () => {
+  it("groups slots and counts per locale, kk like ru (pre-flight #19)", () => {
+    expect(formatInt(1249, "en")).toBe("1,249");
+    expect(formatInt(1249, "ru")).toBe("1\u00a0249");
+    // kk must not fall back to en-US: the footer chip showed "1,249" next to ru "1 249"
+    expect(formatInt(1249, "kk")).toBe("1\u00a0249");
+    expect(formatInt(288_123_456, "ru")).toBe("288\u00a0123\u00a0456");
+    expect(formatInt(288_123_456, "en")).toBe("288,123,456");
+  });
+});
+
+describe("formatDecimal", () => {
+  it("renders fixed-precision decimals per locale (pre-flight #32)", () => {
+    expect(formatDecimal(4.213, 3, "en")).toBe("4.213");
+    expect(formatDecimal(4.213, 3, "ru")).toBe("4,213");
+    expect(formatDecimal(4.213, 3, "kk")).toBe("4,213");
   });
 });
 

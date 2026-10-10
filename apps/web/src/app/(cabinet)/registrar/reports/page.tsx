@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { listSeries } from "@/lib/api";
-import { bpsToPercent } from "@/lib/format";
+import { bpsToPercent, formatInt } from "@/lib/format";
 import { toLocale } from "@/i18n/locale";
 import { csvHref, getHolders, printHref, type HoldingRow } from "@/lib/reports";
 
@@ -45,9 +45,7 @@ export default async function RegistrarReportsPage({
       key: "units",
       header: tc("units"),
       align: "right",
-      render: (h) => (
-        <span className="num">{h.units.toLocaleString("en-US")}</span>
-      ),
+      render: (h) => <span className="num">{formatInt(h.units, locale)}</span>,
     },
     {
       key: "investorType",

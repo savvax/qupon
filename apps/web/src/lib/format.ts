@@ -4,7 +4,6 @@ export function shortKey(key: string, head = 4, tail = 4): string {
   return `${key.slice(0, head)}…${key.slice(-tail)}`;
 }
 
-/** YYYY-MM-DD in Asia/Almaty from an ISO 8601 string (API sends +05:00). */
 import { type Locale } from "@/i18n/locale";
 
 /**
@@ -42,6 +41,32 @@ export function formatDateTime(iso: string, locale?: string): string {
   return locale
     ? `${formatDate(iso, locale)}, ${time}`
     : `${formatDate(iso)} ${time}`;
+}
+
+/** A date-only string is a civil Almaty date; stamp the +05:00 offset so formatDate
+ * (UTC parse) never shifts it a day — one helper shared by the bond page and the KASE panel (pre-flight #17). */
+export function civilDate(iso: string): string {
+  return iso.length > 10 ? iso : `${iso}T00:00:00+05:00`;
+}
+
+/** Grouped integer (slots, counts): EN "288,123,456", RU/KK "288 123 456". One path for every slot
+ * and count in the UI — kk groups like ru, so the footer chip never shows "1,249" next to "1 249". */
+export function formatInt(n: number, locale?: string): string {
+  // one grouping path (pre-flight #17): delegate to formatGroupedInt
+  return formatGroupedInt(n, locale === "ru" || locale === "kk" ? locale : "en");
+}
+
+/** Fixed-precision decimal per locale: EN "4.213", RU/KK "4,213" — SOL balances must not show a dot
+ * decimal next to ru-grouped slots on the same card (pre-flight #32). */
+export function formatDecimal(
+  n: number,
+  digits: number,
+  locale?: string,
+): string {
+  return new Intl.NumberFormat(
+    locale === "ru" || locale === "kk" ? "ru-RU" : "en-US",
+    { minimumFractionDigits: digits, maximumFractionDigits: digits },
+  ).format(n);
 }
 
 /** 1000 bps → "10.00%" (EN) / "10,00 %" (RU, KK). */

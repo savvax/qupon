@@ -7,6 +7,7 @@ const bo = vi.hoisted(() => ({ orgs: [] as Record<string, unknown>[] }));
 
 vi.mock("next-intl/server", () => ({
   getTranslations: async (ns: string) => (key: string) => `${ns}.${key}`,
+  getLocale: async () => "en",
 }));
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,

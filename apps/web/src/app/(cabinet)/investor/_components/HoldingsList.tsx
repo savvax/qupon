@@ -166,7 +166,7 @@ function Holding({
               </div>
               {val.ytm !== undefined && (
                 <div className="num text-xs text-n600">
-                  {t("ytm")} {(val.ytm * 100).toFixed(2)}%
+                  {t("ytm")} {bpsToPercent(Math.round(val.ytm * 10000), locale)}
                   {price === undefined ? ` · ${t("atPar")}` : ""}
                 </div>
               )}

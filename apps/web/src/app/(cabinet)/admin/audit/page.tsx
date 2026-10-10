@@ -5,8 +5,8 @@ import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { boFetch } from "@/lib/bo";
 import { formatDateTime } from "@/lib/format";
-import { metaTitle } from "@/lib/meta";
 import { toLocale } from "@/i18n/locale";
+import { metaTitle } from "@/lib/meta";
 
 type AuditEntryRow = {
   id: number;

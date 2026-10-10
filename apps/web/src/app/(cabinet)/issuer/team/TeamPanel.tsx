@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { DataTable, type Column } from "@/components/ui/DataTable";
@@ -9,6 +9,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { Select, type SelectOption } from "@/components/ui/Select";
 import { TextField } from "@/components/ui/TextField";
 import { boPost, boSend } from "@/lib/boClient";
+import { formatDateTime } from "@/lib/format";
 import { useRunWrite } from "@/lib/useRunWrite";
 
 export type Member = {
@@ -33,6 +34,7 @@ export function TeamPanel({
   meId: number;
 }) {
   const t = useTranslations("org.team");
+  const locale = useLocale();
   const runWrite = useRunWrite();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -159,7 +161,7 @@ export function TeamPanel({
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-n600">
                 {t("expires", {
-                  date: new Date(link.expiresAt).toLocaleString(),
+                  date: formatDateTime(link.expiresAt, locale),
                 })}
               </span>
               <Button

@@ -31,7 +31,13 @@ import {
   type EntitlementDTO,
   type ScheduleItem,
 } from "@/lib/api";
-import { bpsToPercent, formatDate, formatDateTime } from "@/lib/format";
+import {
+  bpsToPercent,
+  civilDate,
+  formatDate,
+  formatDateTime,
+  formatInt,
+} from "@/lib/format";
 import { getKaseSeriesTicker } from "@/lib/kase";
 import { moneyFlowOf } from "@/lib/moneyFlow";
 import { getNetwork } from "@/lib/network";
@@ -298,8 +304,7 @@ export default async function BondPage({
         .filter((ev) => (ev.actionPda ?? ev.action_pda) === pda)
         .map((ev) => ev.sig),
     ).size;
-  const day = (ymd: string) =>
-    ymd.length > 10 ? ymd : `${ymd}T00:00:00+05:00`;
+  const day = civilDate;
   const railStatus = (a?: ActionDTO): RailNode["status"] | undefined =>
     !a
       ? undefined
@@ -655,9 +660,7 @@ export default async function BondPage({
             label={t("kpi.outstanding")}
             value={
               <span className="num">
-                {Number(series.totalIssued).toLocaleString(
-                  locale === "ru" ? "ru-RU" : "en-US",
-                )}
+                {formatInt(Number(series.totalIssued), locale)}
               </span>
             }
           />

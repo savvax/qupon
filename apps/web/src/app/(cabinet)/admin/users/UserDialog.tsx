@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
@@ -161,6 +161,7 @@ function ResetLinkModal({
   onClose: () => void;
 }) {
   const t = useTranslations("admin.users.resetLink");
+  const locale = useLocale();
   const runWrite = useRunWrite();
   const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(
     null,
@@ -237,7 +238,7 @@ function ResetLinkModal({
           />
           <p className="text-xs text-n500">
             {t("expires", {
-              time: formatDateTime(link.expiresAt),
+              time: formatDateTime(link.expiresAt, locale),
             })}
           </p>
         </div>
