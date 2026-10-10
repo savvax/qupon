@@ -112,7 +112,8 @@ export default async function AdminOverviewPage() {
           {t("lead")}
         </p>
       </header>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+      {/* auto-rows-fr: every KPI row is equally tall, so wrapped kk labels never stagger the grid (pre-flight #25). */}
+      <div className="auto-rows-fr grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         {cards.map((c) => (
           <Link
             key={c.href + c.label}

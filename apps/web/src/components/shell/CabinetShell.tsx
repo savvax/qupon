@@ -71,7 +71,11 @@ export function CabinetShell({
         <div className="px-5 pb-2 text-xs font-bold tracking-wider text-n500 uppercase">
           {t(`roles.${role}`)}
         </div>
-        <nav aria-label={t("nav")} data-tour="nav" className="flex flex-col gap-0.5 px-3">
+        <nav
+          aria-label={t("nav")}
+          data-tour="nav"
+          className="flex flex-col gap-0.5 px-3"
+        >
           {nav.map((n) => (
             <Link
               key={n.href}
@@ -174,8 +178,10 @@ export function CabinetShell({
             )}
           >
             {n.icon}
-            {/* 10 px: the longest single words ("Пользователи", "Верификация") fit a fifth of 360 px */}
-            <span className="line-clamp-2 max-w-full text-[10px] tracking-tight hyphens-auto">
+            {/* 10 px: the longest single words ("Пользователи", "Верификация") fit a fifth of 360 px.
+                min-h-[2lh]: every label slot reserves two lines, so wrapped ru/kk labels ("Денежные
+                активы") keep their icon on the same baseline as the rest (pre-flight #11/#12). */}
+            <span className="line-clamp-2 min-h-[2lh] max-w-full text-[10px] tracking-tight hyphens-auto">
               {n.label}
             </span>
           </Link>

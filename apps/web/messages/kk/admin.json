@@ -113,7 +113,7 @@
     "kpi": {
       "users": "Пайдаланушылар",
       "pendingKyc": "Күтудегі KYC",
-      "pendingKycHint": "қарау SIMULATED",
+      "pendingKycHint": "тексеру: SIMULATED",
       "series": "Шығарылымдар",
       "openActions": "Ашық әрекеттер",
       "lowOperators": "Балансы төмен операторлар",

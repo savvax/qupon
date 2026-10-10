@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/components/shell/icons";
 import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -117,6 +117,14 @@ export default async function PrintReportPage({
   const totals: PayoutTotals[] = isHolders
     ? []
     : (data as StatementReport).totals;
+  // Enum columns are translated through the messages files (never raw API values, pre-flight #8).
+  const typeLabel = (v: string) => (t.has(`types.${v}`) ? t(`types.${v}`) : v);
+  const residencyLabel = (v: string) =>
+    t.has(`residencies.${v}`) ? t(`residencies.${v}`) : v;
+  const kindLabel = (v: string) => (t.has(`kinds.${v}`) ? t(`kinds.${v}`) : v);
+  const principalCol = payouts.some((p: PayoutRow) => p.principal > 0);
+  // Row count of the payout table (the bank sub-line below a row spans all of it, pre-flight #9).
+  const payoutCols = principalCol ? 10 : 9;
 
   const meta: [string, string][] = [
     [t("meta.network"), data.network],
@@ -213,7 +221,7 @@ export default async function PrintReportPage({
         </div>
       </div>
 
-      <article className="rounded-card bg-n0 p-8 shadow-card print:rounded-none print:p-0 print:shadow-none">
+      <article className="rounded-card bg-n0 p-4 shadow-card sm:p-8 print:rounded-none print:p-0 print:shadow-none">
         <header className="flex items-baseline justify-between border-b border-n200 pb-4">
           <h1 className="text-xl font-extrabold tracking-tight">
             Qupon · {t(`print.${slug}Title`)}
@@ -234,15 +242,19 @@ export default async function PrintReportPage({
         {summaryRows.length > 0 && (
           <dl className="mt-3 grid gap-x-8 gap-y-1 border-t border-n100 pt-3 text-xs sm:grid-cols-2">
             {summaryRows.map(([k, v]) => (
-              <div key={k} className="flex gap-2">
+              <div key={k} className="flex flex-wrap gap-x-2">
                 <dt className="font-semibold text-n500">{k}:</dt>
                 <dd className="num min-w-0 break-words text-n800">{v}</dd>
               </div>
             ))}
           </dl>
         )}
-        {/* Wide report tables scroll inside their own box on phones (§5.8: no page-level sideways scroll). */}
-        <div className="mt-6 overflow-x-auto print:overflow-visible">
+        {/* Wide report tables scroll inside their own box on phones (§5.8: no page-level sideways scroll);
+            the hint below says so, because a clipped table reads as broken (pre-flight #7). */}
+        <p className="mt-4 text-[10px] text-n400 sm:hidden print:hidden">
+          {t("print.scrollHint")}
+        </p>
+        <div className="mt-2 overflow-x-auto print:mt-6 print:overflow-visible">
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="border-b border-n300 text-left">
@@ -292,8 +304,12 @@ export default async function PrintReportPage({
                     <tr key={h.owner} className="border-b border-n100">
                       <td className="num px-1 py-1.5">{short(h.owner)}</td>
                       <td className="num px-1 py-1.5 text-right">{h.units}</td>
-                      <td className="px-1 py-1.5">{h.investorType}</td>
-                      <td className="px-1 py-1.5">{h.residency}</td>
+                      <td className="px-1 py-1.5">
+                        {typeLabel(h.investorType)}
+                      </td>
+                      <td className="px-1 py-1.5">
+                        {residencyLabel(h.residency)}
+                      </td>
                       <td className="num px-1 py-1.5 text-right">
                         {h.taxBps / 100}%
                       </td>
@@ -304,67 +320,77 @@ export default async function PrintReportPage({
                     </tr>
                   ))
                 : payouts.map((p) => (
-                    <tr
-                      key={`${p.action}-${p.owner}`}
-                      className="border-b border-n100"
-                    >
-                      <td className="num px-1 py-1.5 whitespace-nowrap">
-                        {formatDate(p.paymentDate, locale)}
-                      </td>
-                      <td className="px-1 py-1.5 whitespace-nowrap">
-                        {p.series}
-                        <span className="num ml-1.5 text-n400">{p.isin}</span>
-                      </td>
-                      <td className="px-1 py-1.5">{p.kind}</td>
-                      <td className="num px-1 py-1.5 text-right">{p.units}</td>
-                      <td className="px-1 py-1.5 text-right">
-                        <Amount
-                          minor={p.gross}
-                          currency={p.currency}
-                          decimals={p.decimals}
-                          locale={locale}
-                        />
-                      </td>
-                      <td className="px-1 py-1.5 text-right">
-                        <Amount
-                          minor={p.tax}
-                          currency={p.currency}
-                          decimals={p.decimals}
-                          locale={locale}
-                        />
-                      </td>
-                      <td className="px-1 py-1.5 text-right">
-                        <Amount
-                          minor={p.net}
-                          currency={p.currency}
-                          decimals={p.decimals}
-                          locale={locale}
-                        />
-                      </td>
-                      {p.principal > 0 && (
+                    <Fragment key={`${p.action}-${p.owner}`}>
+                      <tr className="border-b border-n100">
+                        <td className="num px-1 py-1.5 whitespace-nowrap">
+                          {formatDate(p.paymentDate, locale)}
+                        </td>
+                        <td className="px-1 py-1.5 whitespace-nowrap">
+                          {p.series}
+                          <span className="num ml-1.5 text-n400">{p.isin}</span>
+                        </td>
+                        <td className="px-1 py-1.5">{kindLabel(p.kind)}</td>
+                        <td className="num px-1 py-1.5 text-right">
+                          {p.units}
+                        </td>
                         <td className="px-1 py-1.5 text-right">
                           <Amount
-                            minor={p.principal}
+                            minor={p.gross}
                             currency={p.currency}
                             decimals={p.decimals}
                             locale={locale}
                           />
                         </td>
-                      )}
-                      <td className="px-1 py-1.5">
-                        <Badge status={p.status} />
-                        {/* Bank-routed row (plan 15): short note under the pill — the transfer is SIMULATED. */}
-                        {payoutRouteView(p).bank && (
-                          <span className="mt-0.5 block whitespace-normal text-[10px] text-n500">
+                        <td className="px-1 py-1.5 text-right">
+                          <Amount
+                            minor={p.tax}
+                            currency={p.currency}
+                            decimals={p.decimals}
+                            locale={locale}
+                          />
+                        </td>
+                        <td className="px-1 py-1.5 text-right">
+                          <Amount
+                            minor={p.net}
+                            currency={p.currency}
+                            decimals={p.decimals}
+                            locale={locale}
+                          />
+                        </td>
+                        {p.principal > 0 && (
+                          <td className="px-1 py-1.5 text-right">
+                            <Amount
+                              minor={p.principal}
+                              currency={p.currency}
+                              decimals={p.decimals}
+                              locale={locale}
+                            />
+                          </td>
+                        )}
+                        <td className="px-1 py-1.5">
+                          <Badge status={p.status} />
+                        </td>
+                        {/* nowrap: "Actn…1111" stays one line at every width (pre-flight #9). */}
+                        <td className="num px-1 py-1.5 whitespace-nowrap">
+                          {short(p.action)}
+                        </td>
+                      </tr>
+                      {/* Bank-routed row (plan 15): the SIMULATED-transfer note gets its own
+                        sub-row so payout row heights stay even (pre-flight #9). */}
+                      {payoutRouteView(p).bank && (
+                        <tr className="border-b border-n100">
+                          <td
+                            colSpan={payoutCols}
+                            className="px-1 pb-1.5 text-[10px] text-n500"
+                          >
                             {payoutRouteView(p).confirmed
                               ? t("bank.paidViaBankShort")
                               : t("bank.awaitingBankShort")}{" "}
                             · {t("bank.agentSimulated")}
-                          </span>
-                        )}
-                      </td>
-                      <td className="num px-1 py-1.5">{short(p.action)}</td>
-                    </tr>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   ))}
             </tbody>
             {!isHolders && totals.length > 0 && (

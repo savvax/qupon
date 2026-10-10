@@ -288,16 +288,13 @@ export function UserRowActions({
     }
   };
 
-  if (user.isDemo) return <span className="text-xs text-n500">{t("demoReadOnly")}</span>;
+  if (user.isDemo)
+    return <span className="text-xs text-n500">{t("demoReadOnly")}</span>;
 
   return (
     <>
-      <span className="flex justify-end gap-2">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setResetOpen(true)}
-        >
+      <span className="flex min-w-0 flex-wrap justify-end gap-2">
+        <Button size="sm" variant="ghost" onClick={() => setResetOpen(true)}>
           {t("resetLink.title")}
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setOpen(true)}>

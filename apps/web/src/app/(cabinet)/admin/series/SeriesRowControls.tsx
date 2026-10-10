@@ -187,7 +187,7 @@ export function SeriesRowControls({
         <div className="w-24 shrink-0">
           <label
             htmlFor={`kase-${mint}`}
-            className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-n500"
+            className="mb-1 block text-[13px] font-semibold text-n700"
           >
             {t("kaseTicker")}
           </label>

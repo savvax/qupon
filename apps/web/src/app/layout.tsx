@@ -10,7 +10,9 @@ import { LOCALES, type Locale, loadMessages } from "@/i18n/request";
 import { getNetwork } from "@/lib/network";
 
 const manrope = Manrope({
-  subsets: ["latin", "cyrillic"],
+  // cyrillic-ext carries the Kazakh-only glyphs (Ұ/ұ Ұ°04B0/1, Қ/қ, Ә/ә…); without it Manrope
+  // falls back mid-word and Kazakh looks double-struck (design pre-flight #20).
+  subsets: ["latin", "cyrillic", "cyrillic-ext"],
   variable: "--font-manrope",
   display: "swap",
 });

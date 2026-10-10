@@ -1,10 +1,11 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { boFetch } from "@/lib/bo";
 import { formatDateTime } from "@/lib/format";
 import { metaTitle } from "@/lib/meta";
+import { toLocale } from "@/i18n/locale";
 
 type AuditEntryRow = {
   id: number;
@@ -44,6 +45,9 @@ export default async function AdminAuditPage({
 }) {
   const sp = await searchParams;
   const t = await getTranslations("admin.audit");
+  // Locale-aware dates like every neighbouring screen (pre-flight #17/#32); without a locale
+  // formatDateTime prints ISO "2026-10-10 19:13".
+  const locale = toLocale(await getLocale());
   const q = new URLSearchParams();
   for (const k of FILTER_KEYS) {
     const v = sp[k]?.trim();
@@ -68,7 +72,7 @@ export default async function AdminAuditPage({
       header: t("colTime"),
       render: (e) => (
         <span className="num whitespace-nowrap">
-          {formatDateTime(new Date(e.ts * 1000).toISOString())}
+          {formatDateTime(new Date(e.ts * 1000).toISOString(), locale)}
         </span>
       ),
     },
@@ -191,7 +195,7 @@ export default async function AdminAuditPage({
               )}
             </select>
           </div>
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-2 col-span-2 md:col-span-1">
             <div className="min-w-0 flex-1">
               <label
                 htmlFor="f-ok"
