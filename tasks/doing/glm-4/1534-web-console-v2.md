@@ -60,3 +60,17 @@ The feature set is mostly in place: the stepper with times, txs and ISO download
 - Opus design score ≥ 8 — Score 6: overlapping actor chips, badge overflow on the board, a misleading 'Next' on a defaulted action, and contradictory money figures on the REDM screen.
 
 Design score: 6/10
+
+## Review feedback (round 2, 2026-10-10 19:26) — fix every blocking item first; your previous work is already committed on this branch
+
+### Summary
+All five round-1 blockers are fixed and verified in code, tests and fresh screenshots. Defaulted counts as done for the earlier steps, with a test asserting no current step. The confirm-bank toast links the tx, with an e2e assertion. The REDM money matches the brief and both panels agree on 105,000.00. Short 'Anyone' chips fit their stepper columns at 1440. Board badges wrap in EN and RU. Web unit tests pass: 274 passed, 1 skipped (pre-existing). Design score is 8. One blocking data bug remains. The new QPNb1 fixtures (INTR0006, REDM0007) were added to the `[MINT_BTRK]` actions array. So the registrar dashboard NowBar reads 'Confirm bank payout · BTRKdemo' over QPNb1-REDM-0005, the actions list labels both under BTRKdemo, and the public BTRK bond page lists a defaulted KZT coupon. The fix is to move the two objects into the `[MINT_QPNB1]` array and re-run e2e.
+
+### Blocking
+- apps/web/src/mocks/api.ts:394 — The two new QPNb1 fixtures (ACTION_PDA_6 INTR0006, ACTION_PDA_7 REDM0007; seriesMint MINT_QPNB1, KZT, corpId QPNb1-*) sit inside the `[MINT_BTRK]` array. listActions(mint) is keyed by that array, so every screen that pairs actions with the series they were listed under labels them BTRKdemo. On the registrar dashboard this task rebuilt, the top NowBar reads 'Next: Confirm bank payout · BTRKdemo' over 'QPNb1-REDM-0005' (registrar-en-1440.png, registrar-ru-1440.png, ru-390). The /registrar/actions list shows both under the BTRKdemo series column. The public /bonds/BTRKDeM0… page lists a defaulted KZT coupon under a USDC series. That is contradictory data on the golden screen, the same class of defect as round 1's money mismatch.
+  **Fix:** Cut the two objects (mocks/api.ts lines 394–485, ACTION_PDA_6 and ACTION_PDA_7) out of the `[MINT_BTRK]: [...]` array and paste them at the end of the `[MINT_QPNB1]: [...]` array (before its closing `],` at line ~307). Keep seriesMint, corpIds and amounts unchanged. Then run the full web e2e suite (`pnpm --filter @qupon/web exec playwright test`), because QPNb1 series/investor/bonds specs may now see two more actions. Update any count assertion to the new truth instead of weakening it. Re-shoot /registrar and confirm the NowBar reads '… · QPNb1'.
+
+### Acceptance criteria not met
+- Dense registrar board, tickers never truncated at 1440/390, alerts for overdue funding and pending bank confirmations — The 7-column board wraps badges ('Bondholder meeting'/'Собрание держателей' stay inside cards). Tickers are whole, the Defaulted column is red with a count, and the alerts for default and bank-pending are present and unit-tested. But the dashboard NowBar pairs QPNb1-REDM-0005 with ticker BTRKdemo because of the fixture placement (blocking item).
+
+Design score: 8/10
