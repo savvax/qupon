@@ -54,12 +54,11 @@ export function payoutRouteView(
   };
 }
 
-/** Late-payout lateness for the issuer report: 1800 → "30 min", 5400 → "1 h 30 min". */
-export function formatLateSeconds(s: number): string {
-  if (s <= 0) return "—";
+/** Late-payout lateness split for i18n: 1800 → {h:0,m:30}, 5400 → {h:1,m:30}, none → null. */
+export function formatLateSeconds(s: number): { h: number; m: number } | null {
+  if (s <= 0) return null;
   const mins = Math.round(s / 60);
-  const h = Math.floor(mins / 60);
-  return h > 0 ? `${h} h ${mins % 60} min` : `${mins} min`;
+  return { h: Math.floor(mins / 60), m: mins % 60 };
 }
 
 export type PayoutTotals = {

@@ -41,7 +41,9 @@
       "cured": "Дефолт жойылды",
       "late": "Кешігу",
       "bank": "Банк төлемдері (SIMULATED)",
-      "bankCounts": "{confirmed} растырылды · {pending} банкті күтуде"
+      "bankCounts": "{confirmed} растырылды · {pending} банкті күтуде",
+      "lateMin": "{m} мин",
+      "lateHM": "{h} сағ {m} мин"
     }
   },
   "bank": {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/components/shell/icons";
 import { notFound, redirect } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -144,17 +145,22 @@ export default async function PrintReportPage({
   // the bank-routed payout counts (bank transfers SIMULATED). Absent when no funding events were ingested.
   const summary =
     slug === "payouts" ? ((data as IssuerPayoutsReport).action ?? null) : null;
-  const summaryRows: [string, string][] = summary
+  const late = summary ? formatLateSeconds(summary.lateSeconds) : null;
+  // Amounts render through <Amount> like every other number on the page: locale grouping + currency sign.
+  const amount = (a: { minor: string; currency: string }) => (
+    <Amount minor={a.minor} currency={a.currency} locale={locale} />
+  );
+  const summaryRows: [string, ReactNode][] = summary
     ? [
-        [t("issuer.summary.required"), summary.required.display],
-        [t("issuer.summary.funded"), summary.funded.display],
+        [t("issuer.summary.required"), amount(summary.required)],
+        [t("issuer.summary.funded"), amount(summary.funded)],
         ...(summary.defaultedAt
           ? ([
               [
                 t("issuer.summary.defaulted"),
                 formatDateTime(summary.defaultedAt, locale),
               ],
-            ] as [string, string][])
+            ] as [string, ReactNode][])
           : []),
         ...(summary.curedAt
           ? ([
@@ -162,15 +168,17 @@ export default async function PrintReportPage({
                 t("issuer.summary.cured"),
                 formatDateTime(summary.curedAt, locale),
               ],
-            ] as [string, string][])
+            ] as [string, ReactNode][])
           : []),
-        ...(summary.lateSeconds > 0
+        ...(late
           ? ([
               [
                 t("issuer.summary.late"),
-                formatLateSeconds(summary.lateSeconds),
+                late.h > 0
+                  ? t("issuer.summary.lateHM", { h: late.h, m: late.m })
+                  : t("issuer.summary.lateMin", { m: late.m }),
               ],
-            ] as [string, string][])
+            ] as [string, ReactNode][])
           : []),
         ...(summary.bankConfirmed + summary.bankPending > 0
           ? ([
@@ -181,7 +189,7 @@ export default async function PrintReportPage({
                   pending: summary.bankPending,
                 }),
               ],
-            ] as [string, string][])
+            ] as [string, ReactNode][])
           : []),
       ]
     : [];

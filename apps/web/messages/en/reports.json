@@ -41,7 +41,9 @@
       "cured": "Cured at",
       "late": "Late by",
       "bank": "Bank payouts (SIMULATED)",
-      "bankCounts": "{confirmed} confirmed · {pending} awaiting bank"
+      "bankCounts": "{confirmed} confirmed · {pending} awaiting bank",
+      "lateMin": "{m} min",
+      "lateHM": "{h} h {m} min"
     }
   },
   "bank": {

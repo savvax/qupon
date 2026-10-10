@@ -68,9 +68,9 @@ describe("bank-routed payout rows (plan 15)", () => {
     });
   });
 
-  it("formats the default's lateness", () => {
-    expect(formatLateSeconds(1800)).toBe("30 min");
-    expect(formatLateSeconds(5400)).toBe("1 h 30 min");
-    expect(formatLateSeconds(0)).toBe("—");
+  it("splits the default's lateness for i18n", () => {
+    expect(formatLateSeconds(1800)).toEqual({ h: 0, m: 30 });
+    expect(formatLateSeconds(5400)).toEqual({ h: 1, m: 30 });
+    expect(formatLateSeconds(0)).toBeNull();
   });
 });

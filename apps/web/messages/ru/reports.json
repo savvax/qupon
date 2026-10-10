@@ -41,7 +41,9 @@
       "cured": "Дефолт устранён в",
       "late": "Опоздание",
       "bank": "Банковские выплаты (SIMULATED)",
-      "bankCounts": "{confirmed} подтверждено · {pending} ожидает банк"
+      "bankCounts": "{confirmed} подтверждено · {pending} ожидает банк",
+      "lateMin": "{m} мин",
+      "lateHM": "{h} ч {m} мин"
     }
   },
   "bank": {
