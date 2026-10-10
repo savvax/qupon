@@ -328,13 +328,13 @@ export function ProvenOnDevnet() {
 }
 
 /** Plan-15 mechanics, one devnet tx each (reports/demo-plan15.md); `step` is the demo step name, `anchor` the /learn section. */
-const BEYOND = [
+export const BEYOND = [
   {
     key: "default",
     icon: "bell",
     anchor: "default",
     step: "action:default",
-    tx: "2BvYuaWjSbNxVv3Lb618fTsxeWcNeM8DxZt8Kde33bdXJDLLUhxRs8uWMMAuExaVnf4ERePP75bp2fRGjfgFiBGF",
+    tx: "2BvYuaWjSbNxVv3Lb618fTsxeWcNeM8DxZT8Kde33bdXJDLLUhxRs8uWMMAuExaVnf4ERePP75bp2fRGjfgFiBGF",
   },
   {
     key: "bank",
