@@ -5,11 +5,11 @@ test("public shell renders and switches language", async ({ page }) => {
   await expect(
     page.getByRole("link", { name: /^bonds$|^облигации$/i }).first(),
   ).toBeVisible();
-  await page.getByRole("button", { name: "ru", exact: true }).click();
+  await page.getByRole("radio", { name: "Русский" }).click();
   await expect(
     page.getByRole("link", { name: /^Облигации$/ }).first(),
   ).toBeVisible();
-  await page.getByRole("button", { name: "en", exact: true }).click();
+  await page.getByRole("radio", { name: "English" }).click();
   await expect(
     page.getByRole("link", { name: /^Bonds$/ }).first(),
   ).toBeVisible();

@@ -39,7 +39,7 @@ test("activity: on-chain events and the operator audit, EN + RU, 1440 + 390", as
   await expect(audit).toContainText("OK");
 
   // RU renders the same page with real translations.
-  await page.getByRole("button", { name: "ru", exact: true }).click();
+  await page.getByRole("radio", { name: "Русский" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Журнал");
   await expect(audit).toContainText("Успешно");
   await page.screenshot({
@@ -53,7 +53,7 @@ test("activity: on-chain events and the operator audit, EN + RU, 1440 + 390", as
     path: "../../reports/ui/activity-ru-390.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "en", exact: true }).click();
+  await page.getByRole("radio", { name: "English" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Activity");
   await page.screenshot({
     path: "../../reports/ui/activity-en-390.png",
@@ -93,7 +93,7 @@ test("autopilot: pending approval queue, approve runs the step, EN + RU, 1440 + 
     "Snapshot holders",
   );
 
-  await page.getByRole("button", { name: "ru", exact: true }).click();
+  await page.getByRole("radio", { name: "Русский" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Согласование автопилота",
   );
@@ -108,7 +108,7 @@ test("autopilot: pending approval queue, approve runs the step, EN + RU, 1440 + 
     path: "../../reports/ui/autopilot-ru-390.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "en", exact: true }).click();
+  await page.getByRole("radio", { name: "English" }).click();
   await page.getByRole("tab", { name: /Pending/ }).click();
   await page.screenshot({
     path: "../../reports/ui/autopilot-en-390.png",

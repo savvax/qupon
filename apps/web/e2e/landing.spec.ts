@@ -9,11 +9,11 @@ test("landing: hero, five steps, RU, no console errors", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator("#how li")).toHaveCount(5);
   await expect(page.locator("#simulated")).toContainText("Implemented");
-  await page.getByRole("button", { name: "ru", exact: true }).click();
+  await page.getByRole("radio", { name: "Русский" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     "Купоны, погашения",
   );
-  await page.getByRole("button", { name: "en", exact: true }).click();
+  await page.getByRole("radio", { name: "English" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     "Every coupon",
   );

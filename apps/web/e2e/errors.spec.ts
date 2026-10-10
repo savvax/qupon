@@ -25,7 +25,7 @@ test("404 page renders in the new design, EN and RU", async ({ page }) => {
   ).toBeVisible();
   await page.screenshot({ path: "../../reports/ui/errors-404-en.png" });
 
-  await page.getByRole("button", { name: "ru", exact: true }).click();
+  await page.getByRole("radio", { name: "Русский" }).click();
   await expect(
     page.getByRole("main").getByText("Страница не найдена"),
   ).toBeVisible();
@@ -46,7 +46,7 @@ test("500 page (mock registrar outage) renders the error boundary", async ({
   ).toBeVisible();
   await page.screenshot({ path: "../../reports/ui/errors-500-en.png" });
 
-  await page.getByRole("button", { name: "ru", exact: true }).click();
+  await page.getByRole("radio", { name: "Русский" }).click();
   await expect(page.getByText("Сервис регистратора недоступен")).toBeVisible();
   await page.screenshot({ path: "../../reports/ui/errors-500-ru.png" });
 });
