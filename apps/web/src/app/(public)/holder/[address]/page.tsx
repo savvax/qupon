@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Kpi } from "@/components/ui/Kpi";
+import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import {
   getHolder,
   type HolderEntitlement,
@@ -47,13 +48,18 @@ export default async function HolderPage({
   }
 
   const paid = h.entitlements.filter((e) => e.status === "Paid");
-  const received = paid.reduce(
-    (acc, e) =>
-      acc +
-      BigInt(e.net?.minor ?? e.gross?.minor ?? "0") +
-      BigInt(e.principal?.minor ?? "0"),
-    0n,
-  );
+  // Received to date, grouped per currency — tiyn and USDC micro-units never go into one sum.
+  const received = new Map<string, bigint>();
+  for (const e of paid) {
+    const m = e.net ?? e.gross;
+    if (!m) continue;
+    received.set(
+      m.currency,
+      (received.get(m.currency) ?? 0n) +
+        BigInt(m.minor) +
+        BigInt(e.principal?.minor ?? "0"),
+    );
+  }
 
   const positionColumns: Column<HolderPosition>[] = [
     {
@@ -80,7 +86,12 @@ export default async function HolderPage({
       hideBelow: "md",
       render: (p) =>
         p.kyc.attested ? (
-          <Badge tone="success">{t("kycOk")}</Badge>
+          <Badge tone="success">
+            {t("kycOk")}
+            <span className="ml-1 font-normal opacity-80">
+              (SAS · SIMULATED)
+            </span>
+          </Badge>
         ) : (
           <Badge tone="neutral">{t("kycNone")}</Badge>
         ),
@@ -95,6 +106,9 @@ export default async function HolderPage({
             <Badge tone={p.payoutRoute.route === "bank" ? "warn" : "info"}>
               {t(`route.${p.payoutRoute.route}`)}
             </Badge>
+            {p.payoutRoute.route === "bank" && (
+              <ProvenanceChip kind="simulated" className="ml-1" />
+            )}
             {p.payoutRoute.bankRefHash && (
               <span className="num block text-xs text-n500">
                 {p.payoutRoute.bankRefHash.slice(0, 10)}…
@@ -141,7 +155,11 @@ export default async function HolderPage({
       essential: true,
       render: (e) =>
         e.gross ? (
-          <Amount minor={e.gross.minor} currency={e.gross.currency} />
+          <Amount
+            minor={e.gross.minor}
+            currency={e.gross.currency}
+            locale={locale}
+          />
         ) : (
           "—"
         ),
@@ -150,9 +168,17 @@ export default async function HolderPage({
       key: "tax",
       header: t("col.tax"),
       align: "right",
-      hideBelow: "sm",
+      essential: true,
       render: (e) =>
-        e.tax ? <Amount minor={e.tax.minor} currency={e.tax.currency} /> : "—",
+        e.tax ? (
+          <Amount
+            minor={e.tax.minor}
+            currency={e.tax.currency}
+            locale={locale}
+          />
+        ) : (
+          "—"
+        ),
     },
     {
       key: "net",
@@ -160,7 +186,15 @@ export default async function HolderPage({
       align: "right",
       essential: true,
       render: (e) =>
-        e.net ? <Amount minor={e.net.minor} currency={e.net.currency} /> : "—",
+        e.net ? (
+          <Amount
+            minor={e.net.minor}
+            currency={e.net.currency}
+            locale={locale}
+          />
+        ) : (
+          "—"
+        ),
     },
     {
       key: "status",
@@ -204,7 +238,22 @@ export default async function HolderPage({
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <Kpi label={t("kpi.series")} value={String(h.positions.length)} />
         <Kpi label={t("kpi.payouts")} value={String(paid.length)} />
-        <Kpi label={t("kpi.received")} value={received.toString()} />
+        <Kpi
+          label={t("kpi.received")}
+          value={
+            received.size > 0 ? (
+              <>
+                {[...received].map(([currency, minor]) => (
+                  <span key={currency} className="block">
+                    <Amount minor={minor} currency={currency} locale={locale} />
+                  </span>
+                ))}
+              </>
+            ) : (
+              "—"
+            )
+          }
+        />
       </div>
 
       <section aria-labelledby="holder-positions" className="mt-10">

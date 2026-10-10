@@ -38,6 +38,7 @@ export function useClaims(
   rows: SeriesRow[],
   reload: () => void,
   mode: "wallet" | "demo" | "watch",
+  owner: string,
 ): {
   claim: (t: ClaimTarget) => Promise<boolean>;
   claimAll: () => Promise<void>;
@@ -74,7 +75,7 @@ export function useClaims(
         } else {
           const res = await boPost<DemoClaimResponse>("demo/investor/claim", {
             action: target.actionPda,
-            owner: publicKey?.toBase58(),
+            owner,
           });
           signature = res.signature;
         }
@@ -93,7 +94,7 @@ export function useClaims(
         return false;
       }
     },
-    [mode, publicKey, t, wallet],
+    [mode, owner, publicKey, t, wallet],
   );
 
   const claimAll = useCallback(async () => {

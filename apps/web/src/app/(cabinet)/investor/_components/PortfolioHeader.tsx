@@ -96,7 +96,7 @@ function PortfolioHeader({
       />
       <div className="relative flex flex-wrap items-start justify-between gap-3">
         <h2 className="text-lg font-bold">{t("title")}</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <Badge tone={kyc.tone}>
             {kyc.label}
             <span className="ml-1 font-normal opacity-80">
@@ -104,7 +104,11 @@ function PortfolioHeader({
             </span>
           </Badge>
           {claim.claimable > 0 && (
-            <Button onClick={claim.onClaimAll} loading={claim.claiming}>
+            <Button
+              className="w-full sm:w-auto"
+              onClick={claim.onClaimAll}
+              loading={claim.claiming}
+            >
               {t("claimAll")}
             </Button>
           )}
@@ -156,7 +160,7 @@ export function PortfolioView() {
   const tc = useTranslations("common");
   const locale = useLocale() as Locale;
   const { rows, error, reload } = usePortalRows();
-  const claims = useClaims(rows ?? [], reload, mode);
+  const claims = useClaims(rows ?? [], reload, mode, owner);
   // One holder lookup feeds the payout calendar and the per-position route cards (/holders/{owner}, cached 15 s).
   const [holder, setHolder] = useState<Awaited<
     ReturnType<typeof getHolder>
@@ -248,10 +252,11 @@ export function PortfolioView() {
     history.push(h);
   }
 
-  // The Claim button lives on the payout rows it pays out (plan 15 task 1533).
-  const claimable = new Set(
-    claimableEntitlements(rows).map((c) => c.entitlement.pda),
-  );
+  // The Claim button lives on the payout rows it pays out (plan 15 task 1533); watch mode is read-only — no button.
+  const claimable =
+    mode === "watch"
+      ? new Set<string>()
+      : new Set(claimableEntitlements(rows).map((c) => c.entitlement.pda));
 
   type HistoryRow = (typeof history)[number];
   const historyColumns: Column<HistoryRow>[] = [
@@ -290,7 +295,7 @@ export function PortfolioView() {
       key: "gross",
       header: t("col.gross"),
       align: "right",
-      hideBelow: "lg",
+      essential: true,
       render: ({ e }) =>
         e.gross ? (
           <Amount
@@ -306,7 +311,7 @@ export function PortfolioView() {
       key: "tax",
       header: t("col.tax"),
       align: "right",
-      hideBelow: "lg",
+      essential: true,
       render: ({ e }) =>
         e.tax ? (
           <Amount

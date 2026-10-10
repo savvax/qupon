@@ -51,7 +51,7 @@ export function PayoutRouteCard({
         route === "bank"
           ? await sha256Bytes(bankRef.trim())
           : new Uint8Array(32);
-      if (route === "wallet") {
+      if (mode === "wallet") {
         if (!publicKey || !wallet || !("signTransaction" in wallet.adapter))
           throw new Error("connect a wallet that can sign transactions");
         const signer = walletTransactionSigner(
@@ -67,8 +67,7 @@ export function PayoutRouteCard({
         const res = await signAndSendWithWallet(signer, portalRpc(), [ix]);
         toast({ kind: "success", title: ta("routeDone"), tx: res.signature });
       } else {
-        // ponytail: demo-mode bank route stays read-only until the registrar grows a hash-only proxy endpoint;
-        // sending the clear IBAN to the server would break "only the hash leaves the browser".
+        // demo/watch are read-only (the Save button is hidden there); this guard stays for safety
         throw new Error(t("bankWalletOnly"));
       }
     } catch (e) {
@@ -122,7 +121,7 @@ export function PayoutRouteCard({
         <span className="text-xs text-n500">
           {current
             ? t("current", {
-                route: current.route,
+                route: t(current.route),
                 hash: shortHash(current.bankRefHash),
               })
             : t("currentDefault")}

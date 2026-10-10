@@ -1168,7 +1168,7 @@
     "kpi": {
       "series": "Series",
       "payouts": "Payouts paid",
-      "received": "Received (minor units)"
+      "received": "Received to date"
     },
     "col": {
       "series": "Series",

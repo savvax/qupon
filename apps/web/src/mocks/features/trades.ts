@@ -159,12 +159,21 @@ export const handlers: MockHandler[] = [
   {
     method: "POST",
     // Plan 15 task 1533: the demo investor's claim — same DemoResponse shape as the Go endpoint.
+    // owner is required (the Go handler answers 400 for a missing one); the mock enforces the same contract.
     path: /^\/demo\/investor\/claim$/,
-    reply: () => ({
-      demo: true,
-      ok: true,
-      signature: SIG,
-      explorerUrl: `https://explorer.solana.com/tx/${SIG}?cluster=devnet`,
-    }),
+    reply: (_m, body) => {
+      const owner = (body as { owner?: string }).owner;
+      if (!owner)
+        throw Object.assign(new Error("owner must be a base58 pubkey"), {
+          status: 400,
+          code: "bad_request",
+        });
+      return {
+        demo: true,
+        ok: true,
+        signature: SIG,
+        explorerUrl: `https://explorer.solana.com/tx/${SIG}?cluster=devnet`,
+      };
+    },
   },
 ];

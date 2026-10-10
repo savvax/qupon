@@ -252,7 +252,7 @@ const actions: Record<string, ActionDTO[]> = {
       periodEnd: "2026-09-15",
       accrualDays: 180,
       rateBps: 1595,
-      perUnitGross: usdc("79800", "79.80 USDC"),
+      perUnitGross: usdc("79800000", "79.80 USDC"),
       perUnitPrincipal: usdc("0", "0.00 USDC"),
       cashMint: MINT_USDC,
       status: "Announced",
@@ -261,9 +261,9 @@ const actions: Record<string, ActionDTO[]> = {
       unitsSnapshotted: null,
       holdersSnapshotted: null,
       holdersPaid: null,
-      totalGross: usdc("7980000", "7,980.00 USDC"),
+      totalGross: usdc("7980000000", "7,980.00 USDC"),
       totalTax: usdc("0", "0.00 USDC"),
-      totalNet: usdc("7980000", "7,980.00 USDC"),
+      totalNet: usdc("7980000000", "7,980.00 USDC"),
       totalPaid: usdc("0", "0.00 USDC"),
       totalRetired: null,
       holdersRetired: null,
@@ -293,20 +293,20 @@ const actions: Record<string, ActionDTO[]> = {
       periodEnd: "2027-03-15",
       accrualDays: 180,
       rateBps: 1595,
-      perUnitGross: usdc("79800", "79.80 USDC"),
+      perUnitGross: usdc("79800000", "79.80 USDC"),
       perUnitPrincipal: usdc("0", "0.00 USDC"),
       cashMint: MINT_USDC,
       escrow: ESCROW_PDA_2,
-      escrowBalance: usdc("7980000", "7,980.00 USDC"),
+      escrowBalance: usdc("7980000000", "7,980.00 USDC"),
       status: "Funded",
       snapshotSlot: 1235,
       snapshotHash: "D7oUNmockHASHqPQf2XN7pXhXpzKdQmYtWJChMAvery9",
       unitsSnapshotted: "100",
       holdersSnapshotted: 3,
       holdersPaid: 0,
-      totalGross: usdc("7980000", "7,980.00 USDC"),
-      totalTax: usdc("359100", "3,591.00 USDC"),
-      totalNet: usdc("7620900", "7,620.90 USDC"),
+      totalGross: usdc("7980000000", "7,980.00 USDC"),
+      totalTax: usdc("359100000", "3,591.00 USDC"),
+      totalNet: usdc("7620900000", "7,620.90 USDC"),
       totalPaid: usdc("0", "0.00 USDC"),
       totalRetired: null,
       holdersRetired: null,
@@ -329,7 +329,7 @@ const entitlements: Record<string, EntitlementDTO[]> = {
   [ACTION_PDA_1]: INVESTOR_OWNERS.map((owner, i) => {
     const gross = ["50000", "125000", "325000"][i] ?? "0";
     return {
-      pda: `EnTlDem0Pda${i}For${ACTION_PDA_1.slice(0, 4)}1111111111111111111111111`,
+      pda: `EnTlDem0Pda${i}For${ACTION_PDA_1.slice(4, 12)}11111111111111111111111`,
       actionPda: ACTION_PDA_1,
       owner,
       units: ["10", "25", "65"][i] ?? "0",
@@ -345,7 +345,7 @@ const entitlements: Record<string, EntitlementDTO[]> = {
     };
   }),
   [ACTION_PDA_2]: INVESTOR_OWNERS.map((owner, i) => ({
-    pda: `EnTlDem0Pda${i}For${ACTION_PDA_2.slice(0, 4)}1111111111111111111111111`,
+    pda: `EnTlDem0Pda${i}For${ACTION_PDA_2.slice(4, 12)}11111111111111111111111`,
     actionPda: ACTION_PDA_2,
     owner,
     units: ["10", "25", "65"][i] ?? "0",
@@ -360,15 +360,15 @@ const entitlements: Record<string, EntitlementDTO[]> = {
     explorerUrl: explorer(owner),
   })),
   // The funded BTRK coupon: unpaid Snapshotted entitlements — owner 2 is the nonresident with 15% withholding.
-  // BTRK units 40/30/30 × 79.80 = 3,192.00 / 2,394.00 / 2,394.00 USDC; tax 359.10 only for owner 2.
+  // BTRK units 40/30/30 × 79.80 = 3,192.00 / 2,394.00 / 2,394.00 USDC (6-decimal USDC minors); tax 359.10 for owner 2.
   [ACTION_PDA_4]: INVESTOR_OWNERS.map((owner, i) => {
-    const gross = ["3192000", "2394000", "2394000"][i] ?? "0";
-    const tax = i === 2 ? "359100" : "0";
-    const net = String(Number(gross) - Number(tax));
+    const gross = ["3192000000", "2394000000", "2394000000"][i] ?? "0";
+    const tax = i === 2 ? "359100000" : "0";
+    const net = String(BigInt(gross) - BigInt(tax));
     const usd = (minor: string) =>
-      usdc(minor, `${(Number(minor) / 100).toFixed(2)} USDC`);
+      usdc(minor, `${(Number(minor) / 1_000_000).toFixed(2)} USDC`);
     return {
-      pda: `EnTlDem0Pda${i}For${ACTION_PDA_4.slice(0, 4)}1111111111111111111111111`,
+      pda: `EnTlDem0Pda${i}For${ACTION_PDA_4.slice(4, 12)}11111111111111111111111`,
       actionPda: ACTION_PDA_4,
       owner,
       units: ["40", "30", "30"][i] ?? "0",
