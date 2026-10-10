@@ -98,8 +98,9 @@ fn per_holder_tax_and_net_add_up() {
 /// * each holder's half-up error e_i = gross_i − units_i·N/D lies in (−½, ½] (ties round up),
 ///   so Σ gross − supply·N/D = Σ e_i ∈ (−h/2, h/2] — checked exactly, in scaled integers, by
 ///   `rounding_within_tolerance` (h = 0 forces Σ == 0);
-/// * comparing against `round_half_up(supply·N, D)` instead adds one more error δ ∈ (−½, ½],
-///   so |Σ gross − round_half_up(supply·N, D)| ≤ (h + 1) / 2 (integer division) minor units.
+/// * comparing against `round_half_up(supply·N, D)` adds δ ∈ (−½, ½]; Σ gross − round_total
+///   = Σ e_i − δ is an integer strictly inside (−(h+1)/2, (h+1)/2), hence
+///   |Σ gross − round_half_up(supply·N, D)| ≤ ⌊h/2⌋ ≤ holders/2 minor units.
 #[test]
 fn sum_gross_within_holders_half() {
     let mut rng = Rng::new(0xBEEF0000_00000002);
@@ -127,7 +128,7 @@ fn sum_gross_within_holders_half() {
             10_000 * u128::from(dc.basis().unwrap()),
         );
         let round_total = round_half_up(num * u128::from(supply), den);
-        let bound = u128::from(h + 1) / 2;
+        let bound = u128::from(h) / 2; // ⌊h/2⌋ — integer strictly inside (−(h+1)/2, (h+1)/2)
         assert!(
             (u128::from(sum)).abs_diff(round_total) <= bound,
             "sum={sum} round_total={round_total} h={h} face={face} rate={rate_bps} dc={dc:?} days={days} supply={supply}"
