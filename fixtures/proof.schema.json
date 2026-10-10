@@ -1,0 +1,41 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"$id": "https://qupon.kz/proof.schema.json",
+	"title": "Qupon devnet proof manifest",
+	"description": "Machine-readable record of every on-chain step a demo run performed; `qupon proof:verify <file>` re-fetches each transaction and checks it (task 1526).",
+	"type": "object",
+	"required": ["version", "cluster", "programId", "generatedAt", "steps"],
+	"additionalProperties": false,
+	"properties": {
+		"version": { "const": 1 },
+		"cluster": { "type": "string", "enum": ["devnet"] },
+		"programId": { "type": "string" },
+		"generatedAt": { "type": "string", "format": "date-time" },
+		"steps": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["id", "label", "signature", "instruction"],
+				"additionalProperties": false,
+				"properties": {
+					"id": { "type": "string" },
+					"label": { "type": "string" },
+					"signature": { "type": "string" },
+					"slot": { "type": ["integer", "null"] },
+					"instruction": { "type": "string" },
+					"expect": {
+						"type": "object",
+						"additionalProperties": false,
+						"properties": {
+							"event": { "type": "string" },
+							"fields": {
+								"type": "object",
+								"additionalProperties": { "type": ["string", "number"] }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
