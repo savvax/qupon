@@ -108,6 +108,12 @@ const GROUPS: {
   },
 ];
 
+// SWEEP_ROUTES=<r1,r2>: shoot only these routes (design pre-flight re-shoots, task 91545) — comma-separated.
+const ONLY =
+  process.env.SWEEP_ROUTES?.split(",")
+    .map((r) => r.trim())
+    .filter(Boolean) ?? null;
+
 const slug = (route: string) =>
   route
     .replace(/^\//, "")
@@ -212,9 +218,19 @@ async function check(page: Page, route: string, locale: string, width: number) {
 }
 
 for (const group of GROUPS) {
+<<<<<<< ours
   const routes = group.routes.filter(inScope);
   if (routes.length === 0) continue;
   test(`sweep: ${group.role ?? group.routes[1]!.split("/")[1]!.split("?")[0]!}`, async ({
+||||||| base
+  test(`sweep: ${group.role ?? group.routes[1]!.split("/")[1]!.split("?")[0]!}`, async ({
+=======
+  const routes = ONLY
+    ? group.routes.filter((r) => ONLY.includes(r))
+    : group.routes;
+  if (!routes.length) continue; // SWEEP_ROUTES filtered this group out
+  test(`sweep: ${group.role ?? routes[1]!.split("/")[1]!.split("?")[0]!}`, async ({
+>>>>>>> theirs
     page,
     context,
     baseURL,

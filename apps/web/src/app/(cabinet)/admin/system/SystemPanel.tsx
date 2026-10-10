@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatGroupedInt } from "@/lib/format";
+import type { Locale } from "@/i18n/locale";
 
 /** Shape of GET /admin/system (internal/api/system.go); omitted fields are absent. */
 export type SystemHealth = {
@@ -136,7 +137,10 @@ export function SystemPanel() {
               label={t("rpc.latency")}
               value={t("rpc.ms", { n: data.rpc.latencyMs })}
             />
-            <Row label={t("rpc.slot")} value={data.rpc.slot.toLocaleString()} />
+            <Row
+              label={t("rpc.slot")}
+              value={formatGroupedInt(data.rpc.slot, locale as Locale)}
+            />
             <Row label={t("network")} value={data.network} />
           </dl>
         </Card>
@@ -214,7 +218,7 @@ export function SystemPanel() {
           <dl className="mt-3 flex flex-col gap-1.5">
             <Row
               label={t("ingest.lastSlot")}
-              value={data.ingest.lastSlot.toLocaleString()}
+              value={formatGroupedInt(data.ingest.lastSlot, locale as Locale)}
             />
             <Row
               label={t("ingest.lag")}
@@ -233,7 +237,7 @@ export function SystemPanel() {
           <dl className="mt-3 flex flex-col gap-1.5">
             <Row
               label={t("kase.entries")}
-              value={data.kase.entries.toLocaleString()}
+              value={formatGroupedInt(data.kase.entries, locale as Locale)}
             />
             <Row
               label={t("kase.lastFetch")}

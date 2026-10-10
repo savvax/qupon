@@ -6,7 +6,12 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import { Tabs } from "@/components/ui/Tabs";
 import { cx } from "@/lib/ui/cx";
-import { listActions, listPublicSeries, type ActionDTO, type SeriesDTO } from "@/lib/api";
+import {
+  listActions,
+  listPublicSeries,
+  type ActionDTO,
+  type SeriesDTO,
+} from "@/lib/api";
 import { boardStage, type BoardStage } from "@/lib/boardStage";
 import { bpsToPercent, formatDate } from "@/lib/format";
 import type { Locale } from "@/i18n/request";
@@ -47,17 +52,26 @@ export default async function BondsPage() {
   ]);
   const series = await listPublicSeries();
   // Featured first (the registrar already sorts this way; sort here too so the board never depends on it).
-  const ordered = [...series].sort((a, b) => Number(b.featured ?? false) - Number(a.featured ?? false));
+  const ordered = [...series].sort(
+    (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false),
+  );
   // The live action of every series that has one — the source of the life-stage chip.
   const openOf = new Map<string, ActionDTO | null>(
     await Promise.all(
       ordered
         .filter((s) => s.openAction)
         .map(async (s) => {
-          const actions = await listActions(s.mint).catch(() => [] as ActionDTO[]);
+          const actions = await listActions(s.mint).catch(
+            () => [] as ActionDTO[],
+          );
           return [
             s.mint,
-            actions.find((a) => a.pda === s.openAction) ?? actions.find((a) => !["Completed", "Cancelled", "Finalized"].includes(a.status)) ?? null,
+            actions.find((a) => a.pda === s.openAction) ??
+              actions.find(
+                (a) =>
+                  !["Completed", "Cancelled", "Finalized"].includes(a.status),
+              ) ??
+              null,
           ] as const;
         }),
     ),
@@ -136,7 +150,7 @@ export default async function BondsPage() {
       key: "stage",
       header: t("colStage"),
       render: (s) => (
-        <span className="flex flex-wrap items-center gap-1.5">
+        <span className="flex flex-wrap items-center gap-1.5 max-sm:flex-col max-sm:items-start max-sm:gap-1">
           {stageChip(s)}
           {s.demoClock && <ProvenanceChip kind="demo" />}
           <span className="sr-only">{ts(s.status)}</span>

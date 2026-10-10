@@ -69,7 +69,10 @@ export function SandboxView({
   const [stale, setStale] = useState(false);
   const [role, setRole] = useState<Role>("anyone");
   const [busy, setBusy] = useState<ScenarioKind | null>(null);
-  const [scenarioError, setScenarioError] = useState<{ kind: ScenarioKind; text: string } | null>(null);
+  const [scenarioError, setScenarioError] = useState<{
+    kind: ScenarioKind;
+    text: string;
+  } | null>(null);
   const tErr = useTranslations("errors");
 
   const refresh = useCallback(async () => {
@@ -96,7 +99,12 @@ export function SandboxView({
       await refresh();
     } catch (e) {
       const text =
-        e instanceof BoError ? explainBoError(e, Object.assign((k: string) => tErr(k), { has: tErr.has })) : String(e);
+        e instanceof BoError
+          ? explainBoError(
+              e,
+              Object.assign((k: string) => tErr(k), { has: tErr.has }),
+            )
+          : String(e);
       setScenarioError({ kind, text });
     } finally {
       setBusy(null);
@@ -108,9 +116,14 @@ export function SandboxView({
   const toClient = (serverMs: number) => serverMs - skew;
   const money = (minor: bigint | string) => formatAmount(minor, 2, locale);
   const name = (owner: unknown) =>
-    s.holders.find((h) => h.owner === owner)?.label ?? String(owner).slice(0, 4);
+    s.holders.find((h) => h.owner === owner)?.label ??
+    String(owner).slice(0, 4);
   const actionName = (x: SandboxAction | null | undefined) =>
-    !x ? "" : x.kind === "REDM" ? t("rail.maturity") : t("rail.coupon", { n: s.actions.indexOf(x) + 1 });
+    !x
+      ? ""
+      : x.kind === "REDM"
+        ? t("rail.maturity")
+        : t("rail.coupon", { n: s.actions.indexOf(x) + 1 });
   const closed = s.series.status === "Closed";
 
   // ---------- Now bar ----------
@@ -137,7 +150,11 @@ export function SandboxView({
       return {
         key: "issued",
         tone: "default",
-        values: { ticker: s.series.ticker, units: s.series.totalIssued, holders: s.holders.length },
+        values: {
+          ticker: s.series.ticker,
+          units: s.series.totalIssued,
+          holders: s.holders.length,
+        },
         clock: at ? { key: "announce", at } : undefined,
       };
     const n = actionName(a);
@@ -145,12 +162,32 @@ export function SandboxView({
     const required = requiredOf(a);
     switch (a.status) {
       case "Announced":
-        return { key: "announced", tone: "default", values: { action: n }, clock: { key: "record", at: Date.parse(a.recordAt) } };
+        return {
+          key: "announced",
+          tone: "default",
+          values: { action: n },
+          clock: { key: "record", at: Date.parse(a.recordAt) },
+        };
       case "RecordStruck":
-        return { key: "snapshot", tone: "default", values: { done: s.entitlements.length, count: s.holders.filter((h) => h.units !== "0").length } };
+        return {
+          key: "snapshot",
+          tone: "default",
+          values: {
+            done: s.entitlements.length,
+            count: s.holders.filter((h) => h.units !== "0").length,
+          },
+        };
       case "SnapshotComplete":
         return s.autofund
-          ? { key: "funding", tone: "default", values: { count, units: a.unitsSnapshotted ?? "0", amount: money(required) } }
+          ? {
+              key: "funding",
+              tone: "default",
+              values: {
+                count,
+                units: a.unitsSnapshotted ?? "0",
+                amount: money(required),
+              },
+            }
           : {
               key: "skipped",
               tone: "attention",
@@ -161,10 +198,15 @@ export function SandboxView({
         return {
           key: "defaulted",
           tone: "danger",
-          values: { action: n, amount: money(required - BigInt(a.escrowBalance?.minor ?? "0")) },
+          values: {
+            action: n,
+            amount: money(required - BigInt(a.escrowBalance?.minor ?? "0")),
+          },
           action: (
             <Button loading={busy === "cure"} onClick={() => run("cure")}>
-              {t("btn.cure", { amount: money(required - BigInt(a.escrowBalance?.minor ?? "0")) })}
+              {t("btn.cure", {
+                amount: money(required - BigInt(a.escrowBalance?.minor ?? "0")),
+              })}
             </Button>
           ),
         };
@@ -173,25 +215,47 @@ export function SandboxView({
           key: "funded",
           tone: "default",
           values: { amount: money(required), count },
-          clock: Date.parse(a.paymentAt) > s.serverTime ? { key: "payment", at: Date.parse(a.paymentAt) } : undefined,
+          clock:
+            Date.parse(a.paymentAt) > s.serverTime
+              ? { key: "payment", at: Date.parse(a.paymentAt) }
+              : undefined,
         };
       case "Settling": {
         const agent = s.entitlements.find((e) => e.status === "PaidToAgent");
-        if (claim.mine && claim.mine.status === "Snapshotted" && (a.holdersPaid ?? 0) >= count - 1)
+        if (
+          claim.mine &&
+          claim.mine.status === "Snapshotted" &&
+          (a.holdersPaid ?? 0) >= count - 1
+        )
           return {
             key: "claim",
             tone: "attention",
-            values: { amount: money(BigInt(claim.mine.net?.minor ?? "0") + BigInt(claim.mine.principal?.minor ?? "0")) },
+            values: {
+              amount: money(
+                BigInt(claim.mine.net?.minor ?? "0") +
+                  BigInt(claim.mine.principal?.minor ?? "0"),
+              ),
+            },
             clock: at ? { key: "claim", at } : undefined,
             action: claim.button,
           };
         if ((a.holdersPaid ?? 0) < count)
-          return { key: "paying", tone: "default", values: { done: a.holdersPaid ?? 0, count } };
+          return {
+            key: "paying",
+            tone: "default",
+            values: { done: a.holdersPaid ?? 0, count },
+          };
         if (agent)
           return {
             key: "bank",
             tone: "attention",
-            values: { who: name(agent.owner), amount: money(BigInt(agent.net?.minor ?? "0") + BigInt(agent.principal?.minor ?? "0")) },
+            values: {
+              who: name(agent.owner),
+              amount: money(
+                BigInt(agent.net?.minor ?? "0") +
+                  BigInt(agent.principal?.minor ?? "0"),
+              ),
+            },
           };
         return { key: "complete", tone: "default", values: { action: n } };
       }
@@ -199,16 +263,23 @@ export function SandboxView({
         return {
           key: "paid",
           tone: "done",
-          values: { action: n, net: money(a.totalNet?.minor ?? "0"), count, tax: money(a.totalTax?.minor ?? "0") },
+          values: {
+            action: n,
+            net: money(a.totalNet?.minor ?? "0"),
+            count,
+            tax: money(a.totalTax?.minor ?? "0"),
+          },
           clock: at ? { key: "next", at } : undefined,
         };
     }
   }
   const actor = s.next.actor ?? undefined;
   const nowDetail =
-    a?.status === "Settling" && s.entitlements.some((e) => e.status === "PaidToAgent") ? (
+    a?.status === "Settling" &&
+    s.entitlements.some((e) => e.status === "PaidToAgent") ? (
       <span className="inline-flex flex-wrap items-center gap-2">
-        {t("who.payingAgent")} <ProvenanceChip kind="simulated">{t("bankSimulated")}</ProvenanceChip>
+        {t("who.payingAgent")}{" "}
+        <ProvenanceChip kind="simulated">{t("bankSimulated")}</ProvenanceChip>
       </span>
     ) : actor && !closed ? (
       // phones: the docked bar keeps to the sentence, the clock and the actor chip
@@ -217,14 +288,21 @@ export function SandboxView({
 
   // ---------- coupon sheet ----------
   const bondDay = (iso: string) => {
-    const d = Math.floor((Date.parse(iso) / 1000 - s.clock.issueTs) / s.clock.daySecs);
-    return new Date(Date.parse(`${s.series.issueDate}T00:00:00Z`) + d * 86_400_000).toISOString().slice(0, 10);
+    const d = Math.floor(
+      (Date.parse(iso) / 1000 - s.clock.issueTs) / s.clock.daySecs,
+    );
+    return new Date(
+      Date.parse(`${s.series.issueDate}T00:00:00Z`) + d * 86_400_000,
+    )
+      .toISOString()
+      .slice(0, 10);
   };
   const civil = (ymd: string) => `${ymd}T00:00:00+05:00`;
   /** A real instant on the bond's own clock: issue date + elapsed × (one day / daySecs), so times keep their order. */
   const bondIso = (iso: string) =>
     new Date(
-      Date.parse(civil(s.series.issueDate)) + (Date.parse(iso) - s.clock.issueTs * 1000) * (86_400 / s.clock.daySecs),
+      Date.parse(civil(s.series.issueDate)) +
+        (Date.parse(iso) - s.clock.issueTs * 1000) * (86_400 / s.clock.daySecs),
     ).toISOString();
   const rail: RailNode[] = [
     {
@@ -234,7 +312,9 @@ export function SandboxView({
       date: civil(s.series.issueDate),
       status: "done",
       statusLabel: t("rail.placed"),
-      txCount: s.activity.filter((e) => !e.actionPda && !e.kind.startsWith("Trade")).length,
+      txCount: s.activity.filter(
+        (e) => !e.actionPda && !e.kind.startsWith("Trade"),
+      ).length,
     },
     ...s.schedule.map((item, i): RailNode => {
       const act = s.actions[i];
@@ -242,7 +322,9 @@ export function SandboxView({
       return {
         id: `c${item.couponNumber}`,
         kind: last ? "maturity" : "coupon",
-        title: last ? t("rail.maturity") : t("rail.coupon", { n: item.couponNumber }),
+        title: last
+          ? t("rail.maturity")
+          : t("rail.coupon", { n: item.couponNumber }),
         date: civil(bondDay(item.paymentDate)),
         status: !act
           ? "upcoming"
@@ -254,10 +336,16 @@ export function SandboxView({
                 : "done"
               : "live",
         amount: {
-          minor: (BigInt(item.amountPerUnit?.minor ?? "0") + (last ? BigInt(s.series.faceValue.minor) : 0n)).toString(),
+          minor: (
+            BigInt(item.amountPerUnit?.minor ?? "0") +
+            (last ? BigInt(s.series.faceValue.minor) : 0n)
+          ).toString(),
           currency: s.series.faceValue.currency,
         },
-        txCount: act ? s.activity.filter((e) => e.actionPda === act.pda).length || undefined : undefined,
+        txCount: act
+          ? s.activity.filter((e) => e.actionPda === act.pda).length ||
+            undefined
+          : undefined,
       };
     }),
   ];
@@ -274,8 +362,16 @@ export function SandboxView({
     .map((st) =>
       st.id === "snapshot" && fin
         ? fin.state === "done"
-          ? { ...st, state: "done" as const, signature: fin.signature ?? st.signature, at: fin.at ?? st.at }
-          : { ...st, state: st.state === "done" ? ("current" as const) : st.state }
+          ? {
+              ...st,
+              state: "done" as const,
+              signature: fin.signature ?? st.signature,
+              at: fin.at ?? st.at,
+            }
+          : {
+              ...st,
+              state: st.state === "done" ? ("current" as const) : st.state,
+            }
         : st,
     );
   const flow: FlowStep[] = a
@@ -284,12 +380,20 @@ export function SandboxView({
         return {
           id: st.id,
           label: tstep(`done.${st.id}`),
-          state: defaulted ? "defaulted" : st.state === "failed" ? "failed" : st.state,
+          state: defaulted
+            ? "defaulted"
+            : st.state === "failed"
+              ? "failed"
+              : st.state,
           at: st.at ? bondIso(st.at) : st.at,
           tx: st.signature,
           actor: STEP_ACTOR[st.id],
           detail: defaulted
-            ? t("detail.defaulted", { amount: money(requiredOf(a) - BigInt(a.escrowBalance?.minor ?? "0")) })
+            ? t("detail.defaulted", {
+                amount: money(
+                  requiredOf(a) - BigInt(a.escrowBalance?.minor ?? "0"),
+                ),
+              })
             : st.id === "fund" && a.curedAt
               ? t("detail.cured")
               : st.id === "strike" && st.state !== "done"
@@ -298,15 +402,20 @@ export function SandboxView({
                   ? t("detail.bank", { n: a.bankPending ?? 0 })
                   : st.id === "snapshot" && st.state === "done"
                     ? t("detail.supply", { units: a.unitsSnapshotted ?? "0" })
-                    : st.id === "pay" && st.state === "done" && a.kind === "REDM"
+                    : st.id === "pay" &&
+                        st.state === "done" &&
+                        a.kind === "REDM"
                       ? t("detail.burned")
                       : st.detail && st.state !== "pending"
-                    ? tstep(`detail.${st.detail.key}`, st.detail.values)
-                    : undefined,
+                        ? tstep(`detail.${st.detail.key}`, st.detail.values)
+                        : undefined,
           // hooked series: the gate makes the record exact at record_at, whenever the strike tx lands (D1')
           record:
             st.id === "strike"
-              ? { planned: bondIso(a.recordAt), effective: st.state === "done" ? bondIso(a.recordAt) : null }
+              ? {
+                  planned: bondIso(a.recordAt),
+                  effective: st.state === "done" ? bondIso(a.recordAt) : null,
+                }
               : undefined,
         };
       })
@@ -315,17 +424,33 @@ export function SandboxView({
   // ---------- money ----------
   const tm = useTranslations("kit.money");
   const showMoney =
-    a && !["Announced", "RecordStruck"].includes(a.status) && s.entitlements.length > 0;
-  const mf = a ? moneyFlowOf(a as never, s.entitlements as EntitlementDTO[], s.activity, (u) => tm("holderSub", { units: u })) : null;
+    a &&
+    !["Announced", "RecordStruck"].includes(a.status) &&
+    s.entitlements.length > 0;
+  const mf = a
+    ? moneyFlowOf(
+        a as never,
+        s.entitlements as EntitlementDTO[],
+        s.activity,
+        (u) => tm("holderSub", { units: u }),
+      )
+    : null;
   const recipients = (mf?.recipients ?? []).map((r) => {
-    if (r.kind === "tax") return a?.status === "Defaulted" ? { ...r, status: "defaulted" as const } : r;
+    if (r.kind === "tax")
+      return a?.status === "Defaulted"
+        ? { ...r, status: "defaulted" as const }
+        : r;
     const e = s.entitlements.find((x) => x.owner === r.id);
     const agent = e?.status === "PaidToAgent";
     return {
       ...r,
       label: name(r.id),
       kind: agent ? ("agent" as const) : r.kind,
-      status: agent ? ("agent" as const) : a?.status === "Defaulted" ? ("defaulted" as const) : r.status,
+      status: agent
+        ? ("agent" as const)
+        : a?.status === "Defaulted"
+          ? ("defaulted" as const)
+          : r.status,
     };
   });
 
@@ -346,7 +471,9 @@ export function SandboxView({
             <ProvenanceChip kind="onchain" href={s.links.explorer}>
               {t("devnet")}
             </ProvenanceChip>
-            {mock && <ProvenanceChip kind="simulated">{t("mock")}</ProvenanceChip>}
+            {mock && (
+              <ProvenanceChip kind="simulated">{t("mock")}</ProvenanceChip>
+            )}
             <span className="num text-sm text-n600">
               {s.series.ticker} · {s.series.isin}
             </span>
@@ -361,10 +488,16 @@ export function SandboxView({
             })}
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-            <Link href={s.links.bond} className="font-semibold text-g700 underline decoration-g300 underline-offset-2 hover:decoration-g600">
+            <Link
+              href={s.links.bond}
+              className="whitespace-nowrap font-semibold text-g700 underline decoration-g300 underline-offset-2 hover:decoration-g600"
+            >
               {t("bondPage")}
             </Link>
-            <Link href="/sandbox/new?fresh=1" className="font-semibold text-n700 hover:text-n900">
+            <Link
+              href="/sandbox/new?fresh=1"
+              className="whitespace-nowrap font-semibold text-n700 hover:text-n900"
+            >
               {t("restart")}
             </Link>
             <HelpMenu role="sandbox" />
@@ -374,7 +507,10 @@ export function SandboxView({
       </div>
 
       {stale && (
-        <p role="status" className="mt-4 rounded-btn border border-dashed border-warn-bd bg-warn-bg px-3 py-2 text-sm text-warn-fg">
+        <p
+          role="status"
+          className="mt-4 rounded-btn border border-dashed border-warn-bd bg-warn-bg px-3 py-2 text-sm text-warn-fg"
+        >
           {t("stale")}
         </p>
       )}
@@ -387,7 +523,11 @@ export function SandboxView({
           detail={nowDetail}
           clock={
             nb.clock ? (
-              <CountdownClock to={toClient(nb.clock.at)} label={t(`clock.${nb.clock.key}`)} daySecs={s.clock.daySecs} />
+              <CountdownClock
+                to={toClient(nb.clock.at)}
+                label={t(`clock.${nb.clock.key}`)}
+                daySecs={s.clock.daySecs}
+              />
             ) : undefined
           }
           actors={actor && !closed ? [actor] : []}
@@ -404,18 +544,34 @@ export function SandboxView({
           {t("try.title")}
         </h2>
         <p className="mt-1 max-w-[62ch] text-sm text-n600">{t("try.lead")}</p>
-        <Scenarios s={s} a={a} busy={busy} error={scenarioError} onRun={run} locale={locale} />
+        <Scenarios
+          s={s}
+          a={a}
+          busy={busy}
+          error={scenarioError}
+          onRun={run}
+          locale={locale}
+        />
       </section>
 
-      <section data-tour="steps" className="mt-6 rounded-card border border-n200 bg-n0 p-4 sm:p-5">
+      <section
+        data-tour="steps"
+        className="mt-6 rounded-card border border-n200 bg-n0 p-4 sm:p-5"
+      >
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-base font-bold">{a ? t("flowTitle", { action: actionName(a) }) : t("flowEmptyTitle")}</h2>
+          <h2 className="text-base font-bold">
+            {a
+              ? t("flowTitle", { action: actionName(a) })
+              : t("flowEmptyTitle")}
+          </h2>
           {a && <span className="num text-xs text-n500">{a.corpId}</span>}
         </div>
         {a ? (
           <ActionFlow steps={flow} locale={locale} dateOnly />
         ) : (
-          <p className="rounded-btn border border-dashed border-n300 px-4 py-6 text-center text-sm text-n600">{t("flowEmpty")}</p>
+          <p className="rounded-btn border border-dashed border-n300 px-4 py-6 text-center text-sm text-n600">
+            {t("flowEmpty")}
+          </p>
         )}
       </section>
 
@@ -427,26 +583,55 @@ export function SandboxView({
               currency={mf.currency}
               locale={locale}
               title={t("moneyTitle", { action: actionName(a) })}
-              issuer={{ label: t("issuerOf", { ticker: s.series.ticker }), address: s.series.issuer }}
+              issuer={{
+                label: t("issuerOf", { ticker: s.series.ticker }),
+                address: s.series.issuer,
+              }}
               escrow={mf.escrow}
               recipients={recipients}
-              state={a.status === "Defaulted" ? "defaulted" : a.curedAt ? "cured" : "normal"}
+              state={
+                a.status === "Defaulted"
+                  ? "defaulted"
+                  : a.curedAt
+                    ? "cured"
+                    : "normal"
+              }
             />
           )}
         </div>
 
         <aside className="min-w-0 space-y-6 self-start lg:sticky lg:top-24">
-          <section data-tour="roles" className="rounded-card border border-n200 bg-n0 p-4 sm:p-5">
+          <section
+            data-tour="roles"
+            className="rounded-card border border-n200 bg-n0 p-4 sm:p-5"
+          >
             <Segmented
               label={t("viewAs")}
               value={role}
               options={ROLES.map((r) => ({ value: r, label: t(`roles.${r}`) }))}
               onChange={setRole}
             />
-            <RoleCard role={role} s={s} a={a} locale={locale} claim={claim} name={name} onCure={() => run("cure")} busy={busy} />
+            <RoleCard
+              role={role}
+              s={s}
+              a={a}
+              locale={locale}
+              claim={claim}
+              name={name}
+              onCure={() => run("cure")}
+              busy={busy}
+            />
           </section>
           <div data-tour="feed">
-            <Feed s={s} skew={skew} name={name} actionName={(pda) => actionName(s.actions.find((x) => x.pda === pda))} locale={locale} />
+            <Feed
+              s={s}
+              skew={skew}
+              name={name}
+              actionName={(pda) =>
+                actionName(s.actions.find((x) => x.pda === pda))
+              }
+              locale={locale}
+            />
           </div>
         </aside>
       </div>
@@ -460,7 +645,11 @@ export function SandboxView({
 export function Gone() {
   const t = useTranslations("sandbox.gone");
   return (
-    <div className={cx("mx-auto max-w-xl rounded-card border border-dashed border-n300 bg-n0 p-8 text-center")}>
+    <div
+      className={cx(
+        "mx-auto max-w-xl rounded-card border border-dashed border-n300 bg-n0 p-8 text-center",
+      )}
+    >
       <h1 className="text-title font-extrabold tracking-tight">{t("title")}</h1>
       <p className="mt-2 text-n700">{t("body")}</p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">

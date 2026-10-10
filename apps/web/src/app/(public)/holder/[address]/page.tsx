@@ -230,8 +230,11 @@ export default async function HolderPage({
         </h1>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-n600">
           <Address value={h.owner} />
-          <span>·</span>
-          <span>{t("subtitle")}</span>
+          {/* The separator travels with the note (no-break space) so it is never orphaned on a wrap. */}
+          <span>
+            {"·\u00A0"}
+            {t("subtitle")}
+          </span>
         </p>
       </header>
 

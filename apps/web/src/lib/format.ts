@@ -53,6 +53,11 @@ export function bpsToPercent(bps: number, locale: Locale = "en"): string {
   return locale === "en" ? `${n}%` : `${n}\u00a0%`;
 }
 
+/** Grouped integer (slots, counts): EN "288,123,456", RU/KK "288 123 456" — one grouping per locale. */
+export function formatGroupedInt(n: number, locale: Locale = "en"): string {
+  return n.toLocaleString(locale === "en" ? "en-US" : "ru-RU");
+}
+
 const FREQUENCIES: Record<Locale, Record<number, string>> = {
   en: { 1: "annual", 2: "semi-annual", 4: "quarterly", 12: "monthly" },
   ru: {

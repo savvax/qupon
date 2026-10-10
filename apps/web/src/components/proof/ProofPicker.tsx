@@ -6,16 +6,21 @@ import { Button } from "@/components/ui/Button";
 import { shortKey } from "@/lib/format";
 import { DEMO_SERIES } from "@/lib/proof/demoSeries";
 
-
 /**
  * "Paste a bond mint" + the demo series. The static export pre-renders /proof/<mint>/ only for known mints, so a
  * pasted one goes to /proof/?mint=… there.
  */
-export function ProofPicker({ staticExport = false }: { staticExport?: boolean }) {
+export function ProofPicker({
+  staticExport = false,
+}: {
+  staticExport?: boolean;
+}) {
   const t = useTranslations("proof.pick");
   const [mint, setMint] = useState("");
   const href = (m: string) =>
-    staticExport ? `/proof/?mint=${encodeURIComponent(m)}` : `/proof/${encodeURIComponent(m)}`;
+    staticExport
+      ? `/proof/?mint=${encodeURIComponent(m)}`
+      : `/proof/${encodeURIComponent(m)}`;
   return (
     <div className="mx-auto w-full max-w-[720px] px-4 py-12 sm:px-6 sm:py-16">
       <h1 className="text-title font-extrabold tracking-tight">{t("title")}</h1>
@@ -36,7 +41,7 @@ export function ProofPicker({ staticExport = false }: { staticExport?: boolean }
           onChange={(e) => setMint(e.target.value)}
           placeholder={t("label")}
           spellCheck={false}
-          className="num h-11 min-w-0 flex-1 rounded-btn border border-n300 bg-n0 px-3 text-sm outline-none focus:border-g600"
+          className="num h-11 min-w-0 rounded-btn border border-n300 bg-n0 px-3 text-sm outline-none focus:border-g600 sm:flex-1"
         />
         <Button type="submit" className="h-11">
           {t("go")}
@@ -52,11 +57,18 @@ export function ProofPicker({ staticExport = false }: { staticExport?: boolean }
             >
               <span className="min-w-0">
                 <span className="block text-sm font-bold text-n900">
-                  {d.ticker} <span className="num font-semibold text-g700">{shortKey(d.mint, 4, 4)}</span>
+                  {d.ticker}{" "}
+                  <span className="num font-semibold text-g700">
+                    {shortKey(d.mint, 4, 4)}
+                  </span>
                 </span>
-                <span className="mt-0.5 block text-sm text-n600">{t(d.key)}</span>
+                <span className="mt-0.5 block text-sm text-n600">
+                  {t(d.key)}
+                </span>
               </span>
-              <span aria-hidden className="text-n500">›</span>
+              <span aria-hidden className="text-n500">
+                ›
+              </span>
             </a>
           </li>
         ))}

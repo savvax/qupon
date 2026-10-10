@@ -72,7 +72,7 @@ export function HeroLifecycle({
       <div className="rounded-card shadow-[0_24px_64px_-24px_rgba(4,30,22,.7)] ring-1 ring-white/10">
         <div className="rounded-card bg-n50 p-5 text-n900 sm:p-6">
           <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-sm font-semibold text-n600">
+            <span className="min-w-0 text-sm font-semibold text-n600">
               {t("last.title")}
             </span>
             {last.sig ? (
@@ -81,7 +81,9 @@ export function HeroLifecycle({
                 href={explorerHref("tx", last.sig, network.explorerCluster)}
               />
             ) : (
-              <ProvenanceChip kind="simulated">{t("last.example")}</ProvenanceChip>
+              <ProvenanceChip kind="simulated">
+                {t("last.example")}
+              </ProvenanceChip>
             )}
           </div>
           <div className="mt-3 flex h-7 items-center gap-2">
@@ -111,7 +113,9 @@ export function HeroLifecycle({
           <div className="mt-1 flex h-5 items-center gap-2 truncate text-sm text-n600">
             <span>{t("last.holders", { count: last.holders })}</span>
             {last.at && (
-              <span className="num text-n500">· {formatDate(last.at, locale)}</span>
+              <span className="num text-n500">
+                · {formatDate(last.at, locale)}
+              </span>
             )}
           </div>
           <div className="mt-5 flex gap-1" aria-hidden>

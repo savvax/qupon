@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { StableText } from "@/components/i18n/StableLabel";
-import { PublicShell } from "@/components/shell/PublicShell";
 import { ROLE_HOME, getSession } from "@/lib/session";
 import { InviteForm } from "./InviteForm";
 
@@ -20,25 +19,24 @@ export default async function InvitePage({
   const user = await getSession();
   if (user) redirect(ROLE_HOME[user.role]);
   const t = await getTranslations("org.invitePage");
+  // The (public) layout already provides PublicShell; wrapping again stacked two site headers.
   return (
-    <PublicShell>
-      <div className="mx-auto w-full max-w-md px-4 py-10 sm:px-6 sm:py-16">
-        <h1 className="text-2xl font-extrabold tracking-tight">
-          <StableText>{t("title")}</StableText>
-        </h1>
-        <p className="mt-1 text-sm text-n600">
-          <StableText>{t("lead")}</StableText>
-        </p>
-        <div className="mt-6">
-          <InviteForm token={token} />
-        </div>
-        <p className="mt-6 text-sm text-n600">
-          {t("haveAccount")}{" "}
-          <a href="/login" className="font-semibold text-g700 underline">
-            {t("signIn")}
-          </a>
-        </p>
+    <div className="mx-auto w-full max-w-md px-4 py-10 sm:px-6 sm:py-16">
+      <h1 className="text-2xl font-extrabold tracking-tight">
+        <StableText>{t("title")}</StableText>
+      </h1>
+      <p className="mt-1 text-sm text-n600">
+        <StableText>{t("lead")}</StableText>
+      </p>
+      <div className="mt-6">
+        <InviteForm token={token} />
       </div>
-    </PublicShell>
+      <p className="mt-6 text-sm text-n600">
+        {t("haveAccount")}{" "}
+        <a href="/login" className="font-semibold text-g700 underline">
+          {t("signIn")}
+        </a>
+      </p>
+    </div>
   );
 }

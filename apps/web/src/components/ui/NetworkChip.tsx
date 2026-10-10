@@ -3,6 +3,8 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useNetwork } from "@/components/network/NetworkContext";
+import { formatGroupedInt } from "@/lib/format";
+import type { Locale } from "@/i18n/locale";
 import { cx } from "@/lib/ui/cx";
 
 const RPC: Record<string, string> = {
@@ -58,8 +60,11 @@ export function NetworkChip({
     };
   }, [live, network.network]);
 
-  const age = at !== null && now !== null ? Math.max(0, Math.round((now - at) / 1000)) : 0;
-  const lang = useLocale() === "ru" ? "ru-RU" : "en-US";
+  const age =
+    at !== null && now !== null
+      ? Math.max(0, Math.round((now - at) / 1000))
+      : 0;
+  const locale = useLocale() as Locale;
   return (
     <span
       role="status"
@@ -79,7 +84,10 @@ export function NetworkChip({
       />
       <span
         data-network={network.network}
-        className={cx("font-bold", network.mainnet ? "text-err-fg" : "text-n900")}
+        className={cx(
+          "font-bold",
+          network.mainnet ? "text-err-fg" : "text-n900",
+        )}
       >
         {t(network.network)}
       </span>
@@ -89,7 +97,7 @@ export function NetworkChip({
             ·
           </span>
           <span className="num">
-            {t("slot", { slot: slot.toLocaleString(lang) })}
+            {t("slot", { slot: formatGroupedInt(slot, locale) })}
           </span>
         </>
       )}
