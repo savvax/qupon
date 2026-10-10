@@ -1,7 +1,7 @@
 ---
 id: 91531
 title: e2e language switch locator (radio, not button)
-agent: claude
+agent: glm
 tier: T1
 depends_on: [1531]
 verify: make verify
