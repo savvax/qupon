@@ -61,16 +61,16 @@ export function SignupForm() {
   return (
     <form
       onSubmit={submit}
-      className="h-full rounded-hero border border-n200 bg-n0 p-6 sm:p-8"
+      className="h-full rounded-card border border-n200 bg-n0 p-5 sm:p-6"
       noValidate
     >
-      <h1 className="text-2xl font-extrabold tracking-tight">
-        <StableText>{t("title")}</StableText>
-      </h1>
-      <p className="mt-1.5 text-sm text-n600">
-        <StableText>{t("lead")}</StableText>
+      <h2 className="text-lg font-bold text-n900">
+        <StableText>{t("formTitle")}</StableText>
+      </h2>
+      <p className="mt-1 text-sm text-n600">
+        <StableText>{t("formLead")}</StableText>
       </p>
-      <div className="mt-6 space-y-4">
+      <div className="mt-5 space-y-4">
         <TextField
           label={t("name")}
           autoComplete="name"
@@ -120,10 +120,13 @@ export function SignupForm() {
       >
         {t("submit")}
       </Button>
-      <p className="mt-4 text-sm text-n600">
-        {t("haveAccount")}{" "}
-        <Link href="/login" className="font-semibold text-g700 hover:underline">
-          {t("signIn")}
+      <p className="mt-4 border-t border-n100 pt-4 text-sm text-n600">
+        <StableText>{t("haveAccount")}</StableText>{" "}
+        <Link
+          href="/login"
+          className="font-semibold text-g700 underline-offset-2 hover:underline"
+        >
+          <StableText>{t("signIn")}</StableText>
         </Link>
       </p>
     </form>

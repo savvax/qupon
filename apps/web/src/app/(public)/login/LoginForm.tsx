@@ -32,6 +32,7 @@ function useEnter(next?: string) {
     );
 }
 
+/** Email + password: the secondary path on /login (the one-click demo identities need no account). */
 export function SignInCard({ next }: { next?: string }) {
   const t = useTranslations("login");
   const enter = useEnter(next);
@@ -67,16 +68,16 @@ export function SignInCard({ next }: { next?: string }) {
   return (
     <form
       onSubmit={submit}
-      className="h-full rounded-hero border border-n200 bg-n0 p-6 sm:p-8"
+      className="h-full rounded-card border border-n200 bg-n0 p-5 sm:p-6"
       noValidate
     >
-      <h1 className="text-2xl font-extrabold tracking-tight">
-        <StableText>{t("title")}</StableText>
-      </h1>
-      <p className="mt-1.5 text-sm text-n600">
-        <StableText>{t("lead")}</StableText>
+      <h2 className="text-lg font-bold text-n900">
+        <StableText>{t("emailTitle")}</StableText>
+      </h2>
+      <p className="mt-1 text-sm text-n600">
+        <StableText>{t("emailLead")}</StableText>
       </p>
-      <div className="mt-6 space-y-4">
+      <div className="mt-5 space-y-4">
         <TextField
           label={t("email")}
           type="email"
@@ -109,12 +110,12 @@ export function SignInCard({ next }: { next?: string }) {
         <StableText>{t("accountsNote")}</StableText>
       </p>
       <p className="mt-4 border-t border-n100 pt-4 text-sm text-n600">
-        {t("newInvestor")}{" "}
+        <StableText>{t("newInvestor")}</StableText>{" "}
         <Link
           href="/signup"
-          className="font-semibold text-g700 hover:underline"
+          className="font-semibold text-g700 underline-offset-2 hover:underline"
         >
-          {t("createAccount")}
+          <StableText>{t("createAccount")}</StableText>
         </Link>
       </p>
     </form>
@@ -122,11 +123,12 @@ export function SignInCard({ next }: { next?: string }) {
 }
 
 const DEMO = [
-  { role: "issuer", home: "issuer" },
-  { role: "registrar", home: "registrar" },
-  { role: "investor", home: "investor_demo" },
+  { role: "issuer", home: "issuer", icon: "building" },
+  { role: "registrar", home: "registrar", icon: "users" },
+  { role: "investor", home: "investor_demo", icon: "wallet" },
 ] as const;
 
+/** The primary path on /login: one click per role, no password, no wallet (design language v2, task 91530). */
 export function DemoPanel({ next }: { next?: string }) {
   const t = useTranslations("login.demo");
   const enter = useEnter(next);
@@ -152,73 +154,71 @@ export function DemoPanel({ next }: { next?: string }) {
   };
 
   return (
-    <div className="relative h-full overflow-hidden rounded-hero bg-p900 p-6 text-white sm:p-8">
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(90%_80%_at_100%_0%,var(--color-p500)_0%,transparent_60%)] opacity-60"
-      />
-      <div className="relative">
-        <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold ring-1 ring-white/15">
-          <span className="size-1.5 rounded-full bg-g400" />
-          <StableText>{t("badge")}</StableText>
-        </span>
-        <h2 className="mt-4 text-2xl font-extrabold tracking-tight">
-          <StableText>{t("title")}</StableText>
-        </h2>
-        <p className="mt-1.5 text-sm text-p100">
-          <StableText>{t("lead")}</StableText>
-        </p>
-        {/* A plain form posts to the server before hydration (slow phones); once hydrated the click handler takes over. */}
-        <form
-          method="post"
-          action="/api/session/demo"
-          className="mt-6 grid gap-3"
-        >
-          {next && <input type="hidden" name="next" value={next} />}
-          {DEMO.map((d) => (
-            <button
-              key={d.role}
-              type="submit"
-              name="role"
-              value={d.role}
-              onClick={(e) => {
-                e.preventDefault();
-                void start(d);
-              }}
-              disabled={!!pending}
-              aria-busy={pending === d.role || undefined}
-              className="group flex items-center gap-4 rounded-card bg-n0 p-4 text-left text-n900 transition hover:bg-g50 disabled:opacity-70"
+    <section className="h-full rounded-card border border-g200 bg-n0 p-5 sm:p-6">
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-demo-bg px-2.5 py-1 text-micro font-bold text-demo-fg">
+        <span aria-hidden className="size-1.5 rounded-full bg-current" />
+        <StableText>{t("badge")}</StableText>
+      </span>
+      <h2 className="mt-3 text-lg font-bold text-n900">
+        <StableText>{t("title")}</StableText>
+      </h2>
+      <p className="mt-1 text-sm text-n600">
+        <StableText>{t("lead")}</StableText>
+      </p>
+      {/* A plain form posts to the server before hydration (slow phones); once hydrated the click handler takes over. */}
+      <form
+        method="post"
+        action="/api/session/demo"
+        className="mt-5 grid gap-3"
+      >
+        {next && <input type="hidden" name="next" value={next} />}
+        {DEMO.map((d) => (
+          <button
+            key={d.role}
+            type="submit"
+            name="role"
+            value={d.role}
+            onClick={(e) => {
+              e.preventDefault();
+              void start(d);
+            }}
+            disabled={!!pending}
+            aria-busy={pending === d.role || undefined}
+            className="group flex min-h-16 items-center gap-3 rounded-btn border border-n200 bg-n0 p-4 text-left transition hover:border-g300 hover:bg-g50 disabled:opacity-70 sm:gap-4"
+          >
+            <span
+              aria-hidden
+              className="grid size-10 shrink-0 place-items-center rounded-sm bg-n50 text-n600 transition-colors group-hover:bg-g100 group-hover:text-g700"
             >
-              <span className="min-w-0 flex-1">
-                <span className="block font-bold">
-                  <StableText>{t(`${d.role}.title`)}</StableText>
-                </span>
-                <span className="mt-0.5 block text-sm text-n600">
-                  <StableText>{t(`${d.role}.text`)}</StableText>
-                </span>
+              {pending === d.role ? (
+                <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <Icon name={d.icon} className="size-5" />
+              )}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-bold text-n900">
+                <StableText>{t(`${d.role}.title`)}</StableText>
               </span>
-              <span
-                aria-hidden
-                className="flex size-9 shrink-0 items-center justify-center text-n400 transition group-hover:translate-x-0.5 group-hover:text-g600"
-              >
-                {pending === d.role ? (
-                  <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : (
-                  <Icon name="chevronRight" className="size-5" />
-                )}
+              <span className="mt-0.5 block text-sm text-n600">
+                <StableText>{t(`${d.role}.text`)}</StableText>
               </span>
-            </button>
-          ))}
-        </form>
-        {error && (
-          <p role="alert" className="mt-4 text-sm font-semibold text-[#ffb4b4]">
-            {error}
-          </p>
-        )}
-        <p className="mt-5 text-xs text-p100/80">
-          <StableText>{t("note")}</StableText>
+            </span>
+            <Icon
+              name="chevronRight"
+              className="size-5 shrink-0 text-n400 transition group-hover:translate-x-0.5 group-hover:text-g600"
+            />
+          </button>
+        ))}
+      </form>
+      {error && (
+        <p role="alert" className="mt-4 text-sm font-semibold text-err-fg">
+          {error}
         </p>
-      </div>
-    </div>
+      )}
+      <p className="mt-4 text-xs text-n500">
+        <StableText>{t("note")}</StableText>
+      </p>
+    </section>
   );
 }

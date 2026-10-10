@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { StableText } from "@/components/i18n/StableLabel";
 import { Button } from "@/components/ui/Button";
 import { safeNext } from "@/lib/boClient";
 import { ROLE_HOME, getSession } from "@/lib/session";
@@ -28,8 +29,15 @@ export default async function LoginPage({
   const roles = await getTranslations("cabinet.roles");
   return (
     <div className="mx-auto max-w-[1100px] px-4 py-8 sm:px-6 sm:py-14">
+      {/* The demo identities are the primary path: h1 and lead name them first (design language v2, task 91530). */}
+      <h1 className="text-title font-extrabold tracking-tight text-n900">
+        <StableText>{t("title")}</StableText>
+      </h1>
+      <p className="mt-2 max-w-2xl text-base text-n600">
+        <StableText>{t("lead")}</StableText>
+      </p>
       {user && (
-        <div className="mb-6 flex flex-col gap-3 rounded-card border border-g200 bg-g50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-6 flex flex-col gap-3 rounded-card border border-g200 bg-g50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-n800">
             {t("signedInAs", { name: user.name, role: roles(user.role) })}
           </p>
@@ -38,13 +46,15 @@ export default async function LoginPage({
           </Button>
         </div>
       )}
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.15fr] lg:items-stretch">
+      <div
+        className={
+          demoLogin
+            ? "mt-8 grid items-start gap-6 lg:grid-cols-[1.15fr_1fr]"
+            : "mt-8 grid max-w-xl gap-6"
+        }
+      >
+        {demoLogin && <DemoPanel next={next} />}
         <SignInCard next={next} />
-        {demoLogin && (
-          <div className="order-first lg:order-none">
-            <DemoPanel next={next} />
-          </div>
-        )}
       </div>
     </div>
   );

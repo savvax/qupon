@@ -453,8 +453,10 @@
     }
   },
   "login": {
-    "title": "Sign in to the back office",
-    "lead": "Issuers and registrars sign in with the account their organisation was given.",
+    "title": "Sign in",
+    "lead": "Pick a demo role to look around in one click, or sign in with the account your organisation gave you.",
+    "emailTitle": "Sign in with email",
+    "emailLead": "For the account your organisation gave you.",
     "email": "Email",
     "password": "Password",
     "submit": "Sign in",

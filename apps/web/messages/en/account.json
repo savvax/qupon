@@ -45,6 +45,8 @@
   "signup": {
     "title": "Create an investor account",
     "lead": "Self-registered investors link their own wallet and get verified to join bond issues.",
+    "formTitle": "Your details",
+    "formLead": "Email and password now; the wallet and verification come right after.",
     "name": "Full name",
     "email": "Email",
     "password": "Password",
