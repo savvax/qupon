@@ -130,6 +130,8 @@ type Report struct {
 	ExpectedHash     string     `json:"expectedHash"` // sha256 chain recomputed owner-ascending
 	OnchainHash      string     `json:"onchainHash"`
 	HashMatches      bool       `json:"hashMatches"`
+	// HashScheme (plan 15 D3): 0 = rolling sha256 chain over owner-sorted holders, 1 = order-independent set hash.
+	HashScheme uint8 `json:"hashScheme"`
 	Supply           uint64     `json:"supply"` // bond mint supply
 	UnitsSnapshotted uint64     `json:"unitsSnapshotted"`
 	ExpectedTotals   Totals     `json:"expectedTotals"`
@@ -216,6 +218,7 @@ func Run(ctx context.Context, rd Reader, actionPDA solana.PublicKey) (*Report, e
 		},
 		CheckedAt:   time.Now().Unix(),
 		BankPending: action.BankPending,
+		HashScheme:  action.HashScheme,
 	}
 	if action.DefaultedAt != 0 {
 		d := &DefaultReport{

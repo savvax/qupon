@@ -28,7 +28,8 @@ test("landing demo button offers the role choice to a signed-in visitor and swit
 }) => {
   await signInAs(page, "issuer", baseURL);
   await page.goto("/");
-  await page.getByRole("link", { name: /Open the demo/ }).click();
+  // The landing's demo entry is "Try as …" since the showcase refresh (task 1535).
+  await page.getByRole("link", { name: "Try as investor" }).click();
   await expect(page).toHaveURL(/\/login\?choose=1$/);
   await expect(
     page.getByText(/You are signed in as .+\(Issuer\)/),

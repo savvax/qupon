@@ -16,6 +16,8 @@ describe("isAllowedWrite", () => {
     "admin/users/3",
     "me/wallets/challenge",
     "org/invites",
+    // plan 15 D6: bank payout confirmation (paying agent / registrar route on the Go side)
+    "actions/ActnINTR0001Dem0PDA111111111111111111111111111/confirm-bank",
   ])("allows %s", (p) => {
     expect(isAllowedWrite(p)).toBe(true);
   });
@@ -30,24 +32,36 @@ describe("isAllowedWrite", () => {
     "issuer/%2e%2e/auth",
     "documents/1",
     "kase/bonds/X",
+    // only the confirm-bank write is admitted under actions/, nothing else
+    "actions/ActnINTR0001Dem0PDA111111111111111111111111111/advance",
+    "actions/x/confirm-bank/../confirm-bank",
   ])("rejects %s", (p) => {
     expect(isAllowedWrite(p)).toBe(false);
   });
 });
 
 describe("isAllowedRead", () => {
-  it.each(["admin/audit", "me/reports/statement", "documents/12"])(
-    "allows %s",
-    (p) => {
-      expect(isAllowedRead(p)).toBe(true);
-    },
-  );
-  it.each(["auth/me", "admin/../auth", "series", "me//x", ""])(
-    "rejects %s",
-    (p) => {
-      expect(isAllowedRead(p)).toBe(false);
-    },
-  );
+  it.each([
+    "admin/audit",
+    "me/reports/statement",
+    "documents/12",
+    // plan 15 D9: the browser-side disclosure hash check fetches the seev.031 through the session proxy
+    "actions/ActnINTR0001Dem0PDA111111111111111111111111111/iso/seev031.xml",
+  ])("allows %s", (p) => {
+    expect(isAllowedRead(p)).toBe(true);
+  });
+  it.each([
+    "auth/me",
+    "admin/../auth",
+    "series",
+    "me//x",
+    "",
+    // other action reads stay direct API calls, not proxied
+    "actions/x/iso/seev036.zip",
+    "actions/x/notice",
+  ])("rejects %s", (p) => {
+    expect(isAllowedRead(p)).toBe(false);
+  });
 });
 
 describe("isAllowedUpload", () => {

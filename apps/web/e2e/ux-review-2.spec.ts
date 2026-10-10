@@ -13,8 +13,9 @@ test("phones: investor history cards keep net, status and record date", async ({
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Portfolio");
   const card = page.locator("section[aria-labelledby=history] li").first();
   await expect(card).toBeVisible();
+  // "Record date" is also the glossary-term button (task 1530 language pass); .first() is the visible label.
   for (const label of ["Net", "Status", "Record date"])
-    await expect(card.getByText(label, { exact: true })).toBeVisible();
+    await expect(card.getByText(label, { exact: true }).first()).toBeVisible();
   // no horizontal page scroll
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),

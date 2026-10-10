@@ -8,6 +8,7 @@ import { signInAs } from "./session";
  * 5 bonds at par (5,000.00) and one of 10 bonds still awaiting funding.
  */
 const BTRK = "BTRKDeM0BondMint1111111111111111111111111111";
+const QPNB1 = "QpNb1Dem0BondMint1111111111111111111111111111";
 const ANNOUNCED = "ActnINTR0003Dem0PDA111111111111111111111111111"; // BTRKdemo coupon, status Announced
 
 const rows = (page: Page) => page.locator("tbody tr");
@@ -32,6 +33,11 @@ test("registrar creates a trade at par, sees it, and settles the ready one", asy
   await page.getByRole("link", { name: "Trades" }).first().click();
   await expect(page).toHaveURL(/\/registrar\/trades/);
   await expect(page.getByRole("heading", { name: "Trades" })).toBeVisible();
+  // The fixture trades live on QPNb1; the showcase series (task 1535) are also pickable
+  // and the first of them is selected by default.
+  await page
+    .getByRole("combobox", { name: "Series" })
+    .selectOption(QPNB1);
   // implemented flow, with its scope stated
   await expect(
     page.getByRole("link", {

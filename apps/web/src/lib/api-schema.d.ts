@@ -2263,6 +2263,11 @@ export interface components {
             expectedHash: string;
             onchainHash: string;
             hashMatches: boolean;
+            /**
+             * @description plan 15 D3 — 0: rolling sha256 chain over owner-sorted holders; 1: order-independent set hash (XOR of one hash per holder), so parallel or permissionless batches verify the same
+             * @enum {integer}
+             */
+            hashScheme?: 0 | 1;
             /** @description bond mint supply at read time */
             supply: number;
             unitsSnapshotted: number;

@@ -24,6 +24,10 @@ const ACTION_PDA_2 = "ActnBMET0002Dem0PDA1111111111111111111111111111";
 const ACTION_PDA_3 = "ActnINTR0003Dem0PDA111111111111111111111111111";
 // Plan 15 task 1533: a funded BTRK coupon drives the Claim buttons and the claimable KPI in mock mode.
 const ACTION_PDA_4 = "ActnINTR0004Dem0PDA111111111111111111111111111";
+// Plan 15 task 1534: the registrar console v2 fixtures — a defaulted coupon (D4) and a redemption
+// with bank-routed payouts (D6).
+const ACTION_PDA_6 = "ActnINTR0006Dem0PDA111111111111111111111111111";
+const ACTION_PDA_7 = "ActnREDM0007Dem0PDA111111111111111111111111111";
 const ESCROW_PDA_1 = "EscrowDem0PDA11111111111111111111111111111111";
 const ESCROW_PDA_2 = "EscrowDem0PDA22222222222222222222222222222222";
 
@@ -253,6 +257,10 @@ const actions: Record<string, ActionDTO[]> = {
       result: null,
       completedAt: "2026-03-01T12:20:00+05:00",
       factorBps: null,
+      // sha256 of the mock seev.031 XML (mockGetText) — the console's browser-side check shows ✓
+      disclosureHash:
+        "e69e6726894709998fb8a9c481c0ac2fe99401ed8a93cb0c2ad748a7a4194916",
+      finalizedAt: "2026-02-28T00:10:00+05:00",
       explorerUrl: explorer(ACTION_PDA_1),
     },
     {
@@ -295,6 +303,98 @@ const actions: Record<string, ActionDTO[]> = {
       completedAt: null,
       factorBps: null,
       explorerUrl: explorer(ACTION_PDA_2),
+    },
+    // Plan 15 D4 fixture: snapshot complete, payment + grace passed with the escrow short — declared in default.
+    // Required = Σ net + tax = 500 000 tiyn, escrow holds 300 000 → shortfall 200 000 (2 000.00 KZT).
+    {
+      pda: ACTION_PDA_6,
+      seriesMint: MINT_QPNB1,
+      kind: "INTR",
+      mandatory: "MAND",
+      corpId: "QPNb1-INTR-0006",
+      officialId: null,
+      announcedAt: "2026-08-20T10:00:00+05:00",
+      recordAt: "2026-09-05T00:00:00+05:00",
+      paymentAt: "2026-09-15T00:00:00+05:00",
+      periodStart: "2026-03-01",
+      periodEnd: "2026-09-01",
+      accrualDays: 180,
+      rateBps: 1000,
+      perUnitGross: kzt("5000", "50.00 KZT"),
+      perUnitPrincipal: kzt("0", "0.00 KZT"),
+      cashMint: MINT_TKZT,
+      escrowBalance: kzt("300000", "3,000.00 KZT"),
+      status: "Defaulted",
+      snapshotSlot: 2244,
+      snapshotHash: "C7oUNmockHASHqPQf2XN7pXhXpzKdQmYtWJChMAvery9",
+      unitsSnapshotted: "100",
+      holdersSnapshotted: 3,
+      holdersPaid: null,
+      totalGross: kzt("500000", "5,000.00 KZT"),
+      totalTax: kzt("0", "0.00 KZT"),
+      totalNet: kzt("500000", "5,000.00 KZT"),
+      totalPaid: kzt("0", "0.00 KZT"),
+      totalRetired: null,
+      holdersRetired: null,
+      proposalNewRateBps: null,
+      proposalNewMaturity: null,
+      votingEndsAt: null,
+      votesFor: null,
+      votesAgainst: null,
+      votesAbstain: null,
+      result: null,
+      completedAt: null,
+      factorBps: null,
+      defaultedAt: "2026-09-16T00:05:00+05:00",
+      curedAt: null,
+      finalizedAt: "2026-09-05T00:12:00+05:00",
+      explorerUrl: explorer(ACTION_PDA_6),
+    },
+    // Plan 15 D6 fixture: redemption paying out, one holder paid, two routed to the paying agent (PaidToAgent).
+    {
+      pda: ACTION_PDA_7,
+      seriesMint: MINT_QPNB1,
+      kind: "REDM",
+      mandatory: "MAND",
+      corpId: "QPNb1-REDM-0005",
+      officialId: null,
+      announcedAt: "2026-09-01T10:00:00+05:00",
+      recordAt: "2026-09-10T00:00:00+05:00",
+      paymentAt: "2026-09-20T00:00:00+05:00",
+      periodStart: null,
+      periodEnd: null,
+      accrualDays: null,
+      rateBps: 1000,
+      perUnitGross: kzt("5000", "50.00 KZT"),
+      perUnitPrincipal: kzt("100000", "1,000.00 KZT"),
+      cashMint: MINT_TKZT,
+      // coupon Σ 5,000.00 + principal Σ 100,000.00 = 105,000.00 KZT (10/25/65 units of 1,000 face at 10%)
+      escrowBalance: kzt("10500000", "105,000.00 KZT"),
+      status: "Settling",
+      snapshotSlot: 2345,
+      snapshotHash: "C7oUNmockHASHqPQf2XN7pXhXpzKdQmYtWJChMAvery9",
+      unitsSnapshotted: "100",
+      holdersSnapshotted: 3,
+      // all three holders are out of the escrow (one to a wallet, two with the agent): complete waits on the agent
+      holdersPaid: 3,
+      bankPending: 2,
+      totalGross: kzt("500000", "5,000.00 KZT"),
+      totalTax: kzt("0", "0.00 KZT"),
+      totalNet: kzt("500000", "5,000.00 KZT"),
+      totalPaid: kzt("1050000", "10,500.00 KZT"),
+      totalRetired: null,
+      holdersRetired: null,
+      proposalNewRateBps: null,
+      proposalNewMaturity: null,
+      votingEndsAt: null,
+      votesFor: null,
+      votesAgainst: null,
+      votesAbstain: null,
+      result: null,
+      completedAt: null,
+      factorBps: null,
+      finalizedAt: "2026-09-10T00:15:00+05:00",
+      explorerUrl: explorer(ACTION_PDA_7),
     },
   ],
   // Announced with the record date already past: drives the registrar dashboard's
@@ -533,6 +633,49 @@ const entitlements: Record<string, EntitlementDTO[]> = {
       explorerUrl: explorer(owner),
     };
   }),
+  // D4 fixture: record-date claims stay open while the coupon is in default
+  [ACTION_PDA_6]: INVESTOR_OWNERS.map((owner, i) => {
+    const gross = ["50000", "125000", "325000"][i] ?? "0";
+    return {
+      pda: `EnTlDem0Pda${i}For${ACTION_PDA_6.slice(0, 4)}1111111111111111111111111`,
+      actionPda: ACTION_PDA_6,
+      owner,
+      units: ["10", "25", "65"][i] ?? "0",
+      gross: kzt(gross, `${(Number(gross) / 100).toFixed(2)} KZT`),
+      tax: kzt("0", "0.00 KZT"),
+      net: kzt(gross, `${(Number(gross) / 100).toFixed(2)} KZT`),
+      principal: kzt("0", "0.00 KZT"),
+      status: "Snapshotted",
+      paidAt: null,
+      vote: "None",
+      votedAt: null,
+      explorerUrl: explorer(owner),
+    };
+  }),
+  // D6 fixture: one holder paid to the wallet, two routed to the paying agent.
+  // Coupon 500/1,250/3,250 (the brief's 10/25/65 units) plus principal 10,000/25,000/65,000 KZT each.
+  [ACTION_PDA_7]: INVESTOR_OWNERS.map((owner, i) => {
+    const coupon = ["50000", "125000", "325000"][i] ?? "0";
+    const principal = ["1000000", "2500000", "6500000"][i] ?? "0";
+    const kztFmt = (minor: string) =>
+      kzt(minor, `${(Number(minor) / 100).toFixed(2)} KZT`);
+    const toAgent = i > 0;
+    return {
+      pda: `EnTlDem0Pda${i}For${ACTION_PDA_7.slice(0, 4)}1111111111111111111111111`,
+      actionPda: ACTION_PDA_7,
+      owner,
+      units: ["10", "25", "65"][i] ?? "0",
+      gross: kztFmt(coupon),
+      tax: kzt("0", "0.00 KZT"),
+      net: kztFmt(coupon),
+      principal: kztFmt(principal),
+      status: toAgent ? "PaidToAgent" : "Paid",
+      paidAt: toAgent ? null : "2026-09-20T12:00:00+05:00",
+      vote: "None",
+      votedAt: null,
+      explorerUrl: explorer(owner),
+    };
+  }),
 };
 
 /** Demo activity feed: a few events per action so the timeline shows tx links. */
@@ -608,6 +751,25 @@ const activity = [
     owner: INVESTOR_OWNERS[0],
     choice: 1,
     weight: "10",
+  }),
+  // D4 fixture (plan 15): the default declaration is a real timeline step with its own tx
+  ev(16, 1789499100, "ActionDefaulted", ACTION_PDA_6, SIGS[0]!, {
+    required: "500000",
+    escrow_balance: "300000",
+    shortfall: "200000",
+  }),
+  // D6 fixture (plan 15): bank-routed payouts land with the paying agent
+  ev(17, 1789930800, "EntitlementPaid", ACTION_PDA_7, SIGS[1]!, {
+    owner: INVESTOR_OWNERS[0],
+    net: "1050000",
+  }),
+  ev(18, 1789930801, "PaidToAgent", ACTION_PDA_7, SIGS[2]!, {
+    owner: INVESTOR_OWNERS[1],
+    net: "2625000",
+  }),
+  ev(19, 1789930802, "PaidToAgent", ACTION_PDA_7, SIGS[0]!, {
+    owner: INVESTOR_OWNERS[2],
+    net: "6825000",
   }),
 ];
 
@@ -710,6 +872,8 @@ function mockReconcile(pda: string) {
     expectedHash: "C7oUNmockHASHqPQf2XN7pXhXpzKdQmYtWJChMAvery9",
     onchainHash: "C7oUNmockHASHqPQf2XN7pXhXpzKdQmYtWJChMAvery9",
     hashMatches: true,
+    // plan 15 D3: the plan-15-era fixtures snapshot with the order-independent set hash
+    hashScheme: pda === ACTION_PDA_6 || pda === ACTION_PDA_7 ? 1 : 0,
     supply: 100,
     unitsSnapshotted: 100,
     totalsMatch: ok,
@@ -849,6 +1013,42 @@ export function mockGet(path: string): Promise<unknown> {
   if (holderMatch) {
     return delay(holderLookup(holderMatch[1]!));
   }
+  // plan 15 D6: the console's bank confirmations panel
+  const bankMatch = /^\/actions\/([^/]+)\/bank-pending$/.exec(path);
+  if (bankMatch) {
+    const pda = bankMatch[1]!;
+    const found = Object.values(actions)
+      .flat()
+      .find((a) => a.pda === pda);
+    const items =
+      pda === ACTION_PDA_7
+        ? [1, 2].map((i) => ({
+            owner: INVESTOR_OWNERS[i]!,
+            entitlementPda: `EnTlDem0Pda${i}For${ACTION_PDA_7.slice(0, 4)}1111111111111111111111111`,
+            amount: (() => {
+              const minor = ["2625000", "6825000"][i - 1]!;
+              return kzt(minor, `${(Number(minor) / 100).toFixed(2)} KZT`);
+            })(),
+            routeBankRefHash: `a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b${i}`,
+          }))
+        : [];
+    return delay({ bankPending: found?.bankPending ?? 0, items });
+  }
+  // plan 15 D9: server-side comparison of the served seev.031 vs the anchored hash
+  const dhMatch = /^\/actions\/([^/]+)\/disclosure-hash$/.exec(path);
+  if (dhMatch) {
+    const found = Object.values(actions)
+      .flat()
+      .find((a) => a.pda === dhMatch[1]);
+    const hash =
+      "e69e6726894709998fb8a9c481c0ac2fe99401ed8a93cb0c2ad748a7a4194916";
+    const onchain = found?.disclosureHash ?? "";
+    return delay({
+      hash,
+      onchain,
+      match: Boolean(onchain) && onchain === hash,
+    });
+  }
   const seriesMatch = /^\/series\/([^/]+)$/.exec(path);
   if (seriesMatch) {
     // Magic mint for e2e: a registrar 500 so the (public) error boundary renders.
@@ -913,6 +1113,9 @@ export function mockGet(path: string): Promise<unknown> {
       ? delay(found)
       : Promise.reject(new Api404(`action ${actionMatch[1]} not found`));
   }
+  // text downloads (ISO XML) served through the bo-get proxy: the browser-side disclosure hash check fetches
+  // the seev.031 this way (mockGetText holds the fixtures)
+  if (path.endsWith(".xml")) return mockGetText(path);
   return Promise.reject(notFound());
 }
 

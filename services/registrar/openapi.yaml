@@ -110,8 +110,8 @@ paths:
   /series/{mint}/trades:
     get:
       summary: >-
-          Admitted secondary trades of a series (settled by the Solana DvP
-          program), oldest first, with the funding of both legs
+        Admitted secondary trades of a series (settled by the Solana DvP
+        program), oldest first, with the funding of both legs
       operationId: listTrades
       parameters:
         - $ref: '#/components/parameters/Mint'
@@ -129,8 +129,8 @@ paths:
                   openTrades:
                     type: integer
                     description: >-
-                        admitted trades not yet released; strike_record is
-                        refused while this is above 0
+                      admitted trades not yet released; strike_record is
+                      refused while this is above 0
                   items:
                     type: array
                     items:
@@ -1060,8 +1060,8 @@ paths:
   /registrar/series/{mint}/trades:
     post:
       summary: >-
-          Create a secondary trade on the Solana DvP program and admit its bond
-          escrow (trade:create, one transaction)
+        Create a secondary trade on the Solana DvP program and admit its bond
+        escrow (trade:create, one transaction)
       operationId: registrarTradeCreate
       security:
         - bearerAuth: []
@@ -1076,8 +1076,8 @@ paths:
       responses:
         "200":
           description: >-
-              created and admitted; the trade's SwapDvp address and the
-              transaction signature
+            created and admitted; the trade's SwapDvp address and the
+            transaction signature
           content:
             application/json:
               schema:
@@ -1094,8 +1094,8 @@ paths:
                     type: string
         "400":
           description: >-
-              invalid_body — seller or buyer not base58, seller equals buyer,
-              or units below 1
+            invalid_body — seller or buyer not base58, seller equals buyer, or
+            units below 1
         "401":
           description: no valid back-office session
         "403":
@@ -1104,13 +1104,13 @@ paths:
           description: unknown_series
         "409":
           description: >-
-              the chain refused the trade (onchainError), e.g. InvalidTrade or
-              a suspended party
+            the chain refused the trade (onchainError), e.g. InvalidTrade or a
+            suspended party
   /registrar/series/{mint}/trades/{swapDvp}/settle:
     post:
       summary: >-
-          Settle an admitted trade — SettleDvp (both legs atomically) +
-          release_trade, one transaction
+        Settle an admitted trade — SettleDvp (both legs atomically) +
+        release_trade, one transaction
       operationId: registrarTradeSettle
       security:
         - bearerAuth: []
@@ -1139,14 +1139,14 @@ paths:
           description: unknown_series or trade_not_found
         "409":
           description: >-
-              the chain refused the settlement (onchainError), e.g. a leg not
-              funded or the trade expired
+            the chain refused the settlement (onchainError), e.g. a leg not
+            funded or the trade expired
   /registrar/series/{mint}/trades/{swapDvp}/cancel:
     post:
       summary: >-
-          Cancel an admitted trade — CancelDvp + release_trade in one
-          transaction; with force, return the escrowed bonds to the seller
-          without the DvP program
+        Cancel an admitted trade — CancelDvp + release_trade in one
+        transaction; with force, return the escrowed bonds to the seller
+        without the DvP program
       operationId: registrarTradeCancel
       security:
         - bearerAuth: []
@@ -1162,8 +1162,8 @@ paths:
       responses:
         "200":
           description: >-
-              cancelled; signatures and the units a forced release moved back
-              to the seller (0 otherwise)
+            cancelled; signatures and the units a forced release moved back to
+            the seller (0 otherwise)
           content:
             application/json:
               schema:
@@ -1189,8 +1189,8 @@ paths:
           description: unknown_series or trade_not_found
         "409":
           description: >-
-              the chain refused the cancel (onchainError), e.g. a refund
-              account is closed — retry with force
+            the chain refused the cancel (onchainError), e.g. a refund account
+            is closed — retry with force
   /registrar/audit:
     get:
       summary: The back-office audit feed (who ran which write, and what it did)
@@ -1259,8 +1259,8 @@ paths:
   /demo/investor/series/{mint}/trades/{swapDvp}/fund:
     post:
       summary: >-
-          Fund one leg of an admitted trade with a server-held demo investor
-          keypair (trade:fund); the demo investor and the registrar may call it
+        Fund one leg of an admitted trade with a server-held demo investor
+        keypair (trade:fund); the demo investor and the registrar may call it
       operationId: demoTradeFund
       security:
         - bearerAuth: []
@@ -1286,8 +1286,8 @@ paths:
           description: no valid session
         "403":
           description: >-
-              role is not investor_demo, registrar or admin; or
-              not_demo_investor when the server holds no keypair for that party
+            role is not investor_demo, registrar or admin; or not_demo_investor
+            when the server holds no keypair for that party
         "404":
           description: unknown_series or trade_not_found
         "409":
@@ -3919,22 +3919,22 @@ components:
         openTrades:
           type: integer
           description: >-
-              admitted secondary trades (Solana DvP) not yet released; the
-              record date is refused while above 0
+            admitted secondary trades (Solana DvP) not yet released; the record
+            date is refused while above 0
         hookGate:
           type: boolean
           description: >-
-              plan 15 D1' — the record date is the transfer-hook gate (the
-              register never pauses)
+            plan 15 D1' — the record date is the transfer-hook gate (the
+            register never pauses)
         inDefault:
           type: boolean
           description: >-
-              plan 15 D4 — an action of this series is in default and not yet
-              cured
+            plan 15 D4 — an action of this series is in default and not yet
+            cured
         defaultsCount:
           type: integer
           description: >-
-              defaults ever declared on this series (public credit signal)
+            defaults ever declared on this series (public credit signal)
         demoClock:
           oneOf:
             - $ref: '#/components/schemas/DemoClockDTO'
@@ -3949,8 +3949,8 @@ components:
           description: devnet explorer link for the mint
     DemoClockDTO:
       description: >-
-          DEMO clock (plan 15 D7) - one civil day lasts daySecs seconds from
-          issueTs, whose civil date is issueDate.
+        DEMO clock (plan 15 D7) - one civil day lasts daySecs seconds from
+        issueTs, whose civil date is issueDate.
       type: object
       required: [daySecs, issueTs, issueDate]
       properties:
@@ -3964,8 +3964,8 @@ components:
           format: date
     TradeDTO:
       description: >-
-          One admitted secondary trade with the funding of both legs (same
-          field names as the CLI's trade:list).
+        One admitted secondary trade with the funding of both legs (same field
+        names as the CLI's trade:list).
       type: object
       required:
         - swapDvp
@@ -3985,8 +3985,8 @@ components:
         escrow:
           type: string
           description: >-
-              bond-leg escrow, the SwapDvp's associated token account for the
-              bond mint
+            bond-leg escrow, the SwapDvp's associated token account for the
+            bond mint
         seller:
           type: string
         buyer:
@@ -4004,14 +4004,14 @@ components:
             - string
             - "null"
           description: >-
-              bonds in the escrow, decimal string; null once the DvP program
-              closed the escrow
+            bonds in the escrow, decimal string; null once the DvP program
+            closed the escrow
         fundedCash:
           oneOf:
             - $ref: '#/components/schemas/Amount'
             - type: "null"
           description: >-
-              cash in the escrow; null once the DvP program closed the escrow
+            cash in the escrow; null once the DvP program closed the escrow
         status:
           type: string
           enum:
@@ -4041,8 +4041,8 @@ components:
         force:
           type: boolean
           description: >-
-              skip the DvP program and return the escrowed bonds to the seller
-              as permanent delegate
+            skip the DvP program and return the escrowed bonds to the seller as
+            permanent delegate
     TradeFundRequest:
       type: object
       required:
@@ -4287,19 +4287,19 @@ components:
         bankPending:
           type: integer
           description: >-
-              plan 15 D6 — bank-routed payouts awaiting the paying agent's
-              confirmation (complete needs 0)
+            plan 15 D6 — bank-routed payouts awaiting the paying agent's
+            confirmation (complete needs 0)
         disclosureHash:
           type: ["string", "null"]
           description: >-
-              plan 15 D9 — hex sha256 of the official notice (seev.031),
-              anchored once
+            plan 15 D9 — hex sha256 of the official notice (seev.031), anchored
+            once
         finalizedAt:
           type: ["string", "null"]
           format: date-time
           description: >-
-              when the snapshot was finalized; a default is due one series day
-              after max(paymentAt, finalizedAt)
+            when the snapshot was finalized; a default is due one series day
+            after max(paymentAt, finalizedAt)
         explorerUrl:
           type: string
           description: devnet explorer link for the action PDA
@@ -4641,6 +4641,12 @@ components:
           type: string
         hashMatches:
           type: boolean
+        hashScheme:
+          type: integer
+          enum: [0, 1]
+          description: 'plan 15 D3 — 0: rolling sha256 chain over owner-sorted
+            holders; 1: order-independent set hash (XOR of one hash per holder),
+            so parallel or permissionless batches verify the same'
         supply:
           type: integer
           description: bond mint supply at read time

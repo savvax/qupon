@@ -1,5 +1,11 @@
 export type Tone =
-  "success" | "warn" | "danger" | "info" | "neutral" | "violet";
+  | "success"
+  | "warn"
+  | "danger"
+  | "info"
+  | "neutral"
+  | "violet"
+  | "bank";
 
 const TONES: Record<Tone, { bg: string; fg: string }> = {
   success: { bg: "bg-g50", fg: "text-g700" },
@@ -8,6 +14,7 @@ const TONES: Record<Tone, { bg: string; fg: string }> = {
   info: { bg: "bg-p50", fg: "text-p700" },
   neutral: { bg: "bg-n100", fg: "text-n600" },
   violet: { bg: "bg-[#f3efff]", fg: "text-[#5b3cc4]" },
+  bank: { bg: "bg-bank-bg", fg: "text-bank-fg" }, // paid to the paying agent (design language §4)
 };
 
 /** Every status the registrar API emits → tone. Unknown values fall back to neutral (never throw). */
@@ -30,6 +37,8 @@ export const STATUS_TONE: Record<string, Tone> = {
   Suspended: "danger",
   Against: "danger",
   Rejected: "danger",
+  Defaulted: "danger", // plan 15 D4: the loudest state in the system
+  PaidToAgent: "bank", // plan 15 D6: with the paying agent, awaiting confirmation
   VotingOpen: "violet",
   Retiring: "violet",
   Closed: "neutral",

@@ -26,9 +26,8 @@ test("dashboard: kpis, pipeline columns and the record-date alert", async ({
     "Settling",
     "Completed",
   ])
-    await expect(
-      page.getByRole("heading", { name: col, exact: true }),
-    ).toBeVisible();
+    // Column headings carry their action count ("Announced 2") since the plan-15 board.
+    await expect(page.getByRole("heading", { name: col })).toBeVisible();
   // The mock's announced BTRKdemo coupon (record date already passed) lands in column 1 + alerts.
   await expect(
     page.getByRole("link", { name: /BTRKdemo/ }).first(),

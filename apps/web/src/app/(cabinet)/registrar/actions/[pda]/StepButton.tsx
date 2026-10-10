@@ -25,6 +25,7 @@ export function StepButton({
   status,
   progress = "",
   secondary = false,
+  autofund = true,
 }: {
   pda: string;
   label: string;
@@ -32,6 +33,12 @@ export function StepButton({
   /** Batch progress key (unitsSnapshotted/holdersPaid/holdersRetired) — changes while the status holds. */
   progress?: string;
   secondary?: boolean;
+  /**
+   * Send autofund with the advance (default true: pressing "Fund escrow" IS the issuer approval). The one
+   * exception is declare_default — executor.NextStep funds instead whenever autofund is set, so the default
+   * button must leave it off (plan 15 D4).
+   */
+  autofund?: boolean;
 }) {
   const t = useTranslations("action");
   const router = useRouter();
@@ -75,7 +82,7 @@ export function StepButton({
       call: () =>
         boPost(`registrar/actions/${pda}/advance`, {
           confirm: true,
-          autofund: true,
+          autofund,
         }),
       txs: (r) => [r.signature ?? r.signatures?.[0] ?? ""].filter(Boolean),
       onError: (e: BoError, text: string) => {

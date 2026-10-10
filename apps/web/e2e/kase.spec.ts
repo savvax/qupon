@@ -50,7 +50,10 @@ test("a meeting page shows no coupon-only cards (task 9106)", async ({
   await expect(page.getByRole("link", { name: "seev.036 (ZIP)" })).toHaveCount(
     0,
   );
-  await expect(page.getByRole("link", { name: "seev.031" })).toBeVisible();
+  // the plan-15 stepper also links seev.031 on its Record step — the documents card keeps its own
+  await expect(
+    page.getByRole("link", { name: "seev.031" }).first(),
+  ).toBeVisible();
 });
 
 test("the disclosure package downloads and submits to KASE — SIMULATED", async ({

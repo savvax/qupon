@@ -46,7 +46,8 @@
     "gate": {
       "record": "Record date",
       "payment": "Payment date",
-      "vote": "Voting ends"
+      "vote": "Voting ends",
+      "default": "Default may be declared"
     },
     "investorVote": "{ticker} bondholder meeting: holders vote until the deadline",
     "investorRecord": "{ticker} coupon: whoever holds the bond on the record date is paid",

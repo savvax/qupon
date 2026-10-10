@@ -28,17 +28,23 @@ export type FlowStep = {
   downloads?: { label: string; href: string }[];
 };
 
-/** Horizontal from a container width that leaves each step ≥ ~110 px: @2xl (42 rem) for ≤ 6 steps, @3xl otherwise. */
+/** Horizontal from a container width that leaves each step ≥ ~110 px: @2xl (42 rem) for ≤ 6 steps, @3xl otherwise.
+ * In the horizontal columns the actor chip is short ("Anyone") — the long "Anyone can push" pill is wider
+ * than a column and overlaps its neighbours (task 1534 review); it stays in the vertical rail. */
 const LAYOUT = {
   narrow: {
     ol: "@2xl:auto-cols-[minmax(0,1fr)] @2xl:grid-flow-col",
     li: "@2xl:flex-col @2xl:gap-2.5 @2xl:pr-4 @2xl:pb-0",
     line: "@2xl:top-[11px] @2xl:right-2 @2xl:bottom-auto @2xl:left-8 @2xl:h-0.5 @2xl:w-auto",
+    chipLong: "@2xl:hidden",
+    chipShort: "hidden @2xl:inline-flex",
   },
   wide: {
     ol: "@3xl:auto-cols-[minmax(0,1fr)] @3xl:grid-flow-col",
     li: "@3xl:flex-col @3xl:gap-2.5 @3xl:pr-4 @3xl:pb-0",
     line: "@3xl:top-[11px] @3xl:right-2 @3xl:bottom-auto @3xl:left-8 @3xl:h-0.5 @3xl:w-auto",
+    chipLong: "@3xl:hidden",
+    chipShort: "hidden @3xl:inline-flex",
   },
 } as const;
 
@@ -108,7 +114,8 @@ export function ActionFlow({
   className?: string;
 }) {
   const t = useTranslations("kit.flow");
-  const when = (iso: string) => (dateOnly ? formatDate(iso, locale) : formatDateTime(iso, locale));
+  const when = (iso: string) =>
+    dateOnly ? formatDate(iso, locale) : formatDateTime(iso, locale);
   const delta = (planned: string, effective: string) =>
     Math.round(
       (new Date(effective).getTime() - new Date(planned).getTime()) / 1000,
@@ -162,16 +169,12 @@ export function ActionFlow({
                   )}
                 </div>
                 {s.at && (
-                  <div className="num mt-0.5 text-n600">
-                    {when(s.at)}
-                  </div>
+                  <div className="num mt-0.5 text-n600">{when(s.at)}</div>
                 )}
                 {s.record && (
                   <dl className="mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2 text-micro text-n600">
                     <dt>{t("planned")}</dt>
-                    <dd className="num text-n900">
-                      {when(s.record.planned)}
-                    </dd>
+                    <dd className="num text-n900">{when(s.record.planned)}</dd>
                     {s.record.effective && (
                       <>
                         <dt>{t("effective")}</dt>
@@ -212,7 +215,14 @@ export function ActionFlow({
                     {s.actor &&
                       s.state !== "done" &&
                       (s.state === "current" || s.actor === "anyone") && (
-                        <ActorChip actor={s.actor} long />
+                        <>
+                          <span className={L.chipLong}>
+                            <ActorChip actor={s.actor} long />
+                          </span>
+                          <span className={L.chipShort}>
+                            <ActorChip actor={s.actor} />
+                          </span>
+                        </>
                       )}
                     {s.downloads?.map((d) => (
                       <a

@@ -13,15 +13,12 @@ import type { ActionDTO, ActivityLike } from "./api";
  */
 export type FlowAction = Omit<ActionDTO, "status"> & {
   status: ActionDTO["status"] | "Defaulted";
-  /** holders whose payout went to the paying agent (entitlement PaidToAgent) and awaits bank confirmation */
-  bankPending?: number;
 };
 
-/** One row of an action timeline (stepper + timeline card on the registrar action page). */
 export type TimelineStep = {
   id: StepId;
   label: string;
-  state: "done" | "current" | "pending" | "failed";
+  state: "done" | "current" | "pending" | "failed" | "defaulted";
   /** Extra detail under a timeline row: a `steps.detail.*` message key with its values. */
   detail?: StepDetail;
   /** tx signature of the step, when it executed on-chain */
@@ -45,7 +42,10 @@ export type StepId =
   | "meet_finalize"
   | "apply"
   // plan 15 D6: never in a timeline (stepsForKind); nextStep offers it while bank payouts await confirmation
-  | "confirm_bank";
+  | "confirm_bank"
+  // plan 15 D4: permissionless once the funding deadline passed; joins the timeline as its own step once it ran
+  // (like sweep) and marks the fund step defaulted while the default stands
+  | "declare_default";
 
 /** Console button labels (task 030 wording). */
 export const STEP_LABELS: Record<StepId, string> = {
@@ -62,6 +62,7 @@ export const STEP_LABELS: Record<StepId, string> = {
   votes: "Cast votes (portal)",
   meet_finalize: "Finalize meeting",
   confirm_bank: "Confirm bank payout",
+  declare_default: "Declare default",
   apply: "Apply terms change (ARDFM registration — SIMULATED)",
 };
 
@@ -130,10 +131,13 @@ const EVENT_TO_STEP: Record<string, StepId> = {
   "advance:close_series": "close",
   "advance:meeting_finalize": "meet_finalize",
   "advance:apply_terms_change": "apply",
+  ActionDefaulted: "declare_default",
+  "advance:declare_default": "declare_default",
 };
 
 const DONE_STATUSES: Record<StepId, string[]> = {
-  // an Announced action has been announced: the step is done even before its event is indexed
+  // an Announced action has been announced: the step is done even before its event is indexed.
+  // Defaulted counts as done for every step up to funding (D4): the action passed them before it stalled.
   announce: [
     "Announced",
     "RecordStruck",
@@ -144,6 +148,7 @@ const DONE_STATUSES: Record<StepId, string[]> = {
     "Retiring",
     "VotingOpen",
     "Finalized",
+    "Defaulted",
   ],
   strike: ["RecordStruck"].concat([
     "SnapshotComplete",
@@ -153,6 +158,7 @@ const DONE_STATUSES: Record<StepId, string[]> = {
     "Retiring",
     "VotingOpen",
     "Finalized",
+    "Defaulted",
   ]),
   snapshot: [
     "SnapshotComplete",
@@ -162,6 +168,7 @@ const DONE_STATUSES: Record<StepId, string[]> = {
     "Retiring",
     "VotingOpen",
     "Finalized",
+    "Defaulted",
   ],
   finalize: [
     "SnapshotComplete",
@@ -171,6 +178,7 @@ const DONE_STATUSES: Record<StepId, string[]> = {
     "Retiring",
     "VotingOpen",
     "Finalized",
+    "Defaulted",
   ],
   fund: ["Funded", "Settling", "Completed", "Retiring"],
   pay: ["Completed", "Retiring"],
@@ -182,6 +190,7 @@ const DONE_STATUSES: Record<StepId, string[]> = {
   meet_finalize: ["Finalized"],
   apply: [], // BMET Completed — derived below
   confirm_bank: ["Completed", "Retiring"],
+  declare_default: [], // done once its event exists (it joined the timeline only because it ran)
 };
 
 function stepDone(step: StepId, a: FlowAction, seriesClosed: boolean): boolean {
@@ -194,6 +203,8 @@ function stepDone(step: StepId, a: FlowAction, seriesClosed: boolean): boolean {
     );
   if (step === "close") return seriesClosed;
   if (step === "apply") return a.status === "Completed" && a.kind === "BMET";
+  // declare_default joins the timeline (below) only once it ran — the event or the Defaulted status proves it
+  if (step === "declare_default") return true;
   return DONE_STATUSES[step].includes(a.status);
 }
 
@@ -273,6 +284,9 @@ export function buildTimeline(
   // Task 1414: "Escrow swept" joins the timeline only once a sweep activity row
   // exists — complete/cancel leave no pending sweep step to render.
   if (byStep.has("sweep")) steps.push("sweep");
+  // Plan 15 D4: the default is a branch, not a linear step — it joins once declared (event indexed or status set).
+  if (byStep.has("declare_default") || a.status === "Defaulted")
+    steps.push("declare_default");
   const cancelled = a.status === "Cancelled";
   let currentAssigned = false;
   return steps.map((step) => {
@@ -283,6 +297,12 @@ export function buildTimeline(
       state = "done";
     } else if (cancelled) {
       state = "pending";
+    } else if (a.status === "Defaulted" && step === "fund") {
+      // the funding failure IS the default: red until the issuer's late funding cures it (D4).
+      // It also ends the "next" hunt: a defaulted action has no current step — the red one is the state.
+      state = "defaulted";
+      done = false;
+      currentAssigned = true;
     } else if (!currentAssigned) {
       state = "current";
       currentAssigned = true;
@@ -306,7 +326,10 @@ export function buildTimeline(
 }
 
 /** The clock a step waits on or races: the NowBar counts down to `at` (CountdownClock; demo-clock aware). */
-export type TimeGate = { at: number; kind: "record" | "payment" | "vote" };
+export type TimeGate = {
+  at: number;
+  kind: "record" | "payment" | "vote" | "default";
+};
 
 export type NextStep = {
   step: StepId | null;
@@ -318,12 +341,51 @@ export type NextStep = {
 
 const at = (iso?: string | null) => (iso ? new Date(iso).getTime() : NaN);
 
+/** Σ net + tax + principal the escrow must hold for the action to count as funded (Underfunded checks the same sum). */
+export function fundingRequired(a: FlowAction): bigint {
+  const principal =
+    BigInt(a.perUnitPrincipal?.minor ?? "0") *
+    BigInt(a.unitsSnapshotted ?? "0");
+  return (
+    BigInt(a.totalNet?.minor ?? "0") +
+    BigInt(a.totalTax?.minor ?? "0") +
+    principal
+  );
+}
+
+/** How much money is missing (0 = funded); null before the snapshot sizes the requirement. */
+export function fundingShortfall(a: FlowAction): bigint | null {
+  const required = fundingRequired(a);
+  if (required <= 0n) return null;
+  const escrow = BigInt(a.escrowBalance?.minor ?? "0");
+  return escrow >= required ? 0n : required - escrow;
+}
+
 /**
- * The step the console can run right now (mirror of executor.NextStep; the
- * chain re-checks every precondition — TooEarly etc. surfaces as an error).
- * `autofund` is always sent by the console: the operator pressing
- * "Fund escrow (issuer)" IS the issuer approval.
+ * When declare_default becomes valid: max(payment_at, record_at + finalize_delay) + one series day (program
+ * default.rs, D4). The API does not expose finalize_delay, so this mirrors the API's own rule
+ * (ActionDTO.finalizedAt: "a default is due one series day after max(paymentAt, finalizedAt)"): finalize cannot
+ * run before record_at + finalize_delay, so this estimate is never early — the worst case is a button that
+ * appears slightly after the chain would already accept it. The chain re-checks (NotOverdue) either way.
+ * `graceSecs` is one series day: day_secs on a demo clock, 86 400 s otherwise.
  */
+export function defaultDue(a: FlowAction, graceSecs = 86_400): number {
+  const funding = Math.max(at(a.paymentAt), at(a.finalizedAt ?? a.recordAt));
+  return funding + graceSecs * 1000;
+}
+
+/** A snapshot-complete action whose funding deadline passed with the escrow still short (D4). */
+export function defaultOverdue(
+  a: FlowAction,
+  now: number,
+  graceSecs = 86_400,
+): boolean {
+  if (a.status !== "SnapshotComplete") return false;
+  const short = fundingShortfall(a);
+  if (short == null || short === 0n) return false;
+  const due = defaultDue(a, graceSecs);
+  return Number.isFinite(due) && now >= due;
+}
 export function nextStep(
   a: FlowAction,
   now = Date.now(),
@@ -331,6 +393,8 @@ export function nextStep(
   supply?: bigint,
   /** the series' open secondary trades: strike_record fails with TradesInFlight while any is admitted */
   openTrades = 0,
+  /** one series day in seconds (series.demoClock?.daySecs; 86 400 on the real clock) — the default grace */
+  graceSecs = 86_400,
 ): NextStep {
   const hs = a.holdersSnapshotted ?? 0;
   switch (a.status) {
@@ -341,7 +405,11 @@ export function nextStep(
           wait: `open secondary trades: settle or cancel them first (${openTrades})`,
         };
       return at(a.recordAt) > now
-        ? { step: "strike", label: STEP_LABELS.strike, gate: { at: at(a.recordAt), kind: "record" } }
+        ? {
+            step: "strike",
+            label: STEP_LABELS.strike,
+            gate: { at: at(a.recordAt), kind: "record" },
+          }
         : { step: "strike", label: STEP_LABELS.strike };
     case "RecordStruck": {
       // finalize_snapshot needs every outstanding unit in the snapshot (executor.NextStep:
@@ -359,11 +427,24 @@ export function nextStep(
       }
       return { step: "snapshot", label: STEP_LABELS.snapshot };
     }
-    case "SnapshotComplete":
+    case "SnapshotComplete": {
+      // executor.NextStep: funding first; once the payment date plus the grace day passed unfunded, any wallet
+      // may record the default (D4). The cure is funding — the console keeps a secondary cure button.
+      if (defaultOverdue(a, now, graceSecs))
+        return {
+          step: "declare_default",
+          label: STEP_LABELS.declare_default,
+          gate: { at: defaultDue(a, graceSecs), kind: "default" },
+        };
+      const gate = Number.isNaN(at(a.paymentAt))
+        ? undefined
+        : { at: at(a.paymentAt), kind: "payment" as const };
+      return gate
+        ? { step: "fund", label: STEP_LABELS.fund, gate }
+        : { step: "fund", label: STEP_LABELS.fund };
+    }
     case "Defaulted": // the cure is funding: the record-date holders keep their claims (D4)
-      return Number.isNaN(at(a.paymentAt))
-        ? { step: "fund", label: STEP_LABELS.fund }
-        : { step: "fund", label: STEP_LABELS.fund, gate: { at: at(a.paymentAt), kind: "payment" } };
+      return { step: "fund", label: STEP_LABELS.fund };
     case "Funded": // Go executor: always pay (idempotent batches → Settling)
       return { step: "pay", label: STEP_LABELS.pay };
     case "Settling":
@@ -387,7 +468,11 @@ export function nextStep(
         : true;
       if (open && voted < total)
         return a.votingEndsAt
-          ? { step: null, wait: "voting still open", gate: { at: at(a.votingEndsAt), kind: "vote" } }
+          ? {
+              step: null,
+              wait: "voting still open",
+              gate: { at: at(a.votingEndsAt), kind: "vote" },
+            }
           : { step: null, wait: "voting still open" };
       return { step: "meet_finalize", label: STEP_LABELS.meet_finalize };
     }
@@ -530,4 +615,6 @@ export const STEP_ACTOR: Record<
   apply: "registrar",
   // D6: the paying agent confirms each bank payout with its reference (the bank transfer itself is SIMULATED)
   confirm_bank: "payingAgent",
+  // D4: any wallet may record the default once the payment date plus the grace day passed — the program re-checks
+  declare_default: "anyone",
 };

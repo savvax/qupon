@@ -7,7 +7,8 @@ test("overview KPIs link to their pages", async ({ page, baseURL }) => {
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
 
   // Mock fixtures: 7 users (admin/issuer/registrar/investor breakdown as hint),
-  // 2 pending KYC applications, 2 series, 2 open on-chain actions, 1 low operator.
+  // 2 pending KYC applications, 2 demo series + 4 showcase series, 8 open on-chain
+  // actions (4 demo + 4 showcase), 1 low operator.
   const users = page.locator("main a", { hasText: "Users" });
   await expect(users).toHaveAttribute("href", "/admin/users");
   await expect(users.getByText("7", { exact: true })).toBeVisible();
@@ -24,7 +25,7 @@ test("overview KPIs link to their pages", async ({ page, baseURL }) => {
 
   const open = page.locator("main a", { hasText: "Open actions" });
   await expect(open).toHaveAttribute("href", "/registrar/actions");
-  await expect(open.getByText("2", { exact: true })).toBeVisible();
+  await expect(open.getByText("8", { exact: true })).toBeVisible();
 
   const low = page.locator("main a", { hasText: "Low-balance operators" });
   await expect(low).toHaveAttribute("href", "/admin/system");

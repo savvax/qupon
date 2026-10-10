@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { ActionDTO, ActivityLike } from "./api";
 import {
   buildTimeline,
+  defaultDue,
   findOnchainError,
+  fundingShortfall,
   nextStep,
   paidTxByOwner,
   STEP_ACTOR,
@@ -128,7 +130,9 @@ describe("nextStep (mirror of Go executor.NextStep)", () => {
       nextStep(base, Date.parse("2027-02-28T00:00:01+05:00")).gate,
     ).toBeUndefined();
     // funding races the payment date (shown before and after it)
-    expect(nextStep({ ...base, status: "SnapshotComplete" }, now)).toMatchObject({
+    expect(
+      nextStep({ ...base, status: "SnapshotComplete" }, now),
+    ).toMatchObject({
       step: "fund",
       gate: { kind: "payment", at: Date.parse(base.paymentAt) },
     });
@@ -136,22 +140,140 @@ describe("nextStep (mirror of Go executor.NextStep)", () => {
     const votingEndsAt = "2027-02-27T12:00:00+05:00";
     expect(
       nextStep(
-        { ...base, kind: "BMET", status: "VotingOpen", unitsSnapshotted: "100", votingEndsAt },
+        {
+          ...base,
+          kind: "BMET",
+          status: "VotingOpen",
+          unitsSnapshotted: "100",
+          votingEndsAt,
+        },
         now,
       ),
-    ).toMatchObject({ step: null, gate: { kind: "vote", at: Date.parse(votingEndsAt) } });
+    ).toMatchObject({
+      step: null,
+      gate: { kind: "vote", at: Date.parse(votingEndsAt) },
+    });
   });
 
   it("plan 15 fixture states: a default is cured by funding; bank payouts wait on the paying agent", () => {
-    expect(nextStep({ ...base, status: "Defaulted" })).toMatchObject({ step: "fund" });
+    expect(nextStep({ ...base, status: "Defaulted" })).toMatchObject({
+      step: "fund",
+    });
     expect(STEP_ACTOR.fund).toBe("issuer");
-    const settled = { ...base, status: "Settling" as const, holdersSnapshotted: 3, holdersPaid: 3 };
-    expect(nextStep({ ...settled, bankPending: 1 })).toMatchObject({ step: "confirm_bank" });
+    const settled = {
+      ...base,
+      status: "Settling" as const,
+      holdersSnapshotted: 3,
+      holdersPaid: 3,
+    };
+    expect(nextStep({ ...settled, bankPending: 1 })).toMatchObject({
+      step: "confirm_bank",
+    });
     expect(STEP_ACTOR.confirm_bank).toBe("payingAgent");
-    expect(nextStep({ ...settled, bankPending: 0 })).toMatchObject({ step: "complete" });
+    expect(nextStep({ ...settled, bankPending: 0 })).toMatchObject({
+      step: "complete",
+    });
     // the crank steps are permissionless
-    for (const s of ["strike", "snapshot", "finalize", "pay", "complete", "retire"] as const)
+    for (const s of [
+      "strike",
+      "snapshot",
+      "finalize",
+      "pay",
+      "complete",
+      "retire",
+    ] as const)
       expect(STEP_ACTOR[s]).toBe("anyone");
+  });
+
+  it("plan 15 D4: declare_default is offered to anyone once funding is overdue; funding cures", () => {
+    // snapshot done, payment 2027-03-01, required 500 000 tiyn, escrow holds 300 000
+    const unfunded = {
+      ...base,
+      status: "SnapshotComplete" as const,
+      finalizedAt: "2027-02-28T00:10:00+05:00",
+      unitsSnapshotted: "100",
+      totalNet: { minor: "500000", display: "5,000.00 KZT", currency: "tKZT" },
+      totalTax: { minor: "0", display: "0.00 KZT", currency: "tKZT" },
+      escrowBalance: {
+        minor: "300000",
+        display: "3,000.00 KZT",
+        currency: "tKZT",
+      },
+    };
+    expect(fundingShortfall(unfunded)).toBe(200000n);
+    // before payment + one day: the issuer funds (gate = payment date)
+    expect(
+      nextStep(unfunded, Date.parse("2027-03-01T12:00:00+05:00")),
+    ).toMatchObject({ step: "fund" });
+    // at payment + one day, still short: any wallet may record the default
+    const due = defaultDue(unfunded);
+    expect(due).toBe(Date.parse("2027-03-02T00:00:00+05:00"));
+    expect(nextStep(unfunded, due)).toMatchObject({
+      step: "declare_default",
+      gate: { kind: "default", at: due },
+    });
+    expect(STEP_ACTOR.declare_default).toBe("anyone");
+    // the demo clock's grace is one series day (120 s here), not 86 400 s
+    const dueFast = defaultDue(unfunded, 120);
+    expect(dueFast).toBe(Date.parse("2027-03-01T00:02:00+05:00"));
+    expect(nextStep(unfunded, dueFast - 1000, undefined, 0, 120)).toMatchObject(
+      {
+        step: "fund",
+      },
+    );
+    expect(nextStep(unfunded, dueFast, undefined, 0, 120)).toMatchObject({
+      step: "declare_default",
+    });
+    // fully funded past the deadline: nothing to declare
+    const funded = {
+      ...unfunded,
+      escrowBalance: {
+        minor: "500000",
+        display: "5,000.00 KZT",
+        currency: "tKZT",
+      },
+    };
+    expect(fundingShortfall(funded)).toBe(0n);
+    expect(nextStep(funded, due)).toMatchObject({ step: "fund" });
+  });
+
+  it("a defaulted action shows the fund step red and the declaration in the timeline", () => {
+    const a = {
+      ...base,
+      status: "Defaulted" as const,
+      defaultedAt: "2027-03-02T00:05:00+05:00",
+    };
+    const steps = buildTimeline(
+      a,
+      [
+        ev(
+          9,
+          "ActionDefaulted",
+          "SigDefault1111111111111111111111111111111111",
+        ),
+      ],
+      false,
+    );
+    expect(steps.find((s) => s.id === "fund")).toMatchObject({
+      state: "defaulted",
+    });
+    expect(steps.at(-1)).toMatchObject({
+      id: "declare_default",
+      state: "done",
+      signature: "SigDefault1111111111111111111111111111111111",
+    });
+    // no event indexed yet: the Defaulted status alone proves the step ran
+    const noEvent = buildTimeline(a, [], false);
+    expect(noEvent.at(-1)).toMatchObject({
+      id: "declare_default",
+      state: "done",
+    });
+    expect(noEvent.find((s) => s.id === "fund")?.state).toBe("defaulted");
+    // every step the action passed before it stalled is done — none may pose as "current"
+    // (indexer lag: a Defaulted action with no events yet must not render Announced as next)
+    for (const id of ["announce", "strike", "snapshot", "finalize"])
+      expect(noEvent.find((s) => s.id === id)?.state, id).toBe("done");
+    expect(noEvent.some((s) => s.state === "current")).toBe(false);
   });
 
   it("gates the meeting on the voting window", () => {

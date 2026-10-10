@@ -8,10 +8,11 @@ const noOverflow = (page: Page) =>
       document.documentElement.clientWidth,
   );
 
-/** Click EN|RU and wait for the heading to follow. The first click can land before
+/** Click the EN|RU radio in the header and wait for the heading to follow. The first click can land before
  * hydration attaches the handler (right after a native form navigation) → retry once. */
+const LOCALE_RADIO = { en: "English", ru: "Русский" } as const;
 async function switchLocale(page: Page, locale: "en" | "ru", h1: string) {
-  const btn = page.getByRole("button", { name: locale, exact: true });
+  const btn = page.getByRole("radio", { name: LOCALE_RADIO[locale] });
   const heading = page.getByRole("heading", { level: 1 });
   await btn.click();
   await expect

@@ -1,3 +1,4 @@
+import { handlers as actionWrites } from "./actions";
 import { handlers as account } from "./account";
 import { handlers as admin } from "./admin";
 import { handlers as adminSeries } from "./adminSeries";
@@ -31,6 +32,7 @@ const ALL: MockHandler[] = [
   ...assets,
   ...trades,
   ...termsheet,
+  ...actionWrites,
   ...sandbox,
 ];
 

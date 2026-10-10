@@ -44,7 +44,10 @@ export function ReconcilePanel({ pda }: { pda: string }) {
           </div>
           <ul className="space-y-1 text-n700">
             <li>
-              {report.hashMatches ? "✓" : "✗"} {t("hash")}
+              {report.hashMatches ? "✓" : "✗"} {t("hash")}{" "}
+              <span className="text-n500">
+                ({t(report.hashScheme === 1 ? "schemeSet" : "schemeRolling")})
+              </span>
             </li>
             <li>
               {report.totalsMatch ? "✓" : "✗"} {t("totals")}

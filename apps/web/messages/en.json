@@ -46,6 +46,7 @@
     "Projected": "Projected",
     "Funded": "Funded",
     "Settling": "Settling",
+    "PaidToAgent": "Paid to agent",
     "InProgress": "In progress",
     "Matured": "Matured",
     "Suspended": "Suspended",
@@ -687,7 +688,10 @@
       "unavailableBody": "Check the service connection and reload the page.",
       "recordDatePassed": "Record date has passed but the action is still Announced",
       "escrowShort": "Snapshot complete but the escrow is below the required amount",
-      "cancelled": "Action was cancelled"
+      "cancelled": "Action was cancelled",
+      "overdueFunding": "Funding overdue: anyone may declare a default",
+      "defaultedAlert": "In default — the issuer cures it by funding",
+      "bankPending": "{count, plural, one {# bank payout awaits} other {# bank payouts await}} the paying agent's confirmation"
     },
     "investors": {
       "title": "Investors",
@@ -774,7 +778,10 @@
       "awaiting": "Awaiting snapshot",
       "under": "Underfunded",
       "rule": "Required = Σ net + tax across holders.",
-      "ruleWithPrincipal": "Required = Σ net + tax + principal across holders."
+      "ruleWithPrincipal": "Required = Σ net + tax + principal across holders.",
+      "shortfall": "Shortfall:",
+      "inDefault": "In default since {at} — the issuer cures it by funding",
+      "defaultDue": "default may be declared from {at}"
     },
     "meeting": {
       "title": "Bondholder meeting",
@@ -825,7 +832,9 @@
       "mismatch": "Mismatch",
       "summary": "{holders} holders · supply {supply}",
       "hash": "Snapshot hash matches the holders on-chain",
-      "totals": "Σ net + tax + principal equals the amount paid"
+      "totals": "Σ net + tax + principal equals the amount paid",
+      "schemeSet": "set hash, scheme 1 — order-independent",
+      "schemeRolling": "rolling hash, scheme 0 — owner-ascending"
     },
     "downloads": {
       "title": "ISO 20022",
@@ -855,6 +864,30 @@
       "paidOut": "Paid out",
       "holders": "{count, plural, one {# holder} other {# holders}}",
       "done": "Every step is on-chain."
+    },
+    "bank": {
+      "title": "Bank confirmations",
+      "lead": "These payouts went to the paying agent for a bank transfer. Confirm each with the bank's transfer reference; only its hash goes on-chain.",
+      "count": "{count, plural, one {# payout} other {# payouts}} waiting",
+      "routeHash": "route hash {hash}",
+      "reference": "Transfer reference",
+      "confirm": "Confirm",
+      "sending": "Confirming the bank payout…",
+      "confirmed": "Bank payout confirmed",
+      "note": "SIMULATED — the bank transfer itself is off-chain; the confirmation stores only the sha256 of the reference on-chain."
+    },
+    "disclosureHash": {
+      "title": "Disclosure hash",
+      "lead": "Re-hashes the seev.031 served by the registrar in your browser and compares it with the sha256 anchored on the action.",
+      "idle": "Verify that the anchored notice is exactly the bytes served here.",
+      "verify": "Verify in browser",
+      "again": "Verify again",
+      "match": "Served bytes hash to the anchored value",
+      "mismatch": "The served seev.031 does not match the hash anchored on-chain",
+      "notAnchored": "No disclosure hash is anchored on this action",
+      "error": "Could not fetch or hash the notice",
+      "servedHash": "sha256 (served)",
+      "onchainHash": "sha256 (on-chain)"
     }
   },
   "steps": {
@@ -871,7 +904,8 @@
       "votes": "Collect votes",
       "meet_finalize": "Count the votes",
       "apply": "Apply terms change",
-      "confirm_bank": "Confirm bank payout"
+      "confirm_bank": "Confirm bank payout",
+      "declare_default": "Declare default"
     },
     "done": {
       "announce": "Announced",
@@ -886,7 +920,8 @@
       "sweep": "Escrow swept",
       "votes": "Voting",
       "meet_finalize": "Result",
-      "apply": "Terms applied"
+      "apply": "Terms applied",
+      "declare_default": "Default declared"
     },
     "detail": {
       "snapshotted": "{count, plural, one {# holder} other {# holders}} snapshotted",

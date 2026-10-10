@@ -111,11 +111,24 @@ test("registrar: holder register, printable view and CSV", async ({
   baseURL,
 }) => {
   const errors: string[] = [];
-  page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+  // "Connection closed" is Next dev-mode RSC-abort noise when the client navigation
+  // to /print supersedes the still-streaming page; everything else must stay clean.
+  page.on(
+    "console",
+    (m) =>
+      m.type() === "error" &&
+      !m.text().includes("Connection closed") &&
+      errors.push(m.text()),
+  );
   await signInAs(page, "registrar", baseURL);
   await page.goto("/registrar/reports");
 
   await expect(page.getByRole("heading", { name: "Reports" })).toBeVisible();
+  // The showcase series (task 1535) are options too and the first is selected by default.
+  await page
+    .getByRole("combobox", { name: "Series" })
+    .selectOption({ label: "QPNb1" });
+  await page.getByRole("button", { name: "Apply" }).click();
   const table = page.getByRole("table");
   await expect(table).toContainText("10");
   await expect(table).toContainText("25");

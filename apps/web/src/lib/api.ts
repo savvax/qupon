@@ -12,6 +12,7 @@ export type InvestorDTO = Schemas["InvestorDTO"];
 export type EntitlementDTO = Schemas["EntitlementDTO"];
 export type ScheduleItem = Schemas["ScheduleItem"];
 export type ActionDTO = Schemas["ActionDTO"];
+export type BankPendingPayout = Schemas["BankPendingPayout"];
 export type ReconcileReport = Schemas["ReconcileReport"];
 export type AdvanceResponse = Schemas["AdvanceResponse"];
 export type ErrorDTO = Schemas["Error"];
@@ -170,6 +171,21 @@ export type KaseCheck = {
 };
 export const getKaseCheck = (pda: string) =>
   get<KaseCheck>(`/actions/${pda}/kase-check`);
+
+/** Bank-routed payouts waiting for the paying agent's confirmation (plan 15 D6); the transfer itself is SIMULATED. */
+export async function getBankPending(
+  pda: string,
+): Promise<{ bankPending: number; items: BankPendingPayout[] }> {
+  return get(`/actions/${pda}/bank-pending`);
+}
+
+/** Confirm one bank-routed payout with the bank transfer reference (paying agent or registrar session). */
+export function postConfirmBank(
+  pda: string,
+  req: { owner: string; reference: string },
+): Promise<{ ok: boolean; signature?: string; explorerUrl?: string }> {
+  return boPost(`actions/${pda}/confirm-bank`, req);
+}
 
 /** Disclosure ZIP (notices RU/EN, seev.031, seev.036 per holder, manifest) — platform v2 §5.5. */
 export const disclosureZipUrl = (pda: string) =>

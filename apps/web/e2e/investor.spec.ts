@@ -40,7 +40,13 @@ test("demo investor votes on the open meeting (or sees the empty state)", async 
   await page.goto("/investor/meetings");
   await page.getByRole("button", { name: "Try the demo investor" }).click();
 
-  const forButton = page.getByRole("button", { name: "For", exact: true });
+  // Two meetings are open since the showcase fixtures (task 1535): the demo investor
+  // has weight only in the QPNb1 one — the other card's buttons render disabled.
+  const forButton = page
+    .getByRole("button", { name: "For", exact: true })
+    .and(
+      page.getByRole("button", { name: "For", exact: true, disabled: false }),
+    );
   const empty = page.getByText("No open meetings");
   await expect(forButton.or(empty).first()).toBeVisible({ timeout: 15_000 });
   if (!(await forButton.isVisible().catch(() => false))) {

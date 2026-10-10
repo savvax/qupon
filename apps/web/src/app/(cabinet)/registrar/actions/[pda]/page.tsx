@@ -17,6 +17,9 @@ import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import {
   buildTimeline,
+  defaultDue,
+  defaultOverdue,
+  fundingShortfall,
   nextStep,
   paidTxByOwner,
   STEP_ACTOR,
@@ -25,6 +28,7 @@ import {
 import { moneyFlowOf } from "@/lib/moneyFlow";
 import {
   getAction,
+  getBankPending,
   getKaseCheck,
   getNoticeText,
   getSeries,
@@ -44,6 +48,8 @@ import { DisclosurePanel } from "./DisclosurePanel";
 import { KaseCheckPanel } from "./KaseCheckPanel";
 import { ReconcilePanel } from "./ReconcilePanel";
 import { StepButton } from "./StepButton";
+import { BankConfirmPanel } from "./BankConfirmPanel";
+import { DisclosureHashPanel } from "./DisclosureHashPanel";
 import { metaTitle } from "@/lib/meta";
 
 export const dynamic = "force-dynamic";
@@ -96,7 +102,7 @@ export default async function RegistrarActionPage({
     if (status === 404 || status === 400) notFound();
     throw e;
   });
-  const [series, entitlements, activity, noticeEn, noticeRu, kaseCheck] =
+  const [series, entitlements, activity, noticeEn, noticeRu, kaseCheck, bank] =
     await Promise.all([
       getSeries(action.seriesMint).catch(() => null),
       listEntitlements(pda).catch(() => [] as EntitlementDTO[]),
@@ -105,6 +111,8 @@ export default async function RegistrarActionPage({
       getNoticeText(pda, "ru").catch(() => "уведомление недоступно"),
       // kase.kz outages degrade the card, never the page
       getKaseCheck(pda).catch(() => null),
+      // bank-routed payouts awaiting the paying agent (plan 15 D6); failures hide the panel, never block
+      getBankPending(pda).catch(() => null),
     ]);
   const locale = toLocale(await getLocale());
   const [t, ts, tk, tstep, tt, tm, tnow] = await Promise.all([
@@ -127,6 +135,8 @@ export default async function RegistrarActionPage({
     // zero-balance investors are skipped by the snapshot, so counting them never settles
     series ? BigInt(series.totalIssued) : undefined,
     series?.openTrades ?? 0,
+    // one series day = the default grace (D4): day_secs on a demo clock
+    series?.demoClock?.daySecs,
   );
   // Batch counters move while the status holds (snapshot/pay/retire land in batches): StepButton ends its
   // post-success wait when this key changes (task 1423).
@@ -147,6 +157,10 @@ export default async function RegistrarActionPage({
 
   // Escrow must hold Σ net + tax + principal (the DTO has no principal total; complete_action asserts the same sum).
   const isCash = action.kind !== "BMET" && action.kind !== "CHAN";
+  // Plan 15 D4: the funding shortfall and when a permissionless declare_default becomes due
+  const shortfall = isCash ? fundingShortfall(action) : null;
+  const overdue = defaultOverdue(action, Date.now(), series?.demoClock?.daySecs);
+  const defaultAt = defaultDue(action, series?.demoClock?.daySecs);
   const currency = action.totalNet?.currency ?? action.perUnitGross.currency;
   const principalTotal = entitlements.reduce(
     (acc, e) => acc + BigInt(e.principal?.minor ?? "0"),
@@ -342,13 +356,15 @@ export default async function RegistrarActionPage({
     state:
       st.state === "failed"
         ? "failed"
-        : st.state === "done"
-          ? "done"
-          : st.state === "current" && action.status !== "Cancelled"
-            ? "current"
-            : action.status === "Cancelled"
-              ? "skipped"
-              : "pending",
+        : st.state === "defaulted"
+          ? "defaulted"
+          : st.state === "done"
+            ? "done"
+            : st.state === "current" && action.status !== "Cancelled"
+              ? "current"
+              : action.status === "Cancelled"
+                ? "skipped"
+                : "pending",
     at: st.at,
     tx: st.signature,
     actor: STEP_ACTOR[ids[i]!],
@@ -372,18 +388,21 @@ export default async function RegistrarActionPage({
   const flow = moneyFlowOf(action, entitlements, activity, (u) =>
     tm("holderSub", { units: u }),
   );
-  const nowTitle: ReactNode = next.step ? (
-    t("now.next", { step: label(next.step) })
-  ) : action.status === "Completed" && isCash ? (
-    <>
-      {t("now.paidOut")} {money(action.totalPaid)} ·{" "}
-      {t("now.holders", { count: action.holdersPaid ?? holders })}
-    </>
-  ) : action.status === "Completed" ? (
-    t("now.done")
-  ) : (
-    waitText
-  );
+  const nowTitle: ReactNode =
+    action.status === "Defaulted" ? (
+      tnow("defaulted")
+    ) : next.step ? (
+      t("now.next", { step: label(next.step) })
+    ) : action.status === "Completed" && isCash ? (
+      <>
+        {t("now.paidOut")} {money(action.totalPaid)} ·{" "}
+        {t("now.holders", { count: action.holdersPaid ?? holders })}
+      </>
+    ) : action.status === "Completed" ? (
+      t("now.done")
+    ) : (
+      waitText
+    );
   const nowDetail: ReactNode = tradesWait ? (
     <Link
       href={`/registrar/trades?mint=${action.seriesMint}`}
@@ -460,7 +479,9 @@ export default async function RegistrarActionPage({
               ? "done"
               : action.status === "Cancelled"
                 ? "attention"
-                : "default"
+                : action.status === "Defaulted" || overdue
+                  ? "danger"
+                  : "default"
           }
           title={nowTitle}
           detail={nowDetail}
@@ -473,7 +494,15 @@ export default async function RegistrarActionPage({
           }
           actors={next.step ? [STEP_ACTOR[next.step]] : []}
           action={
-            next.step ? (
+            next.step === "confirm_bank" ? (
+              // one reference per holder: the confirmations panel owns the inputs (#bank)
+              <a
+                href="#bank"
+                className="inline-flex h-11 items-center rounded-btn bg-p900 px-5 text-sm font-bold text-white hover:bg-p900/90"
+              >
+                {label("confirm_bank")}
+              </a>
+            ) : next.step ? (
               <span className="flex flex-wrap gap-2">
                 {action.status === "RecordStruck" &&
                   holders > 0 &&
@@ -486,11 +515,22 @@ export default async function RegistrarActionPage({
                       secondary
                     />
                   )}
+                {/* D4: once the grace passed unfunded, anyone may declare — the cure (funding) stays one click away */}
+                {next.step === "declare_default" && (
+                  <StepButton
+                    pda={pda}
+                    label={label("fund")}
+                    status={action.status}
+                    progress={progress}
+                    secondary
+                  />
+                )}
                 <StepButton
                   pda={pda}
                   label={label(next.step)}
                   status={action.status}
                   progress={progress}
+                  autofund={next.step !== "declare_default"}
                 />
               </span>
             ) : undefined
@@ -604,6 +644,13 @@ export default async function RegistrarActionPage({
         />
       </section>
 
+      {/* plan 15 D6: PaidToAgent rows → the paying agent confirms each with the bank transfer reference */}
+      {isCash && bank && bank.items.length > 0 && (
+        <div className="mt-6">
+          <BankConfirmPanel pda={pda} items={bank.items} locale={locale} />
+        </div>
+      )}
+
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">{factsAndReconcile}</div>
 
@@ -653,6 +700,50 @@ export default async function RegistrarActionPage({
                   <Address value={action.escrow} />
                 </div>
               )}
+              {/* D4: the shortfall and when any wallet may record the default (or that it already was) */}
+              {(action.status === "Defaulted" || overdue) &&
+                shortfall != null &&
+                shortfall > 0n && (
+                  <div
+                    className={cx(
+                      "mt-3 rounded-btn border px-3 py-2 text-sm",
+                      action.status === "Defaulted"
+                        ? "border-default/30 bg-err-bg text-err-fg"
+                        : "border-warn-bd bg-warn-bg text-warn-fg",
+                    )}
+                  >
+                    <span className="font-semibold">{t("funding.shortfall")}</span>{" "}
+                    <Amount
+                      minor={shortfall}
+                      currency={currency}
+                      locale={locale}
+                    />{" "}
+                    ·{" "}
+                    {action.status === "Defaulted" ? (
+                      t("funding.inDefault", {
+                        at: formatDateTime(
+                          action.defaultedAt ??
+                            action.finalizedAt ??
+                            action.paymentAt,
+                          locale,
+                        ),
+                      })
+                    ) : (
+                      <>
+                        {t("funding.defaultDue", {
+                          at: formatDateTime(
+                            new Date(defaultAt).toISOString(),
+                            locale,
+                          ),
+                        })}{" "}
+                        <CountdownClock
+                          label={tnow("gate.default")}
+                          to={defaultAt}
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
             </Panel>
           )}
 
@@ -718,6 +809,8 @@ export default async function RegistrarActionPage({
           {isCash && <KaseCheckPanel check={kaseCheck} />}
 
           <DisclosurePanel pda={pda} />
+
+          <DisclosureHashPanel pda={pda} anchored={action.disclosureHash} />
 
           <Panel title={t("downloads.title")}>
             <ul className="space-y-2 text-sm">
