@@ -102,6 +102,8 @@ EN: `/KASE, {payment_date}/ – {issuer_name} has paid the {n}{suffix} coupon on
 RU: `/KASE, {payment_date}/ – {issuer_name} выплатил(а) {n}-й купон по облигациям {isin} ({ticker}). Сумма выплаты: {total_net} {ccy}, держателей: {holders}, дата фиксации реестра: {record_date} (начало дня, Алматы). Расчёты проведены в Solana devnet, транзакции: {tx_links}. Следующая выплата купона: {next_coupon_date}.`
 Redemption, early redemption and terms-change notices follow the real KASE headlines: "… paid principal and final coupon …", "… full early redemption of bonds …", "… changes to prospectus registered: coupon rate {old}% → {new}% …".
 
+Plan 15 (task 1523) adds EN/RU/KK notices for every kind — INTR/REDM/MCAL/PCAL (partial early redemption / amortization)/BMET (bondholder meeting result, `{approved}` → effective date)/CHAN — plus a default notice when an action is declared in default and a cure notice once late funding cures it (on-chain `defaulted_at`/`cured_at`; the default exists the moment it is on chain, before settlement). The official notification anchored on the action (plan 15 D9) is the deterministic seev.031: every timestamp — `CreDtTm` included — comes from the action, never wall clock.
+
 ## 8. Test vectors (must pass in Rust `crates/entitlement`, on-chain tests, and Go)
 
 See `fixtures/entitlement.json`. Summary:

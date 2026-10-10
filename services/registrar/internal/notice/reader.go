@@ -97,11 +97,19 @@ func (r *Reader) FetchAction(ctx context.Context, pda solana.PublicKey, lang str
 		return Data{}, fmt.Errorf("cash mint %s not found", action.CashMint)
 	}
 
-	if s := action.Status; s != 5 && s != 6 && s != 9 {
+	// Default & cure notices (plan 15 D4) exist the moment the fact is on chain;
+	// every other notice reports a completed payment or a concluded meeting.
+	kind := Kind(action.Kind)
+	switch {
+	case action.Status == 10:
+		kind = KindDEFAULT
+	case action.DefaultedAt != 0 && action.CuredAt != 0:
+		kind = KindCURE
+	case action.Status != 5 && action.Status != 6 && action.Status != 9:
 		return Data{}, ErrNotYetSettled
 	}
 	d := Data{
-		Kind:           Kind(action.Kind),
+		Kind:           kind,
 		Lang:           lang,
 		CouponNumber:   int(action.Index) + 1,
 		PaymentDate:    date(action.PaymentAt),
@@ -120,6 +128,11 @@ func (r *Reader) FetchAction(ctx context.Context, pda solana.PublicKey, lang str
 		OldRateBps:     series.CouponRateBps,
 		NewRateBps:     action.ProposalNewRateBps,
 		EffectiveDate:  date(action.PaymentAt),
+		MeetingDate:    date(action.VotingEndsAt),
+		Approved:       action.Result == 1,
+		DueDate:        date(action.PaymentAt),
+		DefaultDate:    date(action.DefaultedAt),
+		CureDate:       date(action.CuredAt),
 	}
 	// MCAL accrued coupon (total, net of tax) rendered with 2 decimals.
 	d.AccruedNetMinor = action.TotalNet

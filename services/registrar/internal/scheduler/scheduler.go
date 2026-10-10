@@ -128,7 +128,6 @@ type Reader interface {
 	FetchMint(ctx context.Context, mint solana.PublicKey) (*chain.Mint, error)
 }
 
-// Scheduler runs the tick loop. Safe as a single goroutine (no shared state).
 type Scheduler struct {
 	Cfg   Config
 	Read  Reader
@@ -136,6 +135,9 @@ type Scheduler struct {
 	Store *store.Store
 	Log   *slog.Logger
 	Now   func() time.Time // injectable clock (tests)
+	// Attach, when set, anchors the seev.031 of a just-announced action on chain
+	// (plan 15 D9; wired to disclosure.Deps.Attach in main.go). nil = off (tests).
+	Attach func(ctx context.Context, actionPDA solana.PublicKey)
 
 	tick     *time.Ticker // non-nil once Run started; shortened while a demo series is open
 	lastTick atomic.Int64 // unix nanos of the last decision pass; read by GET /admin/system
@@ -345,6 +347,13 @@ func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args [
 		s.Log.Error("scheduler: record activity", "err", err)
 	}
 	s.Log.Info("scheduler step", "series", mint, "step", d.Action, "sig", res.Signature, "slot", res.Slot)
+	// Plan 15 D9: right after a successful announce, anchor the official
+	// seev.031 notification on the new action (best-effort, idempotent).
+	if d.Kind == KindAnnounce && s.Attach != nil && res.Action != "" {
+		if pda, err := solana.PublicKeyFromBase58(res.Action); err == nil {
+			s.Attach(ctx, pda)
+		}
+	}
 	// Task 1414: a finished action's escrow goes back to the issuer right after the
 	// finishing step — complete/close clear series.open_action, so no later tick
 	// would find the action again.

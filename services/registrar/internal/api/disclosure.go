@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	solana "github.com/solana-foundation/solana-go/v2"
 
+	"github.com/qupon-kz/qupon/services/registrar/internal/disclosure"
 	"github.com/qupon-kz/qupon/services/registrar/internal/iso20022"
 	"github.com/qupon-kz/qupon/services/registrar/internal/kase"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
@@ -33,6 +34,7 @@ func disclosureDate(unix int64) string { return civil(unix) }
 func mountDisclosure(r chi.Router, deps Deps, st *store.Store) {
 	r.Get("/actions/{pda}/kase-check", disclosureCheck(deps, st))
 	r.Get("/actions/{pda}/disclosure.zip", disclosureZip(deps))
+	r.Get("/actions/{pda}/disclosure-hash", disclosureHash(deps))
 	// The browser write goes through /api/bo (registrar/… allowlist); the bare path is the API-side twin.
 	r.With(requireRole(deps.Auth, "registrar")).Post("/actions/{pda}/disclosure/submit", disclosureSubmit(deps, st))
 	r.With(requireRole(deps.Auth, "registrar")).Post("/registrar/actions/{pda}/disclosure/submit", disclosureSubmit(deps, st))
@@ -182,6 +184,11 @@ func disclosureZip(deps Deps) http.HandlerFunc {
 			writeDisclosureNoticeError(w, err)
 			return
 		}
+		noticeKk, err := deps.Notice.Notice(ctx, pda, "kk")
+		if err != nil {
+			writeDisclosureNoticeError(w, err)
+			return
+		}
 		act, series, err := fetchActionSeries(ctx, deps.Chain, pda)
 		if err != nil {
 			writeError(w, http.StatusBadGateway, err.Error())
@@ -210,6 +217,7 @@ func disclosureZip(deps Deps) http.HandlerFunc {
 		files := []map[string]string{
 			{"name": "notice.en.txt", "kind": "notice_en"},
 			{"name": "notice.ru.txt", "kind": "notice_ru"},
+			{"name": "notice.kk.txt", "kind": "notice_kk"},
 			{"name": fmt.Sprintf("seev031.%s.xml", corpID), "kind": "seev031"},
 		}
 		for _, rec := range ents {
@@ -241,17 +249,19 @@ func disclosureZip(deps Deps) http.HandlerFunc {
 			}
 			return true
 		}
-		if !add("notice.en.txt", []byte(noticeEn)) || !add("notice.ru.txt", []byte(noticeRu)) {
+		if !add("notice.en.txt", []byte(noticeEn)) || !add("notice.ru.txt", []byte(noticeRu)) ||
+			!add("notice.kk.txt", []byte(noticeKk)) {
 			return
 		}
-		doc031, err := iso20022.BuildSeev031(act, series, isoRefs(deps.Chain, act, ""))
+		// The anchored seev.031 (D9): deterministic bytes — the same file whose sha256
+		// disclosure:attach put on the action and GET /actions/{pda}/disclosure-hash checks.
+		body031, err := disclosure.Anchored(act, series, deps.Chain.ProgramID().String())
 		if err != nil {
 			_ = zw.Close()
 			writeError(w, http.StatusUnprocessableEntity, err.Error())
 			return
 		}
-		body031, err := iso20022.Marshal(doc031)
-		if err != nil || !add(files[2]["name"], body031) {
+		if !add(files[3]["name"], body031) {
 			return
 		}
 		for _, rec := range ents {
@@ -300,6 +310,50 @@ func disclosureSubmit(deps Deps, st *store.Store) http.HandlerFunc {
 		audit(st, r, map[string]any{"pda": pda.String(), "corpId": iso20022.CorpID(act)},
 			true, "disclosure package submitted to KASE (SIMULATED: audit row only, nothing is sent)", nil)
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "simulated": true})
+	}
+}
+
+// disclosureHashDTO answers GET /actions/{pda}/disclosure-hash (plan 15 D9):
+// the re-computed hash of the deterministic seev.031 this service serves, the
+// hash anchored on the action, and whether they match. match=false with an
+// empty onchain means "not anchored (yet)"; false with a hash means mismatch.
+type disclosureHashDTO struct {
+	Hash    string `json:"hash"`    // sha256 hex of the deterministic seev.031
+	Onchain string `json:"onchain"` // sha256 hex anchored on the action; "" when absent
+	Match   bool   `json:"match"`
+}
+
+// disclosureHash serves GET /actions/{pda}/disclosure-hash.
+func disclosureHash(deps Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		pda, err := solana.PublicKeyFromBase58(chi.URLParam(r, "pda"))
+		if err != nil {
+			writeErrorCode(w, http.StatusBadRequest, "invalid_action", "invalid action pda")
+			return
+		}
+		if deps.Chain == nil {
+			writeErrorCode(w, http.StatusServiceUnavailable, "chain_unavailable", "chain reader not configured")
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), disclosureTimeout)
+		defer cancel()
+		act, series, err := fetchActionSeries(ctx, deps.Chain, pda)
+		if err != nil {
+			writeError(w, http.StatusBadGateway, err.Error())
+			return
+		}
+		if act == nil {
+			writeErrorCode(w, http.StatusNotFound, "action_not_found", "action account not found")
+			return
+		}
+		body, err := disclosure.Anchored(act, series, deps.Chain.ProgramID().String())
+		if err != nil {
+			writeError(w, http.StatusUnprocessableEntity, err.Error())
+			return
+		}
+		out := disclosureHashDTO{Hash: disclosure.Hash(body), Onchain: disclosure.OnchainHash(act)}
+		out.Match = out.Onchain != "" && out.Onchain == out.Hash
+		writeJSON(w, http.StatusOK, out)
 	}
 }
 

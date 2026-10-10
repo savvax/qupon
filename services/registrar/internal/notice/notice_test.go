@@ -39,13 +39,27 @@ func demoData(kind Kind, lang string) Data {
 	case KindCHAN:
 		base.PaymentDate = "2027-01-10"
 		base.EffectiveDate = "2027-01-03"
+	case KindPCAL:
+		base.PaymentDate = "2027-01-03"
+	case KindBMET:
+		base.PaymentDate, base.MeetingDate = "2027-02-01", "2027-01-15"
+		base.EffectiveDate = "2027-02-01"
+		base.Approved = true
+	case KindDEFAULT:
+		base.PaymentDate, base.DueDate, base.DefaultDate = "2027-01-05", "2027-01-05", "2027-01-10"
+	case KindCURE:
+		base.PaymentDate, base.DueDate = "2027-01-05", "2027-01-05"
+		base.DefaultDate, base.CureDate = "2027-01-10", "2027-01-12"
 	}
 	return base
 }
 
 func TestRenderGolden(t *testing.T) {
-	kinds := map[string]Kind{"intr": KindINTR, "redm": KindREDM, "mcal": KindMCAL, "chan": KindCHAN}
-	langs := []string{"en", "ru"}
+	kinds := map[string]Kind{
+		"intr": KindINTR, "redm": KindREDM, "mcal": KindMCAL, "pcal": KindPCAL,
+		"bmet": KindBMET, "chan": KindCHAN, "default": KindDEFAULT, "cure": KindCURE,
+	}
+	langs := []string{"en", "ru", "kk"}
 	root := filepath.Join("..", "..", "..", "..", "fixtures", "notices")
 
 	for name, kind := range kinds {
@@ -68,12 +82,12 @@ func TestRenderGolden(t *testing.T) {
 
 func TestOrdinals(t *testing.T) {
 	cases := []struct {
-		n      int
-		en, ru string
+		n          int
+		en, ru, kk string
 	}{
-		{1, "1st", "1-й"}, {2, "2nd", "2-й"}, {3, "3rd", "3-й"},
-		{4, "4th", "4-й"}, {11, "11th", "11-й"}, {12, "12th", "12-й"},
-		{13, "13th", "13-й"}, {21, "21st", "21-й"}, {22, "22nd", "22-й"},
+		{1, "1st", "1-й", "1-ші"}, {2, "2nd", "2-й", "2-ші"}, {3, "3rd", "3-й", "3-ші"},
+		{4, "4th", "4-й", "4-ші"}, {11, "11th", "11-й", "11-ші"}, {12, "12th", "12-й", "12-ші"},
+		{13, "13th", "13-й", "13-ші"}, {21, "21st", "21-й", "21-ші"}, {22, "22nd", "22-й", "22-ші"},
 	}
 	for _, c := range cases {
 		if got := OrdinalEN(c.n); got != c.en {
@@ -81,6 +95,9 @@ func TestOrdinals(t *testing.T) {
 		}
 		if got := OrdinalRU(c.n); got != c.ru {
 			t.Errorf("OrdinalRU(%d) = %q, want %q", c.n, got, c.ru)
+		}
+		if got := OrdinalKK(c.n); got != c.kk {
+			t.Errorf("OrdinalKK(%d) = %q, want %q", c.n, got, c.kk)
 		}
 	}
 }

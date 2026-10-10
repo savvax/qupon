@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:seev.031.001.15">
   <CorpActnNtfctn>
+    <NtfctnGnlInf>
+      <CreDtTm>2026-07-03T00:00:00+05:00</CreDtTm>
+    </NtfctnGnlInf>
     <CorpActnGnlInf>
       <CorpActnEvtId>QPNb1-INTR-0001</CorpActnEvtId>
       <EvtTp>INTR</EvtTp>

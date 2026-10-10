@@ -1,0 +1,1 @@
+/KASE, 2027-01-10/ – Qupon Issuer Demo is in default on its bonds KZT0000000000 (QPON): the payment of 5,000 KZT due 2027-01-05 to 3 holders of record as of 2026-12-27 (start of day, Almaty) was not made within the grace period. The default is recorded on Solana devnet, transaction(s): https://explorer.solana.com/tx/<TX_SIGNATURE>?cluster=devnet.

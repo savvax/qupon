@@ -184,6 +184,60 @@ func TestBuildRejectsUnsupportedDayCount(t *testing.T) {
 	}
 }
 
+// Plan 15 D9: the anchored seev.031 must be deterministic — every timestamp
+// comes from the action (CreDtTm = announced_at), never from wall clock.
+func TestSeev031Deterministic(t *testing.T) {
+	build := func() []byte {
+		doc, err := BuildSeev031(briefAction(), briefSeries(), Refs{})
+		if err != nil {
+			t.Fatalf("build: %v", err)
+		}
+		out, err := Marshal(doc)
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		return out
+	}
+	first, second := build(), build()
+	if !bytes.Equal(first, second) {
+		t.Fatal("seev.031 for the same action rendered different bytes twice")
+	}
+	if !strings.Contains(string(first), "<CreDtTm>2026-07-03T00:00:00+05:00</CreDtTm>") {
+		t.Errorf("CreDtTm is not the action's announced_at:\n%s", first)
+	}
+}
+
+// A bank-routed payout (PaidToAgent, plan 15 D6) is serviced by the paying
+// agent — the confirmation names it as the account servicer.
+func TestSeev036BankRoutedNamesAgentAsServicer(t *testing.T) {
+	ata, _, err := solana.FindAssociatedTokenAddressWithProgram(testOwner, testMint, solana.Token2022ProgramID)
+	if err != nil {
+		t.Fatalf("derive ata: %v", err)
+	}
+	agent := solana.PublicKey{9: 9}
+	s := briefSeries()
+	s.PayingAgent = agent
+
+	ent := briefEntitlement()
+	ent.Status = 3 // PaidToAgent
+	doc, err := BuildSeev036(briefAction(), s, ent, ata, Cash{Ccy: "tKZT", Decimals: 2}, Refs{})
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	if got := doc.CorpActnMvmntConf.CorpActnConfDtls.AcctDtls.AcntSvcr; got != agent.String() {
+		t.Errorf("AcntSvcr = %q, want the paying agent %s", got, agent)
+	}
+
+	ent.Status = 1 // wallet payout: no servicer
+	doc, err = BuildSeev036(briefAction(), s, ent, ata, Cash{Ccy: "tKZT", Decimals: 2}, Refs{})
+	if err != nil {
+		t.Fatalf("build wallet: %v", err)
+	}
+	if got := doc.CorpActnMvmntConf.CorpActnConfDtls.AcctDtls.AcntSvcr; got != "" {
+		t.Errorf("wallet-routed AcntSvcr = %q, want empty", got)
+	}
+}
+
 func TestAmount(t *testing.T) {
 	cases := []struct {
 		minor    uint64

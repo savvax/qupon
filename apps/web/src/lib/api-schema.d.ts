@@ -1344,8 +1344,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Disclosure package ZIP: notices EN/RU, seev.031, one seev.036 per holder and a manifest.json (simulated: true — devnet artefact) */
+        /** Disclosure package ZIP: notices EN/RU/KK, seev.031 (the anchored deterministic document), one seev.036 per holder and a manifest.json (simulated: true — devnet artefact) */
         get: operations["disclosureZip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/actions/{pda}/disclosure-hash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Plan 15 D9: re-hash of the deterministic seev.031 this service serves vs the sha256 anchored on the action (disclosure:attach) */
+        get: operations["disclosureHash"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5928,6 +5945,64 @@ export interface operations {
             };
             /** @description the action is not settled yet */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description chain reader not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    disclosureHash: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Account pubkey (base58) — CorporateAction or Entitlement PDA */
+                pda: components["parameters"]["Pda"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description hash comparison */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description sha256 hex of the deterministic seev.031 bytes */
+                        hash: string;
+                        /** @description sha256 hex on the action; empty when absent */
+                        onchain: string;
+                        /** @description anchor exists and equals the served hash. */
+                        match: boolean;
+                    };
+                };
+            };
+            /** @description invalid action pda */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description action_not_found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the action cannot be exported (unsupported day count) */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

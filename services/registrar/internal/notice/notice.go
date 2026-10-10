@@ -1,5 +1,5 @@
-// Package notice renders KASE-style disclosure notices (EN/RU) from on-chain
-// action state, following docs/03-domain.md §7 and fixtures/notices goldens.
+// Package notice renders KASE-style disclosure notices (EN/RU/KK) from
+// on-chain action state, following docs/03-domain.md §7 and fixtures/notices goldens.
 package notice
 
 import (
@@ -17,7 +17,15 @@ const (
 	KindINTR Kind = 0
 	KindREDM Kind = 1
 	KindMCAL Kind = 2
+	KindPCAL Kind = 3
+	KindBMET Kind = 4
 	KindCHAN Kind = 5
+
+	// Synthetic notice kinds with no on-chain enum value: the reader derives them
+	// from action state — a Defaulted action (status 10) and a cured one
+	// (defaulted_at ≠ 0 ∧ cured_at ≠ 0). 100+ never collides with chain kinds.
+	KindDEFAULT Kind = 100
+	KindCURE    Kind = 101
 )
 
 // ErrUnsupportedKind is returned for kinds without a notice template.
@@ -45,7 +53,12 @@ type Data struct {
 	AccruedNetMinor uint64 // MCAL, 2-decimal rendering
 	OldRateBps      uint32 // CHAN
 	NewRateBps      uint32 // CHAN
-	EffectiveDate   string // CHAN
+	EffectiveDate   string // CHAN/BMET
+	MeetingDate     string // BMET only: when the bondholders' meeting concluded
+	Approved        bool   // BMET only: the proposed terms change passed
+	DueDate         string // DEFAULT/CURE: the missed payment date
+	DefaultDate     string // DEFAULT/CURE: when the default was declared
+	CureDate        string // CURE only: when late funding cured the default
 }
 
 // OrdinalEN renders 1st, 2nd, 3rd, 4th…
@@ -68,6 +81,9 @@ func OrdinalEN(n int) string {
 
 // OrdinalRU renders "1-й", "2-й"…
 func OrdinalRU(n int) string { return fmt.Sprintf("%d-й", n) }
+
+// OrdinalKK renders "1-ші", "2-ші"… (the common Kazakh ordinal suffix).
+func OrdinalKK(n int) string { return fmt.Sprintf("%d-ші", n) }
 
 // Amount renders an integer minor-unit amount with thousands separators.
 func Amount(v uint64) string {
@@ -131,6 +147,14 @@ func Render(d Data) (string, error) {
 		return renderMCAL(d, links)
 	case KindCHAN:
 		return renderCHAN(d, links)
+	case KindPCAL:
+		return renderPCAL(d, links)
+	case KindBMET:
+		return renderBMET(d, links)
+	case KindDEFAULT:
+		return renderDefault(d, links)
+	case KindCURE:
+		return renderCure(d, links)
 	default:
 		return "", fmt.Errorf("%w: %d", ErrUnsupportedKind, uint8(d.Kind))
 	}
@@ -151,6 +175,13 @@ func renderINTR(d Data, links string) (string, error) {
 			"Расчёты проведены в Solana devnet, транзакции: %s. "+
 			"Следующая выплата купона: %s.",
 			d.PaymentDate, d.IssuerName, OrdinalRU(d.CouponNumber), d.ISIN, d.Ticker,
+			money(d.TotalNet, d.Decimals), d.Ccy, d.Holders, d.RecordDate, links, d.NextCouponDate), nil
+	case "kk":
+		return fmt.Sprintf("/KASE, %s/ – %s %s (%s) облигациялары бойынша %s купонді төледі. "+
+			"Төлем сомасы: %s %s, ұстаушылар саны: %d, реестрді тіркеу күні: %s (күннің басы, Алматы). "+
+			"Есеп айырысу Solana devnet желісінде жүргізілді, транзакциялар: %s. "+
+			"Келесі купон төлемі: %s.",
+			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker, OrdinalKK(d.CouponNumber),
 			money(d.TotalNet, d.Decimals), d.Ccy, d.Holders, d.RecordDate, links, d.NextCouponDate), nil
 	default:
 		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)
@@ -177,6 +208,15 @@ func renderREDM(d Data, links string) (string, error) {
 			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
 			money(d.Principal, d.Decimals), d.Ccy, money(d.FinalCoupon, d.Decimals), d.Ccy, money(total, d.Decimals), d.Ccy,
 			d.Holders, d.RecordDate, links), nil
+	case "kk":
+		return fmt.Sprintf("/KASE, %s/ – %s %s (%s) облигацияларының мерзімі жеткен өтеуіне байланысты "+
+			"номиналдық құнын және соңғы купонін төледі. "+
+			"Номиналдық құн: %s %s, соңғы купон: %s %s, барлығы: %s %s, ұстаушылар: %d, "+
+			"реестрді тіркеу күні: %s (күннің басы, Алматы). "+
+			"Есеп айырысу Solana devnet желісінде жүргізілді, транзакциялар: %s. Облигациялар KASE тізімінен алынды.",
+			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
+			money(d.Principal, d.Decimals), d.Ccy, money(d.FinalCoupon, d.Decimals), d.Ccy, money(total, d.Decimals), d.Ccy,
+			d.Holders, d.RecordDate, links), nil
 	default:
 		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)
 	}
@@ -200,6 +240,14 @@ func renderMCAL(d Data, links string) (string, error) {
 			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
 			money(d.Principal, d.Decimals), d.Ccy, d.Days, Amount2(d.AccruedNetMinor), d.Ccy,
 			d.Holders, d.RecordDate, links), nil
+	case "kk":
+		return fmt.Sprintf("/KASE, %s/ – %s %s (%s) облигацияларының толық ерте өтеуін аяқтады. "+
+			"Номиналдық құн: %s %s, %d күнге жинақталған купон: салық шегерілгеннен кейін %s %s, "+
+			"ұстаушылар: %d, реестрді тіркеу күні: %s (күннің басы, Алматы). "+
+			"Есеп айырысу Solana devnet желісінде жүргізілді, транзакциялар: %s. Облигациялар KASE тізімінен алынды.",
+			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
+			money(d.Principal, d.Decimals), d.Ccy, d.Days, Amount2(d.AccruedNetMinor), d.Ccy,
+			d.Holders, d.RecordDate, links), nil
 	default:
 		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)
 	}
@@ -219,6 +267,138 @@ func renderCHAN(d Data, links string) (string, error) {
 			"Торги облигациями на KASE продолжаются. Подробности: %s.",
 			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
 			pct(d.OldRateBps), pct(d.NewRateBps), d.EffectiveDate, links), nil
+	case "kk":
+		return fmt.Sprintf("/KASE, %s/ – %s %s (%s) облигацияларының проспектісіне өзгерістер тіркелгені "+
+			"туралы хабарлады: купон мөлшерлемесі %s → %s жылдық, %s бастап қолданысқа енгізіледі. "+
+			"Облигациялардың KASE-тегі саудасы жалғасуда. Толығырақ: %s.",
+			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
+			pct(d.OldRateBps), pct(d.NewRateBps), d.EffectiveDate, links), nil
+	default:
+		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)
+	}
+}
+
+// renderPCAL: partial early redemption by factor (amortization) — units are kept,
+// face value is reduced (docs/03-domain.md §4).
+func renderPCAL(d Data, links string) (string, error) {
+	switch d.Lang {
+	case "en":
+		return fmt.Sprintf("/KASE, %s/ – %s has completed the partial early redemption (amortization) of its bonds %s (%s). "+
+			"Principal paid: %s %s to %d holders of record as of %s (start of day, Almaty). "+
+			"Payment was settled on Solana devnet, transaction(s): %s. The bonds remain listed on KASE; "+
+			"the outstanding face value is reduced accordingly.",
+			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
+			money(d.Principal, d.Decimals), d.Ccy, d.Holders, d.RecordDate, links), nil
+	case "ru":
+		return fmt.Sprintf("/KASE, %s/ – %s осуществил(а) частичное досрочное погашение (амортизацию) облигаций %s (%s). "+
+			"Погашённая часть номинала: %s %s, держателей: %d, дата фиксации реестра: %s (начало дня, Алматы). "+
+			"Расчёты проведены в Solana devnet, транзакции: %s. Торги облигациями на KASE продолжаются; "+
+			"остаточная номинальная стоимость уменьшена соответствующим образом.",
+			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
+			money(d.Principal, d.Decimals), d.Ccy, d.Holders, d.RecordDate, links), nil
+	case "kk":
+		return fmt.Sprintf("/KASE, %s/ – %s %s (%s) облигацияларының ішінара ерте өтеуін (амортизациясын) аяқтады. "+
+			"Өтелген номиналдың бөлігі: %s %s, ұстаушылар: %d, реестрді тіркеу күні: %s (күннің басы, Алматы). "+
+			"Есеп айырысу Solana devnet желісінде жүргізілді, транзакциялар: %s. Облигациялардың KASE-тегі "+
+			"саудасы жалғасуда; қалдық номиналдық құн тиісінше азайтылды.",
+			d.PaymentDate, d.IssuerName, d.ISIN, d.Ticker,
+			money(d.Principal, d.Decimals), d.Ccy, d.Holders, d.RecordDate, links), nil
+	default:
+		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)
+	}
+}
+
+// renderBMET: the bondholder-meeting outcome notice (headline date = the
+// meeting date; only an approved meeting carries an effective date).
+func renderBMET(d Data, links string) (string, error) {
+	old, new := pct(d.OldRateBps), pct(d.NewRateBps)
+	switch d.Lang {
+	case "en":
+		if d.Approved {
+			return fmt.Sprintf("/KASE, %s/ – the bondholders' meeting on the bonds %s (%s) of %s approved "+
+				"the change to the prospectus: coupon rate %s → %s per annum, effective from %s. "+
+				"Voting was recorded on Solana devnet, transaction(s): %s.",
+				d.MeetingDate, d.ISIN, d.Ticker, d.IssuerName, old, new, d.EffectiveDate, links), nil
+		}
+		return fmt.Sprintf("/KASE, %s/ – the bondholders' meeting on the bonds %s (%s) of %s did not approve "+
+			"the proposed change to the prospectus (coupon rate %s → %s per annum). "+
+			"Voting was recorded on Solana devnet, transaction(s): %s.",
+			d.MeetingDate, d.ISIN, d.Ticker, d.IssuerName, old, new, links), nil
+	case "ru":
+		if d.Approved {
+			return fmt.Sprintf("/KASE, %s/ – собрание владельцев облигаций %s (%s) эмитента %s одобрило "+
+				"изменение проспекта выпуска: ставка купона %s → %s годовых с %s. "+
+				"Голосование зафиксировано в Solana devnet, транзакции: %s.",
+				d.MeetingDate, d.ISIN, d.Ticker, d.IssuerName, old, new, d.EffectiveDate, links), nil
+		}
+		return fmt.Sprintf("/KASE, %s/ – собрание владельцев облигаций %s (%s) эмитента %s не одобрило "+
+			"предложенное изменение проспекта выпуска (ставка купона %s → %s годовых). "+
+			"Голосование зафиксировано в Solana devnet, транзакции: %s.",
+			d.MeetingDate, d.ISIN, d.Ticker, d.IssuerName, old, new, links), nil
+	case "kk":
+		if d.Approved {
+			return fmt.Sprintf("/KASE, %s/ – %s эмитентінің %s (%s) облигациялары бойынша ұстаушылар жиналысы "+
+				"проспектіге өзгерісті мақұлдады: купон мөлшерлемесі %s → %s жылдық, %s бастап қолданысқа енгізіледі. "+
+				"Дауыс беру Solana devnet желісінде тіркелді, транзакциялар: %s.",
+				d.MeetingDate, d.IssuerName, d.ISIN, d.Ticker, old, new, d.EffectiveDate, links), nil
+		}
+		return fmt.Sprintf("/KASE, %s/ – %s эмитентінің %s (%s) облигациялары бойынша ұстаушылар жиналысы "+
+			"проспектіге ұсынылған өзгерісті мақұлдамады (купон мөлшерлемесі %s → %s жылдық). "+
+			"Дауыс беру Solana devnet желісінде тіркелді, транзакциялар: %s.",
+			d.MeetingDate, d.IssuerName, d.ISIN, d.Ticker, old, new, links), nil
+	default:
+		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)
+	}
+}
+
+// renderDefault: an unfunded action past its grace period was declared in
+// default (plan 15 D4); claims stay on the on-chain entitlements.
+func renderDefault(d Data, links string) (string, error) {
+	switch d.Lang {
+	case "en":
+		return fmt.Sprintf("/KASE, %s/ – %s is in default on its bonds %s (%s): the payment of %s %s due %s "+
+			"to %d holders of record as of %s (start of day, Almaty) was not made within the grace period. "+
+			"The default is recorded on Solana devnet, transaction(s): %s.",
+			d.DefaultDate, d.IssuerName, d.ISIN, d.Ticker,
+			money(d.TotalNet, d.Decimals), d.Ccy, d.DueDate, d.Holders, d.RecordDate, links), nil
+	case "ru":
+		return fmt.Sprintf("/KASE, %s/ – %s допустил(а) дефолт по облигациям %s (%s): выплата %s %s со сроком %s "+
+			"в пользу %d держателей (дата фиксации реестра: %s, начало дня, Алматы) не была произведена "+
+			"в льготный период. Дефолт зафиксирован в Solana devnet, транзакции: %s.",
+			d.DefaultDate, d.IssuerName, d.ISIN, d.Ticker,
+			money(d.TotalNet, d.Decimals), d.Ccy, d.DueDate, d.Holders, d.RecordDate, links), nil
+	case "kk":
+		return fmt.Sprintf("/KASE, %s/ – %s %s (%s) облигациялары бойынша дефолтқа ұшырады: %s күні мерзімі "+
+			"өткен %s %s төлемі (реестрді тіркеу күні: %s, күннің басы, Алматы) %d ұстаушыға жеңілдік "+
+			"мерзімінде жасалмады. Дефолт Solana devnet желісінде тіркелді, транзакциялар: %s.",
+			d.DefaultDate, d.IssuerName, d.ISIN, d.Ticker,
+			d.DueDate, money(d.TotalNet, d.Decimals), d.Ccy, d.RecordDate, d.Holders, links), nil
+	default:
+		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)
+	}
+}
+
+// renderCure: the issuer's late funding cured a declared default (plan 15 D4).
+func renderCure(d Data, links string) (string, error) {
+	switch d.Lang {
+	case "en":
+		return fmt.Sprintf("/KASE, %s/ – %s has cured the default on its bonds %s (%s): the overdue payment "+
+			"of %s %s (due %s, declared in default on %s) has been funded for %d holders of record "+
+			"as of %s (start of day, Almaty). Payment was settled on Solana devnet, transaction(s): %s.",
+			d.CureDate, d.IssuerName, d.ISIN, d.Ticker,
+			money(d.TotalNet, d.Decimals), d.Ccy, d.DueDate, d.DefaultDate, d.Holders, d.RecordDate, links), nil
+	case "ru":
+		return fmt.Sprintf("/KASE, %s/ – %s устранил(а) дефолт по облигациям %s (%s): просроченная выплата "+
+			"%s %s (срок %s, дефолт объявлен %s) в пользу %d держателей (дата фиксации реестра: %s, "+
+			"начало дня, Алматы) профинансирована. Расчёты проведены в Solana devnet, транзакции: %s.",
+			d.CureDate, d.IssuerName, d.ISIN, d.Ticker,
+			money(d.TotalNet, d.Decimals), d.Ccy, d.DueDate, d.DefaultDate, d.Holders, d.RecordDate, links), nil
+	case "kk":
+		return fmt.Sprintf("/KASE, %s/ – %s %s (%s) облигациялары бойынша дефолтты жойды: %d ұстаушыға "+
+			"(реестрді тіркеу күні: %s, күннің басы, Алматы) мерзімі өткен %s %s төлемі (мерзімі %s, "+
+			"дефолт %s жарияланған) қаржыландырылды. Есеп айырысу Solana devnet желісінде жүргізілді, транзакциялар: %s.",
+			d.CureDate, d.IssuerName, d.ISIN, d.Ticker,
+			d.Holders, d.RecordDate, money(d.TotalNet, d.Decimals), d.Ccy, d.DueDate, d.DefaultDate, links), nil
 	default:
 		return "", fmt.Errorf("notice: unsupported lang %q", d.Lang)
 	}

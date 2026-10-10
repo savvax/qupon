@@ -343,6 +343,24 @@ func TestTickAnnounceExecutes(t *testing.T) {
 	}
 }
 
+// TestTickAnnounceAttachesDisclosure (plan 15 D9): a successful announce runs
+// the Attach hook with the new action's PDA — the registrar anchors the seev.031
+// right after announcing.
+func TestTickAnnounceAttachesDisclosure(t *testing.T) {
+	fc := &fakeChain{series: series(now0.Add(90*time.Second).Unix(), now0.Add(24*time.Hour).Unix())}
+	s, _, log := newScheduler(t, fc, cfg)
+	action := solana.PublicKey{5: 5}
+	t.Setenv("FAKE_CLI_STDOUT", writeJSON(t, filepath.Dir(log),
+		fmt.Sprintf(`{"ok":true,"signature":"sig-ann","slot":"7","action":%q}`, action)))
+
+	var attached []solana.PublicKey
+	s.Attach = func(_ context.Context, pda solana.PublicKey) { attached = append(attached, pda) }
+	s.Tick(t.Context())
+	if len(attached) != 1 || attached[0] != action {
+		t.Fatalf("attached = %v, want [%s]", attached, action)
+	}
+}
+
 // TestTickPayFailureRecordsPartialBatches (task 1408): a pay step whose 2nd
 // batch fails exits 1 with the completed batches in stdout JSON — the scheduler
 // records those signatures in the activity feed, or the money-moving

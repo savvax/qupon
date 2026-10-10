@@ -133,6 +133,11 @@ func approveApproval(deps Deps, st *store.Store, logger *slog.Logger) http.Handl
 		if strings.HasSuffix(step, executor.StepComplete) || strings.HasSuffix(step, executor.StepClose) {
 			sweepAfterApproval(ctx, deps, st, logger, row)
 		}
+		// Plan 15 D9: an approved announce anchors its seev.031 right after the
+		// run — same best-effort follow-up as the direct announce handlers.
+		if strings.HasPrefix(step, "announce:") && res.Action != "" {
+			attachDisclosure(ctx, deps, res.Action)
+		}
 
 		resp := advanceResponse{Step: step, OK: true, Status: "executed",
 			Signature: sigPtr(res), Slot: slotPtr(res), ExplorerURL: txExplorer(res.Signature)}

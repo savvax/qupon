@@ -1,0 +1,1 @@
+/KASE, 2027-01-12/ – Qupon Issuer Demo has cured the default on its bonds KZT0000000000 (QPON): the overdue payment of 5,000 KZT (due 2027-01-05, declared in default on 2027-01-10) has been funded for 3 holders of record as of 2026-12-27 (start of day, Almaty). Payment was settled on Solana devnet, transaction(s): https://explorer.solana.com/tx/<TX_SIGNATURE>?cluster=devnet.

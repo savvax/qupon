@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math"
 	"net/http"
 	"regexp"
@@ -21,6 +22,7 @@ import (
 	solana "github.com/solana-foundation/solana-go/v2"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
+	"github.com/qupon-kz/qupon/services/registrar/internal/disclosure"
 	"github.com/qupon-kz/qupon/services/registrar/internal/execconfig"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
@@ -322,6 +324,7 @@ func issuerAnnounce(deps Deps, st *store.Store) http.HandlerFunc {
 		}
 		audit(st, r, req, true, req.Kind+" announced", sigs)
 		writeJSON(w, http.StatusCreated, map[string]any{"action": res.Action, "signatures": sigs})
+		attachDisclosure(r.Context(), deps, res.Action)
 	}
 }
 
@@ -385,6 +388,22 @@ func issuerMeeting(deps Deps, st *store.Store) http.HandlerFunc {
 		}
 		audit(st, r, req, true, "BMET announced", sigs)
 		writeJSON(w, http.StatusCreated, map[string]any{"action": res.Action, "signatures": sigs})
+		attachDisclosure(r.Context(), deps, res.Action)
+	}
+}
+
+// attachDisclosure anchors the seev.031 of a just-announced action (plan 15
+// D9) by running `qupon disclosure:attach`. Best-effort: the announce already
+// landed on chain, so a failure is logged and the endpoint still answers 201 —
+// GET /actions/{pda}/disclosure-hash then reports match:false until a retry.
+// Inert without a chain reader (tests) or when the PDA does not parse.
+func attachDisclosure(ctx context.Context, deps Deps, actionPDA string) {
+	pda, err := solana.PublicKeyFromBase58(actionPDA)
+	if err != nil || deps.Chain == nil {
+		return
+	}
+	if err := (disclosure.Deps{Chain: deps.Chain, Exec: deps.Executor}).Attach(context.WithoutCancel(ctx), pda); err != nil {
+		slog.Warn("disclosure attach after announce", "action", actionPDA, "err", err)
 	}
 }
 

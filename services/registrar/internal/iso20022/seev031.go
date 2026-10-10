@@ -22,9 +22,11 @@ type CorpActnNtfctn struct {
 	SplmtryData    *SplmtryData        `xml:"SplmtryData,omitempty"`
 }
 
-// NtfctnGnlInf is the notification identification block (unused: ids are
-// derivable from the corp id; kept for schema shape).
+// NtfctnGnlInf is the notification identification block. CreDtTm is the
+// creation timestamp — deterministic (plan 15 D9): it is the action's
+// announced_at, never wall-clock time, so the anchored bytes never change.
 type NtfctnGnlInf struct {
+	CreDtTm  string `xml:"CreDtTm"`
 	NtfctnId string `xml:"NtfctnId,omitempty"`
 }
 
@@ -87,6 +89,7 @@ func BuildSeev031(act *chain.CorporateAction, series *chain.Series, refs Refs) (
 	inf.MndtryVlntryEvtTp = mnd
 	inf.UndrlygScty.FinInstrmId.ISIN = fixedString(series.ISIN[:])
 
+	doc.CorpActnNtfctn.NtfctnGnlInf = &NtfctnGnlInf{CreDtTm: dt(act.AnnouncedAt)}
 	dtls := &doc.CorpActnNtfctn.CorpActnDtls
 	dtls.DtDtls.AnncmntDt = dt(act.AnnouncedAt)
 	dtls.DtDtls.RcrdDt = dt(act.RecordAt)

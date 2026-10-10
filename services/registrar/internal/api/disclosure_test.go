@@ -3,7 +3,9 @@ package api
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -348,7 +350,7 @@ func TestDisclosureZip(t *testing.T) {
 		names[f.Name] = true
 	}
 	want := []string{
-		"notice.en.txt", "notice.ru.txt",
+		"notice.en.txt", "notice.ru.txt", "notice.kk.txt",
 		"seev031.TEBN-INTR-0001.xml",
 		"seev036.TEBN-INTR-0001." + disOwner.String() + ".xml",
 		"manifest.json",
@@ -385,6 +387,75 @@ func TestDisclosureZip(t *testing.T) {
 	defer func() { _ = resp2.Body.Close() }()
 	if resp2.StatusCode != http.StatusConflict {
 		t.Fatalf("unsettled zip status = %d, want 409", resp2.StatusCode)
+	}
+}
+
+// GET /actions/{pda}/disclosure-hash re-hashes the deterministic seev.031 this
+// service serves (plan 15 D9): the hash matches the sha256 of the XML bytes,
+// repeated calls are byte-identical, and an unanchored action reports
+// onchain:"" / match:false.
+func TestDisclosureHash(t *testing.T) {
+	h, _, _ := newDisclosureServer(t, new(atomic.Bool))
+	srv := httptest.NewServer(h)
+	t.Cleanup(srv.Close)
+
+	get := func(path string) (int, []byte) {
+		t.Helper()
+		resp, err := http.Get(srv.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		body, _ := io.ReadAll(resp.Body)
+		return resp.StatusCode, body
+	}
+
+	code, body := get("/actions/" + disAction.String() + "/disclosure-hash")
+	if code != http.StatusOK {
+		t.Fatalf("hash status = %d: %s", code, body)
+	}
+	var out struct {
+		Hash    string `json:"hash"`
+		Onchain string `json:"onchain"`
+		Match   bool   `json:"match"`
+	}
+	if err := json.Unmarshal(body, &out); err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Hash) != 64 || out.Onchain != "" || out.Match {
+		t.Fatalf("hash dto = %+v (want a 64-char hash, no anchor, match false)", out)
+	}
+
+	// The reported hash is the sha256 of the served seev.031 — byte-identical twice.
+	_, xml1 := get("/actions/" + disAction.String() + "/iso/seev031.xml")
+	_, xml2 := get("/actions/" + disAction.String() + "/iso/seev031.xml")
+	if !bytes.Equal(xml1, xml2) {
+		t.Fatal("seev.031 served twice differs")
+	}
+	if sum := sha256.Sum256(xml1); hex.EncodeToString(sum[:]) != out.Hash {
+		t.Fatalf("hash %s != sha256(served xml) %s", out.Hash, hex.EncodeToString(sum[:]))
+	}
+
+	// The zip's seev031 is the same anchored document.
+	if code, zbody := get("/actions/" + disAction.String() + "/disclosure.zip"); code != http.StatusOK {
+		t.Fatalf("zip = %d", code)
+	} else {
+		zr, err := zip.NewReader(bytes.NewReader(zbody), int64(len(zbody)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		f, err := zr.Open("seev031.TEBN-INTR-0001.xml")
+		if err != nil {
+			t.Fatal(err)
+		}
+		zxml, _ := io.ReadAll(f)
+		if !bytes.Equal(zxml, xml1) {
+			t.Fatal("zip seev.031 differs from the served anchored document")
+		}
+	}
+
+	if code, _ := get("/actions/not-a-pk/disclosure-hash"); code != http.StatusBadRequest {
+		t.Fatalf("bad pda = %d, want 400", code)
 	}
 }
 

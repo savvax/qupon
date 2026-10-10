@@ -151,3 +151,81 @@ func TestReaderRefusesBeforeCompletion(t *testing.T) {
 		}
 	}
 }
+
+// Plan 15 D4: a Defaulted action carries a default notice the moment it is
+// declared; once cured, the same action carries a cure notice.
+func TestReaderDefaultAndCureNotices(t *testing.T) {
+	pda := solana.PublicKey{4: 4}
+	a := briefINTR(solana.PublicKey{3: 3})
+	a.Status, a.DefaultedAt = 10, 1_799_521_200 // 2027-01-10 Almaty
+
+	text, err := NewReader(fakeChain{action: a, decimals: 2}, "").Notice(context.Background(), pda, "en")
+	if err != nil {
+		t.Fatalf("default notice: %v", err)
+	}
+	for _, want := range []string{"is in default", "due 2027-01-05", "/KASE, 2027-01-10/"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("default notice lacks %q:\n%s", want, text)
+		}
+	}
+
+	// Cured: status moves past the default, cured_at is set.
+	a.Status, a.CuredAt = 5, 1_799_694_000 // 2027-01-12 Almaty
+	text, err = NewReader(fakeChain{action: a, decimals: 2}, "").Notice(context.Background(), pda, "ru")
+	if err != nil {
+		t.Fatalf("cure notice: %v", err)
+	}
+	for _, want := range []string{"устранил(а) дефолт", "дефолт объявлен 2027-01-10", "/KASE, 2027-01-12/"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("cure notice lacks %q:\n%s", want, text)
+		}
+	}
+}
+
+func TestReaderPCALAndBMET(t *testing.T) {
+	pda := solana.PublicKey{4: 4}
+	a := briefINTR(solana.PublicKey{3: 3})
+	a.Kind, a.TotalPrincipal = 3, 50_000 // PCAL amortization
+	text, err := NewReader(fakeChain{action: a, decimals: 2}, "").Notice(context.Background(), pda, "en")
+	if err != nil {
+		t.Fatalf("pcal notice: %v", err)
+	}
+	for _, want := range []string{"partial early redemption", "500.00", "remain listed on KASE"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("pcal notice lacks %q:\n%s", want, text)
+		}
+	}
+
+	a.Kind, a.Status, a.Result, a.VotingEndsAt, a.ProposalNewRateBps = 4, 9, 1, 1_799_953_200, 1200 // BMET approved 2027-01-15
+	text, err = NewReader(fakeChain{action: a, decimals: 2}, "").Notice(context.Background(), pda, "kk")
+	if err != nil {
+		t.Fatalf("bmet notice: %v", err)
+	}
+	for _, want := range []string{"ұстаушылар жиналысы", "мақұлдады", "10.00% → 12.00%"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("bmet kk notice lacks %q:\n%s", want, text)
+		}
+	}
+
+	a.Result = 2 // rejected
+	text, err = NewReader(fakeChain{action: a, decimals: 2}, "").Notice(context.Background(), pda, "en")
+	if err != nil {
+		t.Fatalf("bmet rejected notice: %v", err)
+	}
+	if !strings.Contains(text, "did not approve") || strings.Contains(text, "effective") {
+		t.Errorf("bmet rejected notice:\n%s", text)
+	}
+}
+
+func TestReaderKazakhINTR(t *testing.T) {
+	r := NewReader(fakeChain{action: briefINTR(solana.PublicKey{3: 3}), decimals: 2}, "")
+	text, err := r.Notice(context.Background(), solana.PublicKey{4: 4}, "kk")
+	if err != nil {
+		t.Fatalf("kk notice: %v", err)
+	}
+	for _, want := range []string{"1-ші купонді төледі", "реестрді тіркеу күні: 2027-01-03", "Келесі купон төлемі: 2027-07-03"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("kk notice lacks %q:\n%s", want, text)
+		}
+	}
+}

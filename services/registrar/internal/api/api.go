@@ -101,9 +101,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 			writeError(w, http.StatusBadRequest, "lang must be en, ru or kk")
 			return
 		}
-		if lang == "kk" { // kk notices land in task 1523; until then fall back to EN
-			lang = "en"
-		}
+		// kk notices ship since task 1523 (renderPCAL/BMET/default/cure + kk for every kind).
 		pda, err := solana.PublicKeyFromBase58(chi.URLParam(r, "pda"))
 		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid action pda")

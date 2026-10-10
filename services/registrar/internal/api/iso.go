@@ -15,6 +15,7 @@ import (
 	solana "github.com/solana-foundation/solana-go/v2"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
+	"github.com/qupon-kz/qupon/services/registrar/internal/disclosure"
 	"github.com/qupon-kz/qupon/services/registrar/internal/iso20022"
 )
 
@@ -97,7 +98,10 @@ func writeXMLError(w http.ResponseWriter, err error) {
 	writeError(w, http.StatusBadGateway, err.Error())
 }
 
-// isoSeev031 serves GET /actions/{pda}/iso/seev031.xml.
+// isoSeev031 serves GET /actions/{pda}/iso/seev031.xml — the anchored
+// notification (plan 15 D9): deterministic bytes whose sha256 equals the hash
+// disclosure:attach stored on the action (no snapshot-slot ref: it would change
+// the bytes after the snapshot and break the anchored hash).
 func isoSeev031(client *chain.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pda, err := solana.PublicKeyFromBase58(chi.URLParam(r, "pda"))
@@ -120,14 +124,9 @@ func isoSeev031(client *chain.Client) http.HandlerFunc {
 			writeError(w, http.StatusNotFound, "action account not found")
 			return
 		}
-		doc, err := iso20022.BuildSeev031(act, series, isoRefs(client, act, ""))
+		body, err := disclosure.Anchored(act, series, client.ProgramID().String())
 		if err != nil {
 			writeError(w, http.StatusUnprocessableEntity, err.Error())
-			return
-		}
-		body, err := iso20022.Marshal(doc)
-		if err != nil {
-			writeXMLError(w, err)
 			return
 		}
 		w.Header().Set("Content-Type", "application/xml; charset=utf-8")

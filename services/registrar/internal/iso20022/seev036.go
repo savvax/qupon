@@ -29,6 +29,10 @@ type Seev036CorpActnDtls struct {
 		AcctOwnr  string `xml:"AcctOwnr"`  // owner wallet pubkey
 		SfkpgAcct string `xml:"SfkpgAcct"` // bond ATA (base58)
 		ConfdBal  uint64 `xml:"ConfdBal"`  // units at record date
+		// AcntSvcr (account servicer) appears only for a bank-routed payout
+		// (PaidToAgent, plan 15 D6): the paying agent pubkey servicing the payout.
+		// The onward bank transfer itself is SIMULATED.
+		AcntSvcr string `xml:"AcntSvcr,omitempty"`
 	} `xml:"AcctDtls"`
 	CshMvmntDtls struct {
 		CdtDbtInd   string            `xml:"CdtDbtInd"`
@@ -108,6 +112,9 @@ func BuildSeev036(
 	dtls.AcctDtls.AcctOwnr = ent.Owner.String()
 	dtls.AcctDtls.SfkpgAcct = bondATA.String()
 	dtls.AcctDtls.ConfdBal = ent.Units
+	if ent.Status == 3 { // PaidToAgent: the paying agent is the account servicer (bank transfer SIMULATED)
+		dtls.AcctDtls.AcntSvcr = series.PayingAgent.String()
+	}
 
 	ts := ent.PaidAt
 	if ts == 0 {

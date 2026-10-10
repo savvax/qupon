@@ -2716,8 +2716,9 @@ paths:
           description: chain reader or kase client not configured
   /actions/{pda}/disclosure.zip:
     get:
-      summary: 'Disclosure package ZIP: notices EN/RU, seev.031, one seev.036
-        per holder and a manifest.json (simulated: true — devnet artefact)'
+      summary: 'Disclosure package ZIP: notices EN/RU/KK, seev.031 (the anchored
+        deterministic document), one seev.036 per holder and a manifest.json
+        (simulated: true — devnet artefact)'
       operationId: disclosureZip
       parameters:
         - $ref: '#/components/parameters/Pda'
@@ -2733,6 +2734,39 @@ paths:
           description: action not found or no entitlements snapshotted
         "409":
           description: the action is not settled yet
+        "503":
+          description: chain reader not configured
+  /actions/{pda}/disclosure-hash:
+    get:
+      summary: 'Plan 15 D9: re-hash of the deterministic seev.031 this service
+        serves vs the sha256 anchored on the action (disclosure:attach)'
+      operationId: disclosureHash
+      parameters:
+        - $ref: '#/components/parameters/Pda'
+      responses:
+        "200":
+          description: hash comparison
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hash, onchain, match]
+                properties:
+                  hash:
+                    type: string
+                    description: sha256 hex of the deterministic seev.031 bytes
+                  onchain:
+                    type: string
+                    description: sha256 hex on the action; empty when absent
+                  match:
+                    type: boolean
+                    description: anchor exists and equals the served hash.
+        "400":
+          description: invalid action pda
+        "404":
+          description: action_not_found
+        "422":
+          description: the action cannot be exported (unsupported day count)
         "503":
           description: chain reader not configured
   /actions/{pda}/disclosure/submit:

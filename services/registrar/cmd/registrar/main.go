@@ -21,6 +21,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/config"
+	"github.com/qupon-kz/qupon/services/registrar/internal/disclosure"
 	"github.com/qupon-kz/qupon/services/registrar/internal/execconfig"
 	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
 	"github.com/qupon-kz/qupon/services/registrar/internal/ingest"
@@ -178,7 +179,9 @@ func run() error {
 			sc.AutoFund = cfg.AutoFund || sc.AutoFund
 			sc.ApprovalRequired = cfg.ApprovalRequired
 			sc.DryRun = cfg.DryRun
-			sched = &scheduler.Scheduler{Cfg: sc, Read: chainClient, Exec: exec, Store: st, Log: logger}
+			sched = &scheduler.Scheduler{Cfg: sc, Read: chainClient, Exec: exec, Store: st, Log: logger,
+				// Plan 15 D9: anchor each announced action's seev.031 right after the announce.
+				Attach: schedulerAttach(disclosure.Deps{Chain: chainClient, Exec: exec, Log: logger})}
 			go sched.Run(ctx)
 		}
 	}
@@ -250,6 +253,17 @@ func readModel(c *chain.Client) api.ReadModel {
 		return nil
 	}
 	return c
+}
+
+// schedulerAttach adapts disclosure.Deps.Attach (best-effort, returns error)
+// to the scheduler's fire-and-forget hook: failures are logged, the tick loop
+// never stops because an anchor failed.
+func schedulerAttach(d disclosure.Deps) func(context.Context, solana.PublicKey) {
+	return func(ctx context.Context, pda solana.PublicKey) {
+		if err := d.Attach(ctx, pda); err != nil {
+			slog.Default().Warn("scheduler: disclosure attach", "action", pda.String(), "err", err)
+		}
+	}
 }
 
 // redactURL drops the query string (Helius puts the API key there) before the URL reaches the logs.
