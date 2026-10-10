@@ -1,7 +1,7 @@
 ---
 id: 91547
 title: design pre-flight fixes: investor, issuer and registrar cabinets
-agent: glm
+agent: claude
 tier: T1
 depends_on: [91539]
 verify: make verify
@@ -70,3 +70,18 @@ Fail. Ten of eleven rows are fixed and confirmed in screenshots: #3, #4, #11, #1
 - Row 15: /investor/reports table fits at kk 1440 — The Action column is still clipped: 'Actn…1' in en-1440, gone completely in ru-1440, and missing its copy icon in kk-1440.
 
 Design score: 7/10
+
+## Review feedback (round 3, 2026-10-11 01:49) — fix every blocking item first; your previous work is already committed on this branch
+
+### Summary
+Fail on one item. The round-2 blocker (row 15) is fixed: in ru-1440 the Payout statement table ends on TX with the copy icon inside the card, and the other rows hold up in screenshots. Design score is 8. But the web unit suite is red at HEAD. The branch changed formatAmount's ru/kk group separator from U+202F to NBSP, rewrote the RU test to match, and left 91548's merged 'KK groups like RU' test (amount.test.ts:24) failing. Revert amount.ts and amount.test.ts to the base, drop the NBSP claim from fixes.md and the worklog, then re-run the tests.
+
+### Blocking
+- apps/web/src/lib/ui/amount.ts:13 — `pnpm --filter web test` fails at HEAD: 1 failed, 268 passed. The failing test is src/lib/ui/amount.test.ts:24 'KK groups like RU, never a comma (pre-flight #18/#19)', which expects '10 000,00' and '2 034,90'. This test comes from merged task 91548. This branch changed formatAmount's ru/kk group separator from U+202F to NBSP (U+00A0) and rewrote the RU assertion at line 18 to match, but left 91548's KK test red. Rewriting one test to fit and breaking another is a test regression. It also overrides row #18/#19, which 91548 already fixed and got reviewed.
+  **Fix:** Revert apps/web/src/lib/ui/amount.ts and apps/web/src/lib/ui/amount.test.ts to the base (`git checkout c17d88a0 -- apps/web/src/lib/ui/amount.ts apps/web/src/lib/ui/amount.test.ts`) so main's U+202F grouping and its tests stand. You may keep the `useGrouping: "always"` additions in format.ts and kyc.ts. Remove the formatAmount/NBSP claim from the #18 line in fixes.md and from the worklog. Re-run `pnpm --filter web test`; it must be 0 failed.
+
+### Acceptance criteria not met
+- Row 18 fixed without breaking other tests — The amount.ts separator change fails 91548's KK grouping test (amount.test.ts:24).
+- Web unit tests and `make verify` green — pnpm --filter web test: Tests 1 failed | 268 passed | 1 skipped.
+
+Design score: 8/10
