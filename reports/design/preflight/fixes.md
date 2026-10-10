@@ -23,7 +23,7 @@ One line per fixed row. Task 91546: rows 2, 7, 8, 9, 10, 12, 20, 24, 25, 32. Tas
 - #8 /print/holders, /print/payouts — raw enums translated through new `reports.types` / `reports.residencies` / `reports.kinds` message keys (same vocabulary as registrar tables), raw value kept as fallback (`apps/web/src/app/(print)/print/[report]/page.tsx`, `apps/web/messages/{en,ru,kk}/reports.json`)
 - #9 /print/payouts — bank sub-line moved to its own colSpan row, `whitespace-nowrap` on the Action cell, summary rows `flex-wrap` so values never squeeze into a narrow column (`apps/web/src/app/(print)/print/[report]/page.tsx`)
 - #10 /admin/audit — Result select + Apply span the phone grid (`col-span-2 md:col-span-1`), so the select shows its "All" label at 390 (`apps/web/src/app/(cabinet)/admin/audit/page.tsx`)
-- #12 /admin/*, /registrar/* — bottom-nav label slot reserves two lines (`min-h-[2lh]`), wrapped ru/kk labels keep their icon on the same baseline (shared CabinetShell; also covers #11) (`apps/web/src/components/shell/CabinetShell.tsx`)
+- #12 /admin/_, /registrar/_ — bottom-nav label slot reserves two lines (`min-h-[2lh]`), wrapped ru/kk labels keep their icon on the same baseline (shared CabinetShell; also covers #11) (`apps/web/src/components/shell/CabinetShell.tsx`)
 - #20 Kazakh Ұ/ұ — Manrope now loads the `cyrillic-ext` subset (Қ/қ, Ә/ә, Ұ/ұ no longer fall back mid-word) (`apps/web/src/app/layout.tsx`)
 - #24 /admin/series — "KASE ticker" label uses the Select label typography (13 px semibold n700), baselines match (`apps/web/src/app/(cabinet)/admin/series/SeriesRowControls.tsx`)
 - #25 /admin — KPI grid `auto-rows-fr` (equal row heights), kk hint reworded to "тексеру: SIMULATED" (`apps/web/src/app/(cabinet)/admin/page.tsx`, `apps/web/messages/kk/admin.json`)
@@ -38,18 +38,24 @@ One line per fixed row. Task 91546: rows 2, 7, 8, 9, 10, 12, 20, 24, 25, 32. Tas
 - #22 /sandbox/* — round 1's `whitespace-nowrap` per link was not enough in ru (row still wrapped, "?" alone); fixed per review by grouping restart + HelpMenu in one nowrap inline-flex span (see above) (`apps/web/src/app/(public)/sandbox/[id]/SandboxView.tsx`)
 
 Re-shots: task 91545 used `SWEEP_ROUTES` (env filter in `e2e/sweep.spec.ts`) on /, /bonds, /holder/&lt;addr&gt;, /invite/[token], /proof, /proof/&lt;mint&gt;, /sandbox/fx-{snapshot,defaulted,bank}; round 1 re-shot /holder/&lt;addr&gt; (ru, kk) and /sandbox/fx-{snapshot,defaulted,bank} (ru) at 390, sweep green.
+
 - #10 /admin/audit, /admin/users — Apply used non-existent `bg-p600` (invisible); both filters now use the shared `<Button>` primary (g600) — verified computed bg `rgb(2,138,41)` at 390 (apps/web/src/app/(cabinet)/admin/{audit,users}/page.tsx)
 - #7 /print/* — scroll hint bumped to `text-[11px] text-n500` (AA on white per language.md §4) (apps/web/src/app/(print)/print/[report]/page.tsx)
 - #7 /print/payouts — payouts `<th>` lost `whitespace-nowrap` (`align-bottom` instead), long ru/kk headers wrap to two lines instead of clipping at the card edge; ru 1440 table now exactly fits the card (apps/web/src/app/(print)/print/[report]/page.tsx)
+
 ## Task 91548 (2026-10-10)
+
 One line per mechanical.md row fixed. Task 91548 (rows 17, 18, 19, 20, 30 + 32).
+
 - #17 /admin/audit, /admin/organizations, /issuer/team — audit rows, org table and invite-expiry now render through `formatDate(Time)(iso, locale)`; no ISO strings in the UI (native `<input type="date">` placeholders stay browser-formatted — not controllable per page locale) (`apps/web/src/app/(cabinet)/admin/audit/page.tsx`, `admin/organizations/page.tsx`, `issuer/team/TeamPanel.tsx`)
 - #18 /investor, /bonds/[mint] — amounts already share one grouped path (`lib/ui/amount.ts` via `<Amount>`; verified against rendered ru text: "2 034,90", "10 000,00"); the actual mixed-separator offenders were raw `toFixed` percentages — YTM, current yield, YTM-to-maturity, KASE price/bid/offer and register shares now go through `bpsToPercent(…, locale)` (kk case added to the amount tests) (`HoldingsList.tsx`, `YieldBlock.tsx`, `KasePanel.tsx`, `RegisterPanel.tsx`)
 - #19 footer chip, /admin/system, /bonds/[mint], /registrar/reports — new `formatInt(n, locale)` in `lib/format.ts` (kk groups like ru, never "1,249"); NetworkChip no longer maps kk→en-US, SystemPanel slots/entries no longer use bare `toLocaleString()` (`NetworkChip.tsx`, `SystemPanel.tsx`, `bonds/[mint]/page.tsx`, `registrar/reports/page.tsx`)
 - #20 kk glyph — Manrope now also loads the `cyrillic-ext` subset (Ә Ғ Қ Ң Ө Ү Һ; Ұ and І were already in `cyrillic`): the served CSS carries `U+0460-052F` and kk after-shots render in one face (`apps/web/src/app/layout.tsx`)
 - #30 /ui — dev-only primitive gallery stays English on purpose; excluded from the ru/kk sweep (en shots only) (`apps/web/e2e/sweep.spec.ts`)
 - #32 /admin/system — same root cause as #17: header time already used `formatDateTime(…, locale)`, slots fixed under #19
+
 ## Task 91548 — review round 1 (2026-10-11)
+
 - #17 /bonds/[mint] — KASE panel quote date, news dates and deal chips render `formatDate(civilDate(…), locale)` — no raw ISO strings remain on the page; the dossier's local `day()` helper now aliases the shared `civilDate` (`KasePanel.tsx`, `bonds/[mint]/page.tsx`, `lib/format.ts`)
 - #17 /admin/users — reset-link expiry is `formatDateTime(link.expiresAt, locale)` (the twin of the fixed TeamPanel invite expiry) (`UserDialog.tsx`)
 - #32 /admin/system — operator SOL balances go through new `formatDecimal(o.sol, 3, locale)`: "4.213" en / "4,213" ru·kk, matching the slot grouping on the same card (`SystemPanel.tsx`, `lib/format.ts`)
@@ -69,7 +75,7 @@ Rows refer to `reports/design/preflight/mechanical.md`. After-shots in `after/` 
 #13 /issuer/series/[mint] — shared Tabs: triggers are `whitespace-nowrap` (one consistent height), the list snap-scrolls (`snap-x scroll-px-1` + `snap-start` per trigger) with a right-edge fade mask below sm, so a half-cut last tab reads as scrollable instead of clipped (Tabs.tsx)
 #15 /investor/reports — round 2: the `action` column also hides below `2xl` (was `lg`, so it still rendered at 1440 and clipped); with `units` already at `2xl`, the essential `tx` is the last column in en/ru/kk at 1440 — DOM-measured: 0 px clipped in every locale, copy icon 13 px inside the card edge (was cut off) (reports/page.tsx)
 #16 cabinet shells — NowBar is two rows below md (row 1: pill + full-width `max-md:line-clamp-2` title, detail `max-md:hidden`; row 2: actors + action spread `max-md:justify-between`) and one row from 768 px; the docked bar measures 123 px (meetings), 91 px (kyc), 103 px (series/new) at kk 390 — ≤ 8 rem, so bar + 4 rem nav fits the existing 12 rem body padding (NowBar.tsx, globals.css)
-#18 /investor, /investor/placement, /bonds — one grouping path: `formatAmount` groups with a real NBSP (the narrow U+202F read as "2034,90" — ungrouped), `bpsToPercent`/`pct` pass `useGrouping: "always"`, and kk no longer falls through to en-style grouping ("3,250.00") anywhere (lib/ui/amount.ts, lib/format.ts, lib/kyc.ts, bonds/[mint]/page.tsx)
+#18 /investor, /investor/placement, /bonds — grouping kept on main's single `formatAmount` path (U+202F, unchanged per 91548's reviewed fix); this task only added `useGrouping: "always"` to `bpsToPercent`/`pct` so percentages group like amounts (lib/format.ts, lib/kyc.ts, bonds/[mint]/page.tsx)
 #26 /registrar/kyc — status filter links are `whitespace-nowrap`, "На проверке" stays one line (registrar/kyc/page.tsx)
 #27 /registrar — the board kind chip wraps: Badge grew a `wrap` prop that swaps (not appends — cx does no tailwind-merge) the one-line `h-6 whitespace-nowrap` pill for `min-h-6 max-w-full py-0.5 leading-snug whitespace-normal`; the kk chip now ends 90 px inside its card (Badge.tsx, Pipeline.tsx)
 #28 /investor — payout calendar grid is `auto-rows-fr`: every month cell in a row shares one height (PayoutCalendar.tsx)
