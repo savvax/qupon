@@ -241,6 +241,7 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	investorDemo := requireRole(deps.Auth, "investor_demo")
 	r.With(investorDemo, write).Post("/demo/investor/subscribe", demoSubscribe(deps, st))
 	r.With(investorDemo, write).Post("/demo/investor/vote", demoVote(deps, st))
+	r.With(investorDemo, write).Post("/demo/investor/claim", demoClaim(deps, st))
 
 	r.Get("/network", func(w http.ResponseWriter, _ *http.Request) {
 		p := deps.Network

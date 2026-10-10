@@ -721,6 +721,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/demo/investor/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim the holder's own payout with the demo investor's keypair
+         * @description pay_batch for one holder (plan 15 D2) — the same instruction a wallet holder signs in the browser. The owner must be one of the server-held demo investors; anyone else claims from their own wallet.
+         */
+        post: operations["demoClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/network": {
         parameters: {
             query?: never;
@@ -1635,6 +1655,12 @@ export interface components {
             action: string;
             /** @enum {string} */
             choice: "for" | "against" | "abstain";
+        };
+        DemoClaimRequest: {
+            /** @description CorporateAction PDA (base58) of the funded action being claimed */
+            action: string;
+            /** @description the claiming holder (base58); must be one of the server-held demo investors */
+            owner: string;
         };
         /** @description Demo custodial-wallet action result (always demo:true). */
         DemoResponse: {
@@ -4218,6 +4244,65 @@ export interface operations {
                 content?: never;
             };
             /** @description the chain refused the vote (onchainError) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    demoClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description payout claimed; body carries the tx signature and explorer URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoResponse"];
+                };
+            };
+            /** @description owner or action not base58 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no valid session */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description role is not investor_demo, or the owner is not a demo investor */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description no corporate action at the PDA */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description the chain refused the claim (onchainError) */
             409: {
                 headers: {
                     [name: string]: unknown;

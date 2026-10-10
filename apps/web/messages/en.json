@@ -77,7 +77,9 @@
     "NoQuorum": "No quorum",
     "Pending": "Pending",
     "None": "Not voted",
-    "Defaulted": "In default"
+    "Defaulted": "In default",
+    "PaidToAgent": "Paid to agent",
+    "Cured": "Cured"
   },
   "landing": {
     "hero": {
@@ -507,7 +509,8 @@
     "adminUsers": "Users",
     "adminOrganizations": "Organizations",
     "resetPassword": "Set a new password",
-    "learn": "How a bond lives on Qupon"
+    "learn": "How a bond lives on Qupon",
+    "holder": "Holder {address}"
   },
   "errors": {
     "failed": "Something went wrong",
@@ -1031,8 +1034,22 @@
         "net": "Net",
         "status": "Status",
         "vote": "Vote",
-        "record": "Record date"
-      }
+        "record": "Record date",
+        "tax": "Withheld tax"
+      },
+      "claimAll": "Claim all",
+      "claim": "Claim",
+      "claimableNow": "Claimable now",
+      "claimableCount": "{count, plural, one {# payout ready} other {# payouts ready}}",
+      "nextCoupon": "Next coupon",
+      "inDays": "{count, plural, =1 {in 1 day} other {in # days}}",
+      "valuation": "Value",
+      "cleanValue": "clean",
+      "accruedValue": "accrued",
+      "dirtyValue": "dirty",
+      "ytm": "YTM",
+      "atPar": "at par",
+      "cured": "Cured"
     },
     "placement": {
       "lead": "Primary placement at par with atomic <term>DvP</term>: bonds against cash in one transaction.",
@@ -1101,7 +1118,70 @@
     },
     "toasts": {
       "failed": "Something went wrong",
-      "txPending": "Sent, not confirmed yet — check the explorer"
+      "txPending": "Sent, not confirmed yet — check the explorer",
+      "claimPending": "Claiming your payout…",
+      "claimDone": "Payout claimed",
+      "routeDone": "Payout route saved"
+    },
+    "calendar": {
+      "title": "Payout calendar",
+      "empty": "No record or payment dates in the next 12 months.",
+      "record": "record",
+      "payment": "payment",
+      "note": "Next 12 months of record and payment dates per series (public holder lookup)."
+    },
+    "route": {
+      "title": "Payout route",
+      "wallet": "Wallet",
+      "bank": "Bank",
+      "bankSimulated": "SIMULATED",
+      "bankRef": "Bank account (IBAN)",
+      "bankRefHint": "Hashed in your browser — only the sha256 goes on-chain.",
+      "bankWalletOnly": "The bank route needs your wallet's signature — connect a wallet to change it.",
+      "current": "Current: {route} · {hash}",
+      "currentDefault": "Current: wallet (default)",
+      "save": "Save route",
+      "demoReadonly": "DEMO",
+      "watchReadonly": "Read-only"
+    }
+  },
+  "holder": {
+    "title": "Holder dossier",
+    "subtitle": "public holder lookup — no sign-in",
+    "notFoundTitle": "Holder not found",
+    "notFoundBody": "The registrar could not answer for this address. Check it and try again.",
+    "positions": "Positions",
+    "positionsEmpty": "No positions",
+    "positionsEmptyBody": "This wallet is not registered in any series.",
+    "payouts": "Payouts",
+    "payoutsEmpty": "No payouts yet",
+    "payoutsEmptyBody": "Payouts appear here after a record date snapshot.",
+    "upcoming": "Upcoming payouts",
+    "record": "record",
+    "payment": "payment",
+    "kycOk": "KYC verified",
+    "kycNone": "No KYC",
+    "route": {
+      "wallet": "Wallet",
+      "bank": "Bank"
+    },
+    "kpi": {
+      "series": "Series",
+      "payouts": "Payouts paid",
+      "received": "Received (minor units)"
+    },
+    "col": {
+      "series": "Series",
+      "units": "Units",
+      "kyc": "KYC",
+      "route": "Payout route",
+      "account": "Bond account",
+      "action": "Action",
+      "gross": "Gross",
+      "tax": "Withheld tax",
+      "net": "Net",
+      "status": "Status",
+      "paidTx": "Paying tx"
     }
   }
 }

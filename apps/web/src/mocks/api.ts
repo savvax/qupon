@@ -22,7 +22,10 @@ const MINT_USDC = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 const ACTION_PDA_1 = "ActnINTR0001Dem0PDA111111111111111111111111111";
 const ACTION_PDA_2 = "ActnBMET0002Dem0PDA1111111111111111111111111111";
 const ACTION_PDA_3 = "ActnINTR0003Dem0PDA111111111111111111111111111";
+// Plan 15 task 1533: a funded BTRK coupon drives the Claim buttons and the claimable KPI in mock mode.
+const ACTION_PDA_4 = "ActnINTR0004Dem0PDA111111111111111111111111111";
 const ESCROW_PDA_1 = "EscrowDem0PDA11111111111111111111111111111111";
+const ESCROW_PDA_2 = "EscrowDem0PDA22222222222222222222222222222222";
 
 const REGISTRAR = "Bnq22GvV6AQcXWeTp6x3uTYkC7HKKrysiFve2uCDqE97";
 const ISSUER = "8zqKjKvQUmo38zTjwppjnQZdaFBf3ipZVZMhV26g3yma";
@@ -275,6 +278,49 @@ const actions: Record<string, ActionDTO[]> = {
       factorBps: null,
       explorerUrl: explorer(ACTION_PDA_3),
     },
+    {
+      // Funded and unpaid (plan 15 task 1533): Claim buttons, "Claimable now", gross/tax/net rows in mock mode.
+      pda: ACTION_PDA_4,
+      seriesMint: MINT_BTRK,
+      kind: "INTR",
+      mandatory: "MAND",
+      corpId: "BTRKdemo-INTR-0002",
+      officialId: null,
+      announcedAt: "2026-09-25T10:00:00+05:00",
+      recordAt: "2026-09-28T00:00:00+05:00",
+      paymentAt: "2026-10-28T00:00:00+05:00",
+      periodStart: "2026-09-15",
+      periodEnd: "2027-03-15",
+      accrualDays: 180,
+      rateBps: 1595,
+      perUnitGross: usdc("79800", "79.80 USDC"),
+      perUnitPrincipal: usdc("0", "0.00 USDC"),
+      cashMint: MINT_USDC,
+      escrow: ESCROW_PDA_2,
+      escrowBalance: usdc("7980000", "7,980.00 USDC"),
+      status: "Funded",
+      snapshotSlot: 1235,
+      snapshotHash: "D7oUNmockHASHqPQf2XN7pXhXpzKdQmYtWJChMAvery9",
+      unitsSnapshotted: "100",
+      holdersSnapshotted: 3,
+      holdersPaid: 0,
+      totalGross: usdc("7980000", "7,980.00 USDC"),
+      totalTax: usdc("359100", "3,591.00 USDC"),
+      totalNet: usdc("7620900", "7,620.90 USDC"),
+      totalPaid: usdc("0", "0.00 USDC"),
+      totalRetired: null,
+      holdersRetired: null,
+      proposalNewRateBps: null,
+      proposalNewMaturity: null,
+      votingEndsAt: null,
+      votesFor: null,
+      votesAgainst: null,
+      votesAbstain: null,
+      result: null,
+      completedAt: null,
+      factorBps: null,
+      explorerUrl: explorer(ACTION_PDA_4),
+    },
   ],
 };
 
@@ -313,6 +359,30 @@ const entitlements: Record<string, EntitlementDTO[]> = {
     votedAt: null,
     explorerUrl: explorer(owner),
   })),
+  // The funded BTRK coupon: unpaid Snapshotted entitlements — owner 2 is the nonresident with 15% withholding.
+  // BTRK units 40/30/30 × 79.80 = 3,192.00 / 2,394.00 / 2,394.00 USDC; tax 359.10 only for owner 2.
+  [ACTION_PDA_4]: INVESTOR_OWNERS.map((owner, i) => {
+    const gross = ["3192000", "2394000", "2394000"][i] ?? "0";
+    const tax = i === 2 ? "359100" : "0";
+    const net = String(Number(gross) - Number(tax));
+    const usd = (minor: string) =>
+      usdc(minor, `${(Number(minor) / 100).toFixed(2)} USDC`);
+    return {
+      pda: `EnTlDem0Pda${i}For${ACTION_PDA_4.slice(0, 4)}1111111111111111111111111`,
+      actionPda: ACTION_PDA_4,
+      owner,
+      units: ["40", "30", "30"][i] ?? "0",
+      gross: usd(gross),
+      tax: usd(tax),
+      net: usd(net),
+      principal: usd("0"),
+      status: "Snapshotted",
+      paidAt: null,
+      vote: "None",
+      votedAt: null,
+      explorerUrl: explorer(owner),
+    };
+  }),
 };
 
 /** Demo activity feed: a few events per action so the timeline shows tx links. */
@@ -500,6 +570,86 @@ function mockReconcile(pda: string) {
 const delay = <T>(body: T): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(body), 30));
 
+/**
+ * Public holder lookup fixture (plan 15 task 1533, mirrors Go /holders/{owner} from task 1525): positions across
+ * both mock series with the payout route (owner 0 chose the bank route), entitlements with kind and paying tx, and
+ * the next payout per series (the open action, else the projected next coupon through the schedule).
+ */
+function holderLookup(owner: string) {
+  const i = INVESTOR_OWNERS.indexOf(owner);
+  const known = i !== -1;
+  const unitsByMint = known
+    ? [
+        { s: series[0]!, units: ["10", "25", "65"][i]! },
+        { s: series[1]!, units: ["40", "30", "30"][i]! },
+      ]
+    : [];
+  const txUrl = (sig: string) =>
+    `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+  const positions = unitsByMint.map(({ s, units }, k) => ({
+    series: `SeRiesDem0Pda${k}1111111111111111111111111111111111`,
+    mint: s.mint,
+    ticker: s.ticker,
+    isin: s.isin,
+    bondAta: `BoNdAtaDem0${s.mint.slice(4, 8)}Pda${i}111111111111111111111111111`,
+    cashAta: `CaShAtaDem0${s.mint.slice(4, 8)}Pda${i}111111111111111111111111111`,
+    units,
+    status: "Active",
+    kyc: {
+      attested: true,
+      ref: `KycAttestPda${i}111111111111111111111111111111`,
+    },
+    // Owner 0 chose the bank route on the BTRK position: the card shows the stored hash (never the reference).
+    payoutRoute:
+      i === 0 && s.mint === MINT_BTRK
+        ? {
+            route: "bank",
+            bankRefHash: "a1b2c3d4e5".padEnd(64, "0"),
+            updatedAt: "2026-09-20T10:00:00+05:00",
+          }
+        : undefined,
+    explorerUrl: explorer(owner),
+  }));
+  const ents = known
+    ? Object.values(entitlements)
+        .flat()
+        .filter((e) => e.owner === owner)
+        .map((e) => {
+          const action = Object.values(actions)
+            .flat()
+            .find((a) => a.pda === e.actionPda);
+          const paidTx = e.status === "Paid" ? SIGS[0] : undefined;
+          return {
+            ...e,
+            kind: action?.kind ?? "INTR",
+            paidTx,
+            paidTxUrl: paidTx ? txUrl(paidTx) : undefined,
+          };
+        })
+    : [];
+  // One upcoming payout per series: BTRK's open action, QPNb1's projected next coupon.
+  const upcoming = known
+    ? [
+        {
+          mint: MINT_BTRK,
+          ticker: "BTRKdemo",
+          kind: "INTR",
+          actionPda: ACTION_PDA_3,
+          recordAt: "2026-09-28T00:00:00+05:00",
+          paymentAt: "2026-10-28T00:00:00+05:00",
+        },
+        {
+          mint: MINT_QPNB1,
+          ticker: "QPNb1",
+          kind: "INTR (projected)",
+          actionPda: null,
+          recordAt: "2027-03-01T00:00:00+05:00",
+          paymentAt: "2027-03-01T00:00:00+05:00",
+        },
+      ]
+    : [];
+  return { owner, positions, entitlements: ents, upcomingPayouts: upcoming };
+}
 /** Serve one registrar API path from the feature mocks (platform v2) or the fixtures above. */
 export function mockGet(path: string): Promise<unknown> {
   const feature = featureMock("GET", path);
@@ -523,6 +673,10 @@ export function mockGet(path: string): Promise<unknown> {
   const reconcileMatch = /^\/actions\/([^/]+)\/reconcile$/.exec(path);
   if (reconcileMatch) {
     return delay(mockReconcile(reconcileMatch[1]!));
+  }
+  const holderMatch = /^\/holders\/([^/]+)$/.exec(path);
+  if (holderMatch) {
+    return delay(holderLookup(holderMatch[1]!));
   }
   const seriesMatch = /^\/series\/([^/]+)$/.exec(path);
   if (seriesMatch) {

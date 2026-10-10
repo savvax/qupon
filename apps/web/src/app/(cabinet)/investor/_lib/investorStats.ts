@@ -1,5 +1,5 @@
+import { claimableEntitlements, estimateCoupon } from "@/lib/portal";
 import type { SeriesRow } from "@/lib/portal";
-import { estimateCoupon } from "@/lib/portal";
 
 /** One money bucket per settlement currency (series in a portfolio may settle differently). */
 export type CurrencyTotal = { currency: string; minor: bigint };
@@ -66,4 +66,22 @@ export function nextPayment(
         ? { currency: best.row.series.faceValue.currency, minor: est }
         : undefined,
   };
+}
+
+/** Whole days from now until an ISO date (Almaty stays civil: dates are dates). Negative = past. */
+export function daysUntil(iso: string, now = Date.now()): number {
+  return Math.ceil((new Date(iso).getTime() - now) / 86_400_000);
+}
+
+/** Net cash sitting in funded-but-unclaimed entitlements (claimable now), grouped by currency. */
+export function claimableNow(rows: SeriesRow[]): CurrencyTotal[] {
+  const out: CurrencyTotal[] = [];
+  for (const { entitlement, row } of claimableEntitlements(rows))
+    add(
+      out,
+      (entitlement.net ?? entitlement.gross)?.currency ??
+        row.series.faceValue.currency,
+      BigInt((entitlement.net ?? entitlement.gross)?.minor ?? "0"),
+    );
+  return out;
 }

@@ -15,6 +15,8 @@ export type ActionDTO = Schemas["ActionDTO"];
 export type ReconcileReport = Schemas["ReconcileReport"];
 export type AdvanceResponse = Schemas["AdvanceResponse"];
 export type ErrorDTO = Schemas["Error"];
+export type HolderLookupDTO = Schemas["HolderLookupDTO"];
+export type UpcomingPayoutDTO = Schemas["UpcomingPayoutDTO"];
 
 /** Base URL of the Go registrar service. NEXT_PUBLIC_API_URL is inlined for
  * browser callers (postAdvance); server components can also set API_URL. */
@@ -228,7 +230,9 @@ export async function listActivity(limit = 200): Promise<ActivityLike[]> {
 /** Slot of the newest indexed event (header network chip); undefined when the feed is empty or down. */
 export const latestSlot = (): Promise<number | undefined> =>
   listActivity(1)
-    .then((evs) => evs.reduce((m, e) => Math.max(m, e.slot ?? 0), 0) || undefined)
+    .then(
+      (evs) => evs.reduce((m, e) => Math.max(m, e.slot ?? 0), 0) || undefined,
+    )
     .catch(() => undefined);
 
 /** Advance one lifecycle step through the session proxy (registrar session required). */

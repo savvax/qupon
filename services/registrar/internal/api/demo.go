@@ -109,6 +109,68 @@ func demoVote(deps Deps, st *store.Store) http.HandlerFunc {
 	}
 }
 
+// demoClaimRequest is openapi.yaml#/components/schemas/DemoClaimRequest.
+type demoClaimRequest struct {
+	Action string `json:"action"` // CorporateAction PDA (base58)
+	Owner  string `json:"owner"`  // the holder claiming (must be a server-held demo investor)
+}
+
+// POST /demo/investor/claim — the holder's own pay_batch (plan 15 D2) through the executor: the demo wallet
+// signs what a wallet-holder would sign in the browser. Only the matching demo keypair may be used.
+func demoClaim(deps Deps, st *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if deps.Executor == nil {
+			writeError(w, http.StatusServiceUnavailable, "executor not configured (set QUPON_CLI)")
+			return
+		}
+		if deps.Read == nil {
+			writeError(w, http.StatusServiceUnavailable, "chain reader not configured (set PROGRAM_ID)")
+			return
+		}
+		var req demoClaimRequest
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, "body must be DemoClaimRequest JSON: "+err.Error())
+			return
+		}
+		owner, err := solana.PublicKeyFromBase58(req.Owner)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "owner must be a base58 pubkey")
+			return
+		}
+		keypair, ok := demoInvestorKeypair(owner)
+		if !ok {
+			writeErrorCode(w, http.StatusForbidden, "not_demo_investor", "the holder "+owner.String()+" is not a demo investor: they claim from their own wallet")
+			return
+		}
+		pda, err := solana.PublicKeyFromBase58(req.Action)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "action must be a base58 pubkey")
+			return
+		}
+		action, err := deps.Read.FetchCorporateAction(r.Context(), pda)
+		if err != nil {
+			writeError(w, http.StatusBadGateway, err.Error())
+			return
+		}
+		if action == nil {
+			writeError(w, http.StatusNotFound, "no corporate action at "+pda.String())
+			return
+		}
+		series, err := deps.Read.FetchSeries(r.Context(), action.Series)
+		if err != nil || series == nil {
+			writeError(w, http.StatusBadGateway, "series of action "+pda.String()+" unreadable")
+			return
+		}
+		name, err := deps.Executor.SeriesName(series.Mint.String())
+		if err != nil {
+			writeErrorCode(w, http.StatusNotFound, "unknown_series", "mint "+series.Mint.String()+" is not a registered series")
+			return
+		}
+		args := []string{"action:claim", "--series", name, "--index", strconv.FormatUint(uint64(action.Index), 10), "--owner", owner.String(), "--keypair", keypair}
+		runDemo(w, r, deps, st, map[string]any{"action": pda.String(), "owner": owner.String()}, args...)
+	}
+}
+
 // runDemo executes one CLI command for the demo investor, audits it and
 // writes the demo-marked response. CLI failures surface as 409 with the
 // program's error name in onchainError (global error contract).

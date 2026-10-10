@@ -22,6 +22,7 @@ import {
   sendTransactionWithoutConfirmingFactory,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
+  type ReadonlyUint8Array,
   type Signature,
   signTransactionMessageWithSigners,
 } from "@solana/kit";
@@ -49,8 +50,9 @@ export type TransactionSigningWallet = Pick<
 
 /**
  * A wallet as a Kit `TransactionModifyingSigner`: the Kit transaction is serialized, signed by the wallet with
- * `signTransaction`, and the wallet's signed bytes are decoded back — wallets may add instructions before signing,
- * so we send exactly what was signed.
+ * `signTransaction`, and the wallet's signed bytes are decoded back. Before anything is sent, the signed message is
+ * byte-compared with the message we built (plan 15 task 1533): a wallet (or an extension behind it) that altered the
+ * transaction — added an instruction, swapped an account — aborts with a clear error, nothing reaches the chain.
  */
 export function walletTransactionSigner(
   wallet: TransactionSigningWallet,
@@ -72,6 +74,11 @@ export function walletTransactionSigner(
           if (!sig || sig.every((b) => b === 0)) {
             throw new Error("the wallet did not sign the transaction");
           }
+          if (!bytesEqual(out.messageBytes, tx.messageBytes)) {
+            throw new Error(
+              "the wallet signed a different transaction than the one built (message bytes differ) — nothing was sent",
+            );
+          }
           // Keep the lifetime Kit attached to the input (the wallet signs the same blockhash we gave it).
           return {
             ...out,
@@ -85,6 +92,10 @@ export function walletTransactionSigner(
       );
     },
   };
+}
+
+function bytesEqual(a: ReadonlyUint8Array, b: ReadonlyUint8Array): boolean {
+  return a.length === b.length && a.every((byte, i) => byte === b[i]);
 }
 
 /** v0 message with the wallet as fee payer (and signer of its instruction accounts). */

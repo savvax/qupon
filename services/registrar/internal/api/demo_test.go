@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	solana "github.com/solana-foundation/solana-go/v2"
+
 	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/executor"
@@ -163,5 +165,62 @@ func TestDemoVote(t *testing.T) {
 	rows, err := st.ListAudit(t.Context(), 10)
 	if err != nil || len(rows) != 1 || rows[0].Route != "POST /demo/investor/vote" || !rows[0].OK {
 		t.Fatalf("audit = %+v %v, want one ok vote row", rows, err)
+	}
+}
+
+func TestDemoClaim(t *testing.T) {
+	// A throwaway demo investor key in the solana-keygen file format, as TestTradeFundDemo builds one.
+	key, err := solana.NewRandomPrivateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nums := make([]int, len(key))
+	for i, b := range key {
+		nums[i] = int(b)
+	}
+	file, _ := json.Marshal(nums)
+	path := filepath.Join(t.TempDir(), "investor.json")
+	if err := os.WriteFile(path, file, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	owner := key.PublicKey()
+
+	fc := &fakeChain{action: &chain.CorporateAction{Series: fSeries, Index: 3, Kind: 0, Status: 3}} // Funded → claimable
+	url, st, log, demo, reg := demoServer(t, fc)
+	for _, name := range demoInvestorEnv {
+		t.Setenv(name, "")
+	}
+	t.Setenv("QUPON_INVESTOR_KEYPAIR", path)
+
+	code, body := postDemo(t, url, "/demo/investor/claim", fmt.Sprintf(`{"action":"%s","owner":"%s"}`, fAction, owner), demo)
+	if code != http.StatusOK || body["demo"] != true || body["signature"] != "sig-demo" {
+		t.Fatalf("claim = %d %v, want 200 demo:true", code, body)
+	}
+	want := "--json action:claim --series QPNb1 --index 3 --owner " + owner.String() + " --keypair " + path
+	if got := cliLog(t, log); len(got) != 1 || got[0] != want {
+		t.Fatalf("cli log = %q, want %q", got, want)
+	}
+
+	// A holder whose key the server does not hold claims from their own wallet: 403, no CLI run.
+	if code, body := postDemo(t, url, "/demo/investor/claim", fmt.Sprintf(`{"action":"%s","owner":"%s"}`, fAction, fOwnerB), demo); code != http.StatusForbidden || body["code"] != "not_demo_investor" {
+		t.Fatalf("foreign owner = %d %v, want 403 not_demo_investor", code, body)
+	}
+	// bad owner / bad action → 400; unknown action → 404; wrong role → 403.
+	for _, tc := range []struct{ body, tok string }{
+		{fmt.Sprintf(`{"action":"%s","owner":"notabase58"}`, fAction), demo},
+		{`{"action":"notabase58","owner":"` + owner.String() + `"}`, demo},
+		{fmt.Sprintf(`{"action":"11111111111111111111111111111111","owner":"%s"}`, owner), demo},
+		{fmt.Sprintf(`{"action":"%s","owner":"%s"}`, fAction, owner), reg},
+	} {
+		if code, _ := postDemo(t, url, "/demo/investor/claim", tc.body, tc.tok); code != http.StatusBadRequest && code != http.StatusForbidden && code != http.StatusNotFound {
+			t.Fatalf("claim %s = %d, want 400/403/404", tc.body, code)
+		}
+	}
+	if got := cliLog(t, log); len(got) != 1 {
+		t.Fatalf("cli log after rejected claims = %q, want only the first run", got)
+	}
+	rows, err := st.ListAudit(t.Context(), 10)
+	if err != nil || len(rows) != 1 || rows[0].Route != "POST /demo/investor/claim" || !rows[0].OK || strings.Contains(string(rows[0].Params), path) {
+		t.Fatalf("audit = %+v %v, want one ok row that does not name the keypair file", rows, err)
 	}
 }

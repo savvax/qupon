@@ -490,7 +490,7 @@ export function useClaim(s: Sandbox, a: SandboxAction | null) {
     const res = await runWalletWrite({
       pending: t("pending"),
       success: () => t("done"),
-      call: async () => signAndSendWithWallet(signer, portalRpc(), [await buildClaimIx(portalRpc(), s.series.mint, address(a.pda), signer)]),
+      call: async () => signAndSendWithWallet(signer, portalRpc(), await buildClaimIx(portalRpc(), s.series.mint, address(a.pda), signer)),
     });
     if (res) setSent(res.signature);
     setBusy(false);

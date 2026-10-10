@@ -5,10 +5,15 @@
  * history) and on-chain instruction builders (cast_vote, subscribe) using the
  * generated Kit client shared with the CLI.
  */
-import { findAssociatedTokenPda } from "@solana-program/token-2022";
+import {
+  findAssociatedTokenPda,
+  getCreateAssociatedTokenIdempotentInstruction,
+} from "@solana-program/token-2022";
 import {
   type Address,
   AccountRole,
+  fetchEncodedAccounts,
+  type Instruction,
   type TransactionSigner,
   address,
 } from "@solana/kit";
@@ -18,6 +23,7 @@ import {
   fetchSeries,
   getCastVoteInstructionAsync,
   getPayBatchInstruction,
+  getSetPayoutRouteInstructionAsync,
   getSubscribeInstructionAsync,
 } from "@qupon/client/src/generated";
 import {
@@ -249,10 +255,11 @@ export async function buildSubscribeIx(
 }
 
 /**
- * Build `pay_batch` for the signer's own entitlement: the holder claims their coupon (pay is a permissionless
- * crank, plan 15 D2). Mirrors the CLI's per-holder remaining accounts [Entitlement (w), Investor, PayoutRoute,
- * cash destination (w), bond ATA (w)] for a wallet-routed holder (a bank-routed one is paid to the paying agent
- * by the crank instead).
+ * Build `pay_batch` for the signer's own entitlement: the holder claims their payout (pay is a permissionless
+ * crank, plan 15 D2). Mirrors the CLI `action:claim` account layout [Entitlement (w), Investor, PayoutRoute,
+ * cash destination (w), bond ATA (w)] and honours the holder's route: a bank-routed payout goes to the paying
+ * agent's cash ATA (the bank transfer itself is SIMULATED off-chain), a wallet-routed one to the holder's cash ATA.
+ * A missing destination ATA is created idempotently in the same transaction.
  */
 export async function buildClaimIx(
   rpc: PortalRpc,
@@ -267,10 +274,53 @@ export async function buildClaimIx(
   const investor = await investorPda(series, owner.address);
   const record = (await fetchInvestor(rpc, investor)).data;
   const { value: cashMintAccount } = await rpc
-    .getAccountInfo(account.cashMint, { commitment: "confirmed", encoding: "base64" })
+    .getAccountInfo(account.cashMint, {
+      commitment: "confirmed",
+      encoding: "base64",
+    })
     .send();
   if (cashMintAccount === null)
     throw new Error(`cash mint ${account.cashMint} not found on chain`);
+  // PayoutRoute ["route", investor]: discriminator (8) + bump (1) + investor (32), then the route byte (1 = bank)
+  // — the same layout the CLI reads (clients/ts payoutRouteIsBank).
+  const route = await routePda(investor);
+  const [routeAcc, walletCash] = await fetchEncodedAccounts(rpc, [
+    route,
+    record.cashAta,
+  ]);
+  const routeData =
+    routeAcc !== undefined && routeAcc.exists ? routeAcc.data : undefined;
+  const bank =
+    routeData !== undefined && routeData.length > 41 && routeData[41] === 1;
+  let destination = record.cashAta;
+  let create: Instruction | undefined;
+  if (bank) {
+    destination = (
+      await findAssociatedTokenPda({
+        owner: account.payingAgent,
+        tokenProgram: cashMintAccount.owner,
+        mint: account.cashMint,
+      })
+    )[0];
+    const [agentCash] = await fetchEncodedAccounts(rpc, [destination]);
+    if (agentCash === undefined || !agentCash.exists) {
+      create = getCreateAssociatedTokenIdempotentInstruction({
+        payer: owner,
+        ata: destination,
+        owner: account.payingAgent,
+        mint: account.cashMint,
+        tokenProgram: cashMintAccount.owner,
+      });
+    }
+  } else if (walletCash === undefined || !walletCash.exists) {
+    create = getCreateAssociatedTokenIdempotentInstruction({
+      payer: owner,
+      ata: destination,
+      owner: owner.address,
+      mint: account.cashMint,
+      tokenProgram: cashMintAccount.owner,
+    });
+  }
   const base = getPayBatchInstruction({
     authority: owner,
     series,
@@ -283,15 +333,72 @@ export async function buildClaimIx(
   });
   const w = AccountRole.WRITABLE;
   const r = AccountRole.READONLY;
-  return {
+  const claim: Instruction = {
     ...base,
     accounts: [
       ...base.accounts,
       { address: await entitlementPda(actionPda, owner.address), role: w },
       { address: investor, role: r },
-      { address: await routePda(investor), role: r },
-      { address: record.cashAta, role: w },
+      { address: route, role: r },
+      { address: destination, role: w },
       { address: record.bondAta, role: w },
     ],
   };
+  return create ? [create, claim] : [claim];
+}
+
+/**
+ * Build `set_payout_route` (plan 15 D6): the holder's own signature chooses wallet or bank. The bank reference is
+ * already a sha256 when it gets here — only {@link sha256Hex} (WebCrypto, in the browser) ever sees the clear text.
+ */
+export async function buildSetPayoutRouteIx(
+  seriesMint: string,
+  owner: TransactionSigner,
+  route: "wallet" | "bank",
+  bankRefHash: Uint8Array,
+) {
+  const series = await seriesPda(address(seriesMint));
+  const investor = await investorPda(series, owner.address);
+  return getSetPayoutRouteInstructionAsync({
+    owner,
+    series,
+    investor,
+    routeArg: route === "bank" ? 1 : 0,
+    bankRefHash,
+  });
+}
+
+/** sha256 of a UTF-8 text as hex — WebCrypto in the browser; only this hash ever leaves the page. */
+export async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text),
+  );
+  return Array.from(new Uint8Array(digest), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
+}
+
+/** The hash bytes `set_payout_route` stores: sha256(UTF-8 text) as the 32-byte argument. */
+export async function sha256Bytes(text: string): Promise<Uint8Array> {
+  const hex = await sha256Hex(text);
+  return Uint8Array.from({ length: 32 }, (_, i) =>
+    parseInt(hex.slice(i * 2, i * 2 + 2), 16),
+  );
+}
+
+/** An entitlement the holder can claim right now: its action is funded (Funded/Settling) and the payout is unpaid. */
+export function claimableEntitlements(
+  rows: SeriesRow[],
+): { row: SeriesRow; action: ActionDTO; entitlement: EntitlementDTO }[] {
+  const paid = new Set(["Paid", "Retired", "PaidToAgent"]);
+  return rows.flatMap((row) =>
+    row.actions
+      .filter((a) => a.status === "Funded" || a.status === "Settling")
+      .flatMap((action) =>
+        row.entitlements
+          .filter((e) => e.actionPda === action.pda && !paid.has(e.status))
+          .map((entitlement) => ({ row, action, entitlement })),
+      ),
+  );
 }

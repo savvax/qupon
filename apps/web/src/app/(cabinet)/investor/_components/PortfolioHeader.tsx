@@ -22,12 +22,18 @@ import { useInvestor } from "./InvestorIdentity";
 import { HoldingsList } from "./HoldingsList";
 import { OpenTrades } from "./OpenTrades";
 import {
+  claimableNow,
+  daysUntil,
   faceTotals,
   nextPayment,
   receivedToDate,
   type CurrencyTotal,
 } from "../_lib/investorStats";
 import { usePortalRows } from "../_lib/usePortalRows";
+import { claimableEntitlements } from "@/lib/portal";
+import { getHolder } from "@/lib/holder";
+import { PayoutCalendar } from "./PayoutCalendar";
+import { useClaims } from "../_lib/useClaims";
 import { type Locale } from "@/i18n/locale";
 
 function Money({
@@ -53,11 +59,25 @@ function Money({
   );
 }
 
-/** Petrol KPI band: face value total, received to date, next payment. */
-function PortfolioHeader({ rows }: { rows: Parameters<typeof faceTotals>[0] }) {
+type ClaimProps = {
+  claimable: number;
+  claiming: boolean;
+  onClaimAll: () => void;
+};
+
+/** Petrol KPI band (plan 15 task 1533): claimable now · next coupon in N days · received to date. */
+function PortfolioHeader({
+  rows,
+  claim,
+}: {
+  rows: Parameters<typeof faceTotals>[0];
+  claim: ClaimProps;
+}) {
   const t = useTranslations("investor.portfolio");
   const locale = useLocale() as Locale;
   const next = nextPayment(rows);
+  const days = next ? daysUntil(next.date) : undefined;
+  const claimable = claimableNow(rows);
   const registered = rows.filter((r) => r.me !== undefined);
   const kyc = registered.some((r) => r.me?.status === "Suspended")
     ? { tone: "danger", label: t("kycSuspended") }
@@ -76,42 +96,53 @@ function PortfolioHeader({ rows }: { rows: Parameters<typeof faceTotals>[0] }) {
       />
       <div className="relative flex flex-wrap items-start justify-between gap-3">
         <h2 className="text-lg font-bold">{t("title")}</h2>
-        <Badge tone={kyc.tone}>
-          {kyc.label}
-          <span className="ml-1 font-normal opacity-80">(SAS · SIMULATED)</span>
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge tone={kyc.tone}>
+            {kyc.label}
+            <span className="ml-1 font-normal opacity-80">
+              (SAS · SIMULATED)
+            </span>
+          </Badge>
+          {claim.claimable > 0 && (
+            <Button onClick={claim.onClaimAll} loading={claim.claiming}>
+              {t("claimAll")}
+            </Button>
+          )}
+        </div>
       </div>
       <div className="relative mt-5 grid gap-5 sm:grid-cols-3">
         <div className="min-w-0">
-          <div className={kpiLabel}>{t("faceTotal")}</div>
+          <div className={kpiLabel}>{t("claimableNow")}</div>
           <div className={kpiValue}>
-            <Money totals={faceTotals(rows)} locale={locale} />
+            <Money totals={claimable} locale={locale} />
           </div>
+          {claim.claimable > 0 && (
+            <div className="num mt-1 text-sm text-p100">
+              {t("claimableCount", { count: claim.claimable })}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0">
+          <div className={kpiLabel}>{t("nextCoupon")}</div>
+          <div className={kpiValue}>
+            {days !== undefined ? t("inDays", { count: days }) : "—"}
+          </div>
+          {next?.est && (
+            <div className="num mt-1 text-sm text-p100">
+              <Amount
+                minor={next.est.minor}
+                currency={next.est.currency}
+                locale={locale}
+              />{" "}
+              · {formatDate(next.date, locale)}
+            </div>
+          )}
         </div>
         <div className="min-w-0">
           <div className={kpiLabel}>{t("receivedToDate")}</div>
           <div className={kpiValue}>
             <Money totals={receivedToDate(rows)} locale={locale} />
           </div>
-        </div>
-        <div className="min-w-0">
-          <div className={kpiLabel}>{t("nextPayment")}</div>
-          <div className={kpiValue}>
-            {next?.est ? (
-              <Amount
-                minor={next.est.minor}
-                currency={next.est.currency}
-                locale={locale}
-              />
-            ) : (
-              "—"
-            )}
-          </div>
-          {next && (
-            <div className="num mt-1 text-sm text-p100">
-              {formatDate(next.date, locale)}
-            </div>
-          )}
         </div>
       </div>
     </section>
@@ -120,11 +151,26 @@ function PortfolioHeader({ rows }: { rows: Parameters<typeof faceTotals>[0] }) {
 
 /** The /investor page body inside <InvestorIdentity>. */
 export function PortfolioView() {
-  const { owner } = useInvestor();
+  const { owner, mode } = useInvestor();
   const t = useTranslations("investor.portfolio");
   const tc = useTranslations("common");
   const locale = useLocale() as Locale;
   const { rows, error, reload } = usePortalRows();
+  const claims = useClaims(rows ?? [], reload, mode);
+  // One holder lookup feeds the payout calendar and the per-position route cards (/holders/{owner}, cached 15 s).
+  const [holder, setHolder] = useState<Awaited<
+    ReturnType<typeof getHolder>
+  > | null>(null);
+  useEffect(() => {
+    let live = true;
+    setHolder(null);
+    getHolder(owner)
+      .then((h) => live && setHolder(h))
+      .catch(() => live && setHolder(null)); // positions/calendar degrade their own cards, never the page
+    return () => {
+      live = false;
+    };
+  }, [owner]);
 
   // actionPda → owner → EntitlementPaid signature (last-payment tx on the cards)
   const [paidTxs, setPaidTxs] = useState<Map<
@@ -202,6 +248,11 @@ export function PortfolioView() {
     history.push(h);
   }
 
+  // The Claim button lives on the payout rows it pays out (plan 15 task 1533).
+  const claimable = new Set(
+    claimableEntitlements(rows).map((c) => c.entitlement.pda),
+  );
+
   type HistoryRow = (typeof history)[number];
   const historyColumns: Column<HistoryRow>[] = [
     {
@@ -252,6 +303,22 @@ export function PortfolioView() {
         ),
     },
     {
+      key: "tax",
+      header: t("col.tax"),
+      align: "right",
+      hideBelow: "lg",
+      render: ({ e }) =>
+        e.tax ? (
+          <Amount
+            minor={e.tax.minor}
+            currency={e.tax.currency}
+            locale={locale}
+          />
+        ) : (
+          "—"
+        ),
+    },
+    {
       key: "net",
       header: t("col.net"),
       align: "right",
@@ -271,7 +338,23 @@ export function PortfolioView() {
       key: "status",
       header: t("col.status"),
       essential: true,
-      render: ({ e }) => <Badge status={e.status} />,
+      render: ({ e, row, action }) =>
+        action && claimable.has(e.pda) ? (
+          <Button
+            size="sm"
+            loading={claims.claiming}
+            onClick={() =>
+              void claims.claim({
+                mint: row.series.mint,
+                actionPda: action.pda,
+              })
+            }
+          >
+            {t("claim")}
+          </Button>
+        ) : (
+          <Badge status={e.status} />
+        ),
     },
     {
       key: "vote",
@@ -304,7 +387,19 @@ export function PortfolioView() {
 
   return (
     <div className="space-y-8">
-      <PortfolioHeader rows={rows} />
+      <PortfolioHeader
+        rows={rows}
+        claim={{
+          claimable: claimable.size,
+          claiming: claims.claiming,
+          onClaimAll: () => void claims.claimAll(),
+        }}
+      />
+
+      <PayoutCalendar
+        upcoming={holder?.upcomingPayouts ?? []}
+        loading={holder === null}
+      />
 
       <OpenTrades rows={rows} />
 
@@ -312,7 +407,12 @@ export function PortfolioView() {
         <h2 id="holdings" className="mb-3 text-lg font-bold">
           {t("holdings")}
         </h2>
-        <HoldingsList rows={rows} paidTxs={lastTxByMint} />
+        <HoldingsList
+          rows={rows}
+          paidTxs={lastTxByMint}
+          positions={holder?.positions}
+          mode={mode}
+        />
       </section>
 
       <section aria-labelledby="history">

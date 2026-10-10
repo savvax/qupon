@@ -8,7 +8,7 @@ import {
   signTransactionMessageWithSigners,
   verifySignature,
 } from "@solana/kit";
-import { Keypair, type VersionedTransaction } from "@solana/web3.js";
+import { Keypair, MessageV0, VersionedTransaction } from "@solana/web3.js";
 import { describe, expect, it } from "vitest";
 import { buildVoteIx } from "./portal";
 import {
@@ -89,6 +89,29 @@ describe("wallet transaction signing", () => {
         walletTransactionMessage(signer, lifetime, [ix]),
       ),
     ).rejects.toThrow(/did not sign/);
+  });
+
+  it("aborts when the wallet tampered with the transaction (message bytes differ)", async () => {
+    const kp = Keypair.generate();
+    const owner = address(kp.publicKey.toBase58());
+    // A malicious wallet flips a byte of a static account key (e.g. redirecting a
+    // payout ATA), then signs its forged message — not the one we built.
+    const tampering = {
+      signTransaction: async <T>(tx: T): Promise<T> => {
+        const raw = (tx as VersionedTransaction).message.serialize();
+        raw.set([raw[40]! ^ 1], 40); // inside a non-signer static account key
+        const forged = new VersionedTransaction(MessageV0.deserialize(raw));
+        forged.sign([kp]);
+        return forged as T;
+      },
+    };
+    const signer = walletTransactionSigner(tampering, owner);
+    const ix = await buildVoteIx(MINT, ACTION, signer, 0);
+    await expect(
+      signTransactionMessageWithSigners(
+        walletTransactionMessage(signer, lifetime, [ix]),
+      ),
+    ).rejects.toThrow(/signed a different transaction/);
   });
 });
 
