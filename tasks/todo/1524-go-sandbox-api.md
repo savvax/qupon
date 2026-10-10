@@ -1,7 +1,6 @@
 ---
 id: 1524
 title: sandbox API — a judge's own bond on a demo clock
-blocked_reason: lead restoring the round-2 work (resume patch was not re-applied after the 14:00 limit)
 agent: glm
 tier: T0
 depends_on: [1520, 1522]

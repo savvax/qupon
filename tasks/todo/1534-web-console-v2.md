@@ -1,7 +1,6 @@
 ---
 id: 1534
 title: registrar console v2
-blocked_reason: lead restoring the round-2 work (resume patch was not re-applied after the 14:00 limit)
 agent: glm
 tier: T1
 depends_on: [1530, 1522, 1523, 91522]

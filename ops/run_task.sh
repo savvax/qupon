@@ -35,7 +35,24 @@ if [ -n "$WIP" ]; then
 NOTE: a previous attempt at this task was interrupted. Its work is already applied and committed on this branch as 'wip($ID): resume previous attempt' (see: git show --stat HEAD). Review it, finish what is missing, run make verify, commit and print DONE:$ID."
     echo "[run_task] resumed from $WIP" >&2
   else
-    git reset -q --hard 2>/dev/null; echo "[run_task] could not apply $WIP (main moved on); starting fresh" >&2
+    # Main moved on since the patch was taken. Starting fresh threw away whole review rounds (1524/1534 on 2026-10-10):
+    # apply it 3-way instead, commit the result with any conflict markers, and make resolving them the first step.
+    git reset -q --hard 2>/dev/null
+    git apply --3way --index "$WIP" >/dev/null 2>&1
+    CONFLICTS=$(git diff --name-only --diff-filter=U 2>/dev/null | tr '\n' ' ')
+    git add -A 2>/dev/null
+    if ! git diff --cached --quiet 2>/dev/null && git commit -qm "wip($ID): resume previous attempt (3-way onto a newer main)" 2>/dev/null; then
+      PROMPT="$PROMPT
+
+NOTE: a previous attempt at this task was interrupted and main has moved on since. Its work is applied 3-way and committed on this branch as 'wip($ID): resume previous attempt (3-way onto a newer main)' (see: git show --stat HEAD)."
+      if [ -n "$CONFLICTS" ]; then
+        PROMPT="$PROMPT FIRST resolve the conflict markers (<<<<<<< ======= >>>>>>>) it left in: $CONFLICTS — keep main's changes AND this task's changes; for binary files (screenshots) keep main's version and re-shoot later if the task needs it."
+      fi
+      PROMPT="$PROMPT Then review it, finish what is missing, run make verify, commit and print DONE:$ID."
+      echo "[run_task] resumed 3-way from $WIP; conflicts: ${CONFLICTS:-none}" >&2
+    else
+      git reset -q --hard 2>/dev/null; echo "[run_task] could not apply $WIP even 3-way; starting fresh" >&2
+    fi
   fi
   mv "$WIP" "$WIP.applied" 2>/dev/null || true
 fi
