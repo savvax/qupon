@@ -121,12 +121,12 @@ export function SignupForm() {
         {t("submit")}
       </Button>
       <p className="mt-4 border-t border-n100 pt-4 text-sm text-n600">
-        <StableText>{t("haveAccount")}</StableText>{" "}
+        {t("haveAccount")}{" "}
         <Link
           href="/login"
-          className="font-semibold text-g700 underline-offset-2 hover:underline"
+          className="inline-flex min-h-11 items-center font-semibold text-g700 underline-offset-2 hover:underline"
         >
-          <StableText>{t("signIn")}</StableText>
+          {t("signIn")}
         </Link>
       </p>
     </form>

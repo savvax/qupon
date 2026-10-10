@@ -110,12 +110,12 @@ export function SignInCard({ next }: { next?: string }) {
         <StableText>{t("accountsNote")}</StableText>
       </p>
       <p className="mt-4 border-t border-n100 pt-4 text-sm text-n600">
-        <StableText>{t("newInvestor")}</StableText>{" "}
+        {t("newInvestor")}{" "}
         <Link
           href="/signup"
-          className="font-semibold text-g700 underline-offset-2 hover:underline"
+          className="inline-flex min-h-11 items-center font-semibold text-g700 underline-offset-2 hover:underline"
         >
-          <StableText>{t("createAccount")}</StableText>
+          {t("createAccount")}
         </Link>
       </p>
     </form>
