@@ -48,3 +48,17 @@ Not mergeable yet: two blocking items. First, a typo in the finalize tx signatur
 - Each section links a real devnet tx from reports/demo-plan15.md — 9 of 10 signatures match the report exactly. TX.finalize (page.tsx:32) has 'ZW9Jf' where the report has 'ZW4Jf', so the link is broken.
 
 Design score: 7/10
+
+## Review feedback (round 2, 2026-10-10 13:43) — fix every blocking item first; your previous work is already committed on this branch
+
+### Summary
+Not mergeable yet, for one reason: the screenshots committed to reports/design/91537/ show the page before the change. Both round-1 problems are fixed: all 10 devnet signatures now match reports/demo-plan15.md exactly, and the bank card is a compact ActionFlow with a SIMULATED chip. The rest is fine. All six plan-15 cards have accurate copy and real explorer links, the accrued split is correct, the three glossary terms are in all three locales and the unit tests pass. Fresh en/ru shots at 1440 look good: the new cards match the six-step cards and nothing is truncated (design score 8). But all six committed PNGs were shot against old code, with no 'Six mechanics' section and no new glossary terms. That means the screenshot deliverable is unmet and the worklog's 're-shot' claim is wrong. Re-shoot from this worktree with SHOT_LOCALES="en ru kk" and commit.
+
+### Blocking
+- reports/design/91537/learn-en-1440.png — The committed screenshots don't show this task's change. reports/design/91537/learn-en-1440.png (1440×3073) and learn-kk-1440.png (1440×3192) go straight from 'Where the money goes' to the Glossary. They have no 'Six mechanics under the hood' section and none of the 3 new glossary terms (Payout route / Grace day / Anchored notice). They were shot against a server running the old code, probably a stale server left over from the worktree reaper incident. A fresh shot from this worktree is 1440×4447 and includes the section. The task's 'Screenshots 1440/390 en/ru/kk → reports/design/91537/' deliverable is therefore unmet, and the worklog/commit claim 'Screenshots re-shot' is false.
+  **Fix:** Stop any running next/playwright web server first. Then, from this worktree, with a free E2E_PORT, run: SHOT_LOCALES="en ru kk" bash ops/shots.sh reports/design/91537 /learn. Open each of the 6 PNGs and confirm it contains the 'Six mechanics under the hood' heading (ru 'Шесть механик под капотом', kk 'Қаптастың астындағы алты механика') and the Payout route / Grace day / Anchored notice glossary entries. Commit the PNGs, and fix the worklog line that still says the bank card reuses MoneyFlow.
+
+### Acceptance criteria not met
+- Screenshots 1440/390 en/ru/kk in reports/design/91537/ — The committed PNGs show the page before the change: no plan-15 section and no new glossary terms.
+
+Design score: 8/10
