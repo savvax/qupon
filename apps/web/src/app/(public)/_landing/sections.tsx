@@ -26,7 +26,7 @@ function Section({
   return (
     <section id={id} className={`${CONTAINER} scroll-mt-20 py-16 sm:py-24`}>
       {eyebrow && (
-        <div className="mb-2 text-sm font-bold tracking-wider text-g700 uppercase">
+        <div className="mb-2 text-sm font-semibold text-g700">
           <StableText>{eyebrow}</StableText>
         </div>
       )}
@@ -148,7 +148,7 @@ export function Scenarios() {
               key={s.key}
               className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-5 border-t border-n200 py-6"
             >
-              <dt className="font-mono text-2xl font-bold tracking-tight text-g700">
+              <dt className="num text-2xl font-bold tracking-tight text-g700">
                 {s.code}
               </dt>
               <dd>
@@ -376,23 +376,30 @@ export function BeyondCoupon() {
         <p className="-mt-6 mb-8 max-w-[65ch] text-n700">
           <StableText>{t("lead")}</StableText>
         </p>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {BEYOND.map((b) => (
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+          {BEYOND.map((b, i) => (
             <li
               key={b.key}
-              className="qp-reveal qp-lift flex flex-col rounded-card border border-n200 bg-n0 p-6"
+              className={cx(
+                "qp-reveal qp-lift flex flex-col rounded-card border border-n200 bg-n0 p-6",
+                i < 3 ? "lg:col-span-2" : "lg:col-span-3",
+                // Five cards in a six-column grid: 3 + 2 across, and no lone half-width card at md.
+                i === BEYOND.length - 1 && "sm:max-lg:col-span-2",
+              )}
             >
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-start gap-3">
                 <span className="qp-ico grid size-10 shrink-0 place-items-center rounded-xl bg-n100 text-g700">
                   <Icon name={b.icon} className="size-5" />
                 </span>
-                <h3 className="font-bold text-n900">
+                <h3 className="min-w-0 flex-1 pt-2 font-bold text-n900">
                   <StableText>{t(`${b.key}.title`)}</StableText>
                 </h3>
-                {"simulated" in b && b.simulated && (
-                  <ProvenanceChip kind="simulated" />
-                )}
               </div>
+              {"simulated" in b && b.simulated && (
+                <div className="mt-2">
+                  <ProvenanceChip kind="simulated" />
+                </div>
+              )}
               <p className="mt-3 flex-1 text-sm leading-relaxed text-n600">
                 <StableText>{t(`${b.key}.text`)}</StableText>
               </p>
@@ -407,9 +414,10 @@ export function BeyondCoupon() {
                   href={`https://explorer.solana.com/tx/${b.tx}?cluster=devnet`}
                   target="_blank"
                   rel="noreferrer"
-                  className="num font-mono text-xs font-semibold text-n600 underline decoration-n300 underline-offset-2 hover:text-n900"
+                  title={b.step}
+                  className="font-semibold text-g700 underline decoration-g300 underline-offset-2 hover:decoration-g600"
                 >
-                  {b.step} ↗
+                  {t("tx")} ↗
                 </a>
               </div>
             </li>

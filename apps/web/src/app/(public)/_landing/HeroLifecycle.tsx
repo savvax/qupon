@@ -1,7 +1,6 @@
 "use client";
 
 import { useInView, useReducedMotion } from "motion/react";
-import { m } from "motion/react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { Address } from "@/components/ui/Address";
@@ -28,8 +27,9 @@ const DURATION = [0.9, 0.9, 0.9, 0.9, 2.4, 3.6];
 const DONE = STEPS.length - 1;
 
 /**
- * "Last completed payout" card: the amount, the holders paid and the transaction are always the final, real values;
- * only the six step segments and the status chip replay the action's lifecycle (so no frame ever reads "0.00 ₸").
+ * "Last completed payout" card: the amount, the holders paid, the transaction and the status chip are always the
+ * final, real values; only the six step segments and the caption under them replay the lifecycle (language §6,
+ * so no frame ever reads "Announced" under a "completed" title, nor "0.00 ₸").
  * Server HTML and reduced motion show the completed state; the loop pauses off-screen.
  */
 export function HeroLifecycle({
@@ -64,8 +64,6 @@ export function HeroLifecycle({
     return () => clearTimeout(timer);
   }, [playing]);
 
-  const status = STEPS[step] ?? "Completed";
-
   return (
     // A plain off-white card with a brand-tinted shadow: the replaying lifecycle inside is the motion.
     <div ref={ref}>
@@ -92,14 +90,8 @@ export function HeroLifecycle({
               <span className="max-sm:hidden">{last.kind} · </span>
               {t(`kinds.${last.kind}`)}
             </span>
-            <m.span
-              key={status}
-              initial={playing ? { y: 4 } : false}
-              animate={{ y: 0 }}
-              transition={{ duration: 0.25 }}
-            >
-              <Badge status={status} />
-            </m.span>
+            {/* The chip never replays (§6): the card is titled "completed", so it stays Completed. */}
+            <Badge status="Completed" />
           </div>
           <div className="mt-5 text-xs font-semibold text-n500">
             {t("last.total")}

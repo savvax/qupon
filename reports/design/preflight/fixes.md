@@ -80,3 +80,12 @@ Rows refer to `reports/design/preflight/mechanical.md`. After-shots in `after/` 
 #27 /registrar — the board kind chip wraps: Badge grew a `wrap` prop that swaps (not appends — cx does no tailwind-merge) the one-line `h-6 whitespace-nowrap` pill for `min-h-6 max-w-full py-0.5 leading-snug whitespace-normal`; the kk chip now ends 90 px inside its card (Badge.tsx, Pipeline.tsx)
 #28 /investor — payout calendar grid is `auto-rows-fr`: every month cell in a row shares one height (PayoutCalendar.tsx)
 #29 NowBar — ActorChip raised to border-n300/bg-n100/text-n800 so it no longer reads as disabled, and a waiting vote no longer shows a "Holder" chip on the issuer's own bar (ActorChip.tsx, StepNowBar.tsx)
+
+## Opus review (task 1537) — task 91549: findings 3, 5, 13, 14
+
+After-shots: `reports/design/preflight/opus-after/` (`/` × en/ru/kk × 1440/390).
+#3 Hero — implemented with one addition: the review's class list `min-h-[840px] min-[360px]:min-h-[800px] sm:h-[740px] lg:h-[560px]` keeps the 800 px phone min-height active at sm+, and min-height beats height, so the desktop hero became 800 px instead of 560/740. Added `sm:min-h-0` so "min-height instead of height on phones" holds literally: measured 800 px at 390, 560 px at 1440. kk title/lead replaced as given; ru title kept — measured at 390, ru wraps to the same 4 lines as en (gap h1→lead = 20 px in every locale/width, card bottom inset 46 px, eyebrow top inset 23 px at 390).
+#5 HeroLifecycle — Badge pinned to `status="Completed"`; only the six segments and the "Step n of 6" caption replay (the motion-keyed span is gone, `m` import dropped).
+#13 Copy — all strings replaced as given (`proven.plan15`, `beyond.lead` ×3, en `proven.demosLabel`, learn `plan15.lead` ×3, kk `hero.cta`, kk `last.title`, kk kit `prov.simulated` → "Симуляция").
+#14 Beyond a coupon — grid `sm:grid-cols-2 lg:grid-cols-6` with 3×`lg:col-span-2` + 2×`lg:col-span-3` (+ `sm:max-lg:col-span-2` on the last), head `flex items-start gap-3` with `min-w-0 flex-1 pt-2` h3 and the Simulated chip on its own line, tx link is a sentence-case `t("tx") ↗` link (`title` carries the step), Section eyebrow `text-sm font-semibold text-g700`, INTR/REDM codes `num` not `font-mono`. New key `landing.beyond.tx` (en/ru/kk).
+Pre-existing, not this task's scope: `locale-stability` EN↔RU at 390 fails on `/registrar` and `/issuer/series/new` ("Next: Confirm bank payout" wraps to two RU lines) on the clean tree too — cabinet NowBar copy, owned by finding-group 3. This task's landing changes fix the `/` EN↔KK 390 diff that also failed before.

@@ -17,15 +17,17 @@ export async function Hero({ live }: { live: Live }) {
   const locale = toLocale(await getLocale());
   const last = live.last ?? EXAMPLE_ACTION;
   // "Try it in 3 minutes" opens the visitor's own sandbox bond; devnet only
-  const tryHref = (await getNetwork()).mainnet ? "/login?choose=1" : "/sandbox/new";
+  const tryHref = (await getNetwork()).mainnet
+    ? "/login?choose=1"
+    : "/sandbox/new";
   return (
     <section className="px-4 pt-6 sm:px-6">
-      {/* Fixed heights per breakpoint: switching EN ↔ RU never resizes the hero (spec §5.8). */}
-      <div className="relative mx-auto h-[840px] max-w-[1200px] overflow-hidden rounded-hero bg-p900 text-white min-[360px]:h-[800px] sm:h-[740px] lg:h-[560px]">
+      {/* Fixed height from sm up; min-height on phones so the longest locale grows instead of clipping (§5.5). */}
+      <div className="relative mx-auto min-h-[840px] max-w-[1200px] overflow-hidden rounded-hero bg-p900 text-white min-[360px]:min-h-[800px] sm:h-[740px] sm:min-h-0 lg:h-[560px]">
         <HeroBackdrop />
         <div className="relative grid h-full grid-cols-[minmax(0,1fr)] content-center gap-8 p-5 sm:p-10 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-center lg:gap-12 lg:p-14">
           <div>
-            <span className="text-sm font-bold tracking-wider text-g300 uppercase">
+            <span className="text-sm font-semibold text-g300">
               {t("hero.badge")}
             </span>
             <h1 className="mt-4 text-[clamp(1.85rem,1.1rem+2.6vw,2.9rem)] leading-[1.08] font-extrabold tracking-tight text-balance">

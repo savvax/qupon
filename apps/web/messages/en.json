@@ -267,8 +267,8 @@
       "title": "Proven on devnet",
       "lead": "The program on devnet is the binary built from this repository — reproducibly, in Docker. Nothing on this page is a mock-up.",
       "hashLabel": "Verified build hash",
-      "demosLabel": "Demo runs · 2026-10-09",
-      "plan15": "{n} transactions — every plan-15 instruction succeeded",
+      "demosLabel": "Demo runs · Oct 9, 2026",
+      "plan15": "{n} transactions — every advanced mechanic succeeded",
       "full": "{n} transactions — the full bond lifecycle",
       "commandTitle": "Verify the build yourself",
       "commandText": "One command rebuilds the program in Docker and compares its hash with the binary deployed on devnet.",
@@ -278,8 +278,9 @@
     },
     "beyond": {
       "title": "Beyond a coupon",
-      "lead": "A coupon is the smallest thing Qupon does. The plan-15 mechanics below each ran for real on devnet — follow the transaction.",
+      "lead": "A coupon is the smallest thing Qupon does. Each mechanic below ran for real on devnet — follow the transaction.",
       "learn": "Read more",
+      "tx": "Transaction",
       "default": {
         "title": "Default and cure",
         "text": "The issuer missed the payment date. One series day later anyone declared the default on-chain; the issuer's late funding cured it, and the record-date holders were still paid in full."

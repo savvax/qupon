@@ -46,7 +46,7 @@
   },
   "plan15": {
     "title": "Six mechanics under the hood",
-    "lead": "What Qupon adds to a plain tokenized bond. Every card links a real transaction from the plan-15 devnet run.",
+    "lead": "What Qupon adds to a plain tokenized bond. Every card links a real devnet transaction.",
     "register": {
       "title": "The register never pauses",
       "body": "The record date is not a freeze. The bond's transfer hook lets every trade through, but from the record moment it copies the seller into the on-chain snapshot first, so trading never stops for a coupon. Once the snapshot is final the gate disarms and buyers trade ex-coupon: the seller keeps this payout.",
