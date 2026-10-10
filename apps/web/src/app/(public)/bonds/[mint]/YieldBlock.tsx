@@ -194,6 +194,7 @@ export function YieldBlock({
               <TextField
                 type="number"
                 min={1}
+                step={1}
                 value={units}
                 onChange={(e) => setUnits(e.target.value)}
                 className="mt-1 w-full"
