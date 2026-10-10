@@ -1536,7 +1536,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** All series with their admin settings (hidden, featured, KASE ticker, organisation) */
+        /** All series with their admin settings (hidden, featured, KASE ticker, organisation, autopilot scenario, demo clock, default state) */
         get: operations["adminListSeries"];
         put?: never;
         post?: never;
@@ -1559,7 +1559,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update a series' admin settings (hidden, featured, KASE ticker, owning organisation) */
+        /** Update a series' admin settings (hidden, featured, KASE ticker, owning organisation, autopilot scenario) */
         patch: operations["adminPatchSeries"];
         trace?: never;
     };
@@ -2259,6 +2259,12 @@ export interface components {
             isin?: string;
             hidden: boolean;
             featured: boolean;
+            /** @description true = the autopilot must not fund this series' escrow, so the coupon defaults after its grace day (default/cure demo) */
+            noAutofund: boolean;
+            /** @description chain day_secs per civil day; 0 = real Almaty clock. Present when the row was read from chain. */
+            demoClock?: number;
+            /** @description an action is Defaulted and not cured on chain */
+            inDefault?: boolean;
             kaseTicker?: string;
             /** @description owning organisation (issuer writes are scoped to it) */
             orgId?: number | null;
@@ -6578,6 +6584,8 @@ export interface operations {
                     kaseTicker?: string;
                     /** @description 0 clears the owning organisation */
                     orgId?: number;
+                    /** @description true keeps the autopilot from funding the escrow (default/cure demo) */
+                    noAutofund?: boolean;
                 };
             };
         };

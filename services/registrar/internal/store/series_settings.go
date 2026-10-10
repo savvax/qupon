@@ -15,15 +15,16 @@ type SeriesSettings struct {
 	Hidden     bool   `json:"hidden"`
 	Featured   bool   `json:"featured"`
 	KaseTicker string `json:"kaseTicker"`
+	NoAutofund bool   `json:"noAutofund"` // task 91541: read-only here; writes go through SetSeriesNoAutofund
 	UpdatedAt  int64  `json:"updatedAt"`
 }
 
-const settingsCols = `series_mint, org_id, hidden, featured, kase_ticker, updated_at`
+const settingsCols = `series_mint, org_id, hidden, featured, kase_ticker, no_autofund, updated_at`
 
 func scanSettings(row interface{ Scan(...any) error }) (SeriesSettings, error) {
 	var x SeriesSettings
 	var org sql.NullInt64
-	err := row.Scan(&x.SeriesMint, &org, &x.Hidden, &x.Featured, &x.KaseTicker, &x.UpdatedAt)
+	err := row.Scan(&x.SeriesMint, &org, &x.Hidden, &x.Featured, &x.KaseTicker, &x.NoAutofund, &x.UpdatedAt)
 	if org.Valid {
 		x.OrgID = &org.Int64
 	}

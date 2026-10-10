@@ -367,6 +367,9 @@ type adminSeriesRow struct {
 	ISIN       string `json:"isin"`
 	Hidden     bool   `json:"hidden"`
 	Featured   bool   `json:"featured"`
+	NoAutofund bool   `json:"noAutofund"` // task 91541: scheduler skips funding the escrow
+	DemoClock  uint32 `json:"demoClock"`  // chain day_secs: 0 = real Almaty clock
+	InDefault  bool   `json:"inDefault"`  // chain in_default: an action Defaulted and not cured
 	KaseTicker string `json:"kaseTicker"`
 	OrgID      *int64 `json:"orgId"`
 	UpdatedAt  int64  `json:"updatedAt"`
@@ -389,8 +392,9 @@ func adminListSeries(deps Deps, st *store.Store) http.HandlerFunc {
 			for _, rec := range recs {
 				mint := rec.Series.Mint.String()
 				rows[mint] = adminSeriesRow{Mint: mint, PDA: rec.PDA.String(),
-					Ticker: strings.TrimRight(string(rec.Series.Ticker[:]), "\x00"),
-					ISIN:   strings.TrimRight(string(rec.Series.ISIN[:]), "\x00")}
+					Ticker:    strings.TrimRight(string(rec.Series.Ticker[:]), "\x00"),
+					ISIN:      strings.TrimRight(string(rec.Series.ISIN[:]), "\x00"),
+					DemoClock: rec.Series.DaySecs, InDefault: rec.Series.InDefault == 1}
 			}
 		} else { // no chain reader: the startup mirror
 			stored, err := st.ListSeries(r.Context())
@@ -413,7 +417,8 @@ func adminListSeries(deps Deps, st *store.Store) http.HandlerFunc {
 		out := make([]adminSeriesRow, 0, len(rows))
 		for mint, row := range rows {
 			x := settings[mint]
-			row.Hidden, row.Featured, row.KaseTicker, row.OrgID, row.UpdatedAt = x.Hidden, x.Featured, x.KaseTicker, x.OrgID, x.UpdatedAt
+			row.Hidden, row.Featured, row.NoAutofund = x.Hidden, x.Featured, x.NoAutofund
+			row.KaseTicker, row.OrgID, row.UpdatedAt = x.KaseTicker, x.OrgID, x.UpdatedAt
 			out = append(out, row)
 		}
 		sort.Slice(out, func(i, j int) bool { return out[i].Mint < out[j].Mint })
@@ -432,6 +437,7 @@ func adminPatchSeries(st *store.Store) http.HandlerFunc {
 			Featured   *bool   `json:"featured"`
 			KaseTicker *string `json:"kaseTicker"`
 			OrgID      *int64  `json:"orgId"`
+			NoAutofund *bool   `json:"noAutofund"`
 		}
 		if !decodeJSON(w, r, &req) {
 			return
@@ -471,8 +477,16 @@ func adminPatchSeries(st *store.Store) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
+		// The scenario flag has its own column and writer, so an UpsertSeriesSettings never resets it (task 91541).
+		if req.NoAutofund != nil {
+			if err := st.SetSeriesNoAutofund(r.Context(), mint.String(), *req.NoAutofund); err != nil {
+				writeError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			x.NoAutofund = *req.NoAutofund
+		}
 		audit(st, r, map[string]any{"mint": mint.String(), "hidden": x.Hidden, "featured": x.Featured,
-			"kaseTicker": x.KaseTicker, "orgId": x.OrgID}, true, "series settings updated", nil)
+			"kaseTicker": x.KaseTicker, "orgId": x.OrgID, "noAutofund": x.NoAutofund}, true, "series settings updated", nil)
 		writeJSON(w, http.StatusOK, map[string]any{"series": x})
 	}
 }

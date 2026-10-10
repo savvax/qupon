@@ -3207,7 +3207,7 @@ paths:
   /admin/series:
     get:
       summary: All series with their admin settings (hidden, featured, KASE
-        ticker, organisation)
+        ticker, organisation, autopilot scenario, demo clock, default state)
       operationId: adminListSeries
       security:
         - bearerAuth: []
@@ -3230,7 +3230,7 @@ paths:
   /admin/series/{mint}:
     patch:
       summary: Update a series' admin settings (hidden, featured, KASE ticker,
-        owning organisation)
+        owning organisation, autopilot scenario)
       operationId: adminPatchSeries
       security:
         - bearerAuth: []
@@ -3253,6 +3253,10 @@ paths:
                 orgId:
                   type: integer
                   description: 0 clears the owning organisation
+                noAutofund:
+                  type: boolean
+                  description: true keeps the autopilot from funding the
+                    escrow (default/cure demo)
       responses:
         "200":
           description: updated settings
@@ -4977,6 +4981,7 @@ components:
         - mint
         - hidden
         - featured
+        - noAutofund
       properties:
         mint:
           type: string
@@ -4990,6 +4995,17 @@ components:
           type: boolean
         featured:
           type: boolean
+        noAutofund:
+          type: boolean
+          description: true = the autopilot must not fund this series' escrow,
+            so the coupon defaults after its grace day (default/cure demo)
+        demoClock:
+          type: integer
+          description: chain day_secs per civil day; 0 = real Almaty clock.
+            Present when the row was read from chain.
+        inDefault:
+          type: boolean
+          description: an action is Defaulted and not cured on chain
         kaseTicker:
           type: string
         orgId:

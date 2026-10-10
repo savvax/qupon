@@ -1,10 +1,15 @@
 import { getTranslations } from "next-intl/server";
 import { Address } from "@/components/ui/Address";
+import { Badge } from "@/components/ui/Badge";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { boFetch } from "@/lib/bo";
 import { metaTitle } from "@/lib/meta";
-import { SeriesRowControls, type OrgOption } from "./SeriesRowControls";
+import {
+  SeriesAutopilot,
+  SeriesRowControls,
+  type OrgOption,
+} from "./SeriesRowControls";
 
 type AdminSeriesRow = {
   mint: string;
@@ -13,6 +18,9 @@ type AdminSeriesRow = {
   isin?: string;
   hidden: boolean;
   featured: boolean;
+  noAutofund: boolean;
+  demoClock?: number;
+  inDefault?: boolean;
   kaseTicker: string;
   orgId: number | null;
   updatedAt: number;
@@ -43,7 +51,13 @@ export default async function AdminSeriesPage() {
     {
       key: "ticker",
       header: t("colTicker"),
-      render: (r) => <span className="font-semibold">{r.ticker || "—"}</span>,
+      render: (r) => (
+        <span className="flex flex-wrap items-center gap-1.5">
+          <span className="font-semibold">{r.ticker || "—"}</span>
+          {r.demoClock ? <Badge tone="info">{t("demoClock")}</Badge> : null}
+          {r.inDefault ? <Badge tone="danger">{t("inDefault")}</Badge> : null}
+        </span>
+      ),
     },
     {
       key: "mint",
@@ -55,6 +69,14 @@ export default async function AdminSeriesPage() {
       header: t("colIsin"),
       hideBelow: "md",
       render: (r) => <span className="num">{r.isin || "—"}</span>,
+    },
+    {
+      key: "autopilot",
+      header: t("colAutopilot"),
+      hideBelow: "lg",
+      render: (r) => (
+        <SeriesAutopilot mint={r.mint} noAutofund={r.noAutofund} />
+      ),
     },
     {
       key: "settings",
@@ -90,10 +112,19 @@ export default async function AdminSeriesPage() {
           empty={t("empty")}
           phoneRow={(r) => (
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-bold">{r.ticker || "—"}</span>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="flex items-center gap-1.5 font-bold">
+                  {r.ticker || "—"}
+                  {r.demoClock ? (
+                    <Badge tone="info">{t("demoClock")}</Badge>
+                  ) : null}
+                  {r.inDefault ? (
+                    <Badge tone="danger">{t("inDefault")}</Badge>
+                  ) : null}
+                </span>
                 <Address value={r.mint} />
               </div>
+              <SeriesAutopilot mint={r.mint} noAutofund={r.noAutofund} />
               <SeriesRowControls
                 mint={r.mint}
                 hidden={r.hidden}

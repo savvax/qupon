@@ -49,6 +49,52 @@ function Switch({
   );
 }
 
+/** Task 91541: per-series autopilot scenario. On (default) = the autopilot funds the escrow;
+ * off = the coupon defaults after its grace day (the default/cure demo). The label is hidden
+ * on lg+ where the table column header names it. */
+export function SeriesAutopilot({
+  mint,
+  noAutofund,
+}: {
+  mint: string;
+  noAutofund: boolean;
+}) {
+  const t = useTranslations("admin.series");
+  const runWrite = useRunWrite();
+  const router = useRouter();
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-[11px] font-bold uppercase tracking-wide text-n500 lg:hidden">
+        {t("colAutopilot")}
+      </span>
+      <span className="flex items-center gap-2 text-xs font-semibold">
+        <Switch
+          checked={!noAutofund}
+          label={t("colAutopilot")}
+          onToggle={() =>
+            void runWrite({
+              pending: t("toggleAutopilotPending"),
+              success: () => t("toggleAutopilotSaved"),
+              call: () =>
+                boSend("PATCH", `admin/series/${mint}`, {
+                  noAutofund: !noAutofund,
+                }),
+            }).then((r) => {
+              if (r) router.refresh();
+            })
+          }
+        />
+        <span className={noAutofund ? "text-n400" : "text-g700"}>
+          {noAutofund ? t("autopilotOff") : t("autopilotOn")}
+        </span>
+      </span>
+      <p className="max-w-[22rem] text-[11px] text-n500">
+        {t("autopilotHint")}
+      </p>
+    </div>
+  );
+}
+
 /** Per-series admin controls (platform v2 §5.2): visibility, featuring, KASE ticker link,
  * owning organisation. Each change PATCHes /admin/series/{mint} and refreshes the table. */
 export function SeriesRowControls({

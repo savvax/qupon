@@ -32,6 +32,9 @@ type SeriesRow = {
   isin: string;
   hidden: boolean;
   featured: boolean;
+  noAutofund: boolean;
+  demoClock?: number;
+  inDefault?: boolean;
   kaseTicker: string;
   orgId: number | null;
   updatedAt: number;
@@ -45,6 +48,8 @@ const series: SeriesRow[] = [
     isin: "KZ2C0QUPON01",
     hidden: false,
     featured: true,
+    noAutofund: false,
+    demoClock: 45, // plan 15 D7: 45 s civil days
     kaseTicker: "QPNB",
     orgId: 1,
     updatedAt: 1770000000,
@@ -56,6 +61,8 @@ const series: SeriesRow[] = [
     isin: "KZ2C00018703",
     hidden: false,
     featured: false,
+    noAutofund: true, // the default/cure demo: the autopilot skips funding this escrow
+    inDefault: true,
     kaseTicker: "",
     orgId: null,
     updatedAt: 0,
@@ -78,6 +85,18 @@ type AuditRow = {
 const nowSec = () => Math.floor(Date.now() / 1000);
 
 const audit: AuditRow[] = [
+  {
+    id: 6,
+    ts: nowSec() - 300,
+    userId: 1,
+    email: "admin@qupon.test",
+    role: "admin",
+    route: "PATCH /admin/series/" + MINT_BTRK,
+    params: { mint: MINT_BTRK, noAutofund: true },
+    ok: true,
+    detail: "series settings updated",
+    signatures: [],
+  },
   {
     id: 5,
     ts: nowSec() - 900,
@@ -207,11 +226,13 @@ export const handlers: MockHandler[] = [
       const b = (body ?? {}) as {
         hidden?: boolean;
         featured?: boolean;
+        noAutofund?: boolean;
         kaseTicker?: string;
         orgId?: number;
       };
       if (b.hidden !== undefined) row.hidden = b.hidden;
       if (b.featured !== undefined) row.featured = b.featured;
+      if (b.noAutofund !== undefined) row.noAutofund = b.noAutofund;
       if (b.kaseTicker !== undefined) row.kaseTicker = b.kaseTicker;
       if (b.orgId !== undefined) row.orgId = b.orgId === 0 ? null : b.orgId;
       row.updatedAt = nowSec();

@@ -4,6 +4,7 @@ package api
 // reset links (single use, expiry), RBAC, audit CSV, hidden series.
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"log/slog"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/auth"
+	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
@@ -322,6 +324,86 @@ func TestAdminHideSeriesAndList(t *testing.T) {
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("bad ticker = %d, want 400", rec.Code)
+	}
+}
+
+// autofundRead is fakeRead whose series runs a 45 s demo clock and is in default, so the list
+// test below checks real non-zero chain values (task 91541).
+type autofundRead struct{ fakeRead }
+
+func (autofundRead) AllSeries(context.Context) ([]chain.SeriesRecord, error) {
+	s := fakeRead{}.series()
+	s.DaySecs, s.InDefault = 45, 1
+	return []chain.SeriesRecord{{PDA: fSeries, Series: s}}, nil
+}
+
+// Task 91541: PATCH noAutofund reaches SetSeriesNoAutofund and survives later settings PATCHes
+// (UpsertSeriesSettings must not reset it); GET /admin/series reports it plus the chain's demo
+// clock and default state; every write is audited with the flag.
+func TestAdminSeriesNoAutofund(t *testing.T) {
+	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "admin-autofund.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	svc := &auth.Service{Store: st, Now: time.Now, TTL: time.Hour, Limit: auth.NewLimiter(5, time.Minute)}
+	h := New(slog.New(slog.DiscardHandler), st, Deps{Auth: svc, Read: autofundRead{}})
+	admin := signIn(t, h, st, svc, "admin")
+
+	// (1) PATCH noAutofund:true — stored and echoed.
+	code, body := doPatch(t, h, "/admin/series/"+fMint.String(), `{"noAutofund":true}`, admin)
+	series, _ := body["series"].(map[string]any)
+	if code != http.StatusOK || series["noAutofund"] != true {
+		t.Fatalf("noAutofund patch = %d %v", code, body)
+	}
+	no, err := st.NoAutofundSeries(t.Context())
+	if err != nil || !no[fMint.String()] {
+		t.Fatalf("NoAutofundSeries after patch = %v (%v)", no, err)
+	}
+
+	// (2) A later PATCH without noAutofund keeps the flag.
+	if code, _ = doPatch(t, h, "/admin/series/"+fMint.String(), `{"hidden":true}`, admin); code != http.StatusOK {
+		t.Fatalf("hidden patch = %d", code)
+	}
+	if no, err = st.NoAutofundSeries(t.Context()); err != nil || !no[fMint.String()] {
+		t.Fatalf("noAutofund survived hidden patch = %v (%v)", no, err)
+	}
+
+	// (3) The list carries noAutofund/hidden from the store and demoClock/inDefault from the chain.
+	var list struct {
+		Series []struct {
+			Hidden     bool   `json:"hidden"`
+			NoAutofund bool   `json:"noAutofund"`
+			DemoClock  uint32 `json:"demoClock"`
+			InDefault  bool   `json:"inDefault"`
+		} `json:"series"`
+	}
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/admin/series", nil)
+	req.Header.Set("Authorization", "Bearer "+admin)
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &list) != nil || len(list.Series) != 1 {
+		t.Fatalf("admin series = %d %s", rec.Code, rec.Body)
+	}
+	if row := list.Series[0]; !row.Hidden || !row.NoAutofund || row.DemoClock != 45 || !row.InDefault {
+		t.Fatalf("row = %+v, want hidden+noAutofund, demoClock 45, inDefault", row)
+	}
+
+	// (4) PATCH noAutofund:false clears the flag everywhere.
+	if code, body = doPatch(t, h, "/admin/series/"+fMint.String(), `{"noAutofund":false}`, admin); code != http.StatusOK {
+		t.Fatalf("clear noAutofund = %d %v", code, body)
+	}
+	if series, _ = body["series"].(map[string]any); series["noAutofund"] != false {
+		t.Fatalf("clear echo = %v", body)
+	}
+	if no, err = st.NoAutofundSeries(t.Context()); err != nil || no[fMint.String()] {
+		t.Fatalf("NoAutofundSeries after clear = %v (%v)", no, err)
+	}
+
+	// The settings writes are audited with the flag in the params.
+	entries, err := st.SearchAudit(t.Context(), store.AuditFilter{Route: "PATCH /admin/series", Limit: 10})
+	if err != nil || len(entries) == 0 || !strings.Contains(string(entries[0].Params), "noAutofund") {
+		t.Fatalf("audit = %+v (%v)", entries, err)
 	}
 }
 
