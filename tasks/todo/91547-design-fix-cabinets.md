@@ -1,7 +1,7 @@
 ---
 id: 91547
 title: design pre-flight fixes: investor, issuer and registrar cabinets
-agent: claude
+agent: glm
 tier: T1
 depends_on: [91539]
 verify: make verify
