@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -60,6 +61,28 @@ func TestValidISIN(t *testing.T) {
 	// A real-world ISIN's check digit, computed the same way.
 	if got := IsinCheckDigit("US037833100"); got != 5 {
 		t.Errorf("IsinCheckDigit(Apple base) = %d, want 5", got)
+	}
+}
+
+func TestShowcaseConfigMatchesTable(t *testing.T) {
+	want, err := json.MarshalIndent(Showcase, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want = append(want, '\n')
+	const path = "../../../../config/showcase.json" // repo root from internal/api
+	if os.Getenv("EXPORT_SHOWCASE") == "1" {
+		if err := os.WriteFile(path, want, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("%s unreadable: %v — regenerate with EXPORT_SHOWCASE=1 go test ./internal/api -run TestShowcaseConfigMatchesTable", path, err)
+	}
+	if string(got) != string(want) {
+		t.Errorf("config/showcase.json drifted from the Showcase table — regenerate with EXPORT_SHOWCASE=1 go test ./internal/api -run TestShowcaseConfigMatchesTable")
 	}
 }
 

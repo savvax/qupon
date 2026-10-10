@@ -1,0 +1,42 @@
+[
+  {
+    "scenario": "coupon",
+    "ticker": "Almaty Power",
+    "isin": "KZ2C0QPN0018",
+    "faceMinor": 100000,
+    "rateBps": 1000,
+    "frequency": 2,
+    "maturityMonths": 12,
+    "daySecs": 4
+  },
+  {
+    "scenario": "redemption",
+    "ticker": "Astana Metro",
+    "isin": "KZ2C0QPN0026",
+    "faceMinor": 100000,
+    "rateBps": 1000,
+    "frequency": 2,
+    "maturityMonths": 6,
+    "daySecs": 4
+  },
+  {
+    "scenario": "meeting",
+    "ticker": "Aktobe Mining",
+    "isin": "KZ2C0QPN0034",
+    "faceMinor": 100000,
+    "rateBps": 1000,
+    "frequency": 2,
+    "maturityMonths": 9,
+    "daySecs": 4
+  },
+  {
+    "scenario": "early_call",
+    "ticker": "Atyrau Oil",
+    "isin": "KZ2C0QPN0042",
+    "faceMinor": 100000,
+    "rateBps": 1000,
+    "frequency": 2,
+    "maturityMonths": 8,
+    "daySecs": 4
+  }
+]
