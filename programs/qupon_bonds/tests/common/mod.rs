@@ -139,7 +139,11 @@ impl Env {
 
     /// Bond mint built with the documented sequence (docs/02-architecture.md); `opts` breaks one property.
     pub fn create_bond_mint(&mut self, opts: BondMintOpts) -> (Pubkey, Pubkey) {
-        let mint = Keypair::new();
+        self.create_bond_mint_from(Keypair::new(), opts)
+    }
+
+    /// Same as `create_bond_mint` with a caller-chosen mint keypair (deterministic fixture export).
+    pub fn create_bond_mint_from(&mut self, mint: Keypair, opts: BondMintOpts) -> (Pubkey, Pubkey) {
         let m = mint.pubkey();
         let series = series_pda(&m);
         let registrar = self.registrar.pubkey();
