@@ -1,8 +1,10 @@
+import { StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { Icon } from "@/components/shell/icons";
 import { formatDate } from "@/lib/format";
 import type { ActionDTO, SeriesDTO } from "@/lib/api";
 import { cx } from "@/lib/ui/cx";
@@ -36,15 +38,19 @@ function ActionCard({
   action,
   ticker,
   locale,
+  bankLabel,
 }: {
   action: ActionDTO;
   ticker: string;
   locale: string;
+  /** sr-only "Paid to agent": the bank chip is an icon, but its meaning stays in text (§7) */
+  bankLabel: string;
 }) {
   const bank = action.bankPending ?? 0;
   return (
     <Link
       href={`/registrar/actions/${action.pda}`}
+      title={action.corpId}
       className={cx(
         "qp-lift block rounded-btn border bg-n0 px-3 py-2.5 text-sm hover:border-g300 hover:bg-g50",
         action.status === "Defaulted" ? "border-default/40" : "border-n200",
@@ -53,7 +59,6 @@ function ActionCard({
       {/* Stacked, not side by side: in a narrow column the badge used to squeeze the ticker down to "Q.". */}
       {/* break-words, never truncate: the whole ticker is readable at 1440 and 390 (task 1534). */}
       <div className="num break-words font-bold">{ticker}</div>
-      <div className="num break-all text-xs text-n500">{action.corpId}</div>
       {/* The kind chip carries the ISO code, not the translated word ("Coupon"/"Купон" wrap to a
           different number of lines → cards change height between locales, which the locale-stability
           spec forbids); the word stays on the wide alerts rows below. */}
@@ -61,8 +66,12 @@ function ActionCard({
         <Badge tone="info" wrap>
           {action.kind}
         </Badge>
-        {action.status === "Defaulted" && <Badge tone="danger">!</Badge>}
-        {bank > 0 && <Badge tone="bank">{bank} ↦</Badge>}
+        {bank > 0 && (
+          <Badge tone="bank">
+            {bank} <Icon name="bank" className="size-3.5" aria-hidden />
+            <span className="sr-only">{bankLabel}</span>
+          </Badge>
+        )}
       </div>
       <div className="num mt-1 text-xs whitespace-nowrap text-n500">
         {formatDate(action.recordAt, locale)}
@@ -81,7 +90,6 @@ export async function Pipeline({
   series: SeriesDTO[];
 }) {
   const t = await getTranslations("status");
-  const kinds = await getTranslations("landing.kinds");
   const locale = await getLocale();
   const dash = await getTranslations("registrar.dash");
   const tickerOf = new Map(series.map((s) => [s.mint, s.ticker] as const));
@@ -105,7 +113,8 @@ export async function Pipeline({
                 className={cx(
                   // min-h-8: the longest label (KK "Тіркеу күні белгіленді") wraps to two lines —
                   // reserving both keeps every column's cards at the same y in every locale.
-                  "mb-2 flex min-h-[2rem] items-baseline gap-1.5 text-xs font-bold tracking-wide uppercase",
+                  // Sentence case (§2): tracked caps wrapped mid-word (preflight #10).
+                  "mb-2 flex min-h-[2rem] items-baseline gap-1.5 text-xs font-bold",
                   col.accent === "default" ? "text-default" : "text-n500",
                 )}
               >
@@ -131,6 +140,7 @@ export async function Pipeline({
                     locale={locale}
                     key={a.pda}
                     action={a}
+                    bankLabel={t("PaidToAgent")}
                     ticker={
                       tickerOf.get(a.seriesMint) ??
                       a.seriesMint.slice(0, 4) + "…"
@@ -153,10 +163,19 @@ export async function Pipeline({
 export async function Alerts({ alerts }: { alerts: ActionAlert[] }) {
   const dash = await getTranslations("registrar.dash");
   const kinds = await getTranslations("landing.kinds");
+  // StableText: the alerts sit above the pipeline now (preflight #10), so a row's height must not
+  // move with the language — each text reserves the height of its longest locale (spec §5.8).
   const text = (a: ActionAlert): ReactNode =>
-    a.kind === "bankPending"
-      ? dash(a.kind, { count: a.action.bankPending ?? 0 })
-      : dash(a.kind);
+    a.kind === "bankPending" ? (
+      <StableText
+        template={dash.raw(a.kind) as string}
+        values={{ count: a.action.bankPending ?? 0 }}
+      >
+        {dash(a.kind, { count: a.action.bankPending ?? 0 })}
+      </StableText>
+    ) : (
+      <StableText>{dash(a.kind)}</StableText>
+    );
   if (alerts.length === 0)
     return <p className="text-sm text-n500">{dash("noAlerts")}</p>;
   return (

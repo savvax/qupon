@@ -4,13 +4,42 @@
  * by itself on the role's home page until it is finished or skipped, and the help menu restarts it.
  */
 export const TOURS = {
-  registrar: { home: "/registrar", steps: ["welcome", "now", "kpi", "pipeline", "alerts", "nav", "help"] },
-  issuer: { home: "/issuer", steps: ["welcome", "now", "kpi", "todo", "latest", "nav", "help"] },
-  investor: { home: "/investor", steps: ["welcome", "now", "checklist", "portfolio", "holdings", "nav", "help"] },
+  // Steps follow the page's DOM: alerts lead the board, the pipeline follows (preflight #10); the
+  // sandbox tells its story (steps) before its toys (scenarios) (preflight #11).
+  registrar: {
+    home: "/registrar",
+    steps: ["welcome", "now", "kpi", "alerts", "pipeline", "nav", "help"],
+  },
+  issuer: {
+    home: "/issuer",
+    steps: ["welcome", "now", "kpi", "todo", "latest", "nav", "help"],
+  },
+  investor: {
+    home: "/investor",
+    steps: [
+      "welcome",
+      "now",
+      "checklist",
+      "portfolio",
+      "holdings",
+      "nav",
+      "help",
+    ],
+  },
   sandbox: {
     // every visitor's own /sandbox/<id> is the sandbox's home (isTourHome); the help menu starts one here
     home: "/sandbox/new",
-    steps: ["welcome", "now", "rail", "scenario", "steps", "money", "roles", "feed", "help"],
+    steps: [
+      "welcome",
+      "now",
+      "rail",
+      "steps",
+      "scenario",
+      "money",
+      "roles",
+      "feed",
+      "help",
+    ],
   },
 } as const;
 

@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 import { Address } from "@/components/ui/Address";
 import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Kpi } from "@/components/ui/Kpi";
 import { ActionFlow, type FlowStep } from "@/components/ui/ActionFlow";
@@ -159,7 +160,11 @@ export default async function RegistrarActionPage({
   const isCash = action.kind !== "BMET" && action.kind !== "CHAN";
   // Plan 15 D4: the funding shortfall and when a permissionless declare_default becomes due
   const shortfall = isCash ? fundingShortfall(action) : null;
-  const overdue = defaultOverdue(action, Date.now(), series?.demoClock?.daySecs);
+  const overdue = defaultOverdue(
+    action,
+    Date.now(),
+    series?.demoClock?.daySecs,
+  );
   const defaultAt = defaultDue(action, series?.demoClock?.daySecs);
   const currency = action.totalNet?.currency ?? action.perUnitGross.currency;
   const principalTotal = entitlements.reduce(
@@ -209,7 +214,9 @@ export default async function RegistrarActionPage({
       </span>,
     ],
     [
-      <GlossaryTerm key="r" term="recordDate">{t("facts.record")}</GlossaryTerm>,
+      <GlossaryTerm key="r" term="recordDate">
+        {t("facts.record")}
+      </GlossaryTerm>,
       <span key="r" className="num">
         {formatDateTime(action.recordAt, locale)}
       </span>,
@@ -233,7 +240,9 @@ export default async function RegistrarActionPage({
     ]);
   if (action.snapshotSlot != null)
     facts.push([
-      <GlossaryTerm key="s" term="snapshot">{t("facts.snapshot")}</GlossaryTerm>,
+      <GlossaryTerm key="s" term="snapshot">
+        {t("facts.snapshot")}
+      </GlossaryTerm>,
       <span key="s" className="num">
         {t("facts.snapshotValue", {
           slot: action.snapshotSlot,
@@ -416,23 +425,6 @@ export default async function RegistrarActionPage({
     waitText
   ) : undefined;
 
-  const factsAndReconcile = (
-    <div className="grid gap-6 xl:grid-cols-2">
-      <Panel title={t("facts.title")}>
-        <dl className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-1">
-          {facts.map(([k, v], i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static positional rows
-            <div key={i} className="min-w-0">
-              <dt className="text-xs font-semibold text-n500">{k}</dt>
-              <dd className="text-sm break-words text-n900">{v}</dd>
-            </div>
-          ))}
-        </dl>
-      </Panel>
-      <ReconcilePanel pda={pda} />
-    </div>
-  );
-
   return (
     <div className="mx-auto max-w-[1200px]">
       <nav className="text-sm text-n500">
@@ -487,7 +479,10 @@ export default async function RegistrarActionPage({
           detail={nowDetail}
           clock={
             next.gate ? (
-              <CountdownClock label={tnow(`gate.${next.gate.kind}`)} to={next.gate.at} />
+              <CountdownClock
+                label={tnow(`gate.${next.gate.kind}`)}
+                to={next.gate.at}
+              />
             ) : action.status === "VotingOpen" && action.votingEndsAt ? (
               <Countdown endsAt={action.votingEndsAt} />
             ) : undefined
@@ -495,13 +490,11 @@ export default async function RegistrarActionPage({
           actors={next.step ? [STEP_ACTOR[next.step]] : []}
           action={
             next.step === "confirm_bank" ? (
-              // one reference per holder: the confirmations panel owns the inputs (#bank)
-              <a
-                href="#bank"
-                className="inline-flex h-11 items-center rounded-btn bg-p900 px-5 text-sm font-bold text-white hover:bg-p900/90"
-              >
-                {label("confirm_bank")}
-              </a>
+              // one reference per holder: the confirmations panel owns the inputs (#bank).
+              // Same button as every other primary action (g600), not a hand-rolled p900 link (preflight #16).
+              <Button asChild size="lg">
+                <a href="#bank">{label("confirm_bank")}</a>
+              </Button>
             ) : next.step ? (
               <span className="flex flex-wrap gap-2">
                 {action.status === "RecordStruck" &&
@@ -615,6 +608,14 @@ export default async function RegistrarActionPage({
           className="mt-8"
           currency={flow.currency}
           locale={locale}
+          // D4 draws the shortfall red, a late cure teal — the same state the sandbox shows (preflight #8)
+          state={
+            action.status === "Defaulted"
+              ? "defaulted"
+              : action.curedAt
+                ? "cured"
+                : "normal"
+          }
           issuer={{
             label: series?.ticker ?? "—",
             address: series?.issuer ?? undefined,
@@ -651,197 +652,208 @@ export default async function RegistrarActionPage({
         </div>
       )}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
-        <div className="min-w-0 space-y-6">{factsAndReconcile}</div>
-
-        <aside className="min-w-0 space-y-4">
-          {isCash && (
-            <Panel title={t("funding.title")}>
-              <div className="flex items-baseline justify-between gap-2 text-sm">
-                <span className="text-n600">{t("funding.escrow")}</span>
-                <span
+      {/* Calm density: even CSS columns instead of two cards beside a six-card stack (preflight #16);
+          the order follows the operator's reading — the money, the facts, the paperwork, the checks. */}
+      <div className="mt-8 gap-6 lg:columns-2 2xl:columns-3 [&>*]:mb-6 [&>*]:break-inside-avoid">
+        {isCash ? (
+          <Panel title={t("funding.title")}>
+            <div className="flex items-baseline justify-between gap-2 text-sm">
+              <span className="text-n600">{t("funding.escrow")}</span>
+              <span
+                className={cx(
+                  "font-semibold",
+                  funded || paidOut
+                    ? "text-g700"
+                    : required === 0n
+                      ? "text-n500"
+                      : "text-warn-fg",
+                )}
+              >
+                {funded
+                  ? t("funding.funded")
+                  : paidOut
+                    ? t("funding.paidOut")
+                    : required === 0n
+                      ? t("funding.awaiting")
+                      : t("funding.under")}
+              </span>
+            </div>
+            <div className="mt-2">
+              <Bar
+                pct={paidOut ? 100 : pctOf(escrow, required)}
+                tone={funded || paidOut ? "bg-g500" : "bg-[#d99a1e]"}
+              />
+            </div>
+            <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2 text-sm">
+              {money(action.escrowBalance)}
+              <span className="text-n500">
+                / {money({ minor: required.toString(), currency })}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-n500">
+              {principalTotal > 0n
+                ? t("funding.ruleWithPrincipal")
+                : t("funding.rule")}
+            </p>
+            {action.escrow && (
+              <div className="mt-2 text-xs">
+                <Address value={action.escrow} />
+              </div>
+            )}
+            {/* D4: the shortfall and when any wallet may record the default (or that it already was) */}
+            {(action.status === "Defaulted" || overdue) &&
+              shortfall != null &&
+              shortfall > 0n && (
+                <div
                   className={cx(
-                    "font-semibold",
-                    funded || paidOut
-                      ? "text-g700"
-                      : required === 0n
-                        ? "text-n500"
-                        : "text-warn-fg",
+                    "mt-3 rounded-btn border px-3 py-2 text-sm",
+                    action.status === "Defaulted"
+                      ? "border-default/30 bg-err-bg text-err-fg"
+                      : "border-warn-bd bg-warn-bg text-warn-fg",
                   )}
                 >
-                  {funded
-                    ? t("funding.funded")
-                    : paidOut
-                      ? t("funding.paidOut")
-                      : required === 0n
-                        ? t("funding.awaiting")
-                        : t("funding.under")}
-                </span>
-              </div>
-              <div className="mt-2">
-                <Bar
-                  pct={paidOut ? 100 : pctOf(escrow, required)}
-                  tone={funded || paidOut ? "bg-g500" : "bg-[#d99a1e]"}
-                />
-              </div>
-              <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2 text-sm">
-                {money(action.escrowBalance)}
-                <span className="text-n500">
-                  / {money({ minor: required.toString(), currency })}
-                </span>
-              </div>
-              <p className="mt-2 text-xs text-n500">
-                {principalTotal > 0n
-                  ? t("funding.ruleWithPrincipal")
-                  : t("funding.rule")}
-              </p>
-              {action.escrow && (
-                <div className="mt-2 text-xs">
-                  <Address value={action.escrow} />
-                </div>
-              )}
-              {/* D4: the shortfall and when any wallet may record the default (or that it already was) */}
-              {(action.status === "Defaulted" || overdue) &&
-                shortfall != null &&
-                shortfall > 0n && (
-                  <div
-                    className={cx(
-                      "mt-3 rounded-btn border px-3 py-2 text-sm",
-                      action.status === "Defaulted"
-                        ? "border-default/30 bg-err-bg text-err-fg"
-                        : "border-warn-bd bg-warn-bg text-warn-fg",
-                    )}
-                  >
-                    <span className="font-semibold">{t("funding.shortfall")}</span>{" "}
-                    <Amount
-                      minor={shortfall}
-                      currency={currency}
-                      locale={locale}
-                    />{" "}
-                    ·{" "}
-                    {action.status === "Defaulted" ? (
-                      t("funding.inDefault", {
+                  <span className="font-semibold">
+                    {t("funding.shortfall")}
+                  </span>{" "}
+                  <Amount
+                    minor={shortfall}
+                    currency={currency}
+                    locale={locale}
+                  />{" "}
+                  ·{" "}
+                  {action.status === "Defaulted" ? (
+                    t("funding.inDefault", {
+                      at: formatDateTime(
+                        action.defaultedAt ??
+                          action.finalizedAt ??
+                          action.paymentAt,
+                        locale,
+                      ),
+                    })
+                  ) : (
+                    <>
+                      {t("funding.defaultDue", {
                         at: formatDateTime(
-                          action.defaultedAt ??
-                            action.finalizedAt ??
-                            action.paymentAt,
+                          new Date(defaultAt).toISOString(),
                           locale,
                         ),
-                      })
-                    ) : (
-                      <>
-                        {t("funding.defaultDue", {
-                          at: formatDateTime(
-                            new Date(defaultAt).toISOString(),
-                            locale,
-                          ),
-                        })}{" "}
-                        <CountdownClock
-                          label={tnow("gate.default")}
-                          to={defaultAt}
-                        />
-                      </>
-                    )}
+                      })}{" "}
+                      <CountdownClock
+                        label={tnow("gate.default")}
+                        to={defaultAt}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+          </Panel>
+        ) : (
+          <Panel title={t("meeting.title")}>
+            <p className="text-sm text-n700">
+              {t("meeting.proposal")}{" "}
+              <span className="num font-semibold">
+                {series ? bpsToPercent(series.couponRateBps, locale) : "—"}
+              </span>{" "}
+              <span className="text-n400">→</span>{" "}
+              <span className="num font-semibold text-g700">
+                {action.proposalNewRateBps != null
+                  ? bpsToPercent(action.proposalNewRateBps, locale)
+                  : "—"}
+              </span>
+            </p>
+            <div className="mt-4 space-y-3">
+              {(
+                [
+                  ["for", votes.for, "bg-g500"],
+                  ["against", votes.against, "bg-err-fg"],
+                  ["abstain", votes.abstain, "bg-n400"],
+                ] as const
+              ).map(([k, units, tone]) => (
+                <div key={k}>
+                  <div className="flex justify-between text-xs">
+                    <span className="font-semibold text-n700">
+                      {t(`meeting.${k}`)}
+                    </span>
+                    <span className="num text-n600">
+                      {units.toString()} · {pctOf(units, snapUnits).toFixed(1)}%
+                    </span>
                   </div>
-                )}
-            </Panel>
-          )}
-
-          {action.kind === "BMET" && (
-            <Panel title={t("meeting.title")}>
-              <p className="text-sm text-n700">
-                {t("meeting.proposal")}{" "}
-                <span className="num font-semibold">
-                  {series ? bpsToPercent(series.couponRateBps, locale) : "—"}
-                </span>{" "}
-                <span className="text-n400">→</span>{" "}
-                <span className="num font-semibold text-g700">
-                  {action.proposalNewRateBps != null
-                    ? bpsToPercent(action.proposalNewRateBps, locale)
-                    : "—"}
-                </span>
+                  <div className="mt-1">
+                    <Bar pct={pctOf(units, snapUnits)} tone={tone} />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-n500">
+              {t("meeting.thresholds", {
+                quorum: series ? series.quorumBps / 100 : "—",
+                approval: series ? series.approvalBps / 100 : "—",
+              })}
+            </p>
+            {action.votingEndsAt && (
+              <p className="mt-1 text-xs text-n500">
+                {t("meeting.ends", {
+                  at: formatDateTime(action.votingEndsAt, locale),
+                })}{" "}
+                · <Countdown endsAt={action.votingEndsAt} />
               </p>
-              <div className="mt-4 space-y-3">
-                {(
-                  [
-                    ["for", votes.for, "bg-g500"],
-                    ["against", votes.against, "bg-err-fg"],
-                    ["abstain", votes.abstain, "bg-n400"],
-                  ] as const
-                ).map(([k, units, tone]) => (
-                  <div key={k}>
-                    <div className="flex justify-between text-xs">
-                      <span className="font-semibold text-n700">
-                        {t(`meeting.${k}`)}
-                      </span>
-                      <span className="num text-n600">
-                        {units.toString()} ·{" "}
-                        {pctOf(units, snapUnits).toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="mt-1">
-                      <Bar pct={pctOf(units, snapUnits)} tone={tone} />
-                    </div>
-                  </div>
-                ))}
+            )}
+            {action.result && action.result !== "Pending" && (
+              <div className="mt-3">{status(action.result)}</div>
+            )}
+          </Panel>
+        )}
+
+        <Panel title={t("facts.title")}>
+          <dl className="grid gap-2.5 sm:grid-cols-2">
+            {facts.map(([k, v], i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: static positional rows
+              <div key={i} className="min-w-0">
+                <dt className="text-xs font-semibold text-n500">{k}</dt>
+                <dd className="text-sm break-words text-n900">{v}</dd>
               </div>
-              <p className="mt-3 text-xs text-n500">
-                {t("meeting.thresholds", {
-                  quorum: series ? series.quorumBps / 100 : "—",
-                  approval: series ? series.approvalBps / 100 : "—",
-                })}
-              </p>
-              {action.votingEndsAt && (
-                <p className="mt-1 text-xs text-n500">
-                  {t("meeting.ends", {
-                    at: formatDateTime(action.votingEndsAt, locale),
-                  })}{" "}
-                  · <Countdown endsAt={action.votingEndsAt} />
-                </p>
-              )}
-              {action.result && action.result !== "Pending" && (
-                <div className="mt-3">{status(action.result)}</div>
-              )}
-            </Panel>
-          )}
+            ))}
+          </dl>
+        </Panel>
 
-          {/* coupon/redemption-only cards: a meeting has no KASE schedule check, payout confirmations or notice */}
-          {isCash && <KaseCheckPanel check={kaseCheck} />}
+        <DisclosurePanel pda={pda} />
 
-          <DisclosurePanel pda={pda} />
-
-          <DisclosureHashPanel pda={pda} anchored={action.disclosureHash} />
-
-          <Panel title={t("downloads.title")}>
-            <ul className="space-y-2 text-sm">
+        <Panel title={t("downloads.title")}>
+          <ul className="space-y-2 text-sm">
+            <li>
+              <a
+                href={seev031Url(pda)}
+                className="font-semibold text-g700 hover:underline"
+              >
+                seev.031
+              </a>{" "}
+              <span className="text-n600">— {t("downloads.seev031")}</span>
+            </li>
+            {isCash && (
               <li>
                 <a
-                  href={seev031Url(pda)}
+                  href={seev036ZipUrl(pda)}
                   className="font-semibold text-g700 hover:underline"
                 >
-                  seev.031
+                  seev.036 (ZIP)
                 </a>{" "}
-                <span className="text-n600">— {t("downloads.seev031")}</span>
+                <span className="text-n600">— {t("downloads.seev036")}</span>
               </li>
-              {isCash && (
-                <li>
-                  <a
-                    href={seev036ZipUrl(pda)}
-                    className="font-semibold text-g700 hover:underline"
-                  >
-                    seev.036 (ZIP)
-                  </a>{" "}
-                  <span className="text-n600">— {t("downloads.seev036")}</span>
-                </li>
-              )}
-            </ul>
-            <div className="mt-3">
-              <Badge tone="neutral">{t("downloads.simulated")}</Badge>
-            </div>
-          </Panel>
+            )}
+          </ul>
+          <div className="mt-3">
+            <Badge tone="neutral">{t("downloads.simulated")}</Badge>
+          </div>
+        </Panel>
 
-          {isCash && <NoticePanel en={noticeEn} ru={noticeRu} />}
-        </aside>
+        {isCash && <NoticePanel en={noticeEn} ru={noticeRu} />}
+
+        <DisclosureHashPanel pda={pda} anchored={action.disclosureHash} />
+
+        <ReconcilePanel pda={pda} />
+
+        {/* coupon/redemption-only cards: a meeting has no KASE schedule check, payout confirmations or notice */}
+        {isCash && <KaseCheckPanel check={kaseCheck} />}
       </div>
     </div>
   );

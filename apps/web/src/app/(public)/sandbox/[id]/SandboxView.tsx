@@ -541,21 +541,6 @@ export function SandboxView({
         <LifecycleRail locale={locale} nodes={rail} />
       </div>
 
-      <section data-tour="scenario" aria-labelledby="sbx-try" className="mt-8">
-        <h2 id="sbx-try" className="text-lg font-bold">
-          {t("try.title")}
-        </h2>
-        <p className="mt-1 max-w-[62ch] text-sm text-n600">{t("try.lead")}</p>
-        <Scenarios
-          s={s}
-          a={a}
-          busy={busy}
-          error={scenarioError}
-          onRun={run}
-          locale={locale}
-        />
-      </section>
-
       <section
         data-tour="steps"
         className="mt-6 rounded-card border border-n200 bg-n0 p-4 sm:p-5"
@@ -575,6 +560,23 @@ export function SandboxView({
             {t("flowEmpty")}
           </p>
         )}
+      </section>
+
+      {/* Preflight #11: the story (what happened, step by step) comes before the toys — the scenario
+          cards used to push the coupon's progress below the second screen. */}
+      <section data-tour="scenario" aria-labelledby="sbx-try" className="mt-6">
+        <h2 id="sbx-try" className="text-lg font-bold">
+          {t("try.title")}
+        </h2>
+        <p className="mt-1 max-w-[62ch] text-sm text-n600">{t("try.lead")}</p>
+        <Scenarios
+          s={s}
+          a={a}
+          busy={busy}
+          error={scenarioError}
+          onRun={run}
+          locale={locale}
+        />
       </section>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">

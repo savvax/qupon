@@ -284,14 +284,30 @@ export function buildTimeline(
   // Task 1414: "Escrow swept" joins the timeline only once a sweep activity row
   // exists — complete/cancel leave no pending sweep step to render.
   if (byStep.has("sweep")) steps.push("sweep");
-  // Plan 15 D4: the default is a branch, not a linear step — it joins once declared (event indexed or status set).
-  if (byStep.has("declare_default") || a.status === "Defaulted")
-    steps.push("declare_default");
+  // Plan 15 D4: the default is a branch off the funding step, not a linear end step — it sits right
+  // after fund (where it happened), never appended after completion (preflight #8).
+  if (byStep.has("declare_default") || a.status === "Defaulted") {
+    const afterFund = steps.indexOf("fund") + 1;
+    steps.splice(
+      afterFund > 0 ? afterFund : steps.length,
+      0,
+      "declare_default",
+    );
+  }
   const cancelled = a.status === "Cancelled";
   let currentAssigned = false;
   return steps.map((step) => {
     const ev = byStep.get(step);
-    let done = stepDone(step, a, seriesClosed) || ev !== undefined;
+    // Preflight #4: "Paid ✓" while holders are still unpaid or with the bank contradicts the NowBar — the pay
+    // step is only done once every holder is out AND the action moved past it (Completed/Retiring). Until then
+    // it is the current step and keeps its "{done} of {count}" detail, events or not.
+    const payOpen =
+      step === "pay" &&
+      !stepDone("pay", a, seriesClosed) &&
+      ((a.holdersPaid ?? 0) < (a.holdersSnapshotted ?? 0) ||
+        (a.bankPending ?? 0) > 0);
+    let done =
+      !payOpen && (stepDone(step, a, seriesClosed) || ev !== undefined);
     let state: TimelineStep["state"];
     if (done) {
       state = "done";

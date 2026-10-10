@@ -49,12 +49,16 @@ export function StepNowBar({
             : s === "Completed"
               ? ["completed", { ticker }]
               : ["idle", { ticker }];
+  // StableText: the bar's height must not move with the language (spec §5.8) — the detail sits above
+  // everything on /registrar now that a default leads the board (preflight #10).
   const detail =
-    s === "Defaulted"
-      ? t("defaulted")
-      : actor === "anyone"
-        ? t("anyone")
-        : action.corpId;
+    s === "Defaulted" ? (
+      <StableText>{t("defaulted")}</StableText>
+    ) : actor === "anyone" ? (
+      <StableText>{t("anyone")}</StableText>
+    ) : (
+      action.corpId
+    );
   return (
     <NowBar
       dock={dock}

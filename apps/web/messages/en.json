@@ -692,7 +692,7 @@
       "cancelled": "Action was cancelled",
       "overdueFunding": "Funding overdue: anyone may declare a default",
       "defaultedAlert": "In default — the issuer cures it by funding",
-      "bankPending": "{count, plural, one {# bank payout awaits} other {# bank payouts await}} the paying agent's confirmation"
+      "bankPending": "{count} × bank payout with the paying agent, awaiting the bank reference"
     },
     "investors": {
       "title": "Investors",

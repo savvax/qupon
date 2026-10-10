@@ -14,6 +14,11 @@ test.use({ reducedMotion: "reduce" });
 const MINT = "QpNb1Dem0BondMint1111111111111111111111111111";
 const INTR = "ActnINTR0001Dem0PDA111111111111111111111111111";
 const BMET = "ActnBMET0002Dem0PDA1111111111111111111111111111";
+// Design pre-flight console fixtures (task 91551 re-shots): the Announced coupon, the D4 default and the D6
+// bank-routed redemption (mocks/api.ts) — SWEEP_ROUTES can only select routes a group already lists.
+const INTR3 = "ActnINTR0003Dem0PDA111111111111111111111111111";
+const DFLT = "ActnINTR0006Dem0PDA111111111111111111111111111";
+const REDM = "ActnREDM0007Dem0PDA111111111111111111111111111";
 // Showcase series (task 1535, mirrors internal/api/showcase.go) and the plan-15 bond whose devnet responses
 // are recorded in e2e/fixtures/proof-rpc.json — /proof/<other mint> has nothing to verify against.
 const SHOWCASE = "PwrAlmtDem0Mint11111111111111111111111111111";
@@ -49,6 +54,7 @@ const GROUPS: {
       `/proof/${PLAN15}`,
       "/sandbox/new",
       "/sandbox/fx-snapshot",
+      "/sandbox/fx-paying",
       "/sandbox/fx-defaulted",
       "/sandbox/fx-bank",
     ],
@@ -71,6 +77,9 @@ const GROUPS: {
       "/registrar",
       "/registrar/actions",
       `/registrar/actions/${INTR}`,
+      `/registrar/actions/${INTR3}`,
+      `/registrar/actions/${DFLT}`,
+      `/registrar/actions/${REDM}`,
       `/registrar/actions/${BMET}`,
       "/registrar/investors",
       "/registrar/activity",

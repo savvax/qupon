@@ -257,15 +257,18 @@ describe("nextStep (mirror of Go executor.NextStep)", () => {
     expect(steps.find((s) => s.id === "fund")).toMatchObject({
       state: "defaulted",
     });
-    expect(steps.at(-1)).toMatchObject({
-      id: "declare_default",
+    // the declaration branches off the funding step — right after it, not after completion (preflight #8)
+    const declared = steps.findIndex((s) => s.id === "declare_default");
+    expect(declared).toBe(steps.findIndex((s) => s.id === "fund") + 1);
+    expect(steps[declared]).toMatchObject({
       state: "done",
       signature: "SigDefault1111111111111111111111111111111111",
     });
     // no event indexed yet: the Defaulted status alone proves the step ran
     const noEvent = buildTimeline(a, [], false);
-    expect(noEvent.at(-1)).toMatchObject({
-      id: "declare_default",
+    const declared0 = noEvent.findIndex((s) => s.id === "declare_default");
+    expect(declared0).toBe(noEvent.findIndex((s) => s.id === "fund") + 1);
+    expect(noEvent[declared0]).toMatchObject({
       state: "done",
     });
     expect(noEvent.find((s) => s.id === "fund")?.state).toBe("defaulted");
@@ -367,6 +370,44 @@ describe("buildTimeline", () => {
     expect(steps.find((s) => s.label === "Pay holders")).toMatchObject({
       state: "current",
       detail: { key: "paid", values: { done: 1, count: 3 } },
+    });
+  });
+
+  it("keeps the pay step current until every holder is out (preflight #4)", () => {
+    // partial pay: the first EntitlementPaid event must not mark "Paid ✓ 2 of 3" done
+    const partial = buildTimeline(
+      { ...base, status: "Settling", holdersSnapshotted: 3, holdersPaid: 2 },
+      [ev(5, "EntitlementPaid", "SigPaid111111111111111111111111111111111111")],
+      false,
+    );
+    expect(partial.find((s) => s.id === "pay")).toMatchObject({
+      state: "current",
+      detail: { key: "paid", values: { done: 2, count: 3 } },
+    });
+    expect(partial.find((s) => s.id === "complete")?.state).toBe("pending");
+    // bank pending: every holder left the escrow, two sit with the paying agent — still not done
+    const bank = buildTimeline(
+      {
+        ...base,
+        status: "Settling",
+        holdersSnapshotted: 3,
+        holdersPaid: 3,
+        bankPending: 2,
+      },
+      [ev(6, "PaidToAgent", "SigAgent11111111111111111111111111111111111")],
+      false,
+    );
+    expect(bank.find((s) => s.id === "pay")?.state).toBe("current");
+    expect(bank.find((s) => s.id === "complete")?.state).toBe("pending");
+    // completed: pay stays done and the events keep their signature
+    const done = buildTimeline(
+      { ...base, status: "Completed", holdersSnapshotted: 3, holdersPaid: 3 },
+      [ev(7, "EntitlementPaid", "SigPaid111111111111111111111111111111111111")],
+      false,
+    );
+    expect(done.find((s) => s.id === "pay")).toMatchObject({
+      state: "done",
+      signature: "SigPaid111111111111111111111111111111111111",
     });
   });
 

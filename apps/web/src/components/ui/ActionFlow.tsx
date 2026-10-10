@@ -206,24 +206,20 @@ export function ActionFlow({
                     <Address value={s.tx} kind="tx" />
                   </div>
                 )}
-                {((s.actor &&
-                  s.state !== "done" &&
-                  (s.state === "current" || s.actor === "anyone")) ||
-                  !!s.downloads?.length) && (
+                {(s.state === "current" || !!s.downloads?.length) && (
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    {/* who may push it: on the next step, and on every permissionless one (the point worth seeing) */}
-                    {s.actor &&
-                      s.state !== "done" &&
-                      (s.state === "current" || s.actor === "anyone") && (
-                        <>
-                          <span className={L.chipLong}>
-                            <ActorChip actor={s.actor} long />
-                          </span>
-                          <span className={L.chipShort}>
-                            <ActorChip actor={s.actor} />
-                          </span>
-                        </>
-                      )}
+                    {/* who may push it — only on the step that is live right now: a pill on every pending
+                        step is noise and contradicts the NowBar (preflight #7) */}
+                    {s.actor && s.state === "current" && (
+                      <>
+                        <span className={L.chipLong}>
+                          <ActorChip actor={s.actor} long />
+                        </span>
+                        <span className={L.chipShort}>
+                          <ActorChip actor={s.actor} />
+                        </span>
+                      </>
+                    )}
                     {s.downloads?.map((d) => (
                       <a
                         key={d.href}

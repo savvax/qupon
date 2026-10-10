@@ -102,3 +102,7 @@ After-shots: `reports/design/preflight/opus-after/` (mock mode; `/`, `/bonds`, b
 #12 — phone cards: the ticker link's `after:inset-0` cover needed `relative` on the phone `<li>` (DataTable), otherwise the cover escapes the card.
 #15 — no deviations; Announced → `now.next` + countdown, other live statuses → `now.inProgress` with `kindName` only.
 #6 — no deviations; dropped the dashed `money.empty` card, register/journal moved into the 2fr column, YieldBlock docks sticky at `lg:top-24`.
+
+## Opus round 1 (task 91551 — review fixes)
+
+Round-1 blocking items, both as written: the duplicated Alerts card after the Pipeline in `registrar/page.tsx` is deleted (one `data-tour="alerts"` again; /registrar re-shot into `opus-after/`). The out-of-scope task-4 bundle (ActorChip, ProvenanceChip, WalletButton, PublicShell, NetworkBadge, PortfolioHeader, PayoutCalendar, ProofView, globals.css and the `reports/ui/*.png` re-shots) no longer exists as commit b41d636 — the resume attempt had squashed it into the branch WIP — so it was removed the "rebase it out" way: those files restored to `main` and the branch squashed to a single commit. The NowBar/StepNowBar edit stays: it is finding #10's own work.
