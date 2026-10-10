@@ -4,8 +4,10 @@ import { LiveStrip } from "./_landing/LiveStrip";
 import { loadLive } from "./_landing/live";
 import {
   Audiences,
+  BeyondCoupon,
   HowItWorks,
   ImplementedVsSimulated,
+  ProvenOnDevnet,
   Scenarios,
   Platform,
 } from "./_landing/sections";
@@ -23,6 +25,8 @@ export default async function Home() {
       <Hero live={live} />
       <LiveStrip live={live} />
       <FlowSection live={live} />
+      <ProvenOnDevnet />
+      <BeyondCoupon />
       <HowItWorks />
       <Platform />
       <Scenarios />

@@ -174,7 +174,7 @@
     },
     "simulated": {
       "eyebrow": "Honest scope",
-      "title": "Implemented vs simulated",
+      "title": "What is real, what is simulated",
       "note": "Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are series configuration, not a statement of Kazakh law.",
       "rows": {
         "core": {
@@ -261,6 +261,44 @@
       "title": "Follow one coupon to the last tenge",
       "lead": "The issuer funds an escrow; the program pays each holder their exact share, sends withheld tax to the tax vault and bank payouts through the paying agent. Band widths follow the money; every leg is a transaction.",
       "terms": "Terms on this page"
+    },
+    "proven": {
+      "title": "Proven on devnet",
+      "lead": "The program on devnet is the binary built from this repository — reproducibly, in Docker. Nothing on this page is a mock-up.",
+      "hashLabel": "Verified build hash",
+      "demosLabel": "Demo runs · 2026-10-09",
+      "plan15": "{n} transactions — every plan-15 instruction succeeded",
+      "full": "{n} transactions — the full bond lifecycle",
+      "commandTitle": "Verify the build yourself",
+      "commandText": "One command rebuilds the program in Docker and compares its hash with the binary deployed on devnet.",
+      "commandNote": "Docker required. On any mismatch solana-verify exits non-zero.",
+      "cta": "Re-verify a bond in your browser",
+      "report": "Build report"
+    },
+    "beyond": {
+      "title": "Beyond a coupon",
+      "lead": "A coupon is the smallest thing Qupon does. The plan-15 mechanics below each ran for real on devnet — follow the transaction.",
+      "learn": "Read more",
+      "default": {
+        "title": "Default and cure",
+        "text": "The issuer missed the payment date. One series day later anyone declared the default on-chain; the issuer's late funding cured it, and the record-date holders were still paid in full."
+      },
+      "bank": {
+        "title": "Paid to your bank",
+        "text": "Only the holder's own signature chooses the payout route. This coupon went to the paying agent, who confirmed the transfer with a reference hash — the bank transfer itself is simulated."
+      },
+      "crank": {
+        "title": "Anyone can push the next step",
+        "text": "Snapshot, payout, completion — every crank step is permissionless. This snapshot was pushed by an outsider key, not by the registrar or the issuer."
+      },
+      "accrued": {
+        "title": "Accrued interest on every trade",
+        "text": "A DvP trade between coupon dates carries its accrued interest: clean 4,975.00 ₸ + accrued 25.00 ₸ = a 5,000.00 ₸ cash leg, computed by the program."
+      },
+      "notice": {
+        "title": "The notice is anchored",
+        "text": "The sha256 of the seev.031 notice is anchored on-chain once; attaching it a second time is rejected. Download the notice and compare the hash yourself."
+      }
     }
   },
   "bonds": {

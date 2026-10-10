@@ -7,6 +7,7 @@ import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/shell/icons";
 import { cx } from "@/lib/ui/cx";
+import { DEMO_SERIES } from "@/lib/proof/demoSeries";
 
 const CONTAINER = "mx-auto w-full max-w-[1200px] px-4 sm:px-6";
 
@@ -233,6 +234,191 @@ export function Audiences() {
   );
 }
 
+/** Evidence block (task 91538). Facts from reports/verified-build.md and the demo runs of 2026-10-09
+ *  (reports/demo-plan15.md: 28 txs, reports/demo-full.md: 60 txs) — update them with the next verified deploy. */
+const PROGRAM_ID = "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd";
+const BUILD_HASH =
+  "4a2e46778847f8b6277194a74ee89e9145fc8c03f8e4e8c9ede3bdda752a3505";
+const VERIFY_CMD = [
+  "cargo install solana-verify --locked",
+  "solana-verify verify-from-repo https://github.com/savvax/qupon \\",
+  `  --program-id ${PROGRAM_ID} \\`,
+  "  --library-name qupon_bonds \\",
+  "  --base-image solanafoundation/solana-verifiable-build:4.3.0",
+].join("\n");
+const PLAN15_TXS = 28;
+const FULL_TXS = 60;
+const VERIFIED_BUILD_URL =
+  "https://github.com/savvax/qupon/blob/main/reports/verified-build.md";
+const PROOF_MINT = DEMO_SERIES.find((d) => d.key === "plan15")!.mint;
+
+/** "Proven on devnet": the verified build hash, the one command that reproduces it, and the demo-run counts. */
+export function ProvenOnDevnet() {
+  const t = useTranslations("landing.proven");
+  const fact = (label: string, value: ReactNode) => (
+    <div className="min-w-0">
+      <dt className="text-xs font-semibold text-n600">
+        <StableText>{label}</StableText>
+      </dt>
+      <dd className="mt-0.5 text-sm font-bold break-words text-n900">
+        {value}
+      </dd>
+    </div>
+  );
+  return (
+    <Section id="proven" title={t("title")}>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <div className="min-w-0 rounded-card border border-g100 bg-g50 p-6 sm:p-7">
+          <ProvenanceChip kind="verified" />
+          <dl className="mt-5 space-y-5">
+            {fact(
+              t("hashLabel"),
+              <span className="num break-all">{BUILD_HASH}</span>,
+            )}
+            {fact(
+              t("demosLabel"),
+              <span className="num">
+                <StableText
+                  template={t.raw("plan15") as string}
+                  values={{ n: PLAN15_TXS }}
+                >
+                  {t("plan15", { n: PLAN15_TXS })}
+                </StableText>
+                <br />
+                <StableText
+                  template={t.raw("full") as string}
+                  values={{ n: FULL_TXS }}
+                >
+                  {t("full", { n: FULL_TXS })}
+                </StableText>
+              </span>,
+            )}
+          </dl>
+          <p className="mt-5 max-w-[58ch] text-sm leading-relaxed text-n700">
+            <StableText>{t("lead")}</StableText>
+          </p>
+          <div className="mt-6 flex flex-col gap-3 min-[480px]:flex-row">
+            <Button asChild>
+              <Link href={`/proof/${PROOF_MINT}`}>{t("cta")}</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <a href={VERIFIED_BUILD_URL} target="_blank" rel="noreferrer">
+                {t("report")}
+              </a>
+            </Button>
+          </div>
+        </div>
+        <div className="min-w-0 rounded-card border border-n200 bg-n0 p-6 sm:p-7">
+          <h3 className="text-lg font-bold text-n900">
+            <StableText>{t("commandTitle")}</StableText>
+          </h3>
+          <p className="mt-1.5 max-w-[60ch] text-sm leading-relaxed text-n600">
+            <StableText>{t("commandText")}</StableText>
+          </p>
+          <pre className="mt-4 rounded-sm bg-p900 px-4 py-3 font-mono text-xs leading-relaxed break-words whitespace-pre-wrap text-p100">
+            {VERIFY_CMD}
+          </pre>
+          <p className="mt-3 text-xs text-n600">
+            <StableText>{t("commandNote")}</StableText>
+          </p>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+/** Plan-15 mechanics, one devnet tx each (reports/demo-plan15.md); `step` is the demo step name, `anchor` the /learn section. */
+const BEYOND = [
+  {
+    key: "default",
+    icon: "bell",
+    anchor: "default",
+    step: "action:default",
+    tx: "2BvYuaWjSbNxVv3Lb618fTsxeWcNeM8DxZt8Kde33bdXJDLLUhxRs8uWMMAuExaVnf4ERePP75bp2fRGjfgFiBGF",
+  },
+  {
+    key: "bank",
+    icon: "bank",
+    anchor: "bank-route",
+    step: "payout:route",
+    tx: "xxNBG1YLimYpDwtX2waTBzGR8q33tpSJZs1Ex6w22hFZf8YMkZyNcJAqut27sMWT8igLgvjeFmyjZhB6d3pxET4",
+    simulated: true,
+  },
+  {
+    key: "crank",
+    icon: "plus",
+    anchor: "crank",
+    step: "action:snapshot",
+    tx: "5PKcFSJjmkVbDCiYAS7x2aNUvcqtuyVTyEencPssGbwV5hfdZ5Fw77p2bN4mmGf4w3JjNX4q8GKKfKZY48sZwZW8",
+  },
+  {
+    key: "accrued",
+    icon: "coins",
+    anchor: "accrued",
+    step: "trade:create",
+    tx: "5inUUPFvRRdDQW9YDur9q544kbKL38MrhRC3a1r49xCwsL4NQFKvJnWtiZAAJxccKmnSUYCJt4TJgLsDRzCDZ7BA",
+  },
+  {
+    key: "notice",
+    icon: "statements",
+    anchor: "anchored-notice",
+    step: "disclosure:attach",
+    tx: "3dsJLizw1ufUAVjDZmtuKoigzyyfcM1smBKojW6MmvGYZcnZW4zLF2RPVa6JQL7TpYuTSWLM8PHtSTAjhWnu3aLg",
+  },
+] as const;
+
+/** "Beyond a coupon": the plan-15 highlights, each with its /learn section and one real devnet tx. */
+export function BeyondCoupon() {
+  const t = useTranslations("landing.beyond");
+  return (
+    <div className="bg-n0">
+      <Section id="beyond" title={t("title")}>
+        <p className="-mt-6 mb-8 max-w-[65ch] text-n700">
+          <StableText>{t("lead")}</StableText>
+        </p>
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {BEYOND.map((b) => (
+            <li
+              key={b.key}
+              className="qp-reveal qp-lift flex flex-col rounded-card border border-n200 bg-n0 p-6"
+            >
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="qp-ico grid size-10 shrink-0 place-items-center rounded-xl bg-n100 text-g700">
+                  <Icon name={b.icon} className="size-5" />
+                </span>
+                <h3 className="font-bold text-n900">
+                  <StableText>{t(`${b.key}.title`)}</StableText>
+                </h3>
+                {"simulated" in b && b.simulated && (
+                  <ProvenanceChip kind="simulated" />
+                )}
+              </div>
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-n600">
+                <StableText>{t(`${b.key}.text`)}</StableText>
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-n100 pt-4 text-sm">
+                <Link
+                  href={`/learn#${b.anchor}`}
+                  className="font-semibold text-g700 underline decoration-g300 underline-offset-2 hover:decoration-g600"
+                >
+                  {t("learn")}
+                </Link>
+                <a
+                  href={`https://explorer.solana.com/tx/${b.tx}?cluster=devnet`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="num font-mono text-xs font-semibold text-n600 underline decoration-n300 underline-offset-2 hover:text-n900"
+                >
+                  {b.step} ↗
+                </a>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </Section>
+    </div>
+  );
+}
 /** Nine rows grouped by provenance into three columns, each headed by the chip used next to features site-wide. */
 const GROUPS = [
   { tone: "success", chip: "onchain", keys: ["core", "trades"] },

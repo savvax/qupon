@@ -63,7 +63,7 @@ test("plan-15 series: every check passes, every transaction links to the explore
   expect(hrefs.length).toBeGreaterThanOrEqual(17);
   for (const h of hrefs) expect(h).toMatch(/^https:\/\/explorer\.solana\.com\/tx\/[1-9A-HJ-NP-Za-km-z]{64,88}\?cluster=devnet$/);
 
-  await expect(page.getByRole("heading", { name: "Implemented vs simulated" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What is real, what is simulated" })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
