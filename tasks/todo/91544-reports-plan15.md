@@ -48,3 +48,20 @@ The Go side is solid. store.BankPayouts and api.bankRoute mark rows as bank-rout
 - Web screens pass design review at 1440/390 in shipped locales — Shots of /investor/statements and /investor/reports in en/ru at 1440/390 show only a Route column of '—'. The bank states and issuer summary cannot be rendered in mock mode, and the long nowrap badge labels will likely overflow at 390 px.
 
 Design score: 6/10
+
+## Review feedback (round 2, 2026-10-10 13:49) — fix every blocking item first; your previous work is already committed on this branch
+
+### Summary
+Both round-1 blockers are fixed. The TS mock CSV now mirrors Go's route and bank_confirmation_tx columns. The mocks include a confirmed bank row, an awaiting-bank row and the issuer action summary with the brief's numbers. The bank pill is short, with the SIMULATED qualifier beneath it, and does not overflow at 390 px. The Go side is unchanged from round 1 and its reports/api/store tests pass. The web unit tests assert the full route mapping; I couldn't run them here because the permission was denied, but the orchestrator's make verify passed. Merge is blocked by one small, web-only i18n problem in the new issuer summary on /print/payouts. Lateness renders as hardcoded English '30 min' in ru/kk, and Required/Funded show the raw '5000.00 tKZT' display string instead of the localized <Amount> used everywhere else on the page ('5 000,00 ₸'). Both fixes are confined to reports.ts, the print page and the three message files.
+
+### Blocking
+- apps/web/src/lib/reports.ts:58 — The issuer summary leaves English in the ru/kk locales. formatLateSeconds hardcodes "h"/"min", so the ru print shot of /print/payouts reads "Опоздание: 30 min" (kk does the same). The design checklist says no English may remain in ru/kk.
+  **Fix:** Add messages reports.issuer.summary.lateMin and lateHM to en/ru/kk: en "{m} min" / "{h} h {m} min", ru "{m} мин" / "{h} ч {m} мин", kk "{m} мин" / "{h} сағ {m} мин". Change formatLateSeconds to return {h, m} (null when s <= 0). In print/[report]/page.tsx, render the result with t(h > 0 ? "issuer.summary.lateHM" : "issuer.summary.lateMin", {h, m}). Update the reports.test.ts expectations: 1800 → {h:0,m:30}, 5400 → {h:1,m:30}, 0 → null.
+- apps/web/src/app/(print)/print/[report]/page.tsx:148 — Required and Funded show the server's raw display string. The ru shot shows "Требуется: 5000.00 tKZT" with a decimal point, no thousands separator and a tKZT suffix. Every other amount on the same page goes through <Amount> and shows "5 000,00 ₸", so the new block is inconsistent and not localized.
+  **Fix:** Change summaryRows to [string, React.ReactNode][]. Render the two values as <Amount minor={summary.required.minor} currency={summary.required.currency} locale={locale} /> and the same with summary.funded, which is the pattern in registrar/actions/[pda]/page.tsx:141. Then re-shoot /print/payouts?pda=ActnINTR0001Dem0PDA111111111111111111111111111 in ru at 1440 and 390 and check that it shows "5 000,00 ₸".
+
+### Acceptance criteria not met
+- en/ru/kk strings, bank transfers labelled SIMULATED — The bank.* and issuer.summary.* keys exist in all three locales with SIMULATED. However, the lateness unit ('30 min') is hardcoded English and the amounts in the summary block are not localized.
+- Web screens pass design review (design_score >= 8) — Score 7. The layout and hierarchy are good. The summary block on /print/payouts shows English 'min' and unlocalized '5000.00 tKZT' in ru.
+
+Design score: 7/10
