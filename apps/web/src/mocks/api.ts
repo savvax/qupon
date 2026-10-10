@@ -637,7 +637,7 @@ const entitlements: Record<string, EntitlementDTO[]> = {
   [ACTION_PDA_6]: INVESTOR_OWNERS.map((owner, i) => {
     const gross = ["50000", "125000", "325000"][i] ?? "0";
     return {
-      pda: `EnTlDem0Pda${i}For${ACTION_PDA_6.slice(0, 4)}1111111111111111111111111`,
+      pda: `EnTlDem0Pda${i}For${ACTION_PDA_6.slice(4, 12)}1111111111111111111111111`,
       actionPda: ACTION_PDA_6,
       owner,
       units: ["10", "25", "65"][i] ?? "0",
@@ -661,7 +661,7 @@ const entitlements: Record<string, EntitlementDTO[]> = {
       kzt(minor, `${(Number(minor) / 100).toFixed(2)} KZT`);
     const toAgent = i > 0;
     return {
-      pda: `EnTlDem0Pda${i}For${ACTION_PDA_7.slice(0, 4)}1111111111111111111111111`,
+      pda: `EnTlDem0Pda${i}For${ACTION_PDA_7.slice(4, 12)}1111111111111111111111111`,
       actionPda: ACTION_PDA_7,
       owner,
       units: ["10", "25", "65"][i] ?? "0",
@@ -1024,7 +1024,7 @@ export function mockGet(path: string): Promise<unknown> {
       pda === ACTION_PDA_7
         ? [1, 2].map((i) => ({
             owner: INVESTOR_OWNERS[i]!,
-            entitlementPda: `EnTlDem0Pda${i}For${ACTION_PDA_7.slice(0, 4)}1111111111111111111111111`,
+            entitlementPda: `EnTlDem0Pda${i}For${ACTION_PDA_7.slice(4, 12)}1111111111111111111111111`,
             amount: (() => {
               const minor = ["2625000", "6825000"][i - 1]!;
               return kzt(minor, `${(Number(minor) / 100).toFixed(2)} KZT`);

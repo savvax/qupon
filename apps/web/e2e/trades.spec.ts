@@ -8,7 +8,6 @@ import { signInAs } from "./session";
  * 5 bonds at par (5,000.00) and one of 10 bonds still awaiting funding.
  */
 const BTRK = "BTRKDeM0BondMint1111111111111111111111111111";
-const QPNB1 = "QpNb1Dem0BondMint1111111111111111111111111111";
 const ANNOUNCED = "ActnINTR0003Dem0PDA111111111111111111111111111"; // BTRKdemo coupon, status Announced
 
 const rows = (page: Page) => page.locator("tbody tr");
@@ -34,10 +33,15 @@ test("registrar creates a trade at par, sees it, and settles the ready one", asy
   await expect(page).toHaveURL(/\/registrar\/trades/);
   await expect(page.getByRole("heading", { name: "Trades" })).toBeVisible();
   // The fixture trades live on QPNb1; the showcase series (task 1535) are also pickable
-  // and the first of them is selected by default.
-  await page
-    .getByRole("combobox", { name: "Series" })
-    .selectOption(QPNB1);
+  // and the first of them is selected by default. Radix select: a click before hydration is
+  // lost — retry until picking QPNb1 really navigates with its mint.
+  await expect(async () => {
+    await page.getByRole("combobox", { name: "Series" }).click();
+    await page.getByRole("option", { name: "QPNb1" }).click();
+    await expect(page).toHaveURL(/mint=QpNb1Dem0BondMint/, {
+      timeout: 2_000,
+    });
+  }).toPass({ timeout: 20_000 });
   // implemented flow, with its scope stated
   await expect(
     page.getByRole("link", {

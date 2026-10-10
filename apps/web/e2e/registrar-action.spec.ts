@@ -10,9 +10,10 @@ test.beforeEach(async ({ page }) => {
   await page.getByRole("button", { name: /Registrar/ }).click();
   await expect(page).toHaveURL(/\/registrar\/actions$/);
   // the URL flips before the client navigation lands; wait for the page itself
+  // cold dev server: the route compiles on first visit — the default 5 s flakes under load
   await expect(
     page.getByRole("heading", { level: 1, name: "Corporate actions" }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
 });
 
 test("actions list opens a completed coupon with every step done and all holders paid", async ({
