@@ -230,9 +230,11 @@ export default async function HolderPage({
         </h1>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-n600">
           <Address value={h.owner} />
-          {/* The separator travels with the note (no-break space) so it is never orphaned on a wrap. */}
-          <span>
-            {"·\u00A0"}
+          {/* Hide the separator below sm so the note never leads a wrapped line. */}
+          <span className="max-sm:basis-full">
+            <span aria-hidden className="max-sm:hidden">
+              {"·\u00A0"}
+            </span>
             {t("subtitle")}
           </span>
         </p>

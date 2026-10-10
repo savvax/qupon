@@ -494,13 +494,15 @@ export function SandboxView({
             >
               {t("bondPage")}
             </Link>
-            <Link
-              href="/sandbox/new?fresh=1"
-              className="whitespace-nowrap font-semibold text-n700 hover:text-n900"
-            >
-              {t("restart")}
-            </Link>
-            <HelpMenu role="sandbox" />
+            <span className="inline-flex items-center gap-x-3 whitespace-nowrap">
+              <Link
+                href="/sandbox/new?fresh=1"
+                className="font-semibold text-n700 hover:text-n900"
+              >
+                {t("restart")}
+              </Link>
+              <HelpMenu role="sandbox" />
+            </span>
           </div>
         </div>
         <ClockCard s={s} skew={skew} locale={locale} />
