@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/fs"
 	"sort"
+	"strings"
 
 	_ "modernc.org/sqlite" // driver registered as "sqlite"
 
@@ -111,22 +112,61 @@ func (s *Store) migrate(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("read migration %s: %w", name, err)
 		}
-		tx, err := s.db.BeginTx(ctx, nil)
+		if err := s.applyMigration(ctx, name, string(body)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// fkOffMarker opts a migration into SQLite's table-rebuild procedure (https://sqlite.org/lang_altertable.html#otheralter):
+// foreign keys off for that migration's connection, so `DROP TABLE` of a referenced table neither fails nor cascades
+// into child rows, then `PRAGMA foreign_key_check` before commit. 008 rebuilt `users` with live child rows on production
+// (2026-10-10: "FOREIGN KEY constraint failed" — the registrar crash-looped; tests had empty tables).
+const fkOffMarker = "-- qupon:foreign_keys=off"
+
+// applyMigration runs one migration in a transaction on a pinned connection (PRAGMAs are per connection).
+func (s *Store) applyMigration(ctx context.Context, name, body string) error {
+	conn, err := s.db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("conn for migration %s: %w", name, err)
+	}
+	defer func() { _ = conn.Close() }()
+	fkOff := strings.Contains(body, fkOffMarker)
+	if fkOff {
+		if _, err := conn.ExecContext(ctx, `PRAGMA foreign_keys=OFF`); err != nil {
+			return fmt.Errorf("foreign keys off for %s: %w", name, err)
+		}
+		defer func() { _, _ = conn.ExecContext(context.WithoutCancel(ctx), `PRAGMA foreign_keys=ON`) }()
+	}
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin tx %s: %w", name, err)
+	}
+	if _, err := tx.ExecContext(ctx, body); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("apply migration %s: %w", name, err)
+	}
+	if fkOff {
+		rows, err := tx.QueryContext(ctx, `PRAGMA foreign_key_check`)
 		if err != nil {
-			return fmt.Errorf("begin tx %s: %w", name, err)
-		}
-		if _, err := tx.ExecContext(ctx, string(body)); err != nil {
 			_ = tx.Rollback()
-			return fmt.Errorf("apply migration %s: %w", name, err)
+			return fmt.Errorf("foreign key check %s: %w", name, err)
 		}
-		if _, err := tx.ExecContext(ctx,
-			`INSERT INTO schema_migrations (name, applied_at) VALUES (?, unixepoch())`, name); err != nil {
+		bad := rows.Next()
+		_ = rows.Close()
+		if bad {
 			_ = tx.Rollback()
-			return fmt.Errorf("record migration %s: %w", name, err)
+			return fmt.Errorf("apply migration %s: foreign key check failed after the rebuild", name)
 		}
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("commit migration %s: %w", name, err)
-		}
+	}
+	if _, err := tx.ExecContext(ctx,
+		`INSERT INTO schema_migrations (name, applied_at) VALUES (?, unixepoch())`, name); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("record migration %s: %w", name, err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit migration %s: %w", name, err)
 	}
 	return nil
 }

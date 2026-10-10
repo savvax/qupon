@@ -185,3 +185,40 @@ func TestUsersAdmitPayingAgentAndKazakh(t *testing.T) {
 		t.Fatalf("kk locale: %v", err)
 	}
 }
+
+// Production regression (2026-10-10): 008 rebuilds `users` while child tables hold rows — with foreign keys on, the
+// DROP failed ("FOREIGN KEY constraint failed") and the registrar crash-looped; with ON DELETE CASCADE it would have
+// wiped wallets and sessions. Re-applying 008 over live child rows must succeed and keep every child row.
+func TestMigration008RebuildKeepsChildRows(t *testing.T) {
+	st := openT(t)
+	ctx := t.Context()
+	uid, err := st.UpsertUser(ctx, User{Email: "holder@test.kz", Name: "Holder", Role: "investor"}, "x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, q := range []string{
+		`INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ('h1', ?, 9999999999)`,
+		`INSERT INTO wallets (address, user_id, verified_at) VALUES ('W1', ?, 1)`,
+		`INSERT INTO kyc_applications (user_id, wallet, investor_type, residency, tax_bps, full_name, created_at) VALUES (?, 'W1', 'individual', 'resident', 1000, 'H', 1)`,
+	} {
+		if _, err := st.db.ExecContext(ctx, q, uid); err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+	}
+	if _, err := st.db.ExecContext(ctx, `DELETE FROM schema_migrations WHERE name = '008_paying_agent.sql'`); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.migrate(ctx); err != nil {
+		t.Fatalf("re-apply 008 over child rows: %v", err)
+	}
+	for _, table := range []string{"sessions", "wallets", "kyc_applications"} {
+		var n int
+		if err := st.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM `+table+` WHERE user_id = ?`, uid).Scan(&n); err != nil || n != 1 {
+			t.Fatalf("%s rows after 008 = %d (%v), want 1", table, n, err)
+		}
+	}
+	var fkOn int
+	if err := st.db.QueryRowContext(ctx, `PRAGMA foreign_keys`).Scan(&fkOn); err != nil || fkOn != 1 {
+		t.Fatalf("foreign keys after migration = %d (%v), want 1", fkOn, err)
+	}
+}

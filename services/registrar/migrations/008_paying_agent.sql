@@ -1,3 +1,4 @@
+-- qupon:foreign_keys=off  (table rebuild: live child rows reference users — see store.applyMigration)
 -- 008_paying_agent.sql — plan 15 D6 (task 91522): the paying agent confirms bank-routed payouts from the
 -- console, so the back-office admits the role; the kk locale (task 1504) is admitted too — account.go already accepted it
 -- and the old CHECK refused the write. SQLite cannot alter a CHECK: rebuild users as 006 did
