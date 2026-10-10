@@ -1,6 +1,7 @@
 ---
 id: 1533
 title: investor — claim, payout route, calendar, yield, holder lookup, signing guard
+blocked_reason: lead rebuilding the resume patch (a restart captured a half-deleted worktree)
 agent: glm
 tier: T1
 depends_on: [1530, 1502, 1525]
