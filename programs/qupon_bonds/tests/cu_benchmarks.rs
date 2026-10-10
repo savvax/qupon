@@ -51,6 +51,7 @@ const RETIRE_WORST: &str = "retire_batch, worst case";
 /// One measured transaction; `holders` is 0 for a single call.
 struct Row {
     name: &'static str,
+    scenario: &'static str,
     holders: usize,
     cu: u64,
 }
@@ -574,17 +575,29 @@ fn report(rows: &[Row], plan: &[PlanRow], spl_token_build: &str) -> String {
          Generated on {} (UTC) by `QUPON_CU_REPORT=1 cargo test -p qupon_bonds --test cu_benchmarks` \
          (`programs/qupon_bonds/tests/cu_benchmarks.rs`). Every number below comes from that run; do not edit by hand.\n\n\
          ## Measurements\n\n\
-         | Instruction | Holders | CU | CU per holder | Marginal CU per holder | Share of the 1.4M limit |\n\
-         |---|---:|---:|---:|---:|---:|\n",
+         | Instruction | Scenario | Holders | CU | CU per holder | Marginal CU per holder | Share of the 1.4M limit |\n\
+         |---|---|---:|---:|---:|---:|---:|\n",
         date.trim()
     );
-    for (i, r) in rows.iter().enumerate() {
-        let prev = rows[..i].last().filter(|p| p.name == r.name);
+    let mut sorted: Vec<&Row> = rows.iter().collect();
+    sorted.sort_by(|a, b| {
+        a.name
+            .cmp(b.name)
+            .then(a.scenario.cmp(b.scenario))
+            .then(a.holders.cmp(&b.holders))
+    });
+    for (i, r) in sorted.iter().enumerate() {
+        // Marginal only against the previous size of the SAME instruction and scenario; holders ascending,
+        // so a cross-scenario comparison never produces a negative number that reads as a bug.
+        let prev = sorted[..i]
+            .last()
+            .filter(|p| p.name == r.name && p.scenario == r.scenario && p.holders < r.holders);
         let dash = || "—".to_string();
         writeln!(
             md,
-            "| {} | {} | {} | {} | {} | {} |",
+            "| {} | {} | {} | {} | {} | {} | {} |",
             r.name,
+            r.scenario,
             if r.holders > 0 {
                 r.holders.to_string()
             } else {
@@ -602,7 +615,8 @@ fn report(rows: &[Row], plan: &[PlanRow], spl_token_build: &str) -> String {
     }
     md.push_str(
         "\n*CU per holder* is the whole transaction divided by the holders in it; *marginal* is the increase \
-         per added holder against the previous measured size of the same instruction.\n\n\
+         per added holder against the previous measured size of the same instruction AND scenario (rows are \
+         grouped by instruction, then scenario, then holders ascending).\n\n\
          ## Batch constants and headroom\n\n\
          | Batch | Constant | CLI sends | Highest CU at the CLI size | Share of the CLI's 600k limit | Highest CU at the on-chain maximum | Share of the 1.4M limit | Holders that fit in 600k CU |\n\
          |---|---|---:|---:|---:|---:|---:|---:|\n",
@@ -682,35 +696,46 @@ fn batches_stay_inside_the_compute_limits() {
         [1, CLI_PAY_BATCH, PAY_BATCH_MAX, SNAPSHOT_BATCH_MAX].map(|n| (n, flow(n, false, worst)))
     };
     let (plain, worst) = (coupons(false), coupons(true));
-    let row = |name, holders, cu| Row { name, holders, cu };
+    let row = |name, scenario, holders, cu| Row {
+        name,
+        scenario,
+        holders,
+        cu,
+    };
+    const PLAIN: &str = "legacy pause";
+    const WORST_PAY: &str = "worst case (Token-2022 cash, 15% tax)";
+    const WORST_RETIRE: &str = "worst case (suspended holders)";
     let mut rows: Vec<Row> = vec![];
+    // Snapshot sizes: 1, the CLI pay batch and the on-chain maximum. The 4→5 pair comes from two independent
+    // runs with random keys, so its marginal is key noise (it produced the -8,357 that read as a bug).
     rows.extend(
         plain
             .iter()
-            .filter(|(n, _)| *n <= SNAPSHOT_BATCH_MAX)
-            .map(|(n, f)| row("snapshot_batch", *n, f.snapshot)),
+            .filter(|(n, _)| [1, CLI_PAY_BATCH, SNAPSHOT_BATCH_MAX].contains(n))
+            .map(|(n, f)| row("snapshot_batch", PLAIN, *n, f.snapshot)),
     );
     let payable = |n: &usize| *n <= PAY_BATCH_MAX;
     rows.extend(
         plain
             .iter()
             .filter(|(n, _)| payable(n))
-            .map(|(n, f)| row("pay_batch", *n, f.pay)),
+            .map(|(n, f)| row("pay_batch", PLAIN, *n, f.pay)),
     );
     rows.extend(
         worst
             .iter()
             .filter(|(n, _)| payable(n))
-            .map(|(n, f)| row(PAY_WORST, *n, f.pay)),
+            .map(|(n, f)| row(PAY_WORST, WORST_PAY, *n, f.pay)),
     );
     let mut redemption_pay = 0; // plan-15 row: the redemption `pay_batch` (pay + burn) over 5 holders
     for (name, frozen) in [("retire_batch", false), (RETIRE_WORST, true)] {
+        let scenario = if frozen { WORST_RETIRE } else { PLAIN };
         for n in [1, 5, RETIRE_BATCH_MAX] {
             let (pay, retire_cu) = retire(n, frozen);
             if n == 5 && !frozen {
                 redemption_pay = pay;
             }
-            rows.push(row(name, n, retire_cu));
+            rows.push(row(name, scenario, n, retire_cu));
         }
     }
     let single = &plain
@@ -729,7 +754,7 @@ fn batches_stay_inside_the_compute_limits() {
             ("release_trade", release),
             ("release_trade (force)", forced),
         ]
-        .map(|(name, cu)| row(name, 0, cu)),
+        .map(|(name, cu)| row(name, PLAIN, 0, cu)),
     );
 
     // p-token is loaded under the upgradeable loader, SPL Token 3.5.0 under the legacy one (litesvm programs/mod.rs).
