@@ -1,0 +1,280 @@
+{
+	"version": 1,
+	"cluster": "devnet",
+	"programId": "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd",
+	"generatedAt": "2026-10-10T23:13:21.352Z",
+	"steps": [
+		{
+			"id": "trade/001-series-init",
+			"label": "series:init",
+			"signature": "4fu2NBJdgJAtZpUahfHirnpcYvPPR9VGVx5omCY75mFZYD2GqUAuCym9uEbJqmRpbu9tn4tNEAmnrnehtGUN9KkG",
+			"slot": 509701670,
+			"instruction": "series:init",
+			"expect": {
+				"event": "SeriesInitialized"
+			}
+		},
+		{
+			"id": "trade/002-investor-register-investor1-checks-the-sas-attes",
+			"label": "investor:register investor1 (checks the SAS attestation)",
+			"signature": "2BMSh2jc7dUCzSXtJzgV3TbLf43fTv8HkzcD1imctrJpukS8exgenKqsjXmxHMLBeXyruWSUHyXfHSxeJ8XvPKfX",
+			"slot": 509701693,
+			"instruction": "investor:register",
+			"expect": {
+				"event": "InvestorRegistered"
+			}
+		},
+		{
+			"id": "trade/003-investor-register-investor2-checks-the-sas-attes",
+			"label": "investor:register investor2 (checks the SAS attestation)",
+			"signature": "G4VGEBjPk1bYY9J8yVvnRmZPWRf2tderMcpUuxa4dPp85GPyrMn4SNjxPYftpM9EYN3qRpArxwWcjpcDjEyGPit",
+			"slot": 509701710,
+			"instruction": "investor:register",
+			"expect": {
+				"event": "InvestorRegistered"
+			}
+		},
+		{
+			"id": "trade/004-investor-register-investor3-checks-the-sas-attes",
+			"label": "investor:register investor3 (checks the SAS attestation)",
+			"signature": "284JAggZAMEtbG28aPnb8CfqEQzwM355nyw2siWaNhJtg4XVt91SS6AL8Pv4XKfTbjcQdEyFbxMsw6FMsBcyStca",
+			"slot": 509701725,
+			"instruction": "investor:register",
+			"expect": {
+				"event": "InvestorRegistered"
+			}
+		},
+		{
+			"id": "trade/005-subscribe-10-bonds-dvp-investor1",
+			"label": "subscribe 10 bonds — DvP investor1",
+			"signature": "2nCb8BDWBiQHcngzJstEemDmW7B74t84CNfwybeFSvLTNCJ3wXtJYZfhpKwkbSw7PtFMb1ZLWN7p8kiAsA8vzFhb",
+			"slot": 509701747,
+			"instruction": "subscribe",
+			"expect": {
+				"event": "Subscribed",
+				"fields": {
+					"owner": "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo",
+					"units": 10
+				}
+			}
+		},
+		{
+			"id": "trade/006-subscribe-25-bonds-dvp-investor2",
+			"label": "subscribe 25 bonds — DvP investor2",
+			"signature": "2dWkfNgHSA4ytShs17ainRqSG45dMCrotseWd7MCk1CBLYurArYPUrZUru8vDsekMXQcuhvSaJyw1BnAcou4ibYY",
+			"slot": 509701766,
+			"instruction": "subscribe",
+			"expect": {
+				"event": "Subscribed",
+				"fields": {
+					"owner": "7XVBxDqctEz5mMXieqJ7swAa2UbBK2hBSwvoXc9ntLau",
+					"units": 25
+				}
+			}
+		},
+		{
+			"id": "trade/007-subscribe-65-bonds-dvp-investor3",
+			"label": "subscribe 65 bonds — DvP investor3",
+			"signature": "2CGm2QBTcwRZ7k23836NDyNRbvWc8ahoDSgzpLpewsvsyPjBxVrquvsaAoqXajsVEKdSP4x2kQWRW8z3RCqBXpnk",
+			"slot": 509701783,
+			"instruction": "subscribe",
+			"expect": {
+				"event": "Subscribed",
+				"fields": {
+					"owner": "6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC",
+					"units": 65
+				}
+			}
+		},
+		{
+			"id": "trade/008-trade-create-createdvp-admit-trade-bond-escrow-t",
+			"label": "trade:create — CreateDvp + admit_trade (bond escrow thawed), one transaction",
+			"signature": "2STgzgEVeq2W5NhYZJRQsKzfbhZvZTXMavAmqJv3JN8bqAizsLwuLKykk5zqgQvDYYhxrSeJjaFqAyGZbdwNCw8F",
+			"slot": 509701805,
+			"instruction": "trade:create",
+			"expect": {
+				"event": "TradeAdmitted"
+			}
+		},
+		{
+			"id": "trade/009-trade-settle-settledvp-moves-both-legs-atomicall",
+			"label": "trade:settle — SettleDvp moves both legs atomically + release_trade",
+			"signature": "RqXDhpWvcS1aWBponAJoNMphoqVXNSfhx91Nm51PNwD4gdRiib5Gj4BJ7RVEVnmjg87vZLxY8mKvtE8VRVr6JnQ",
+			"slot": 509701862,
+			"instruction": "trade:settle",
+			"expect": {
+				"event": "TradeReleased"
+			}
+		},
+		{
+			"id": "trade/010-trade-create-second-trade-5-more-bonds",
+			"label": "trade:create — second trade, 5 more bonds",
+			"signature": "2ERG958U6khzx6VP1kMjyJr9BuLe2Dd6oWxdJYJw91TDxeKF7L9pYENAnZyFZ3b9Zr6W86CvQr4TwMTBoiF1KS47",
+			"slot": 509701895,
+			"instruction": "trade:create",
+			"expect": {
+				"event": "TradeAdmitted"
+			}
+		},
+		{
+			"id": "trade/011-action-announce-intr-1-on-the-post-trade-registe",
+			"label": "action:announce INTR #1 on the post-trade register (2026-07-03 → 2027-01-03, 180 days, 10%)",
+			"signature": "4PTve7MCDsqxg6bQ95cjisWbmTBXKbmc75fGcoK5NZAyvMgfGNDm279sbyJ8Ywgmuv1LJouFavfBMUv46RgKCjZi",
+			"slot": 509701947,
+			"instruction": "action:announce",
+			"expect": {
+				"event": "ActionAnnounced"
+			}
+		},
+		{
+			"id": "trade/012-trade-cancel-canceldvp-returns-the-bonds-to-the-",
+			"label": "trade:cancel — CancelDvp returns the bonds to the seller + release_trade (before record_at: the hook gate is not armed yet)",
+			"signature": "48fDZzFapFMSkHHeWDtDe29LGHXaRheJrvLQadWW51zCCqLroABFoFWCHjyTcpB9YWdhZiUJcavGiTXJuxQACx9T",
+			"slot": 509701964,
+			"instruction": "trade:cancel",
+			"expect": {
+				"event": "TradeReleased"
+			}
+		},
+		{
+			"id": "trade/013-action-snapshot-one-entitlement-per-holder-sha25",
+			"label": "action:snapshot — one Entitlement per holder, sha256 chain",
+			"signature": "346b8GZhKnSmKnEphL4N6DwniFRCE75wPxLa5FZJW2iEEgMGzCg4vNdZqjQpfd1Ev4AuSWueKJZJ3RtzvStmFbHB",
+			"slot": null,
+			"instruction": "action:snapshot",
+			"expect": {
+				"event": "HolderSnapshotted"
+			}
+		},
+		{
+			"id": "trade/014-action-snapshot-investor1",
+			"label": "action:snapshot — investor1",
+			"signature": "346b8GZhKnSmKnEphL4N6DwniFRCE75wPxLa5FZJW2iEEgMGzCg4vNdZqjQpfd1Ev4AuSWueKJZJ3RtzvStmFbHB",
+			"slot": null,
+			"instruction": "action:snapshot",
+			"expect": {
+				"event": "HolderSnapshotted",
+				"fields": {
+					"owner": "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo",
+					"units": 15,
+					"gross": 75000
+				}
+			}
+		},
+		{
+			"id": "trade/015-action-snapshot-investor2",
+			"label": "action:snapshot — investor2",
+			"signature": "346b8GZhKnSmKnEphL4N6DwniFRCE75wPxLa5FZJW2iEEgMGzCg4vNdZqjQpfd1Ev4AuSWueKJZJ3RtzvStmFbHB",
+			"slot": null,
+			"instruction": "action:snapshot",
+			"expect": {
+				"event": "HolderSnapshotted",
+				"fields": {
+					"owner": "7XVBxDqctEz5mMXieqJ7swAa2UbBK2hBSwvoXc9ntLau",
+					"units": 25,
+					"gross": 125000
+				}
+			}
+		},
+		{
+			"id": "trade/016-action-snapshot-investor3",
+			"label": "action:snapshot — investor3",
+			"signature": "346b8GZhKnSmKnEphL4N6DwniFRCE75wPxLa5FZJW2iEEgMGzCg4vNdZqjQpfd1Ev4AuSWueKJZJ3RtzvStmFbHB",
+			"slot": null,
+			"instruction": "action:snapshot",
+			"expect": {
+				"event": "HolderSnapshotted",
+				"fields": {
+					"owner": "6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC",
+					"units": 60,
+					"gross": 300000
+				}
+			}
+		},
+		{
+			"id": "trade/017-action-finalize-snapshot-units-supply-rounding-b",
+			"label": "action:finalize-snapshot — Σ units == supply, rounding bound",
+			"signature": "2oni8XMbREgxUejwSmk3My9kMEd8srnPoBzWKTcUa5mMsZxhMfGBZjKCAnNxm6vCJeMLmakcyvMtdLaeurnQ7hfB",
+			"slot": 509702221,
+			"instruction": "action:finalize-snapshot",
+			"expect": {
+				"event": "SnapshotFinalized"
+			}
+		},
+		{
+			"id": "trade/018-action-fund-issuer-pre-funds-the-escrow-net-tax-",
+			"label": "action:fund — issuer pre-funds the escrow (net + tax + principal)",
+			"signature": "34y6uRLcepqM1yZM4kLt9rpVaYBUqGLVaLt5J87JHUuF2KgQN3woZLXhyup955gaifn9BTMjiPeyXxRfKEn7njZK",
+			"slot": 509702239,
+			"instruction": "action:fund",
+			"expect": {
+				"event": "ActionFunded"
+			}
+		},
+		{
+			"id": "trade/019-action-pay-holders-paid-from-escrow-action-pda-s",
+			"label": "action:pay — holders paid from escrow (action PDA signs)",
+			"signature": "4pxBTdQBcox8aDZai6YMJo7royXwzzQbPVE9nX7iHyD2YmQAPnYkVdARqwYEojreEFaPoew93UsMNbaiYRMiSKcL",
+			"slot": null,
+			"instruction": "action:pay",
+			"expect": {
+				"event": "EntitlementPaid"
+			}
+		},
+		{
+			"id": "trade/020-action-pay-investor1",
+			"label": "action:pay — investor1",
+			"signature": "4pxBTdQBcox8aDZai6YMJo7royXwzzQbPVE9nX7iHyD2YmQAPnYkVdARqwYEojreEFaPoew93UsMNbaiYRMiSKcL",
+			"slot": null,
+			"instruction": "action:pay",
+			"expect": {
+				"event": "EntitlementPaid",
+				"fields": {
+					"owner": "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo",
+					"units": 15,
+					"gross": 75000
+				}
+			}
+		},
+		{
+			"id": "trade/021-action-pay-investor2",
+			"label": "action:pay — investor2",
+			"signature": "4pxBTdQBcox8aDZai6YMJo7royXwzzQbPVE9nX7iHyD2YmQAPnYkVdARqwYEojreEFaPoew93UsMNbaiYRMiSKcL",
+			"slot": null,
+			"instruction": "action:pay",
+			"expect": {
+				"event": "EntitlementPaid",
+				"fields": {
+					"owner": "7XVBxDqctEz5mMXieqJ7swAa2UbBK2hBSwvoXc9ntLau",
+					"units": 25,
+					"gross": 125000
+				}
+			}
+		},
+		{
+			"id": "trade/022-action-pay-investor3",
+			"label": "action:pay — investor3",
+			"signature": "4pxBTdQBcox8aDZai6YMJo7royXwzzQbPVE9nX7iHyD2YmQAPnYkVdARqwYEojreEFaPoew93UsMNbaiYRMiSKcL",
+			"slot": null,
+			"instruction": "action:pay",
+			"expect": {
+				"event": "EntitlementPaid",
+				"fields": {
+					"owner": "6g4FxBFAfC9hSdanqRhvu2eFuYCEUh5cveB7xX5M9rdC",
+					"units": 60,
+					"gross": 300000
+				}
+			}
+		},
+		{
+			"id": "trade/023-action-complete-reconcile-resume-register",
+			"label": "action:complete — reconcile, resume register",
+			"signature": "2Lz1K2N3yUc9G3BpuDqR9P6nHpEkwxu7JFyGRkFQPSeU5Z7ojBwhSbyC5hqVHVXWtm2Jf62SJh5C2yEgEx2XeEjb",
+			"slot": 509702288,
+			"instruction": "action:complete",
+			"expect": {
+				"event": "ActionCompleted"
+			}
+		}
+	]
+}
