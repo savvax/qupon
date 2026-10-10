@@ -177,6 +177,10 @@
       "term": "Tax vault",
       "def": "Where withholding tax goes at source, per the holder's investor class, before the net amount is paid."
     },
+    "payoutRoute": {
+      "term": "Payout route",
+      "def": "Where a holder's money goes: straight to their wallet, or through the paying agent to a bank account. Only the holder's own signature can set or change it."
+    },
     "payingAgent": {
       "term": "Paying agent",
       "def": "The bank that receives payouts for holders who chose a bank route and confirms the transfer with a reference. Bank transfer is simulated."
@@ -225,6 +229,10 @@
       "term": "Default",
       "def": "The payment date plus one grace day passed and the escrow is short. Anyone can record it on-chain; the debt stays public until cured."
     },
+    "graceDay": {
+      "term": "Grace day",
+      "def": "The one series day after a payment date during which the issuer may still fund the escrow. Once it passes with the escrow short, anyone can record the default."
+    },
     "cure": {
       "term": "Cure",
       "def": "Late funding of a defaulted payment. Holders on the record date are still the ones paid."
@@ -240,6 +248,10 @@
     "dayCount": {
       "term": "30E/360",
       "def": "Day-count convention: every month counts as 30 days and a year as 360, as in KASE coupon schedules."
+    },
+    "noticeAnchor": {
+      "term": "Anchored notice",
+      "def": "The sha256 hash of a seev.031 notice, written on-chain once. Any copy of the file can be checked against it forever."
     },
     "seev031": {
       "term": "seev.031",

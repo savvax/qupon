@@ -44,6 +44,53 @@
     "holderSub": "{units} bonds",
     "holder": "Holder {name}"
   },
+  "plan15": {
+    "title": "Six mechanics under the hood",
+    "lead": "What Qupon adds to a plain tokenized bond. Every card links a real transaction from the plan-15 devnet run.",
+    "register": {
+      "title": "The register never pauses",
+      "body": "The record date is not a freeze. The bond's transfer hook lets every trade through, but from the record moment it copies the seller into the on-chain snapshot first, so trading never stops for a coupon. Once the snapshot is final the gate disarms and buyers trade ex-coupon: the seller keeps this payout.",
+      "l1": "Coupon announced",
+      "l2": "Record date: the hook gates each trade",
+      "l3": "Snapshot final: ex-date"
+    },
+    "crank": {
+      "title": "Anyone can push the next step",
+      "body": "Snapshotting, payout and completion are permissionless: any wallet can push them and the program checks every rule, so a funded coupon cannot be stalled by an absent operator. Each step is its own transaction, visible to everyone.",
+      "l1": "Snapshot holders",
+      "l2": "Finalize snapshot",
+      "l3": "Pay holders",
+      "l4": "Complete"
+    },
+    "late": {
+      "title": "When the issuer is late",
+      "body": "If the escrow is still short one series day after the payment date, anyone can record the default on-chain: it becomes part of the series' public history and no new action opens while it stands. The issuer cures it simply by funding the escrow — and the record-date holders are paid all the same.",
+      "l1": "Payment date: escrow short",
+      "l2": "One series day of grace",
+      "l3": "Default declared",
+      "l4": "Cured: late funding"
+    },
+    "bank": {
+      "title": "Paid to your bank",
+      "body": "Each holder chooses their own payout route on-chain: straight to their wallet, or through the paying agent to a bank account only that holder's signature can set. The action cannot close until the agent confirms the transfer; the bank transfer itself is simulated.",
+      "l1": "Holder chooses the bank route",
+      "l2": "Coupon paid to the paying agent",
+      "l3": "Agent confirms the transfer",
+      "l4": "Action complete"
+    },
+    "anchored": {
+      "title": "The notice is anchored",
+      "body": "The registrar's seev.031 notice is hashed with sha256 and the hash is written on-chain once, where nobody can change or reissue it. Custodians can check any copy of the file against the anchored hash at any time.",
+      "file": "seev.031 notice"
+    },
+    "accrued": {
+      "title": "Buying between coupons",
+      "body": "A bond sold between coupons carries its accrued interest: the buyer pays the seller the part of the next coupon already earned, on top of the clean price. After the record date this flips — the accrued amount turns negative and the seller keeps the coupon. Every admitted trade records the split on-chain.",
+      "days": "{n} days of accrual",
+      "clean": "clean",
+      "accruedLbl": "accrued"
+    }
+  },
   "gloss": {
     "title": "Glossary",
     "lead": "Every term of art Qupon uses, in plain language. The same definitions open from the dotted terms across the app."
