@@ -56,3 +56,17 @@ Fail. Seven of the eleven rows are fixed (#4, #11, #15, #18, #26, #28, #29), and
 - Row 27 (registrar board chip clipping, kk 1440) — after/registrar-kk-1440.jpg still shows 'Облигация ұстаушылары' past the card edge, because Badge's base whitespace-nowrap beats the passed className (cx has no merge).
 
 Design score: 5/10
+
+## Review feedback (round 2, 2026-10-11 01:16) — fix every blocking item first; your previous work is already committed on this branch
+
+### Summary
+Fail. Ten of eleven rows are fixed and confirmed in screenshots: #3, #4, #11, #13, #16, #18, #26, #27, #28 and #29. All four round-1 blockers are resolved: the phone NowBar is two rows and about 120 px, the term-sheet trigger wraps, Tabs snap with a fade, and Badge/Button `wrap` swap their base classes instead of appending. Row 15 is not fixed. The /investor/reports Payout statement table still overflows its card at 1440 in en, ru and kk, and fixes.md wrongly says it fits. Hiding the `action` column below 2xl fixes it. Web unit tests pass (264). Design score 7.
+
+### Blocking
+- apps/web/src/app/(cabinet)/investor/reports/page.tsx:197 — Row 15 is still not fixed. At 1440 px the Payout statement table is still wider than its card in every locale, even though `units` is now hidden below 2xl. In my en-1440 shot the last column is cut to 'Actn…1'. In ru-1440 the whole Action ('ДЕЙСТВИЕ') column is pushed out of view. In the worker's own after/investor-reports-kk-1440.jpg, 'Actn…1111' ends flush on the card border and its copy icon is cut off; the Tax certificate table below it shows that icon. fixes.md says 'the kk table fits 1440 px', which the shots contradict.
+  **Fix:** In the Payout statement column list, change the `action` column from `hideBelow: "lg"` to `hideBelow: "2xl"`. It only links to the corporate-action account, and the essential `tx` column stays. Keep `units` at 2xl. Re-shoot /investor/reports in en, ru and kk at 1440. Check that Payout TX is the last column, its copy icon is fully inside the card, and there are at least 16 px of right padding. Then correct the #15 line in fixes.md and the worklog.
+
+### Acceptance criteria not met
+- Row 15: /investor/reports table fits at kk 1440 — The Action column is still clipped: 'Actn…1' in en-1440, gone completely in ru-1440, and missing its copy icon in kk-1440.
+
+Design score: 7/10
