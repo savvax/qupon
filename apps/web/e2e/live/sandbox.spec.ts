@@ -77,11 +77,12 @@ test("@live sandbox: a judge's own bond pays coupon 1, trades with accrued, refu
   await refuse.getByRole("button", { name: "Try the transfer" }).click();
   const refused = refuse.getByRole("status");
   await expect(refused).toContainText(
-    /Refused \([\w:]+\): an outsider's bond account stays frozen/,
+    /Refused \(.+\): an outsider's bond account stays frozen/,
     {
       timeout: 120_000,
     },
   );
+  await expect(feed).toContainText("Transfer to a wallet without KYC refused");
   expect(await refused.locator("a").first().getAttribute("href")).toMatch(
     EXPLORER,
   );
