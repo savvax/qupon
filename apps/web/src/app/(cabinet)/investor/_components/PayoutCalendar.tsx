@@ -45,15 +45,16 @@ export function PayoutCalendar({
         {events === 0 ? (
           <p className="py-6 text-center text-sm text-n600">{t("empty")}</p>
         ) : (
-          // auto-rows-fr: every month cell takes the same height, like a calendar (preflight #28)
-          <ol className="grid auto-rows-fr gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          // opus #19: empty months hide on phones (a 12-box grid is ~1,300 px of scroll there); event months keep
+          // a min height so the desktop grid still reads as one calendar — no auto-rows-fr, empties no longer stretch
+          <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {months.map((m) => (
               <li
                 key={m.key}
                 className={
                   m.events.length === 0
-                    ? "rounded-card border border-n200 p-3 text-sm text-n400"
-                    : "rounded-card border border-n200 p-3"
+                    ? "max-sm:hidden min-h-0 rounded-card border border-n200 p-3 text-sm text-n400"
+                    : "min-h-24 rounded-card border border-n200 p-3"
                 }
               >
                 <div className="num text-xs font-bold text-n500">

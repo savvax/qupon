@@ -84,37 +84,29 @@ function PortfolioHeader({
     : registered.length > 0
       ? { tone: "success", label: t("kycOk") }
       : { tone: "neutral", label: t("kycNone") };
-  const kpiLabel = "text-xs font-bold uppercase tracking-wider text-p100";
+  const kpiLabel = "text-sm font-semibold text-p100"; // sentence case (§2); opus #18 dropped the tracked caps
   const kpiValue =
     "num mt-1.5 text-2xl font-extrabold [&_.text-n500]:text-p100";
 
   return (
-    <section className="relative overflow-hidden rounded-hero bg-p900 p-6 text-white sm:p-8">
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(90%_80%_at_100%_0%,var(--color-p500)_0%,transparent_60%)] opacity-60"
-      />
-      <div className="relative flex flex-wrap items-start justify-between gap-3">
-        <h2 className="text-lg font-bold">{t("title")}</h2>
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <Badge tone={kyc.tone}>
-            {kyc.label}
-            <span className="ml-1 font-normal opacity-80">
-              (SAS · SIMULATED)
-            </span>
-          </Badge>
-          {claim.claimable > 0 && (
-            <Button
-              className="w-full sm:w-auto"
-              onClick={claim.onClaimAll}
-              loading={claim.claiming}
-            >
-              {t("claimAll")}
-            </Button>
-          )}
-        </div>
+    // opus #18: the page h1 already says "Portfolio" — no repeated title, no decorative gradient (§1), card radius
+    <section className="rounded-card bg-p900 p-6 text-white sm:p-8">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Badge tone={kyc.tone}>
+          {kyc.label}
+          <span className="ml-1 font-normal opacity-80">(SAS · SIMULATED)</span>
+        </Badge>
+        {claim.claimable > 0 && (
+          <Button
+            className="w-full sm:w-auto"
+            onClick={claim.onClaimAll}
+            loading={claim.claiming}
+          >
+            {t("claimAll")}
+          </Button>
+        )}
       </div>
-      <div className="relative mt-5 grid gap-5 sm:grid-cols-3">
+      <div className="mt-5 grid gap-5 sm:grid-cols-3">
         <div className="min-w-0">
           <div className={kpiLabel}>{t("claimableNow")}</div>
           <div className={kpiValue}>
@@ -215,7 +207,7 @@ export function PortfolioView() {
   if (!rows || !paidTxs) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-36 rounded-hero" />
+        <Skeleton className="h-36 rounded-card" />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           <Skeleton className="h-56" />
           <Skeleton className="h-56" />

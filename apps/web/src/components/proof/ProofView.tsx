@@ -321,7 +321,8 @@ function Certificate({ report, fmt }: { report?: ProofReport; fmt: Fmt }) {
   return (
     <section
       aria-label={t("eyebrow")}
-      className="overflow-hidden rounded-card border border-n200 bg-n0 sm:flex"
+      // opus #20: a phone column (not block) so the verdict aside can order-first below sm; ≥ sm the row is unchanged
+      className="overflow-hidden rounded-card border border-n200 bg-n0 flex flex-col sm:flex-row"
       style={{ ["--qp-sheet-bg" as string]: "var(--color-n50)" }}
     >
       <div className="min-w-0 flex-1 p-5 sm:p-8">
@@ -398,7 +399,9 @@ function Certificate({ report, fmt }: { report?: ProofReport; fmt: Fmt }) {
       <aside
         aria-live="polite"
         className={cx(
-          "qp-perf flex flex-col items-center justify-center gap-3 px-6 py-8 text-center sm:w-[300px] sm:shrink-0",
+          // opus #20: on phones the verdict comes first (max-sm:order-first); qp-perf-b moves its perforation to the
+          // bottom edge so the dashed line still sits between the stub and the certificate body
+          "qp-perf qp-perf-b flex flex-col items-center justify-center gap-3 px-6 py-8 text-center max-sm:order-first max-sm:py-6 sm:w-[300px] sm:shrink-0",
           tone === "pass" ? "bg-g50" : tone === "fail" ? "bg-err-bg" : "bg-n50",
         )}
       >

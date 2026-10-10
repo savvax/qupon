@@ -25,7 +25,7 @@ export function WalletButton({
 }: {
   /** Icon-only below `labelAt` (the public header has less room than the cabinet top bar). */
   compact?: boolean;
-  labelAt?: "sm" | "xl";
+  labelAt?: "sm" | "xl" | "2xl";
 }) {
   const t = useTranslations("wallet.button");
   const net = useNetwork();
@@ -83,9 +83,13 @@ export function WalletButton({
         <span
           className={cx(
             compact &&
-              (labelAt === "xl"
-                ? "sr-only xl:not-sr-only"
-                : "sr-only sm:not-sr-only"),
+              // opus pre-flight #17: "2xl" keeps the public header icon-only below 1536 px, so "Connect wallet"
+              // stops competing with "Sign in" and the green CTA (aria-label always carries the full text).
+              (labelAt === "2xl"
+                ? "sr-only 2xl:not-sr-only"
+                : labelAt === "xl"
+                  ? "sr-only xl:not-sr-only"
+                  : "sr-only sm:not-sr-only"),
           )}
         >
           <StableLabel

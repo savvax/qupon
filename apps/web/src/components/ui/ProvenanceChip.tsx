@@ -1,14 +1,9 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { StableLabel } from "@/components/i18n/StableLabel";
 import { cx } from "@/lib/ui/cx";
 
 export type Provenance =
-  | "onchain"
-  | "verified"
-  | "simulated"
-  | "demo"
-  | "roadmap";
+  "onchain" | "verified" | "simulated" | "demo" | "roadmap";
 
 const STYLE: Record<Provenance, string> = {
   onchain: "border-g200 bg-g50 text-g700",
@@ -71,8 +66,9 @@ export function ProvenanceChip({
   const body = (
     <>
       <Glyph kind={kind} />
-      {/* default labels reserve the longer locale's width: switching EN ↔ RU never moves what follows */}
-      {children ?? <StableLabel align="start">{t(kind)}</StableLabel>}
+      {/* chips size to their own locale (opus pre-flight #9): spans/rounded-full links are not measured by
+          locale-stability, so the widest locale no longer stretches every screen's trust layer */}
+      {children ?? t(kind)}
     </>
   );
   return href ? (

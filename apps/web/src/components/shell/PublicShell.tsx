@@ -22,12 +22,23 @@ const ROLES = ["issuer", "registrar", "investor"] as const;
  * "View as: Public · Issuer · Registrar · Investor": each role is a one-click demo session (a plain form post, so it
  * works before hydration); Public is where the visitor already is. Hidden where demo login is off (mainnet).
  */
-async function ViewAs({ demo, compact = false }: { demo: boolean; compact?: boolean }) {
+async function ViewAs({
+  demo,
+  compact = false,
+}: {
+  demo: boolean;
+  compact?: boolean;
+}) {
   const t = await getTranslations("nav");
   const seg =
     "inline-flex h-8 items-center rounded-sm px-2.5 text-xs font-bold whitespace-nowrap transition-colors";
   return (
-    <div className={cx("flex items-center gap-2", compact && "flex-col items-stretch")}>
+    <div
+      className={cx(
+        "flex items-center gap-2",
+        compact && "flex-col items-stretch",
+      )}
+    >
       <span className="text-xs font-semibold text-n600">
         <StableLabel align="start">{t("viewAs")}</StableLabel>
       </span>
@@ -39,12 +50,21 @@ async function ViewAs({ demo, compact = false }: { demo: boolean; compact?: bool
           compact && "grid grid-cols-2",
         )}
       >
-        <Link href="/bonds" aria-current="page" className={cx(seg, "bg-p900 text-white")}>
+        <Link
+          href="/bonds"
+          aria-current="page"
+          className={cx(seg, "bg-p900 text-white")}
+        >
           <StableLabel>{t("view.public")}</StableLabel>
         </Link>
         {demo &&
           ROLES.map((r) => (
-            <form key={r} action="/api/session/demo" method="post" className="contents">
+            <form
+              key={r}
+              action="/api/session/demo"
+              method="post"
+              className="contents"
+            >
               <input type="hidden" name="role" value={r} />
               <button
                 type="submit"
@@ -90,7 +110,10 @@ export async function PublicShell({ children }: { children: ReactNode }) {
               Qupon
             </span>
           </Link>
-          <nav aria-label={t("main")} className="hidden items-center gap-1 lg:flex">
+          <nav
+            aria-label={t("main")}
+            className="hidden items-center gap-1 lg:flex"
+          >
             {links.map((l) => (
               <Link
                 key={l.href}
@@ -104,7 +127,7 @@ export async function PublicShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-2">
             <LocaleSwitch />
             <span className="hidden md:contents">
-              <WalletButton compact labelAt="xl" />
+              <WalletButton compact labelAt="2xl" />
             </span>
             <SignInButton label={c("signIn")} />
             {/* the header's one primary action */}
@@ -128,7 +151,9 @@ export async function PublicShell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <div className="hidden border-t border-n100 bg-n50/80 sm:block">
-          <div className={`${CONTAINER} flex h-12 items-center justify-between gap-4`}>
+          <div
+            className={`${CONTAINER} flex h-12 items-center justify-between gap-4`}
+          >
             <HideOnPath path="/login">
               <ViewAs demo={network.demoLogin} />
             </HideOnPath>
@@ -167,4 +192,3 @@ export async function PublicShell({ children }: { children: ReactNode }) {
     </div>
   );
 }
-

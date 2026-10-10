@@ -78,7 +78,8 @@
   --text-title--line-height: 2.125rem;
 
   /* Elevation: one soft brand-tinted shadow for raised surfaces, one for docked bars. */
-  --shadow-raise: 0 1px 2px rgba(7, 29, 37, 0.06), 0 8px 24px -12px rgba(7, 29, 37, 0.18);
+  --shadow-raise:
+    0 1px 2px rgba(7, 29, 37, 0.06), 0 8px 24px -12px rgba(7, 29, 37, 0.18);
   --shadow-dock: 0 -8px 24px -12px rgba(7, 29, 37, 0.28);
 }
 
@@ -299,7 +300,6 @@
   user-select: none;
 }
 
-
 /* Hover lift for clickable cards (task 1108): 2 px rise and a soft shadow, 180 ms. */
 .qp-lift {
   transition:
@@ -369,7 +369,6 @@
   }
 }
 
-
 /* ── v2 primitives (task 1530) ── */
 
 /* GlossaryTerm: a native popover. Anchored under its term where CSS anchor positioning exists; elsewhere the
@@ -416,7 +415,9 @@
   border-width: 1.5px 0 0;
 }
 .qp-perf::before,
-.qp-perf::after {
+.qp-perf::after,
+.qp-perf-b::before,
+.qp-perf-b::after {
   content: "";
   position: absolute;
   top: -6.5px;
@@ -427,26 +428,48 @@
   border: 1px solid var(--color-n200);
 }
 /* phone: a horizontal perforation, notches punched into the left and right edge of the sheet */
-.qp-perf::before {
+.qp-perf::before,
+.qp-perf-b::before {
   left: -6px;
 }
-.qp-perf::after {
+.qp-perf::after,
+.qp-perf-b::after {
   right: -6px;
+}
+/* phone, proof verdict only (opus pre-flight #20): the stub sits above the body, so its perforation is the
+   bottom edge — LifecycleRail keeps the top-edge variant above */
+@media (max-width: 39.99rem) {
+  .qp-perf-b {
+    border-width: 0 0 1.5px;
+  }
+  .qp-perf-b::before,
+  .qp-perf-b::after {
+    top: auto;
+    bottom: -6.5px;
+  }
 }
 /* ≥ 640 px: a vertical perforation, notches at the top and bottom edge */
 @media (min-width: 40rem) {
   .qp-perf {
     border-width: 0 0 0 1.5px;
   }
+  .qp-perf-b {
+    border-width: 0 0 0 1.5px;
+  }
   .qp-perf::before,
-  .qp-perf::after {
+  .qp-perf-b::before,
+  .qp-perf::after,
+  .qp-perf-b::after {
     left: -6.5px;
     right: auto;
+    bottom: auto;
   }
-  .qp-perf::before {
+  .qp-perf::before,
+  .qp-perf-b::before {
     top: -6px;
   }
-  .qp-perf::after {
+  .qp-perf::after,
+  .qp-perf-b::after {
     top: auto;
     bottom: -6px;
   }

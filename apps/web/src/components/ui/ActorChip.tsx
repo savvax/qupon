@@ -1,5 +1,4 @@
 import { useTranslations } from "next-intl";
-import { StableLabel } from "@/components/i18n/StableLabel";
 import { cx } from "@/lib/ui/cx";
 
 /** Who may perform a step. `anyone` = permissionless (any signer; the program enforces every rule). */
@@ -42,9 +41,8 @@ export function ActorChip({
           <path d="M8 5v6M5 8h6" />
         </svg>
       )}
-      <StableLabel align="start">
-        {anyone && long ? t("anyonePush") : t(actor)}
-      </StableLabel>
+      {/* direct text: StableLabel stretched the pill to the kk width on every screen (opus pre-flight #9) */}
+      {anyone && long ? t("anyonePush") : t(actor)}
     </span>
   );
 }
