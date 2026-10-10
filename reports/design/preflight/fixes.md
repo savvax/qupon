@@ -12,3 +12,9 @@ One line per fixed row. Task 91546: rows 2, 7, 8, 9, 10, 12, 20, 24, 25, 32.
 - #24 /admin/series — "KASE ticker" label uses the Select label typography (13 px semibold n700), baselines match (apps/web/src/app/(cabinet)/admin/series/SeriesRowControls.tsx)
 - #25 /admin — KPI grid `auto-rows-fr` (equal row heights), kk hint reworded to "тексеру: SIMULATED" (apps/web/src/app/(cabinet)/admin/page.tsx, apps/web/messages/kk/admin.json)
 - #32 /admin/system — header already used `formatDateTime(…, locale)`; the mismatch came from the audit page's locale-less call, now locale-aware (shared with #17, task 91548) (apps/web/src/app/(cabinet)/admin/audit/page.tsx)
+
+## Round 1 review fixes (2026-10-10)
+
+- #10 /admin/audit, /admin/users — Apply used non-existent `bg-p600` (invisible); both filters now use the shared `<Button>` primary (g600) — verified computed bg `rgb(2,138,41)` at 390 (apps/web/src/app/(cabinet)/admin/{audit,users}/page.tsx)
+- #7 /print/* — scroll hint bumped to `text-[11px] text-n500` (AA on white per language.md §4) (apps/web/src/app/(print)/print/[report]/page.tsx)
+- #7 /print/payouts — payouts `<th>` lost `whitespace-nowrap` (`align-bottom` instead), long ru/kk headers wrap to two lines instead of clipping at the card edge; ru 1440 table now exactly fits the card (apps/web/src/app/(print)/print/[report]/page.tsx)

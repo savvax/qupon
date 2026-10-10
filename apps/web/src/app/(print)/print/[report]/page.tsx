@@ -251,7 +251,7 @@ export default async function PrintReportPage({
         )}
         {/* Wide report tables scroll inside their own box on phones (§5.8: no page-level sideways scroll);
             the hint below says so, because a clipped table reads as broken (pre-flight #7). */}
-        <p className="mt-4 text-[10px] text-n400 sm:hidden print:hidden">
+        <p className="mt-4 text-[11px] text-n500 sm:hidden print:hidden">
           {t("print.scrollHint")}
         </p>
         <div className="mt-2 overflow-x-auto print:mt-6 print:overflow-visible">
@@ -291,7 +291,7 @@ export default async function PrintReportPage({
                     ].map((h) => (
                       <th
                         key={h}
-                        className="px-1 py-1.5 font-semibold whitespace-nowrap"
+                        className="px-1 py-1.5 font-semibold align-bottom"
                       >
                         {h}
                       </th>

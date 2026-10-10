@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -185,12 +186,7 @@ export default async function AdminUsersPage({
             </select>
           </div>
           <div className="flex justify-end">
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center rounded-btn bg-p600 px-4 text-sm font-semibold text-white hover:bg-p700"
-            >
-              {t("apply")}
-            </button>
+            <Button type="submit">{t("apply")}</Button>
           </div>
         </form>
       </Card>

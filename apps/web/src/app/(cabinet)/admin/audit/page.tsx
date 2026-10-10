@@ -1,5 +1,6 @@
 import { getLocale, getTranslations } from "next-intl/server";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { boFetch } from "@/lib/bo";
@@ -214,12 +215,9 @@ export default async function AdminAuditPage({
                 <option value="false">{t("resultFailed")}</option>
               </select>
             </div>
-            <button
-              type="submit"
-              className="inline-flex h-10 shrink-0 items-center rounded-btn bg-p600 px-4 text-sm font-semibold text-white hover:bg-p700"
-            >
+            <Button type="submit" className="shrink-0">
               {t("apply")}
-            </button>
+            </Button>
           </div>
         </form>
       </Card>
