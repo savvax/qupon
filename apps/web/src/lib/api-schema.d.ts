@@ -2336,8 +2336,31 @@ export interface components {
                 decimals?: number;
                 /** Format: date-time */
                 paidAt?: string;
+                /**
+                 * @description how the payout left the escrow (plan 15); bank = via the paying agent
+                 * @enum {string}
+                 */
+                route?: "onchain" | "bank";
+                /** @description escrow → paying agent transaction (bank route only) */
+                bankPayoutTx?: string;
+                /** @description the paying agent's confirmation transaction ("" while the SIMULATED bank transfer awaits confirmation) */
+                bankConfirmationTx?: string;
+                /** @description sha256 hex of the bank transfer reference (bank route, confirmed) */
+                bankRefHash?: string;
                 paidYear?: number | null;
             }[];
+            /** @description issuer payout report only (plan 15) — the action's settlement story; absent when the activity feed holds no funding events for it. */
+            action?: {
+                required?: components["schemas"]["Amount"];
+                funded?: components["schemas"]["Amount"];
+                /** Format: date-time */
+                defaultedAt?: string;
+                /** Format: date-time */
+                curedAt?: string;
+                lateSeconds?: number;
+                bankConfirmed?: number;
+                bankPending?: number;
+            };
             totals: {
                 gross?: number;
                 tax?: number;

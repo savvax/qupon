@@ -5155,10 +5155,48 @@ components:
               paidAt:
                 type: string
                 format: date-time
+              route:
+                type: string
+                enum:
+                  - onchain
+                  - bank
+                description: how the payout left the escrow (plan 15); bank = via the paying agent
+              bankPayoutTx:
+                type: string
+                description: escrow → paying agent transaction (bank route only)
+              bankConfirmationTx:
+                type: string
+                description: the paying agent's confirmation transaction (""
+                  while the SIMULATED bank transfer awaits confirmation)
+              bankRefHash:
+                type: string
+                description: sha256 hex of the bank transfer reference (bank route, confirmed)
               paidYear:
                 type:
                   - integer
                   - "null"
+        action:
+          type: object
+          description: issuer payout report only (plan 15) — the action's
+            settlement story; absent when the activity feed holds no funding
+            events for it.
+          properties:
+            required:
+              $ref: '#/components/schemas/Amount'
+            funded:
+              $ref: '#/components/schemas/Amount'
+            defaultedAt:
+              type: string
+              format: date-time
+            curedAt:
+              type: string
+              format: date-time
+            lateSeconds:
+              type: integer
+            bankConfirmed:
+              type: integer
+            bankPending:
+              type: integer
         totals:
           type: object
           properties:

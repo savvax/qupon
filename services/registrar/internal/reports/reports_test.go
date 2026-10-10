@@ -86,3 +86,24 @@ func TestWriteCSVFormulaGuard(t *testing.T) {
 		t.Errorf("unguarded formula cell: %q", s)
 	}
 }
+
+// Plan 15 D6: a bank-routed row says how it left the escrow (route) and which transaction confirmed the
+// SIMULATED bank transfer (bank_confirmation_tx); a row with no route set defaults to onchain.
+func TestPayoutTableBankRoute(t *testing.T) {
+	h, rows := PayoutTable([]Payout{
+		{Series: "QPNb1", Kind: "INTR", Owner: "C", Units: 65, Gross: 325_000, Tax: 48_750, Net: 276_250,
+			Status: "Paid", Route: "bank", BankConfirmationTx: "confirmTx", Currency: "tKZT", Decimals: 2,
+			PaymentDate: "2026-07-05"},
+		{Series: "QPNb1", Kind: "INTR", Owner: "A", Units: 10, Gross: 50_000, Net: 50_000,
+			Status: "Paid", Currency: "tKZT", Decimals: 2, PaymentDate: "2026-07-05"},
+	})
+	if h[13] != "route" || h[15] != "bank_confirmation_tx" {
+		t.Fatalf("header = %v", h)
+	}
+	if rows[0][13] != "bank" || rows[0][15] != "confirmTx" {
+		t.Fatalf("bank row = %v", rows[0])
+	}
+	if rows[1][13] != "onchain" || rows[1][15] != "" {
+		t.Fatalf("route-less row must read onchain: %v", rows[1])
+	}
+}

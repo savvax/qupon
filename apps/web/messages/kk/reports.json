@@ -33,7 +33,24 @@
     "empty": "Ұстаушылар жоқ"
   },
   "issuer": {
-    "payoutReport": "Төлем есебі"
+    "payoutReport": "Төлем есебі",
+    "summary": {
+      "required": "Қажет",
+      "funded": "Қаржыландырылды",
+      "defaulted": "Дефолт уақыты",
+      "cured": "Дефолт жойылды",
+      "late": "Кешігу",
+      "bank": "Банк төлемдері (SIMULATED)",
+      "bankCounts": "{confirmed} растырылды · {pending} банкті күтуде"
+    }
+  },
+  "bank": {
+    "paidViaBankShort": "Банк арқылы төленді",
+    "awaitingBankShort": "Банкті күтуде",
+    "agentSimulated": "төлем агенті арқылы — SIMULATED",
+    "agentTx": "Эскроу → төлем агенті",
+    "confirmTx": "Банктің растауы",
+    "refHash": "Сілтеме хеші"
   },
   "cols": {
     "paymentDate": "Төлем күні",
@@ -48,6 +65,7 @@
     "principal": "Номинал",
     "status": "Күйі",
     "paidAt": "Төленген уақыты",
+    "tx": "Төлем tx",
     "action": "Әрекет",
     "investorType": "Түрі",
     "residency": "Резиденттігі",

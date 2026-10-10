@@ -1,11 +1,14 @@
 package api
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -116,5 +119,59 @@ func TestRegistrarHoldersAndIssuerPayouts(t *testing.T) {
 	}
 	if rec, _ := getReport(t, h, "/issuer/reports/payouts/"+fAction.String(), inv); rec.Code != http.StatusForbidden {
 		t.Fatalf("investor read payouts: %d", rec.Code)
+	}
+}
+
+// Plan 15 (task 91544): the statement tells the bank-route story — the escrow→agent tx, and once the paying
+// agent confirms the SIMULATED transfer, the confirmation tx and reference hash — while the issuer report
+// adds required vs funded, the default/cure stamps and the bank payout counts. Everything is read back
+// from stored activity rows exactly as the poller ingests them.
+func TestBankRouteStatementAndIssuerSummary(t *testing.T) {
+	h, st, svc := reportsServer(t)
+	inv := signIn(t, h, st, svc, "investor")
+	iss := signIn(t, h, st, svc, "issuer")
+	linkWallet(t, st, "investor@test.kz", fOwnerB.String())
+
+	apda := fAction.String()
+	ins := func(kind, sig, payload string, ts int64) {
+		t.Helper()
+		if _, err := st.InsertActivity(t.Context(), store.Activity{Ts: ts, ActionPDA: &apda, Kind: kind,
+			Payload: json.RawMessage(payload), Sig: sig}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ref := make([]byte, 32)
+	ref[0], ref[1] = 0xAB, 0xCD
+	ins("ActionFunded", "fundTx", `{"required":"500000","escrow_balance":"500000","fully_funded":true}`, tsCoupon)
+	ins("ActionDefaulted", "defaultTx", `{"required":"500000","defaulted_at":`+strconv.FormatInt(tsCoupon+7200, 10)+`}`, tsCoupon+7200)
+	ins("DefaultCured", "cureTx", `{"late_secs":1800}`, tsCoupon+9000)
+	ins("PaidToAgent", "agentTx", `{"owner":"`+fOwnerB.String()+`"}`, tsCoupon+9600)
+	ins("BankPayoutConfirmed", "confirmTx",
+		`{"owner":"`+fOwnerB.String()+`","reference_hash":"`+base64.StdEncoding.EncodeToString(ref)+`"}`, tsCoupon+9900)
+	ins("PaidToAgent", "agentTx2", `{"owner":"`+fOwnerA.String()+`"}`, tsCoupon+9700) // awaiting confirmation
+
+	rec, out := getReport(t, h, "/me/reports/statement", inv)
+	p := out["payouts"].([]any)[0].(map[string]any)
+	if rec.Code != 200 || p["route"] != "bank" || p["bankPayoutTx"] != "agentTx" ||
+		p["bankConfirmationTx"] != "confirmTx" || p["bankRefHash"] != hex.EncodeToString(ref) {
+		t.Fatalf("bank row = %v", p)
+	}
+
+	rec, _ = getReport(t, h, "/me/reports/statement?format=csv", inv)
+	if body := rec.Body.String(); !strings.Contains(body, ",bank,") || !strings.Contains(body, ",confirmTx,") {
+		t.Fatalf("csv route/confirmation columns: %q", body)
+	}
+
+	_, out = getReport(t, h, "/issuer/reports/payouts/"+fAction.String(), iss)
+	sum, _ := out["action"].(map[string]any)
+	if sum == nil {
+		t.Fatalf("no action summary: %v", out)
+	}
+	req, _ := sum["required"].(map[string]any)
+	if req["minor"] != "500000" || sum["lateSeconds"].(float64) != 1800 ||
+		sum["bankConfirmed"].(float64) != 1 || sum["bankPending"].(float64) != 1 ||
+		sum["defaultedAt"] != time.Unix(tsCoupon+7200, 0).In(almaty).Format(time.RFC3339) ||
+		sum["curedAt"] != time.Unix(tsCoupon+9000, 0).In(almaty).Format(time.RFC3339) {
+		t.Fatalf("action summary = %v", sum)
 	}
 }

@@ -9,9 +9,11 @@ const noOverflow = (page: Page) =>
   );
 
 /** Click EN|RU and wait for the heading to follow (retries once pre-hydration, as in admin-series-audit). */
+const LOCALE_LABEL = { en: "English", ru: "Русский" } as const;
 async function switchLocale(page: Page, locale: "en" | "ru", h1: string) {
-  const btn = page.getByRole("button", { name: locale, exact: true });
+  const btn = page.getByRole("radio", { name: LOCALE_LABEL[locale] });
   const heading = page.getByRole("heading", { level: 1 });
+  await btn.click();
   await btn.click();
   await expect
     .poll(() => heading.textContent(), { timeout: 4000 })
@@ -76,6 +78,31 @@ test("investor: statement filters, tax year, CSV keeps the filters (brief number
   await expect(page.locator("body")).toContainText(/10\s000,00/);
   await expect(page.getByRole("table").first()).toContainText("Выплачено");
   expect(await noOverflow(page)).toBeLessThanOrEqual(1);
+  expect(errors).toEqual([]);
+});
+
+test("statement bank rows fit a 390 px phone in ru and kk (short bank pills)", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const errors: string[] = [];
+  page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+  for (const locale of ["ru", "kk"] as const) {
+    await context.clearCookies();
+    await context.addCookies([
+      { name: "NEXT_LOCALE", value: locale, url: baseURL! },
+      { name: "qupon_session", value: "mock:member", url: baseURL! },
+    ]);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/investor/reports");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    // The mock's awaiting-bank row (plan 15): the short pill, never the long nowrap label.
+    await expect(page.locator("body")).toContainText(
+      locale === "ru" ? "Ожидает банка" : "Банкті күтуде",
+    );
+    expect(await noOverflow(page)).toBeLessThanOrEqual(1);
+  }
   expect(errors).toEqual([]);
 });
 

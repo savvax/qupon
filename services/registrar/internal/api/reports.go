@@ -22,20 +22,89 @@ func ymdAlmaty(ts int64) string {
 	return time.Unix(ts, 0).In(almaty).Format("2006-01-02")
 }
 
-// payoutRow converts one entitlement of an action into a report row.
+// payoutRow converts one entitlement of an action into a report row. Bank-routed rows are marked later by
+// bankRoute from the ingested events (the entitlement account itself only says Paid/PaidToAgent).
 func payoutRow(s *chain.Series, actionPDA solana.PublicKey, a *chain.CorporateAction, e *chain.Entitlement, m money) reports.Payout {
 	p := reports.Payout{
 		Series: trimBytes(s.Ticker[:]), ISIN: trimBytes(s.ISIN[:]), Kind: pick(kindNames, a.Kind),
 		CorpID: trimBytes(a.CorpID[:]), Action: actionPDA.String(), Owner: e.Owner.String(),
 		RecordDate: ymdAlmaty(a.RecordAt), PaymentDate: ymdAlmaty(a.PaymentAt), Units: e.Units,
 		Gross: e.Gross, Tax: e.Tax, Net: e.Net, Principal: e.Principal,
-		Status: pick(entitlementStatusNames, e.Status), Currency: m.currency, Decimals: m.decimals,
+		Status: pick(entitlementStatusNames, e.Status), Route: "onchain", Currency: m.currency, Decimals: m.decimals,
 	}
 	if e.PaidAt != 0 {
 		t := time.Unix(e.PaidAt, 0).In(almaty)
 		p.PaidAt, p.PaidYear = t.Format(time.RFC3339), t.Year()
 	}
 	return p
+}
+
+// bankRoute marks the payouts that left the escrow through the paying agent (plan 15 D6) using the ingested
+// events: route "bank", the escrow→agent tx and — once the paying agent confirms the SIMULATED bank
+// transfer — the confirmation tx and the sha256 reference hash. Best effort: with no feed rows the
+// statement keeps the plain onchain row (the feed only holds what the poller ingested).
+func bankRoute(ctx context.Context, st *store.Store, ps []reports.Payout) {
+	seen := map[string]bool{}
+	actions := make([]string, 0, len(ps))
+	for _, p := range ps {
+		if !seen[p.Action] {
+			seen[p.Action] = true
+			actions = append(actions, p.Action)
+		}
+	}
+	byAction, err := st.BankPayouts(ctx, actions)
+	if err != nil {
+		return
+	}
+	for i := range ps {
+		if b, ok := byAction[ps[i].Action][ps[i].Owner]; ok {
+			ps[i].Route, ps[i].BankPayoutTx, ps[i].BankConfirmationTx, ps[i].BankRefHash =
+				"bank", b.AgentTx, b.ConfirmTx, b.ReferenceHash
+		}
+	}
+}
+
+// ActionSummary is the issuer payout report's per-action block (plan 15): required vs funded from the
+// funding events, the default/cure stamps with lateness, and the bank-routed payout counts.
+type ActionSummary struct {
+	Required      Amount `json:"required"`
+	Funded        Amount `json:"funded"`
+	DefaultedAt   string `json:"defaultedAt"` // RFC 3339 (Almaty), "" if never
+	CuredAt       string `json:"curedAt"`     // "" while the default stands
+	LateSeconds   int64  `json:"lateSeconds"`
+	BankConfirmed int    `json:"bankConfirmed"`
+	BankPending   int    `json:"bankPending"`
+}
+
+// actionSummary builds the issuer block from the ingested funding events (newest row wins). nil when the
+// feed holds nothing for the action — there is no plan-15 story to tell beyond the rows themselves.
+func actionSummary(ctx context.Context, st *store.Store, m money, pda string) *ActionSummary {
+	set, err := st.ActionSettlement(ctx, pda)
+	if err != nil {
+		return nil
+	}
+	bank, err := st.BankPayouts(ctx, []string{pda})
+	if err != nil {
+		return nil
+	}
+	s := &ActionSummary{Required: m.amount(set.Required), Funded: m.amount(set.Funded), LateSeconds: set.LateSeconds}
+	if set.DefaultedAt != 0 {
+		s.DefaultedAt = time.Unix(set.DefaultedAt, 0).In(almaty).Format(time.RFC3339)
+	}
+	if set.CuredAt != 0 {
+		s.CuredAt = time.Unix(set.CuredAt, 0).In(almaty).Format(time.RFC3339)
+	}
+	for _, b := range bank[pda] {
+		if b.ConfirmTx != "" {
+			s.BankConfirmed++
+		} else if b.AgentTx != "" {
+			s.BankPending++
+		}
+	}
+	if set.Required == 0 && set.Funded == 0 && s.DefaultedAt == "" && s.CuredAt == "" && s.BankConfirmed+s.BankPending == 0 {
+		return nil
+	}
+	return s
 }
 
 // ownerPayouts walks every series and action and keeps the entitlements of the given owners.
@@ -145,6 +214,7 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 				ps = append(ps, p)
 			}
 		}
+		bankRoute(r.Context(), st, ps)
 		h, rows := reports.PayoutTable(ps)
 		sendReport(w, r, deps, "statement", h, rows, list, map[string]any{"payouts": ps, "totals": reports.Sum(ps)})
 	})
@@ -170,6 +240,7 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 			return
 		}
 		ps := reports.TaxYear(all, year)
+		bankRoute(r.Context(), st, ps)
 		h, rows := reports.PayoutTable(ps)
 		sendReport(w, r, deps, "tax-"+strconv.Itoa(year), h, rows, list,
 			map[string]any{"year": year, "payouts": ps, "totals": reports.Sum(ps)})
@@ -247,8 +318,12 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 		for _, er := range ents {
 			ps = append(ps, payoutRow(s, pda, a, er.Entitlement, m))
 		}
+		bankRoute(r.Context(), st, ps)
 		h, rows := reports.PayoutTable(ps)
-		sendReport(w, r, deps, "payouts-"+trimBytes(a.CorpID[:]), h, rows, []string{pda.String()},
-			map[string]any{"payouts": ps, "totals": reports.Sum(ps)})
+		body := map[string]any{"payouts": ps, "totals": reports.Sum(ps)}
+		if sum := actionSummary(r.Context(), st, m, pda.String()); sum != nil {
+			body["action"] = sum // plan-15 story: required vs funded, default/cure, bank payout counts
+		}
+		sendReport(w, r, deps, "payouts-"+trimBytes(a.CorpID[:]), h, rows, []string{pda.String()}, body)
 	})
 }

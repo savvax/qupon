@@ -12,6 +12,8 @@ import (
 )
 
 // Payout is one holder's entitlement in one corporate action, amounts in minor units of Currency.
+// Bank-routed rows (plan 15 D6) carry the escrow→agent transaction and, once the paying agent confirms the
+// SIMULATED bank transfer, the confirmation transaction and the sha256 reference hash.
 type Payout struct {
 	Series      string `json:"series"` // ticker
 	ISIN        string `json:"isin"`
@@ -28,9 +30,15 @@ type Payout struct {
 	Tax         uint64 `json:"tax"`
 	Net         uint64 `json:"net"`
 	Principal   uint64 `json:"principal"`
-	Status      string `json:"status"` // Snapshotted | Paid | Retired
-	Currency    string `json:"currency"`
-	Decimals    uint8  `json:"decimals"`
+	Status      string `json:"status"` // Snapshotted | Paid | PaidToAgent | Retired
+	Route       string `json:"route"`  // onchain | bank
+	// Bank route only (plan 15 D6): the escrow→agent tx and, once the paying agent confirms the SIMULATED
+	// bank transfer, the confirmation tx and the sha256 reference hash (hex).
+	BankPayoutTx       string `json:"bankPayoutTx"`
+	BankConfirmationTx string `json:"bankConfirmationTx"`
+	BankRefHash        string `json:"bankRefHash"`
+	Currency           string `json:"currency"`
+	Decimals           uint8  `json:"decimals"`
 }
 
 // Holding is one row of a holder register.
@@ -109,15 +117,21 @@ func TaxYear(ps []Payout, year int) []Payout {
 	return out
 }
 
-// PayoutTable is the CSV body of statements, tax certificates and payout reports.
+// PayoutTable is the CSV body of statements, tax certificates and payout reports. The plan-15 columns say
+// how the money left the escrow (route) and, for bank rows, which transaction confirmed the SIMULATED
+// bank transfer (bank_confirmation_tx).
 func PayoutTable(ps []Payout) ([]string, [][]string) {
 	header := []string{"payment_date", "series", "isin", "kind", "corp_id", "owner", "units", "gross", "tax_withheld",
-		"net", "principal", "currency", "status", "paid_at", "action"}
+		"net", "principal", "currency", "status", "route", "paid_at", "bank_confirmation_tx", "action"}
 	rows := make([][]string, 0, len(ps))
 	for _, p := range ps {
+		route := p.Route
+		if route == "" {
+			route = "onchain"
+		}
 		rows = append(rows, []string{p.PaymentDate, p.Series, p.ISIN, p.Kind, p.CorpID, p.Owner,
 			strconv.FormatUint(p.Units, 10), Major(p.Gross, p.Decimals), Major(p.Tax, p.Decimals), Major(p.Net, p.Decimals),
-			Major(p.Principal, p.Decimals), p.Currency, p.Status, p.PaidAt, p.Action})
+			Major(p.Principal, p.Decimals), p.Currency, p.Status, route, p.PaidAt, p.BankConfirmationTx, p.Action})
 	}
 	return header, rows
 }

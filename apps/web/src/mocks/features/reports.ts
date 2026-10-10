@@ -9,7 +9,16 @@ import type { MockHandler } from "./types";
 const QPNB1 = "QpNb1Dem0BondMint1111111111111111111111111111";
 const BTRK = "BTRKDeM0BondMint1111111111111111111111111111";
 const ACTION_PDA_1 = "ActnINTR0001Dem0PDA111111111111111111111111111";
+const ACTION_PDA_2 = "ActnINTR0002Dem0PDA111111111111111111111111111";
 const ACTION_PDA_REDM = "ActnREDM0004Dem0PDA111111111111111111111111111";
+
+// Plan-15 story (task 91544): a bank-routed payout and its confirmation, plus a default cured 30 min late.
+const BANK_AGENT_TX =
+  "5UpRq2vXnMczD8KbGFtQmJ4hWjAeZyLpVnS7dRgKfCuBqM9xT2vHnE3wAsYd6LpTfGhJ5kWrXnZ8mBvC4qLd7SgNh";
+const BANK_CONFIRM_TX =
+  "3FgKq7YtNmBvCeHrXzLwPdJcAoSbUiTnEqWmZxKvCuBgSd8HpN6rTyFjMhLdGsAweRoKiUyTrEwqZnXvB4mLp2hKf";
+const BANK_REF_HASH =
+  "c7f4a9e21b0d8356fa92f1e7b04d6c8a5e3f29d170b48ac6de95f2b7130ad84e";
 
 const OWNERS = [
   "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo",
@@ -36,6 +45,11 @@ type Payout = {
   net: number;
   principal: number;
   status: string;
+  // Plan 15 D6: bank-routed payouts went to the paying agent; the bank transfer itself is SIMULATED.
+  route?: "onchain" | "bank";
+  bankPayoutTx?: string;
+  bankConfirmationTx?: string;
+  bankRefHash?: string;
   currency: string;
   decimals: number;
 };
@@ -59,6 +73,13 @@ const coupon = (i: number): Payout => {
     net: gross - tax,
     principal: 0,
     status: "Paid",
+    // The 65-unit non-resident holder chose the bank route (plan 15): paid to the paying agent and confirmed.
+    ...(i === 2 && {
+      route: "bank" as const,
+      bankPayoutTx: BANK_AGENT_TX,
+      bankConfirmationTx: BANK_CONFIRM_TX,
+      bankRefHash: BANK_REF_HASH,
+    }),
     currency: "tKZT",
     decimals: 2,
   };
@@ -125,7 +146,33 @@ const sum = (ps: Payout[]) => {
 };
 
 /** All payouts that touch the mock member's wallets (first owner). */
-const memberPayouts = [coupon(0), redemption];
+const memberPayouts: Payout[] = [
+  coupon(0),
+  redemption,
+  // Plan 15: the member's next coupon chose the bank route — paid to the agent, awaiting the SIMULATED
+  // bank transfer's confirmation.
+  {
+    series: "QPNb1",
+    isin: "KZ2C0QUPON01",
+    kind: "INTR",
+    corpId: "QPNb1-INTR-0002",
+    action: ACTION_PDA_2,
+    owner: OWNERS[0]!,
+    recordDate: "2026-08-31",
+    paymentDate: "2026-09-01",
+    paidAt: "2026-09-01T12:00:00+05:00",
+    units: 10,
+    gross: 50000,
+    tax: 0,
+    net: 50000,
+    principal: 0,
+    status: "PaidToAgent",
+    route: "bank",
+    bankPayoutTx: BANK_AGENT_TX,
+    currency: "tKZT",
+    decimals: 2,
+  },
+];
 
 const holders = (units: number[]) =>
   units.map((units, i) => ({
@@ -171,7 +218,9 @@ const PAYOUT_HEADER = [
   "principal",
   "currency",
   "status",
+  "route",
   "paid_at",
+  "bank_confirmation_tx",
   "action",
 ];
 
@@ -190,7 +239,9 @@ const payoutRows = (ps: Payout[]) =>
     major(p.principal, p.decimals),
     p.currency,
     p.status,
+    p.route ?? "onchain",
     p.paidAt,
+    p.bankConfirmationTx ?? "",
     p.action,
   ]);
 
@@ -311,6 +362,27 @@ export const handlers: MockHandler[] = [
       return {
         payouts: ps,
         totals: sum(ps),
+        // Plan-15 settlement story (brief numbers: coupons 500+1,250+3,250 = 5,000 KZT): funded in full
+        // after a default cured 30 minutes late; one bank-routed payout confirmed.
+        ...(m[1] !== ACTION_PDA_REDM && {
+          action: {
+            required: {
+              minor: "500000",
+              display: "5000.00 tKZT",
+              currency: "tKZT",
+            },
+            funded: {
+              minor: "500000",
+              display: "5000.00 tKZT",
+              currency: "tKZT",
+            },
+            defaultedAt: "2026-03-01T12:30:00+05:00",
+            curedAt: "2026-03-01T13:00:00+05:00",
+            lateSeconds: 1800,
+            bankConfirmed: 1,
+            bankPending: 0,
+          },
+        }),
         network: NETWORK,
         generatedAt: GENERATED,
         sources: [m[1]!],

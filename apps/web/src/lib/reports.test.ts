@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { csvHref, majorMinor, printHref } from "./reports";
+import {
+  csvHref,
+  formatLateSeconds,
+  majorMinor,
+  payoutRouteView,
+  printHref,
+} from "./reports";
 
 /** The report helpers are the money paths of task 902: exact major-unit strings and filter-carrying URLs. */
 describe("report helpers", () => {
@@ -24,5 +30,47 @@ describe("report helpers", () => {
       "/print/holders?mint=Mint123",
     );
     expect(printHref("statement", {})).toBe("/print/statement");
+  });
+});
+
+describe("bank-routed payout rows (plan 15)", () => {
+  it("maps confirmed, awaiting and onchain rows", () => {
+    expect(
+      payoutRouteView({
+        route: "bank",
+        status: "Paid",
+        bankPayoutTx: "agentTx",
+        bankConfirmationTx: "confirmTx",
+        bankRefHash: "ab12",
+      }),
+    ).toEqual({
+      bank: true,
+      confirmed: true,
+      agentTx: "agentTx",
+      confirmTx: "confirmTx",
+      refHash: "ab12",
+    });
+    expect(
+      payoutRouteView({
+        route: "bank",
+        status: "PaidToAgent",
+        bankPayoutTx: "agentTx",
+      }),
+    ).toEqual({ bank: true, confirmed: false, agentTx: "agentTx" });
+    // A PaidToAgent row is bank-routed even before the feed rows carrying the txs arrive.
+    expect(payoutRouteView({ status: "PaidToAgent" })).toEqual({
+      bank: true,
+      confirmed: false,
+    });
+    expect(payoutRouteView({ status: "Paid" })).toEqual({
+      bank: false,
+      confirmed: false,
+    });
+  });
+
+  it("formats the default's lateness", () => {
+    expect(formatLateSeconds(1800)).toBe("30 min");
+    expect(formatLateSeconds(5400)).toBe("1 h 30 min");
+    expect(formatLateSeconds(0)).toBe("—");
   });
 });

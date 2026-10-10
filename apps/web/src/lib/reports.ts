@@ -20,7 +20,47 @@ export type PayoutRow = {
   status: string;
   currency: string;
   decimals: number;
+  // Plan 15 D6: bank-routed payouts went to the paying agent; the bank transfer itself is SIMULATED.
+  route?: "onchain" | "bank";
+  bankPayoutTx?: string; // escrow → paying agent tx
+  bankConfirmationTx?: string; // agent's confirmation tx ("" while awaiting)
+  bankRefHash?: string; // sha256 hex of the transfer reference
 };
+
+/** The bank-route facts a statement row renders (plan 15): pure mapping, unit-tested. */
+export type PayoutRouteView = {
+  bank: boolean;
+  confirmed: boolean; // the paying agent confirmed the SIMULATED transfer
+  agentTx?: string;
+  confirmTx?: string;
+  refHash?: string;
+};
+
+export function payoutRouteView(
+  p: Pick<
+    PayoutRow,
+    "route" | "status" | "bankPayoutTx" | "bankConfirmationTx" | "bankRefHash"
+  >,
+): PayoutRouteView {
+  // A PaidToAgent row is bank-routed even if the feed rows that carry the txs were not ingested yet.
+  const bank = p.route === "bank" || p.status === "PaidToAgent";
+  if (!bank) return { bank: false, confirmed: false };
+  return {
+    bank: true,
+    confirmed: Boolean(p.bankConfirmationTx),
+    agentTx: p.bankPayoutTx || undefined,
+    confirmTx: p.bankConfirmationTx || undefined,
+    refHash: p.bankRefHash || undefined,
+  };
+}
+
+/** Late-payout lateness for the issuer report: 1800 → "30 min", 5400 → "1 h 30 min". */
+export function formatLateSeconds(s: number): string {
+  if (s <= 0) return "—";
+  const mins = Math.round(s / 60);
+  const h = Math.floor(mins / 60);
+  return h > 0 ? `${h} h ${mins % 60} min` : `${mins} min`;
+}
 
 export type PayoutTotals = {
   currency: string;
@@ -55,6 +95,26 @@ export type StatementReport = ReportMeta & {
 };
 export type TaxReport = StatementReport & { year: number };
 export type HoldersReport = ReportMeta & { holders: HoldingRow[] };
+
+/** Amount DTO of the registrar API (minor units + a display string). */
+export type ActionAmount = { minor: string; display: string; currency: string };
+
+/** Issuer payout report's per-action block (plan 15): required vs funded, the default and its cure, and
+ * the bank-routed payout counts (bank transfers SIMULATED). Absent when no funding events were ingested. */
+export type ActionSummary = {
+  required: ActionAmount;
+  funded: ActionAmount;
+  defaultedAt: string;
+  curedAt: string;
+  lateSeconds: number;
+  bankConfirmed: number;
+  bankPending: number;
+};
+export type IssuerPayoutsReport = ReportMeta & {
+  payouts: PayoutRow[];
+  totals: PayoutTotals[];
+  action?: ActionSummary | null;
+};
 
 const qs = (query: Record<string, string | number | undefined>) => {
   const q = new URLSearchParams();
@@ -100,4 +160,4 @@ export const getHolders = (mint: string) =>
   boFetch<HoldersReport>(`/registrar/reports/holders/${mint}`);
 
 export const getPayouts = (pda: string) =>
-  boFetch<StatementReport>(`/issuer/reports/payouts/${pda}`);
+  boFetch<IssuerPayoutsReport>(`/issuer/reports/payouts/${pda}`);

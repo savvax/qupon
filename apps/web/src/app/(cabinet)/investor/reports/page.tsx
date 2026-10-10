@@ -13,6 +13,7 @@ import {
   csvHref,
   getStatement,
   getTax,
+  payoutRouteView,
   printHref,
   type PayoutRow,
   type PayoutTotals,
@@ -48,11 +49,12 @@ export default async function InvestorReportsPage({
   const tax = user ? await getTax(year).catch(() => null) : null;
 
   const locale = toLocale(await getLocale());
-  const [t, tc, tm, tk] = await Promise.all([
+  const [t, tc, tm, tk, tb] = await Promise.all([
     getTranslations("reports.investor"),
     getTranslations("reports.cols"),
     getTranslations("reports.totals"),
     getTranslations("landing.kinds"),
+    getTranslations("reports.bank"),
   ]);
 
   const hasPrincipal = (ps: PayoutRow[]) => ps.some((p) => p.principal > 0);
@@ -150,7 +152,46 @@ export default async function InvestorReportsPage({
     {
       key: "status",
       header: tc("status"),
-      render: (p) => <Badge status={p.status} />,
+      render: (p) => {
+        // Bank-routed payouts (plan 15): a short pill (a nowrap Badge must not carry the long label —
+        // it overflows a 390 px card) plus the paying-agent qualifier as plain text below it.
+        const r = payoutRouteView(p);
+        if (!r.bank) return <Badge status={p.status} />;
+        return (
+          <span className="flex flex-col items-start gap-1">
+            <Badge tone={r.confirmed ? "success" : "warn"}>
+              {r.confirmed ? tb("paidViaBankShort") : tb("awaitingBankShort")}
+            </Badge>
+            <span className="text-xs text-n500">{tb("agentSimulated")}</span>
+          </span>
+        );
+      },
+    },
+    {
+      key: "tx",
+      header: tc("tx"),
+      essential: true,
+      render: (p) => {
+        const r = payoutRouteView(p);
+        if (!r.bank) return <span className="text-n400">—</span>;
+        return (
+          <span className="flex flex-col items-start gap-1">
+            {r.agentTx ? <Address value={r.agentTx} kind="tx" /> : null}
+            {r.confirmTx ? (
+              <span className="flex flex-col text-xs text-n500">
+                <span>
+                  {tb("confirmTx")}: <Address value={r.confirmTx} kind="tx" />
+                </span>
+                {r.refHash && (
+                  <span className="num">
+                    {tb("refHash")}: {r.refHash.slice(0, 8)}…
+                  </span>
+                )}
+              </span>
+            ) : null}
+          </span>
+        );
+      },
     },
     {
       key: "action",

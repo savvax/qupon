@@ -33,7 +33,24 @@
     "empty": "No holders"
   },
   "issuer": {
-    "payoutReport": "Payout report"
+    "payoutReport": "Payout report",
+    "summary": {
+      "required": "Required",
+      "funded": "Funded",
+      "defaulted": "Defaulted at",
+      "cured": "Cured at",
+      "late": "Late by",
+      "bank": "Bank payouts (SIMULATED)",
+      "bankCounts": "{confirmed} confirmed · {pending} awaiting bank"
+    }
+  },
+  "bank": {
+    "paidViaBankShort": "Paid via bank",
+    "awaitingBankShort": "Awaiting bank",
+    "agentSimulated": "via paying agent — SIMULATED",
+    "agentTx": "Escrow → paying agent",
+    "confirmTx": "Bank confirmation",
+    "refHash": "Reference hash"
   },
   "cols": {
     "paymentDate": "Payment date",
@@ -48,6 +65,7 @@
     "principal": "Principal",
     "status": "Status",
     "paidAt": "Paid at",
+    "tx": "Payout tx",
     "action": "Action",
     "investorType": "Type",
     "residency": "Residency",

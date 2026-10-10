@@ -33,7 +33,24 @@
     "empty": "Держателей нет"
   },
   "issuer": {
-    "payoutReport": "Отчёт по выплате"
+    "payoutReport": "Отчёт по выплате",
+    "summary": {
+      "required": "Требуется",
+      "funded": "Пополнено",
+      "defaulted": "Дефолт в",
+      "cured": "Дефолт устранён в",
+      "late": "Опоздание",
+      "bank": "Банковские выплаты (SIMULATED)",
+      "bankCounts": "{confirmed} подтверждено · {pending} ожидает банк"
+    }
+  },
+  "bank": {
+    "paidViaBankShort": "Выплачено через банк",
+    "awaitingBankShort": "Ожидает банка",
+    "agentSimulated": "через платёжного агента — SIMULATED",
+    "agentTx": "Эскроу → платёжный агент",
+    "confirmTx": "Подтверждение банка",
+    "refHash": "Хеш ссылки"
   },
   "cols": {
     "paymentDate": "Дата выплаты",
@@ -48,6 +65,7 @@
     "principal": "Основной долг",
     "status": "Статус",
     "paidAt": "Оплачена",
+    "tx": "Tx выплаты",
     "action": "Корпоративное действие",
     "investorType": "Тип",
     "residency": "Резидентство",

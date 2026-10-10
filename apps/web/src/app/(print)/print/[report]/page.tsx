@@ -9,11 +9,14 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { currencyDecimals, majorToMinor } from "@/lib/ui/amount";
 import {
   csvHref,
+  formatLateSeconds,
   getHolders,
   getPayouts,
   getStatement,
   getTax,
+  payoutRouteView,
   type HoldersReport,
+  type IssuerPayoutsReport,
   type PayoutRow,
   type PayoutTotals,
   type StatementReport,
@@ -137,6 +140,52 @@ export default async function PrintReportPage({
     [t("meta.sources"), data.sources.map(short).join(", ")],
   ];
 
+  // Plan-15 settlement story of the issuer payout report: required vs funded, the default and its cure, and
+  // the bank-routed payout counts (bank transfers SIMULATED). Absent when no funding events were ingested.
+  const summary =
+    slug === "payouts" ? ((data as IssuerPayoutsReport).action ?? null) : null;
+  const summaryRows: [string, string][] = summary
+    ? [
+        [t("issuer.summary.required"), summary.required.display],
+        [t("issuer.summary.funded"), summary.funded.display],
+        ...(summary.defaultedAt
+          ? ([
+              [
+                t("issuer.summary.defaulted"),
+                formatDateTime(summary.defaultedAt, locale),
+              ],
+            ] as [string, string][])
+          : []),
+        ...(summary.curedAt
+          ? ([
+              [
+                t("issuer.summary.cured"),
+                formatDateTime(summary.curedAt, locale),
+              ],
+            ] as [string, string][])
+          : []),
+        ...(summary.lateSeconds > 0
+          ? ([
+              [
+                t("issuer.summary.late"),
+                formatLateSeconds(summary.lateSeconds),
+              ],
+            ] as [string, string][])
+          : []),
+        ...(summary.bankConfirmed + summary.bankPending > 0
+          ? ([
+              [
+                t("issuer.summary.bank"),
+                t("issuer.summary.bankCounts", {
+                  confirmed: summary.bankConfirmed,
+                  pending: summary.bankPending,
+                }),
+              ],
+            ] as [string, string][])
+          : []),
+      ]
+    : [];
+
   return (
     <div className="mx-auto max-w-[860px] px-4 print:max-w-none print:px-0">
       {/* Toolbar never prints. */}
@@ -174,6 +223,16 @@ export default async function PrintReportPage({
             </div>
           ))}
         </dl>
+        {summaryRows.length > 0 && (
+          <dl className="mt-3 grid gap-x-8 gap-y-1 border-t border-n100 pt-3 text-xs sm:grid-cols-2">
+            {summaryRows.map(([k, v]) => (
+              <div key={k} className="flex gap-2">
+                <dt className="font-semibold text-n500">{k}:</dt>
+                <dd className="num min-w-0 break-words text-n800">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
         {/* Wide report tables scroll inside their own box on phones (§5.8: no page-level sideways scroll). */}
         <div className="mt-6 overflow-x-auto print:overflow-visible">
           <table className="w-full border-collapse text-xs">
@@ -286,6 +345,15 @@ export default async function PrintReportPage({
                       )}
                       <td className="px-1 py-1.5">
                         <Badge status={p.status} />
+                        {/* Bank-routed row (plan 15): short note under the pill — the transfer is SIMULATED. */}
+                        {payoutRouteView(p).bank && (
+                          <span className="mt-0.5 block whitespace-normal text-[10px] text-n500">
+                            {payoutRouteView(p).confirmed
+                              ? t("bank.paidViaBankShort")
+                              : t("bank.awaitingBankShort")}{" "}
+                            · {t("bank.agentSimulated")}
+                          </span>
+                        )}
                       </td>
                       <td className="num px-1 py-1.5">{short(p.action)}</td>
                     </tr>
