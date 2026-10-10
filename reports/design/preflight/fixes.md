@@ -53,3 +53,8 @@ One line per mechanical.md row fixed. Task 91548 (rows 17, 18, 19, 20, 30 + 32).
 - #17 /bonds/[mint] — KASE panel quote date, news dates and deal chips render `formatDate(civilDate(…), locale)` — no raw ISO strings remain on the page; the dossier's local `day()` helper now aliases the shared `civilDate` (`KasePanel.tsx`, `bonds/[mint]/page.tsx`, `lib/format.ts`)
 - #17 /admin/users — reset-link expiry is `formatDateTime(link.expiresAt, locale)` (the twin of the fixed TeamPanel invite expiry) (`UserDialog.tsx`)
 - #32 /admin/system — operator SOL balances go through new `formatDecimal(o.sol, 3, locale)`: "4.213" en / "4,213" ru·kk, matching the slot grouping on the same card (`SystemPanel.tsx`, `lib/format.ts`)
+
+## Task 91548 — review round 2 (2026-10-11)
+
+- #17 `civilDate` — offset-less KASE datetimes (news `create_datetime` "2026-09-18T19:38:00", deal `date0` "2026-10-05 16:59:40") are now stamped `+05:00` (space → `T`) instead of passed through, so a UTC host no longer reads 19:38 Almaty as UTC and shifts the rendered day; suite also run under `TZ=UTC` (17/17) (`apps/web/src/lib/format.ts`, `format.test.ts`)
+- after-shots — re-shot all 8 touched routes from this worktree on a fresh `E2E_PORT=3917` dev server; the sweep's `SWEEP_OUT` now strips leading `../` so a worktree run can never stray into a sibling checkout (round 2's stale evidence came from exactly that) (`apps/web/e2e/sweep.spec.ts`); rendered DOM verified on the same server: ru/kk "288 123 456" + "4,213 SOL" (en "288,123,456" / "4.213 SOL"), kk chip "слот 1 2xx", KASE 06.10.2026 / 18.09.2026 with no raw ISO left, and `document.fonts.check` confirms Manrope covers ӘҒҚҢӨҰҮҺІ (row #20)

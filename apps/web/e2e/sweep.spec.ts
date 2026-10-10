@@ -128,10 +128,12 @@ const inScope = (route: string) =>
   SWEEP_ROUTES.length === 0 || SWEEP_ROUTES.includes(route.split("?")[0]!);
 
 // Shot directory: SWEEP_OUT (repo-root relative) or the default reports/ui/sweep (also repo-root relative).
+// Leading "../" segments (e.g. "../../reports/…", typed relative to apps/web) are stripped so a run from a
+// worktree never strays into a sibling checkout — round 2 re-shot the main repo's dir instead of ours.
 const OUT = path.resolve(
   __dirname,
   "../../../",
-  process.env.SWEEP_OUT ?? "reports/ui/sweep",
+  (process.env.SWEEP_OUT ?? "reports/ui/sweep").replace(/^(?:\.\.\/)+/, ""),
 );
 const SHOTS = new Map<string, string>(); // file name → route, for the index
 

@@ -58,6 +58,13 @@ describe("formatDate / formatDateTime", () => {
     );
     expect(formatDate(civilDate("2026-10-06"), "ru")).toBe("06.10.2026");
   });
+  it("treats offset-less KASE datetimes as Almaty civil time (round 2)", () => {
+    // 19:38 Almaty is still the same day even when the host runs UTC (new Date would read it as UTC).
+    expect(formatDate(civilDate("2026-09-18T19:38:00"), "ru")).toBe(
+      "18.09.2026",
+    );
+    expect(civilDate("2026-10-05 16:59:40")).toBe("2026-10-05T16:59:40+05:00");
+  });
 });
 
 describe("formatInt", () => {

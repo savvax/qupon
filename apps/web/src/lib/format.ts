@@ -43,10 +43,14 @@ export function formatDateTime(iso: string, locale?: string): string {
     : `${formatDate(iso)} ${time}`;
 }
 
-/** A date-only string is a civil Almaty date; stamp the +05:00 offset so formatDate
- * (UTC parse) never shifts it a day — one helper shared by the bond page and the KASE panel (pre-flight #17). */
+/** KASE and dossier dates arrive as Almaty civil time with no zone ("2026-09-18T19:38:00",
+ * "2026-10-05 16:59:40") or as a plain date. Stamp +05:00 on anything offset-less so a UTC
+ * host never parses 19:38 as UTC and shifts the rendered day (pre-flight #17, review round 2). */
 export function civilDate(iso: string): string {
-  return iso.length > 10 ? iso : `${iso}T00:00:00+05:00`;
+  if (iso.length <= 10) return `${iso}T00:00:00+05:00`;
+  return /(?:Z|[+-]\d{2}:?\d{2})$/i.test(iso)
+    ? iso
+    : `${iso.replace(" ", "T")}+05:00`;
 }
 
 /** Grouped integer (slots, counts): EN "288,123,456", RU/KK "288 123 456". One path for every slot
