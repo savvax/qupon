@@ -1,8 +1,8 @@
 /** `series:init` — initialize the on-chain Series for a name in config/devnet.json. */
-import { address, type Address, type Instruction, type KeyPairSigner, type Signature } from "@solana/kit";
+import { address, type Address, type Base64EncodedBytes, type Instruction, type KeyPairSigner, type Signature, getBase64Decoder, getBase64Encoder, type ReadonlyUint8Array } from "@solana/kit";
 import { fetchMaybeMint } from "@solana-program/token-2022";
-import type { Command } from "commander";
-import { getInitHookInstructionAsync, getInitSeriesInstructionAsync } from "../generated/index.js";
+import { Option, type Command } from "commander";
+import { getInitHookInstructionAsync, getInitSeriesInstructionAsync, QUPON_BONDS_PROGRAM_ADDRESS, SERIES_DISCRIMINATOR, getSeriesDecoder, type Series } from "../generated/index.js";
 import { CivilClock } from "../lib/clock.js";
 import { packYmd } from "../lib/daycount.js";
 import { mintIsHooked } from "../lib/hook.js";
@@ -132,6 +132,89 @@ async function runInitSeries(opts: InitOpts, cmd: Command): Promise<void> {
 	out({ ok: true, signature: report.signature, slot: report.slot, series: opts.series, mint, seriesPda: report.seriesPda });
 }
 
+const SERIES_STATUS_NAMES = ["active", "matured", "retiring", "closed"] as const;
+
+/** The JSON row `series:list` prints per on-chain series (ticker/isin NUL-trimmed ASCII). */
+export interface SeriesRow {
+	readonly pda: Address;
+	readonly mint: Address;
+	readonly ticker: string;
+	readonly isin: string;
+	readonly status: string;
+	readonly daySecs: number;
+	readonly hookGate: boolean;
+	readonly actionCount: number;
+	readonly issueDate: bigint;
+	readonly maturityDate: bigint;
+}
+
+export type SeriesStatusFilter = "active" | "closed" | "all";
+
+function ascii(bytes: ReadonlyUint8Array): string {
+	return new TextDecoder().decode(bytes).replace(/\0+$/, "");
+}
+
+/** Series account → the `series:list` row. */
+export function toSeriesRow(pda: Address, s: Series): SeriesRow {
+	return {
+		pda,
+		mint: s.mint,
+		ticker: ascii(s.ticker),
+		isin: ascii(s.isin),
+		status: SERIES_STATUS_NAMES[s.status] ?? `unknown(${s.status})`,
+		daySecs: s.daySecs,
+		hookGate: s.hook === 1,
+		actionCount: s.actionCount,
+		issueDate: s.issueDate,
+		maturityDate: s.maturityDate,
+	};
+}
+
+/** Keep active/closed/all (± demo-clock only), then sort by ticker (PDA tiebreak — deterministic). */
+export function filterSeriesRows(
+	rows: readonly SeriesRow[],
+	status: SeriesStatusFilter,
+	demo: boolean,
+): SeriesRow[] {
+	return rows
+		.filter(r => (status === "all" || r.status === status) && (!demo || r.daySecs > 0))
+		.sort((a, b) => (a.ticker === b.ticker ? a.pda.localeCompare(b.pda) : a.ticker.localeCompare(b.ticker)));
+}
+
+/**
+ * Every on-chain Series via getProgramAccounts. Discriminator memcmp only — no dataSize filter and
+ * no zero-padding assumption: accounts whose open_action went Some → None keep a stale 32-byte
+ * tail, and the Codama decoder reads the shifted tail fields and ignores the leftovers.
+ */
+export async function listSeries(rpc: QuponRpc): Promise<SeriesRow[]> {
+	const b64 = getBase64Decoder();
+	const memcmp = {
+		memcmp: { bytes: b64.decode(SERIES_DISCRIMINATOR) as Base64EncodedBytes, encoding: "base64" as const, offset: 0n },
+	};
+	const res = await rpc
+		.getProgramAccounts(QUPON_BONDS_PROGRAM_ADDRESS, { commitment: "confirmed", encoding: "base64", filters: [memcmp] })
+		.send();
+	const decoder = getSeriesDecoder();
+	const b64ToBytes = getBase64Encoder();
+	return res.map(item => {
+		const [encoded] = item.account.data;
+		if (encoded === undefined) throw new Error(`empty account data for ${item.pubkey}`);
+		return toSeriesRow(item.pubkey, decoder.decode(b64ToBytes.encode(encoded)));
+	});
+}
+
+interface ListOpts extends GlobalOptions {
+	status: SeriesStatusFilter;
+	demo: boolean;
+}
+
+async function runSeriesList(opts: ListOpts, cmd: Command): Promise<void> {
+	const { rpc } = await initCtx(cmd);
+	const rows = filterSeriesRows(await listSeries(rpc), opts.status, opts.demo);
+	log(`series:list: ${rows.length} series (${opts.status}${opts.demo ? ", demo clock only" : ""})`);
+	out({ ok: true, series: rows });
+}
+
 export function registerSeriesCommands(program: Command): void {
 	withGlobals(
 		program
@@ -147,4 +230,9 @@ export function registerSeriesCommands(program: Command): void {
 		.option("--paying-agent <address>", "paying agent (default: config wallets.payingAgent), e.g. a Squads vault")
 		.option("--demo-day-secs <n>", "demo clock: seconds per civil day (1..86399), labelled DEMO; omit for the real clock")
 		.action(runInitSeries);
+
+	withGlobals(program.command("series:list").description("list every on-chain series, sorted by ticker"))
+		.addOption(new Option("--status <s>", "keep only these series").choices(["active", "closed", "all"]).default("all"))
+		.option("--demo", "demo-clock series only (day_secs > 0)")
+		.action(runSeriesList);
 }

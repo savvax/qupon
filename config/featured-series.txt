@@ -1,0 +1,2 @@
+# Curated series always visible in the web app (one mint per line, '#' comments).
+# ops/hide-demo-series.sh never hides these or any config/devnet.json series.*.mint.
