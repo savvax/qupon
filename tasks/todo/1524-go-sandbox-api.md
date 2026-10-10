@@ -1,8 +1,7 @@
 ---
 id: 1524
 title: sandbox API — a judge's own bond on a demo clock
-blocked_reason: lead rebuilding the resume patch (a restart captured a half-deleted worktree)
-agent: claude
+agent: glm
 tier: T0
 depends_on: [1520, 1522]
 verify: make verify
