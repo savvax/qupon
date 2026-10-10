@@ -3268,6 +3268,46 @@ paths:
           description: invalid ticker or orgId
         "403":
           description: role is not admin
+  /admin/showcase/seed:
+    post:
+      summary: Seed the curated public showcase (plan 15 task 1535) — mark the
+        four showcase series featured and hide uncurated demo-clock series
+      description: Matches series by ISIN from the Showcase definitions in
+        internal/api/showcase.go (the data itself is created on devnet by task
+        1540). Judge sandboxes (demo clock, not admin-featured) leave the public
+        board; idempotent.
+      operationId: adminShowcaseSeed
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: seed result
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - seeded
+                  - hidden
+                  - missing
+                properties:
+                  seeded:
+                    type: array
+                    items:
+                      type: string
+                    description: mints marked featured, in showcase order
+                  hidden:
+                    type: array
+                    items:
+                      type: string
+                    description: mints hidden (uncurated demo-clock series)
+                  missing:
+                    type: array
+                    items:
+                      type: string
+                    description: showcase ISINs with no on-chain series yet
+        "403":
+          description: role is not admin
   /admin/audit:
     get:
       summary: The admin audit feed with filters (JSON, or CSV with format=csv)

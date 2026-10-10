@@ -511,8 +511,10 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			kept = append(kept, seriesDTO(rec.PDA, rec.Series, m, set.Featured))
 		}
 		slices.SortStableFunc(kept, func(a, b SeriesDTO) int {
-			switch { // featured first; scan order stays stable within each group
-			case a.Featured == b.Featured:
+			switch { // featured first; within the showcase, ISIN order = the curated board order (showcase.go)
+			case a.Featured && b.Featured:
+				return strings.Compare(a.ISIN, b.ISIN)
+			case a.Featured == b.Featured: // both non-featured: keep AllSeries order
 				return 0
 			case b.Featured:
 				return 1

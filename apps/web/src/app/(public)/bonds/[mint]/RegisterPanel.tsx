@@ -48,10 +48,13 @@ const pct = (part: bigint, whole: bigint) =>
 export function RegisterPanel({
   sets,
   initial,
+  mint,
   locale,
 }: {
   sets: RegisterSet[];
   initial?: string;
+  /** the series mint: each register links to its action card on the proof page */
+  mint: string;
   locale: Locale;
 }) {
   const t = useTranslations("bond.register");
@@ -244,9 +247,17 @@ export function RegisterPanel({
           </li>
         ))}
       </ul>
-      <p className="border-t border-n100 px-4 py-2.5 text-xs text-n500">
-        {t("total", { units: total.toString(), holders: set.rows.length })}{" "}
-        <GlossaryTerm term="snapshot">{t("snapshotLink")}</GlossaryTerm>
+      <p className="flex flex-wrap items-center gap-x-1.5 border-t border-n100 px-4 py-2.5 text-xs text-n500">
+        <span>
+          {t("total", { units: total.toString(), holders: set.rows.length })}{" "}
+          <GlossaryTerm term="snapshot">{t("snapshotLink")}</GlossaryTerm>
+        </span>
+        <a
+          href={`/proof/${mint}#${set.pda}`}
+          className="ml-auto font-semibold text-g700 underline decoration-g300 underline-offset-2 hover:decoration-g600"
+        >
+          {t("proofLink")}
+        </a>
       </p>
 
       <Drawer

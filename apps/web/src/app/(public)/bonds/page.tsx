@@ -2,10 +2,12 @@ import { StableText } from "@/components/i18n/StableLabel";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Amount } from "@/components/ui/Amount";
-import { Badge } from "@/components/ui/Badge";
 import { DataTable, type Column } from "@/components/ui/DataTable";
+import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import { Tabs } from "@/components/ui/Tabs";
-import { listPublicSeries, type SeriesDTO } from "@/lib/api";
+import { cx } from "@/lib/ui/cx";
+import { listActions, listPublicSeries, type ActionDTO, type SeriesDTO } from "@/lib/api";
+import { boardStage, type BoardStage } from "@/lib/boardStage";
 import { bpsToPercent, formatDate } from "@/lib/format";
 import type { Locale } from "@/i18n/request";
 
@@ -14,6 +16,7 @@ import { metaTitle } from "@/lib/meta";
 export async function generateMetadata() {
   return { title: await metaTitle("bonds") };
 }
+
 export const dynamic = "force-dynamic";
 
 const FREQ_KEY: Record<number, string> = {
@@ -23,7 +26,18 @@ const FREQ_KEY: Record<number, string> = {
   12: "freqMonthly",
 };
 
-/** Public bond board: active series by default, everything (incl. closed) under "All". */
+/** The stage chip: a bond's life stage, not the raw chain status. Defaulted is the loudest state. */
+const STAGE_STYLE: Record<BoardStage, string> = {
+  inDefault: "bg-default text-white",
+  voting: "bg-p50 text-p700",
+  paying: "bg-p900 text-white",
+  recordSoon: "bg-warn-bg text-warn-fg",
+  redeemed: "bg-n100 text-n600",
+  live: "bg-p50 text-p700",
+  issued: "bg-n100 text-n600",
+};
+
+/** Public bond board (task 1535): the curated showcase first, then every other public series. */
 export default async function BondsPage() {
   const locale = (await getLocale()) as Locale;
   const [t, ts, tf] = await Promise.all([
@@ -32,12 +46,41 @@ export default async function BondsPage() {
     getTranslations("bond"),
   ]);
   const series = await listPublicSeries();
-  // Closed and matured series only appear under "All".
-  const active = series.filter(
+  // Featured first (the registrar already sorts this way; sort here too so the board never depends on it).
+  const ordered = [...series].sort((a, b) => Number(b.featured ?? false) - Number(a.featured ?? false));
+  // The live action of every series that has one — the source of the life-stage chip.
+  const openOf = new Map<string, ActionDTO | null>(
+    await Promise.all(
+      ordered
+        .filter((s) => s.openAction)
+        .map(async (s) => {
+          const actions = await listActions(s.mint).catch(() => [] as ActionDTO[]);
+          return [
+            s.mint,
+            actions.find((a) => a.pda === s.openAction) ?? actions.find((a) => !["Completed", "Cancelled", "Finalized"].includes(a.status)) ?? null,
+          ] as const;
+        }),
+    ),
+  );
+  const active = ordered.filter(
     (s) => s.status === "Active" || s.status === "Retiring",
   );
   const freqLabel = (f: number) =>
     FREQ_KEY[f] ? tf(FREQ_KEY[f]!) : `${f}×/yr`;
+
+  const stageChip = (s: SeriesDTO) => {
+    const stage = boardStage(s, openOf.get(s.mint));
+    return (
+      <span
+        className={cx(
+          "inline-flex h-6 items-center rounded-full px-2.5 text-xs font-bold whitespace-nowrap",
+          STAGE_STYLE[stage],
+        )}
+      >
+        {t(`stage.${stage}`)}
+      </span>
+    );
+  };
 
   const columns: Column<SeriesDTO>[] = [
     {
@@ -90,9 +133,15 @@ export default async function BondsPage() {
       ),
     },
     {
-      key: "status",
-      header: t("colStatus"),
-      render: (s) => <Badge status={s.status}>{ts(s.status)}</Badge>,
+      key: "stage",
+      header: t("colStage"),
+      render: (s) => (
+        <span className="flex flex-wrap items-center gap-1.5">
+          {stageChip(s)}
+          {s.demoClock && <ProvenanceChip kind="demo" />}
+          <span className="sr-only">{ts(s.status)}</span>
+        </span>
+      ),
     },
   ];
 
@@ -126,7 +175,7 @@ export default async function BondsPage() {
               content: (
                 <DataTable
                   columns={columns}
-                  rows={series}
+                  rows={ordered}
                   rowKey={(s) => s.mint}
                   empty={t("emptyActive")}
                 />

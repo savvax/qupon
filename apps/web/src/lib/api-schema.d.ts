@@ -1563,6 +1563,26 @@ export interface paths {
         patch: operations["adminPatchSeries"];
         trace?: never;
     };
+    "/admin/showcase/seed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Seed the curated public showcase (plan 15 task 1535) — mark the four showcase series featured and hide uncurated demo-clock series
+         * @description Matches series by ISIN from the Showcase definitions in internal/api/showcase.go (the data itself is created on devnet by task 1540). Judge sandboxes (demo clock, not admin-featured) leave the public board; idempotent.
+         */
+        post: operations["adminShowcaseSeed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/audit": {
         parameters: {
             query?: never;
@@ -6605,6 +6625,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description role is not admin */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    adminShowcaseSeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description seed result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description mints marked featured, in showcase order */
+                        seeded: string[];
+                        /** @description mints hidden (uncurated demo-clock series) */
+                        hidden: string[];
+                        /** @description showcase ISINs with no on-chain series yet */
+                        missing: string[];
+                    };
+                };
             };
             /** @description role is not admin */
             403: {

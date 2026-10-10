@@ -49,6 +49,42 @@ const usdc = (minor: string, display: string) => ({
 const explorer = (address: string) =>
   `https://explorer.solana.com/address/${address}?cluster=devnet`;
 
+/** The showcase definitions the Go registrar seeds (internal/api/showcase.go); mock mirror. */
+const SHOWCASE_SERIES = [
+  {
+    mint: "PwrAlmtDem0Mint11111111111111111111111111111",
+    isin: "KZ2C0QPN0018",
+    ticker: "Almaty Power",
+    maturity: "2027-10-09",
+    coupons: 2,
+    actionPda: "ActnPWR0001Dem0PDA111111111111111111111111111",
+  },
+  {
+    mint: "MtrAstnDem0Mint11111111111111111111111111111",
+    isin: "KZ2C0QPN0026",
+    ticker: "Astana Metro",
+    maturity: "2027-04-09",
+    coupons: 1,
+    actionPda: "ActnMTR0002Dem0PDA111111111111111111111111111",
+  },
+  {
+    mint: "MngAktbDem0Mint11111111111111111111111111111",
+    isin: "KZ2C0QPN0034",
+    ticker: "Aktobe Mining",
+    maturity: "2027-07-09",
+    coupons: 2,
+    actionPda: "ActnMNG0003Dem0PDA111111111111111111111111111",
+  },
+  {
+    mint: "OilAtryDem0Mint11111111111111111111111111111",
+    isin: "KZ2C0QPN0042",
+    ticker: "Atyrau Oil",
+    maturity: "2027-06-09",
+    coupons: 1,
+    actionPda: "ActnOIL0004Dem0PDA111111111111111111111111111",
+  },
+] as const;
+
 const series: SeriesDTO[] = [
   {
     mint: MINT_QPNB1,
@@ -94,6 +130,32 @@ const series: SeriesDTO[] = [
     openAction: ACTION_PDA_3,
     explorerUrl: explorer(MINT_BTRK),
   },
+  // The curated showcase (task 1535): four demo series on the accelerated clock, one per scenario,
+  // mirroring internal/api/showcase.go — the same tickers and ISINs task 1540 issues on devnet.
+  ...SHOWCASE_SERIES.map((s): SeriesDTO => ({
+    mint: s.mint,
+    cashMint: MINT_TKZT,
+    registrar: REGISTRAR,
+    issuer: ISSUER,
+    payingAgent: PAYING_AGENT,
+    isin: s.isin,
+    ticker: s.ticker,
+    faceValue: kzt("100000", "1,000.00 KZT"),
+    couponRateBps: 1000,
+    frequency: 2 as const,
+    dayCount: "THIRTY_360",
+    issueDate: "2026-10-09",
+    maturityDate: s.maturity,
+    nextCouponDate: "2027-04-09T00:00:00+05:00",
+    status: "Active",
+    totalIssued: "100",
+    quorumBps: 5000,
+    approvalBps: 6667,
+    openAction: s.actionPda,
+    demoClock: { daySecs: 4, issueTs: 1_791_000_000, issueDate: "2026-10-09" },
+    featured: true,
+    explorerUrl: explorer(s.mint),
+  })),
 ];
 
 const investors = (mint: string, units: string[]): InvestorDTO[] =>
@@ -322,6 +384,94 @@ const actions: Record<string, ActionDTO[]> = {
       explorerUrl: explorer(ACTION_PDA_4),
     },
   ],
+  // One live showcase action per scenario (task 1535): each drives its series' life-stage chip.
+  ...Object.fromEntries(
+    SHOWCASE_SERIES.map((s, i) => {
+      const [pda, kind, status, record, pay] = (
+        [
+          [
+            "ActnPWR0001Dem0PDA111111111111111111111111111",
+            "INTR",
+            "Announced",
+            "2027-04-08T00:00:00+05:00",
+            "2027-04-09T00:00:00+05:00",
+          ],
+          [
+            "ActnMTR0002Dem0PDA111111111111111111111111111",
+            "REDM",
+            "Funded",
+            "2026-10-12T00:00:00+05:00",
+            "2026-10-18T00:00:00+05:00",
+          ],
+          [
+            "ActnMNG0003Dem0PDA111111111111111111111111111",
+            "BMET",
+            "VotingOpen",
+            "2026-10-11T00:00:00+05:00",
+            "2026-10-11T00:00:00+05:00",
+          ],
+          [
+            "ActnOIL0004Dem0PDA111111111111111111111111111",
+            "MCAL",
+            "RecordStruck",
+            "2026-10-13T00:00:00+05:00",
+            "2026-10-20T00:00:00+05:00",
+          ],
+        ] as const
+      )[i]!;
+      return [
+        s.mint,
+        [
+          {
+            pda,
+            seriesMint: s.mint,
+            kind,
+            mandatory: kind === "BMET" ? "VOLU" : "MAND",
+            corpId: `${s.ticker.replace(/ /g, "")}-${kind}-0001`,
+            officialId: null,
+            announcedAt: "2026-10-09T10:00:00+05:00",
+            recordAt: record,
+            paymentAt: pay,
+            periodStart: "2026-10-09",
+            periodEnd: kind === "INTR" ? "2027-04-09" : null,
+            accrualDays: kind === "INTR" ? 180 : null,
+            rateBps: kind === "INTR" ? 1000 : null,
+            perUnitGross:
+              kind === "INTR" || kind === "REDM" || kind === "MCAL"
+                ? kzt(
+                    kind === "INTR" ? "5000" : "100000",
+                    kind === "INTR" ? "50.00 KZT" : "1,000.00 KZT",
+                  )
+                : kzt("0", "0.00 KZT"),
+            perUnitPrincipal: kzt("0", "0.00 KZT"),
+            cashMint: MINT_TKZT,
+            status,
+            snapshotSlot: null,
+            snapshotHash: null,
+            unitsSnapshotted: null,
+            holdersSnapshotted: null,
+            holdersPaid: null,
+            totalGross: kzt("0", "0.00 KZT"),
+            totalTax: kzt("0", "0.00 KZT"),
+            totalNet: kzt("0", "0.00 KZT"),
+            totalPaid: kzt("0", "0.00 KZT"),
+            totalRetired: null,
+            holdersRetired: null,
+            proposalNewRateBps: kind === "BMET" ? 1200 : null,
+            proposalNewMaturity: null,
+            votingEndsAt: kind === "BMET" ? "2026-10-16T18:00:00+05:00" : null,
+            votesFor: null,
+            votesAgainst: null,
+            votesAbstain: null,
+            result: null,
+            completedAt: null,
+            factorBps: null,
+            explorerUrl: explorer(pda),
+          },
+        ] as ActionDTO[],
+      ];
+    }),
+  ),
 };
 
 /** Entitlements of an action: the brief's numbers (10/25/65 units → 500/1,250/3,250 KZT). */
@@ -663,7 +813,28 @@ export function mockGet(path: string): Promise<unknown> {
     ...s,
     openTrades: openTradesOf(s.mint),
   });
-  if (path === "/series") return delay(series.map(withTrades));
+  // Showcase demo clock: pin the bond date per request (always day 10 of period 1) so the
+  // accelerated clock never drifts past maturity between mock sessions.
+  const withLiveClock = (s: SeriesDTO): SeriesDTO =>
+    s.demoClock
+      ? {
+          ...s,
+          demoClock: {
+            ...s.demoClock,
+            issueTs: Math.floor(Date.now() / 1000) - 10 * s.demoClock.daySecs,
+          },
+        }
+      : s;
+  // Featured first, mirroring the registrar's /series ordering (rest.go: ISIN asc within featured).
+  if (path === "/series")
+    return delay(
+      series
+        .map(withTrades)
+        .map(withLiveClock)
+        .toSorted(
+          (a, b) => Number(b.featured ?? false) - Number(a.featured ?? false),
+        ),
+    );
   if (path.startsWith("/activity")) return delay(activity);
   if (path.startsWith("/registrar/audit")) return delay({ items: auditTrail });
   if (path.startsWith("/approvals")) {
@@ -685,7 +856,7 @@ export function mockGet(path: string): Promise<unknown> {
       return Promise.reject(new Mock500("mock registrar exploded (e2e)"));
     const found = series.find((s) => s.mint === seriesMatch[1]);
     return found
-      ? delay(withTrades(found))
+      ? delay(withLiveClock(withTrades(found)))
       : Promise.reject(new Api404(`series ${seriesMatch[1]} not found`));
   }
   const subMatch = /^\/series\/([^/]+)\/(investors|schedule|actions)$/.exec(
@@ -702,6 +873,7 @@ export function mockGet(path: string): Promise<unknown> {
       );
     }
     if (resource === "schedule") {
+      const showcase = SHOWCASE_SERIES.find((s) => s.mint === mint);
       return delay(
         mint === MINT_QPNB1
           ? couponSchedule(
@@ -711,12 +883,19 @@ export function mockGet(path: string): Promise<unknown> {
               kzt("500000", "5,000.00 KZT"),
               true,
             )
-          : couponSchedule(
-              [2026, 9, 15],
-              10,
-              usdc("79800", "79.80 USDC"),
-              usdc("7980000", "7,980.00 USDC"),
-            ),
+          : showcase
+            ? couponSchedule(
+                [2026, 10, 9],
+                showcase.coupons,
+                kzt("5000", "50.00 KZT"),
+                kzt("500000", "5,000.00 KZT"),
+              )
+            : couponSchedule(
+                [2026, 9, 15],
+                10,
+                usdc("79800", "79.80 USDC"),
+                usdc("7980000", "7,980.00 USDC"),
+              ),
       );
     }
     return delay(actions[mint] ?? []);

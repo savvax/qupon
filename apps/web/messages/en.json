@@ -272,9 +272,19 @@
     "colFrequency": "Frequency",
     "colNextCoupon": "Next coupon",
     "colStatus": "Status",
+    "colStage": "Life stage",
+    "stage": {
+      "inDefault": "In default",
+      "voting": "Voting",
+      "paying": "Paying",
+      "recordSoon": "Record date soon",
+      "redeemed": "Redeemed",
+      "live": "In progress",
+      "issued": "Issued"
+    },
     "filterActive": "Active",
     "filterAll": "All",
-    "emptyActive": "No active bonds yet.",
+    "emptyActive": "No bonds here yet: the curated showcase appears once the demo series are issued on devnet.",
     "unavailable": {
       "title": "The registrar service is unavailable",
       "body": "Bond data comes from the registrar API, which is not answering right now.",
@@ -283,6 +293,7 @@
   },
   "bond": {
     "back": "All bonds",
+    "verifyOnChain": "Verify on-chain",
     "freqAnnual": "Annual",
     "freqSemiAnnual": "Semi-annual",
     "freqQuarterly": "Quarterly",
@@ -346,7 +357,8 @@
       "meeting": "Bondholder meeting"
     },
     "money": {
-      "title": "Last payout: {id}"
+      "title": "Last payout: {id}",
+      "empty": "No payment yet: the money flow of the first coupon appears here once it is paid."
     },
     "register": {
       "title": "Register on the record date",
@@ -361,6 +373,7 @@
       "unitsShare": "{units} bonds · {share}%",
       "total": "{units} bonds across {holders} holders, equal to the supply in the",
       "snapshotLink": "snapshot",
+      "proofLink": "Verify this register on-chain",
       "empty": "No snapshot yet: the register appears here once a record date passes.",
       "calc": {
         "title": "Calculation for {who}",
@@ -386,8 +399,19 @@
       "accrued": "Accrued interest per bond",
       "clean": "Clean price",
       "dirty": "Dirty price per bond",
+      "current": "Current yield",
       "ytm": "Yield to maturity",
-      "noTrades": "Prices and yield appear after the first secondary trade."
+      "redeemed": "Redeemed: no accrued interest remains on a matured bond.",
+      "ticket": {
+        "title": "Trade ticket",
+        "units": "Bonds",
+        "price": "Clean price, %",
+        "clean": "Clean price ({n} bonds)",
+        "accrued": "Accrued ({days} days)",
+        "dirty": "Total (dirty)",
+        "invalid": "Enter a positive price to see the split.",
+        "note": "Preview only: there is no market feed on devnet — a real trade settles on the DvP program with this clean/accrued split."
+      }
     }
   },
   "login": {

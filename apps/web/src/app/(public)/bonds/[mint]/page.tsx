@@ -16,7 +16,8 @@ import { MoneyFlow } from "@/components/ui/MoneyFlow";
 import { NowBar } from "@/components/ui/NowBar";
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import { Tabs } from "@/components/ui/Tabs";
-import { almatyToday, couponGross, days30E360 } from "@/lib/accrual";
+import { almatyToday } from "@/lib/accrual";
+import { bondDate } from "@/lib/sandbox";
 import { nextStep, paidTxByOwner, STEP_ACTOR } from "@/lib/actionFlow";
 import {
   getSchedule,
@@ -232,7 +233,9 @@ export default async function BondPage({
     ],
     [t("terms.face"), money(series.faceValue)],
     [
-      <GlossaryTerm key="rate" term="coupon">{t("terms.rate")}</GlossaryTerm>,
+      <GlossaryTerm key="rate" term="coupon">
+        {t("terms.rate")}
+      </GlossaryTerm>,
       <span key="rate" className="num">
         {bpsToPercent(series.couponRateBps, locale)}
       </span>,
@@ -252,7 +255,9 @@ export default async function BondPage({
       </span>,
     ],
     [
-      <GlossaryTerm key="quorum" term="quorum">{t("terms.quorum")}</GlossaryTerm>,
+      <GlossaryTerm key="quorum" term="quorum">
+        {t("terms.quorum")}
+      </GlossaryTerm>,
       <span key="q" className="num">
         {bpsToPercent(series.quorumBps, locale)}
       </span>,
@@ -302,7 +307,9 @@ export default async function BondPage({
         ? "done"
         : a.status === "Cancelled"
           ? "cancelled"
-          : "live";
+          : a.status === "Defaulted"
+            ? "defaulted"
+            : "live";
   const matured = series.maturityDate.slice(0, 10);
   const rail: RailNode[] = [
     {
@@ -356,6 +363,32 @@ export default async function BondPage({
             : undefined,
         txCount: txCount(a.pda),
         href: `?rec=${a.pda}#register`,
+      })),
+    // Calls and redemptions that are not a scheduled coupon date (MCAL before maturity, an early REDM)
+    // still belong on the sheet: one stub each, linked to its register.
+    ...actions
+      .filter(
+        (a) =>
+          (a.kind === "REDM" || a.kind === "MCAL" || a.kind === "PCAL") &&
+          !schedule.some(
+            (s) =>
+              s.actionPda === a.pda ||
+              (s.periodEnd && s.periodEnd === a.periodEnd),
+          ),
+      )
+      .map((a): RailNode => ({
+        id: a.pda,
+        kind: a.kind === "REDM" ? "redemption" : "call",
+        title: tk.has(a.kind) ? tk(a.kind) : a.kind,
+        date: a.recordAt,
+        status: railStatus(a)!,
+        statusLabel: ts.has(a.status) ? ts(a.status) : a.status,
+        amount: a.perUnitGross,
+        txCount: txCount(a.pda),
+        href:
+          (a.holdersSnapshotted ?? 0) > 0
+            ? `?rec=${a.pda}#register`
+            : undefined,
       })),
   ].sort((a, b) => a.date.localeCompare(b.date));
 
@@ -511,7 +544,17 @@ export default async function BondPage({
   });
   const SHOWN = 8;
   // accrued interest today: face × rate × 30E/360 days since the current period started
-  const today = almatyToday();
+  // As-of date: the bond's own calendar on the demo clock (one civil day = daySecs), else real Almaty.
+  const bondToday = series.demoClock
+    ? bondDate(series.issueDate.slice(0, 10), series.demoClock, Date.now()).date
+    : almatyToday();
+  const maturity = series.maturityDate.slice(0, 10);
+  // Clamp the shown as-of date to maturity so a stale demo clock never renders a far-future year.
+  const today = bondToday < maturity ? bondToday : maturity;
+  const redeemed =
+    series.status === "Matured" ||
+    series.status === "Closed" ||
+    bondToday >= maturity;
   const period = schedule.find(
     (s) =>
       s.periodStart &&
@@ -519,17 +562,6 @@ export default async function BondPage({
       s.periodStart <= today &&
       today < s.periodEnd,
   );
-  const accrued = period?.periodStart
-    ? {
-        minor: couponGross(
-          1n,
-          BigInt(series.faceValue.minor),
-          series.couponRateBps,
-          days30E360(period.periodStart, today),
-        ).toString(),
-        currency: series.faceValue.currency,
-      }
-    : null;
   const journalRow = (r: AuditRow, i: number) => (
     <li
       key={`${r.sig}-${i}`}
@@ -562,6 +594,12 @@ export default async function BondPage({
               {series.ticker}
             </h1>
             {status(series.status)}
+            {series.inDefault && (
+              <span className="inline-flex h-6 items-center rounded-full bg-default px-2.5 text-xs font-bold text-white">
+                {ts("Defaulted")}
+              </span>
+            )}
+            {series.demoClock && <ProvenanceChip kind="demo" />}
             <ProvenanceChip
               kind="onchain"
               href={`https://explorer.solana.com/address/${series.mint}${network.explorerCluster ? `?cluster=${network.explorerCluster}` : ""}`}
@@ -576,11 +614,20 @@ export default async function BondPage({
             </span>
           </div>
         </div>
-        <ExportAuditButton
-          rows={audit}
-          filename={`${series.ticker}-audit.csv`}
-          label={t("journal.export")}
-        />
+        <div className="flex flex-col items-start gap-3 sm:items-end">
+          <Link
+            href={`/proof/${series.mint}`}
+            className="inline-flex items-center gap-1.5 rounded-btn border border-g200 bg-g50 px-3 py-2 text-sm font-semibold text-g700 hover:border-g400"
+          >
+            <Icon name="shield" className="size-4" />
+            {t("verifyOnChain")}
+          </Link>
+          <ExportAuditButton
+            rows={audit}
+            filename={`${series.ticker}-audit.csv`}
+            label={t("journal.export")}
+          />
+        </div>
       </div>
 
       <div className="mt-6">{now}</div>
@@ -627,7 +674,7 @@ export default async function BondPage({
         </StaggerItem>
       </Stagger>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         {flow && lastPaid ? (
           <MoneyFlow
             currency={flow.currency}
@@ -641,13 +688,21 @@ export default async function BondPage({
             title={t("money.title", { id: lastPaid.corpId })}
           />
         ) : (
-          <div className="rounded-card border border-dashed border-n300 bg-n0 p-6 text-sm text-n600">
-            {t("register.empty")}
+          <div className="flex items-center rounded-card border border-dashed border-n300 bg-n0 p-6 text-sm text-n600">
+            {t("money.empty")}
           </div>
         )}
         <YieldBlock
-          accrued={accrued}
-          asOf={`${today}T12:00:00+05:00`}
+          face={BigInt(series.faceValue.minor)}
+          rateBps={series.couponRateBps}
+          frequency={series.frequency}
+          dayCount={series.dayCount}
+          currency={series.faceValue.currency}
+          issueDate={series.issueDate}
+          maturityDate={series.maturityDate}
+          periodStart={period?.periodStart ?? null}
+          today={today}
+          redeemed={redeemed}
           locale={locale}
         />
       </div>
@@ -657,7 +712,12 @@ export default async function BondPage({
         <p className="mt-0.5 mb-3 max-w-2xl text-sm text-n600">
           {t("register.lead")}
         </p>
-        <RegisterPanel sets={registerSets} initial={rec} locale={locale} />
+        <RegisterPanel
+          sets={registerSets}
+          initial={rec}
+          mint={series.mint}
+          locale={locale}
+        />
       </section>
 
       <section id="journal" className="mt-10">
