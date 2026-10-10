@@ -137,3 +137,4 @@ The human answers inline under the item. The planner pass folds answers into tas
     `/Users/dev/code/hackatons/kase/qupon-kit-w91537` (**default: run `make verify` there; merge
     `task/91537-web-learn-plan15`; then `git worktree remove /Users/dev/code/hackatons/kase/qupon-kit-w91537`**),
     or explicitly free `glm-8` and hand it back to 91537.
+- [ ] 2026-10-11 01:34 (91548) rebase conflict on task/91548-design-fix-format-font (branch kept) — resolve by hand or let the lead/planner split; then delete blocked_reason.
