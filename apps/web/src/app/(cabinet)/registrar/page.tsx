@@ -104,25 +104,6 @@ export default async function RegistrarDashboard() {
           </div>
 
           {/* Alerts lead the board: the emergency is the first sentence, not 2 000 px down (preflight #10) */}
-<<<<<<< ours
-||||||| base
-          <div data-tour="pipeline">
-            <Pipeline actions={actions} series={series ?? emptySeries} />
-          </div>
-
-=======
-          <Card data-tour="alerts">
-            <h2 className="text-base font-bold">{t("alerts")}</h2>
-            <div className="mt-3">
-              <Alerts alerts={deriveAlerts(actions)} />
-            </div>
-          </Card>
-
-          <div data-tour="pipeline">
-            <Pipeline actions={actions} series={series ?? emptySeries} />
-          </div>
-
->>>>>>> theirs
           <Card data-tour="alerts">
             <h2 className="text-base font-bold">{t("alerts")}</h2>
             <div className="mt-3">

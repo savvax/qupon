@@ -103,7 +103,7 @@ export function NowBar({
                 <StableLabel align="end">{t("actor.label")}</StableLabel>
               </span>
               {actors.map((a) => (
-                <ActorChip key={a} actor={a} />
+                <ActorChip key={a} actor={a} stable />
               ))}
             </span>
           )}

@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { StableLabel } from "@/components/i18n/StableLabel";
 import { cx } from "@/lib/ui/cx";
 
 /** Who may perform a step. `anyone` = permissionless (any signer; the program enforces every rule). */
@@ -9,10 +10,14 @@ export type Actor =
 export function ActorChip({
   actor,
   long = false,
+  stable = false,
 }: {
   actor: Actor;
   /** "Anyone can push" instead of "Anyone" (step lists, where the verb matters). */
   long?: boolean;
+  /** Reserve the wider locale's width (opus pre-flight #9 deviation): only inside NowBar, where the chip's
+   *  width feeds the measured flex-1 title <p> next to it — everywhere else the chip sizes to its own locale. */
+  stable?: boolean;
 }) {
   const t = useTranslations("kit.actor");
   const anyone = actor === "anyone";
@@ -41,8 +46,17 @@ export function ActorChip({
           <path d="M8 5v6M5 8h6" />
         </svg>
       )}
-      {/* direct text: StableLabel stretched the pill to the kk width on every screen (opus pre-flight #9) */}
-      {anyone && long ? t("anyonePush") : t(actor)}
+      {/* direct text: StableLabel stretched the pill to the kk width on every screen (opus pre-flight #9);
+          `stable` keeps the reservation only in the NowBar row, for the title <p> measured by locale-stability */}
+      {stable ? (
+        <StableLabel align="start">
+          {anyone && long ? t("anyonePush") : t(actor)}
+        </StableLabel>
+      ) : anyone && long ? (
+        t("anyonePush")
+      ) : (
+        t(actor)
+      )}
     </span>
   );
 }

@@ -102,19 +102,16 @@ After-shots: `reports/design/preflight/opus-after/` (mock mode; `/`, `/bonds`, b
 #12 — phone cards: the ticker link's `after:inset-0` cover needed `relative` on the phone `<li>` (DataTable), otherwise the cover escapes the card.
 #15 — no deviations; Announced → `now.next` + countdown, other live statuses → `now.inProgress` with `kindName` only.
 #6 — no deviations; dropped the dashed `money.empty` card, register/journal moved into the 2fr column, YieldBlock docks sticky at `lg:top-24`.
-<<<<<<< ours
 
 ## Opus round 1 (task 91551 — review fixes)
 
 Round-1 blocking items, both as written: the duplicated Alerts card after the Pipeline in `registrar/page.tsx` is deleted (one `data-tour="alerts"` again; /registrar re-shot into `opus-after/`). The out-of-scope task-4 bundle (ActorChip, ProvenanceChip, WalletButton, PublicShell, NetworkBadge, PortfolioHeader, PayoutCalendar, ProofView, globals.css and the `reports/ui/*.png` re-shots) no longer exists as commit b41d636 — the resume attempt had squashed it into the branch WIP — so it was removed the "rebase it out" way: those files restored to `main` and the branch squashed to a single commit. The NowBar/StepNowBar edit stays: it is finding #10's own work.
-||||||| base
-=======
+
 ## Task 91552 — shared chrome, investor, proof (findings 9, 17, 18, 19, 20)
 
-- #9 — as specified: ProvenanceChip/ActorChip render `t(kind)` directly (no StableLabel), so chips size to their own locale. Deviation: the landing flow-section chip keeps its reservation via `children` — it precedes the glossary-term `<button>`s that `e2e/locale-stability.spec.ts` measures, and unreserved it shifted them 19 px between en/ru/kk (`app/(public)/_landing/FlowSection.tsx`).
+- #9 — as specified: ProvenanceChip/ActorChip render `t(kind)` directly (no StableLabel), so chips size to their own locale. Deviations: the landing flow-section chip keeps its reservation via `children` — it precedes the glossary-term `<button>`s that `e2e/locale-stability.spec.ts` measures (`app/(public)/_landing/FlowSection.tsx`); and ActorChip grew a `stable` prop that NowBar passes — the bar's chip sits in the same row as the measured flex-1 title `<p>`, and unreserved it shifted that `<p>` 12–15 px between en and kk, failing locale-stability on /investor, /registrar and /issuer/series/new (`components/ui/NowBar.tsx`). Everywhere else the chip sizes to its own locale.
 - #17 — as specified: `WalletButton labelAt="2xl"` (icon-only below 1536 px, aria-label kept; PublicShell passes it); NetworkBadge devnet is `bg-n100 text-n700` with a `bg-g600` dot, mainnet stays red.
 - #18 — as specified: gradient div and the repeated `<h2>` removed, KYC chip + Claim all right-aligned, `rounded-card`, KPI labels `text-sm font-semibold text-p100`; the loading Skeleton follows the card radius.
 - #19 — as specified: empty months `max-sm:hidden min-h-0`, event months `min-h-24`, `auto-rows-fr` dropped; the desktop 12-month grid is unchanged.
 - #20 — aside got `max-sm:order-first max-sm:py-6`; the sheet also became `flex flex-col sm:flex-row` (order is a no-op in the old block container below sm), and a new `.qp-perf-b` rule in `globals.css` flips the perforation to the aside's bottom edge below 640 px so the dashed line stays between the verdict stub and the body — LifecycleRail keeps the top-edge variant.
-- Gate notes — locale-stability: my pages show zero diffs after the #9 deviation above. Two pre-existing failures remain at HEAD, both outside this task's files: (a) the kk 390 `/` hero shift is finding 3 itself (Hero.tsx, task 91549); (b) the cabinet NowBar `<p>` ("Next: …" on /investor, /registrar, /issuer/series/new) is width:auto and locale-variable — it comes and goes with the mock's live clock rotating the top action (StepNowBar, task 91551's scope). Re-shots: `reports/design/preflight/opus-after/` (/, /investor, /proof/<plan-15> × en/ru/kk × 1440/390), sweep green.
->>>>>>> theirs
+- Gate notes — locale-stability 4/4 green on the resumed tree (clean `main` was verified green in a throwaway worktree first: the NowBar flakes the first attempt documented are gone once 91551 landed; the `stable` prop above fixes the one regression #9 introduced). Re-shots taken on the final tree: `reports/design/preflight/opus-after/` (/, /investor, /proof/<plan-15> × en/ru/kk × 1440/390).
