@@ -236,6 +236,65 @@ func (e *Executor) Run(ctx context.Context, args ...string) (Result, error) {
 }
 
 func (e *Executor) run(ctx context.Context, args ...string) (Result, error) {
+	stdout, stderr, err := e.exec(ctx, args)
+	if err != nil {
+		// Timeout or cancellation is a Go error, never step data.
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			return Result{}, err
+		}
+		// CLI exited non-zero: a failed step is data, not a Go error
+		var res Result
+		if jerr := json.Unmarshal(bytes.TrimSpace(stdout), &res); jerr == nil && res.Error != "" {
+			res.OK = false
+			return res, nil
+		}
+		msg := lastLine(stderr)
+		if msg == "" {
+			msg = fmt.Sprintf("cli exited: %v", err)
+		}
+		return Result{OK: false, Error: msg}, nil
+	}
+	var res Result
+	if jerr := json.Unmarshal(bytes.TrimSpace(stdout), &res); jerr != nil {
+		return Result{}, fmt.Errorf("cli %s stdout is not the JSON contract (%q): %w", strings.Join(args, " "), strings.TrimSpace(string(stdout)), jerr)
+	}
+	if !res.OK && res.Error == "" {
+		res.Error = "cli reported ok:false without an error message"
+	}
+	if res.Signature == "" && len(res.Results) > 0 { // batch: report the last batch's transaction
+		last := res.Results[len(res.Results)-1]
+		res.Signature, res.Slot = last.Signature, last.Slot
+	}
+	e.log.Info("cli step", "cmd", strings.Join(logArgs(args), " "), "ok", res.OK, "sig", res.Signature, "slot", res.Slot)
+	return res, nil
+}
+
+// RunRaw execs the CLI and returns its raw stdout — for list commands whose
+// JSON is not the {ok, signature, slot} step contract (trade:list).
+func (e *Executor) RunRaw(ctx context.Context, args ...string) ([]byte, error) {
+	stdout, stderr, err := e.exec(ctx, args)
+	if err != nil {
+		if msg := lastLine(stderr); msg != "" {
+			return nil, fmt.Errorf("%s: %w", msg, err)
+		}
+		return nil, err
+	}
+	return stdout, nil
+}
+
+// exec spawns the CLI process and returns its raw streams. Spawn/timeout/
+// cancellation are Go errors; a non-zero exit is returned through err with
+// the captured stderr so callers decide how to interpret it.
+func (e *Executor) exec(ctx context.Context, args []string) ([]byte, string, error) {
+	e.waiting.Add(1)
+	select {
+	case e.slots <- struct{}{}:
+		e.waiting.Add(-1)
+		defer func() { <-e.slots }()
+	case <-ctx.Done():
+		e.waiting.Add(-1)
+		return nil, "", fmt.Errorf("cli %s: waiting for a free executor slot: %w", strings.Join(args, " "), ctx.Err())
+	}
 	runCtx, cancel := context.WithTimeout(ctx, e.timeout)
 	defer cancel()
 	full := append([]string{"--json"}, args...)
@@ -256,36 +315,14 @@ func (e *Executor) run(ctx context.Context, args ...string) (Result, error) {
 		// shutdown) is a different failure: handlers detach the CLI from the request
 		// context, but the scheduler passes its own — report what actually happened.
 		if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
-			return Result{}, fmt.Errorf("cli %s timed out after %s: %w", strings.Join(args, " "), e.timeout, runCtx.Err())
+			return nil, stderr.String(), fmt.Errorf("cli %s timed out after %s: %w", strings.Join(args, " "), e.timeout, runCtx.Err())
 		}
-		return Result{}, fmt.Errorf("cli %s cancelled: %w", strings.Join(args, " "), runCtx.Err())
+		return nil, stderr.String(), fmt.Errorf("cli %s cancelled: %w", strings.Join(args, " "), runCtx.Err())
 	}
 	if err != nil {
-		// Contract violation on the happy path is fatal; a failed step is data.
-		var res Result
-		if jerr := json.Unmarshal(bytes.TrimSpace(stdout.Bytes()), &res); jerr == nil && res.Error != "" {
-			res.OK = false
-			return res, nil
-		}
-		msg := lastLine(stderr.String())
-		if msg == "" {
-			msg = fmt.Sprintf("cli exited: %v", err)
-		}
-		return Result{OK: false, Error: msg}, nil
+		return stdout.Bytes(), stderr.String(), err
 	}
-	var res Result
-	if jerr := json.Unmarshal(bytes.TrimSpace(stdout.Bytes()), &res); jerr != nil {
-		return Result{}, fmt.Errorf("cli %s stdout is not the JSON contract (%q): %w", strings.Join(args, " "), strings.TrimSpace(stdout.String()), jerr)
-	}
-	if !res.OK && res.Error == "" {
-		res.Error = "cli reported ok:false without an error message"
-	}
-	if res.Signature == "" && len(res.Results) > 0 { // batch: report the last batch's transaction
-		last := res.Results[len(res.Results)-1]
-		res.Signature, res.Slot = last.Signature, last.Slot
-	}
-	e.log.Info("cli step", "cmd", strings.Join(logArgs(args), " "), "ok", res.OK, "sig", res.Signature, "slot", res.Slot)
-	return res, nil
+	return stdout.Bytes(), stderr.String(), nil
 }
 
 func lastLine(s string) string {

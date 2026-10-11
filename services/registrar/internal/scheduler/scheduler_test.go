@@ -308,6 +308,10 @@ func newScheduler(t *testing.T, fc *fakeChain, cfg Config) (*Scheduler, *store.S
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { _ = st.Close() })
+	// The series the tests drive is owned: a registry row (task 91563 ownership gate).
+	if err := st.UpsertRegistry(t.Context(), store.RegistryRow{Name: "QPNb1", Mint: kMint.String()}); err != nil {
+		t.Fatalf("registry: %v", err)
+	}
 	log := filepath.Join(dir, "cli.log")
 	t.Setenv("FAKE_CLI_LOG", log)
 	t.Setenv("FAKE_CLI_STDOUT", writeJSON(t, dir, `{"ok":true,"signature":"sig-sched","slot":"7"}`))
@@ -809,5 +813,170 @@ func TestTickSandboxBankConfirm(t *testing.T) {
 	wantPrefix := "--json payout:confirm-bank --series QPNb1 --index 3 --owner " + owner.String() + " --reference SANDBOX-QPNb1-3-"
 	if !strings.HasPrefix(line, wantPrefix) || !strings.HasSuffix(line, "(SIMULATED)") {
 		t.Fatalf("bank confirm argv = %q, want %s… (SIMULATED)", line, wantPrefix)
+	}
+}
+
+// fundedChain: one owned series whose open action is Funded with the payment
+// date passed → pay_batch every tick.
+func fundedChain() *fakeChain {
+	return &fakeChain{
+		series: func() *chain.Series {
+			s := series(now0.Unix(), now0.Add(24*time.Hour).Unix())
+			s.OpenAction = &kAction
+			return s
+		}(), action: action(3),
+	}
+}
+
+// TestTickBacksOffAfterRefusal (task 91563): a chain refusal backs off 10 s →
+// doubling, ticks inside the window run nothing (injected clock).
+func TestTickBacksOffAfterRefusal(t *testing.T) {
+	s, _, log := newScheduler(t, fundedChain(), cfg)
+	t.Setenv("FAKE_CLI_STDOUT", writeJSON(t, t.TempDir(), `{"ok":false,"error":"ConstraintSeeds: 2006"}`))
+	t.Setenv("FAKE_CLI_EXIT", "1")
+	clock := now0.Add(2 * time.Minute) // past the payment date → pay
+	s.Now = func() time.Time { return clock }
+	lines := func() int {
+		raw, _ := os.ReadFile(log)
+		if len(strings.TrimSpace(string(raw))) == 0 {
+			return 0
+		}
+		return len(strings.Split(strings.TrimSpace(string(raw)), "\n"))
+	}
+
+	s.Tick(t.Context()) // first refusal: runs, arms the 10 s backoff
+	if got := lines(); got != 1 {
+		t.Fatalf("cli runs after the refusing tick = %d, want 1", got)
+	}
+	s.Tick(t.Context()) // inside the backoff: nothing runs
+	if got := lines(); got != 1 {
+		t.Fatalf("cli runs inside the backoff = %d, want still 1", got)
+	}
+	clock = now0.Add(2*time.Minute + 5*time.Second)
+	s.Tick(t.Context()) // still inside 10 s
+	if got := lines(); got != 1 {
+		t.Fatalf("cli runs at +5s = %d, want still 1", got)
+	}
+	clock = now0.Add(2*time.Minute + 10*time.Second)
+	s.Tick(t.Context()) // past the first backoff → retried, next window 20 s
+	if got := lines(); got != 2 {
+		t.Fatalf("cli runs at +10s = %d, want 2", got)
+	}
+	clock = now0.Add(2*time.Minute + 25*time.Second) // +15 s < 20 s backoff
+	s.Tick(t.Context())
+	if got := lines(); got != 2 {
+		t.Fatalf("cli runs at +25s = %d, want still 2 (20 s backoff)", got)
+	}
+	clock = now0.Add(2*time.Minute + 31*time.Second)
+	s.Tick(t.Context())
+	if got := lines(); got != 3 {
+		t.Fatalf("cli runs at +31s = %d, want 3", got)
+	}
+}
+
+// TestTickBackoffResetsOnSuccess (task 91563): after a success the refusal
+// schedule starts over at 10 s.
+func TestTickBackoffResetsOnSuccess(t *testing.T) {
+	s, _, log := newScheduler(t, fundedChain(), cfg)
+	fail := writeJSON(t, t.TempDir(), `{"ok":false,"error":"ConstraintSeeds: 2006"}`)
+	ok := writeJSON(t, t.TempDir(), `{"ok":true,"signature":"sig-ok","slot":"7"}`)
+	clock := now0.Add(2 * time.Minute) // past the payment date → pay
+	s.Now = func() time.Time { return clock }
+	runs := func() int {
+		raw, _ := os.ReadFile(log)
+		return len(strings.Split(strings.TrimSpace(string(raw)), "\n"))
+	}
+
+	t.Setenv("FAKE_CLI_STDOUT", fail)
+	t.Setenv("FAKE_CLI_EXIT", "1")
+	s.Tick(t.Context()) // refusal, 10 s backoff
+	if got := runs(); got != 1 {
+		t.Fatalf("runs after refusal = %d, want 1", got)
+	}
+	t.Setenv("FAKE_CLI_STDOUT", ok)
+	t.Setenv("FAKE_CLI_EXIT", "")
+	clock = now0.Add(2*time.Minute + 10*time.Second)
+	s.Tick(t.Context()) // success clears the backoff
+	if got := runs(); got != 2 {
+		t.Fatalf("runs after success = %d, want 2", got)
+	}
+	t.Setenv("FAKE_CLI_STDOUT", fail)
+	t.Setenv("FAKE_CLI_EXIT", "1")
+	clock = now0.Add(2*time.Minute + 11*time.Second)
+	s.Tick(t.Context()) // fresh refusal must run immediately again, not be backed off
+	if got := runs(); got != 3 {
+		t.Fatalf("runs after reset = %d, want 3", got)
+	}
+}
+
+// TestTickSkipsUnownedSeries (task 91563): a demo-clock series with no registry
+// row, no sandbox and no showcase feature is skipped, log once.
+func TestTickSkipsUnownedSeries(t *testing.T) {
+	s, st, log := newScheduler(t, fundedChain(), cfg)
+	s.Now = func() time.Time { return now0.Add(2 * time.Minute) } // past the payment date → pay
+	if err := st.DeleteRegistry(t.Context(), "QPNb1"); err != nil {
+		t.Fatal(err)
+	}
+	s.Tick(t.Context())
+	s.Tick(t.Context())
+	if raw, _ := os.ReadFile(log); strings.TrimSpace(string(raw)) != "" {
+		t.Fatalf("unowned series ran %q, want nothing", raw)
+	}
+	// Owning it again (registry row) resumes the loop.
+	if err := st.UpsertRegistry(t.Context(), store.RegistryRow{Name: "QPNb1", Mint: kMint.String()}); err != nil {
+		t.Fatal(err)
+	}
+	s.Tick(t.Context())
+	if raw, _ := os.ReadFile(log); !strings.Contains(string(raw), "action:pay") {
+		t.Fatalf("owned series did not run: %q", raw)
+	}
+}
+
+// TestTickReleasesStaleSandboxTrade (task 91563): a sandbox series refused with
+// TradesInFlight gets its admitted DvP trades cancelled; a real series in the
+// same state does not.
+func TestTickReleasesStaleSandboxTrade(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "trades-cli.sh")
+	script := "#!/bin/sh\n" +
+		"[ -n \"$FAKE_CLI_LOG\" ] && printf '%s\\n' \"$*\" >>\"$FAKE_CLI_LOG\"\n" +
+		"if [ \"$2\" = trade:list ]; then cat \"$TRADE_LIST\"; exit 0; fi\n" +
+		"if [ \"$2\" = trade:cancel ]; then echo '{\"ok\":true,\"signature\":\"sig-cancel\",\"slot\":\"9\"}'; exit 0; fi\n" +
+		"echo '{\"ok\":false,\"error\":\"TradesInFlight: 6032\"}'; exit 1\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	list := filepath.Join(dir, "trades.json")
+	if err := os.WriteFile(list, []byte(`{"trades":[{"swapDvp":"Trade1","units":"25","cashAmount":"25000","fundedUnits":null,"fundedCash":null}]}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TRADE_LIST", list)
+
+	mk := func() (*Scheduler, string) {
+		s, _, log := newScheduler(t, fundedChain(), cfg)
+		s.Exec = executor.New(bin, s.Exec.ConfigPath(), nil)
+		s.Now = func() time.Time { return now0.Add(2 * time.Minute) } // past the payment date → pay
+		return s, log
+	}
+	// Real series (no sandbox row): only the failing step, no trade calls.
+	sReal, logReal := mk()
+	sReal.Tick(t.Context())
+	if raw, _ := os.ReadFile(logReal); strings.Contains(string(raw), "trade:") {
+		t.Fatalf("real series ran trade commands: %q", raw)
+	}
+	// Sandbox series: trade:list then trade:cancel after the refusal.
+	s, log := mk()
+	sbx := store.Sandbox{ID: "sbxtrade0", Ticker: "SBX-TRADE0", Mint: kMint.String(),
+		CreatedAt: now0.Unix(), ExpiresAt: now0.Add(24 * time.Hour).Unix()}
+	if err := s.Store.InsertSandbox(t.Context(), sbx); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Store.SetSeriesSandbox(t.Context(), kMint.String(), sbx.ID); err != nil {
+		t.Fatal(err)
+	}
+	s.Tick(t.Context())
+	raw, _ := os.ReadFile(log)
+	if !strings.Contains(string(raw), "trade:list --series QPNb1") || !strings.Contains(string(raw), "trade:cancel --series QPNb1 --trade Trade1") {
+		t.Fatalf("sandbox cli log = %q, want trade:list then trade:cancel Trade1", raw)
 	}
 }

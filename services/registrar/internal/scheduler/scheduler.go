@@ -9,12 +9,14 @@
 package scheduler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -147,6 +149,78 @@ type Scheduler struct {
 
 	tick     *time.Ticker // non-nil once Run started; shortened while a demo series is open
 	lastTick atomic.Int64 // unix nanos of the last decision pass; read by GET /admin/system
+
+	// Task 91563: chain refusals back off exponentially instead of retrying every tick,
+	// and the autopilot only drives series it owns. skippedMints logs a skip once.
+	backoffMu    sync.Mutex
+	backoffs     map[string]*refusal // mint → the refused step, its attempt count and next-try time
+	skippedMints map[string]bool
+}
+
+// Refusal backoff schedule: 10 s, doubling, capped at 15 min. Reset when the
+// step succeeds or the series' decision moves to another step.
+const (
+	refusalBase = 10 * time.Second
+	refusalCap  = 15 * time.Minute
+)
+
+// refusal is the backoff state of one series' currently failing step.
+type refusal struct {
+	step    string
+	attempt int // completed backoffs so far
+	nextTry time.Time
+}
+
+// canRun: the (mint, step) pair is past its backoff (or never refused).
+func (s *Scheduler) canRun(mint, step string, now time.Time) bool {
+	s.backoffMu.Lock()
+	defer s.backoffMu.Unlock()
+	r := s.backoffs[mint]
+	return r == nil || r.step != step || !now.Before(r.nextTry)
+}
+
+// recordRefusal arms the backoff and returns (delay, first). A changed step
+// restarts the schedule — the chain moved on, the old failure is stale.
+func (s *Scheduler) recordRefusal(mint, step string, now time.Time) (time.Duration, bool) {
+	s.backoffMu.Lock()
+	defer s.backoffMu.Unlock()
+	if s.backoffs == nil {
+		s.backoffs = map[string]*refusal{}
+	}
+	r, ok := s.backoffs[mint]
+	if !ok || r.step != step {
+		r, ok = &refusal{step: step}, false
+	}
+	delay := refusalBase << min(r.attempt, 7)
+	if delay > refusalCap {
+		delay = refusalCap
+	}
+	r.attempt++
+	r.nextTry = now.Add(delay)
+	s.backoffs[mint] = r
+	return delay, !ok
+}
+
+// clearBackoff resets the schedule after a success (or any state change worth
+func (s *Scheduler) clearBackoff(mint string) {
+	s.backoffMu.Lock()
+	defer s.backoffMu.Unlock()
+	delete(s.backoffs, mint)
+}
+
+// skipped marks an unowned mint as skipped and reports whether it was new
+// (the skip is logged once, not every tick).
+func (s *Scheduler) skipped(mint string) bool {
+	s.backoffMu.Lock()
+	defer s.backoffMu.Unlock()
+	if s.skippedMints[mint] {
+		return false
+	}
+	if s.skippedMints == nil {
+		s.skippedMints = map[string]bool{}
+	}
+	s.skippedMints[mint] = true
+	return true
 }
 
 // Run loops until ctx is cancelled (one decision pass per Tick).
@@ -198,12 +272,57 @@ func (s *Scheduler) Tick(ctx context.Context) {
 			s.Log.Error("scheduler: series scenarios", "err", err) // fall back to the global autofund
 		}
 	}
+	if owned, err := s.ownedMints(ctx); err != nil {
+		s.Log.Error("scheduler: owned series", "err", err) // drive everything, the pre-91563 behaviour
+	} else {
+		for _, rec := range recs {
+			if ctx.Err() != nil {
+				return
+			}
+			mint := rec.Series.Mint.String()
+			if !owned[mint] {
+				if !s.skipped(mint) {
+					s.skippedMints[mint] = true
+					s.Log.Info("scheduler: skipping series the autopilot does not own (no registry row, sandbox or showcase feature)", "series", mint)
+				}
+				continue
+			}
+			s.handleSeries(ctx, rec, noFund[mint])
+		}
+		return
+	}
 	for _, rec := range recs {
 		if ctx.Err() != nil {
 			return
 		}
 		s.handleSeries(ctx, rec, noFund[rec.Series.Mint.String()])
 	}
+}
+
+// ownedMints: the series the autopilot drives — a registry row, a sandbox row,
+// or a curated showcase mint. A nil map (no store) drives everything.
+func (s *Scheduler) ownedMints(ctx context.Context) (map[string]bool, error) {
+	if s.Store == nil {
+		return nil, nil
+	}
+	reg, err := s.Store.ListRegistry(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]bool{}
+	for _, r := range reg {
+		out[r.Mint] = true
+	}
+	set, err := s.Store.ListSeriesSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for mint, x := range set {
+		if x.Featured || x.SandboxID != "" {
+			out[mint] = true
+		}
+	}
+	return out, nil
 }
 
 // anyDemoSeriesOpen: an Active series whose clock runs on compressed days.
@@ -420,9 +539,15 @@ func (s *Scheduler) staleSuperseded(ctx context.Context, row store.Approval) err
 // FlagValue (executor) returns the token after a --flag in a stored CLI argv.
 
 // execute runs one CLI step and records the outcome in the activity feed.
-// A refused step (chain said TooEarly/WrongStatus…) is a warn, not an error:
-// the next tick re-decides from the chain.
+// A refused step (chain said TooEarly/WrongStatus…) backs off exponentially
+// (task 91563) instead of retrying on every tick; the first refusal is a WARN,
+// repeats are DEBUG.
 func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args []string, actionPda *solana.PublicKey) {
+	now := s.now()
+	if !s.canRun(mint, d.Action, now) {
+		s.Log.Debug("scheduler step backing off after refusal", "series", mint, "step", d.Action)
+		return
+	}
 	res, err := s.Exec.Run(ctx, args...)
 	if err != nil {
 		s.Log.Error("scheduler exec", "series", mint, "step", d.Action, "err", err)
@@ -432,9 +557,22 @@ func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args [
 		// A failed batch step may already have moved money: keep its completed
 		// batch signatures in the activity feed before the retry (task 1408).
 		s.recordPartialBatches(ctx, mint, d, res)
-		s.Log.Warn("scheduler step refused by chain (will retry)", "series", mint, "step", d.Action, "err", res.Error)
+		delay, first := s.recordRefusal(mint, d.Action, s.now())
+		if first {
+			s.Log.Warn("scheduler step refused by chain (will retry)", "series", mint, "step", d.Action,
+				"err", res.Error, "retry_in", delay.String())
+		} else {
+			s.Log.Debug("scheduler step refused by chain (backing off)", "series", mint, "step", d.Action,
+				"err", res.Error, "retry_in", delay.String())
+		}
+		// A sandbox series whose coupon is blocked by an admitted DvP trade can never
+		// proceed until it is released — the autopilot cancels the stale trades itself.
+		if strings.Contains(res.Error, "TradesInFlight") {
+			s.releaseStaleTrades(ctx, mint)
+		}
 		return
 	}
+	s.clearBackoff(mint)
 	payload, _ := json.Marshal(map[string]any{"step": d.Action, "ok": true, "skipped": res.Skipped})
 	mintArg := mint
 	if _, err := s.Store.InsertActivity(ctx, store.Activity{
@@ -456,6 +594,55 @@ func (s *Scheduler) execute(ctx context.Context, mint string, d Decision, args [
 	// would find the action again.
 	if d.Action == executor.StepComplete || d.Action == executor.StepClose {
 		s.sweep(ctx, mint, args, actionPda)
+	}
+}
+
+// releaseStaleTrades cancels every admitted DvP trade of a sandbox series
+// (task 91563): an admission blocks the next record date with TradesInFlight,
+// and on a sandbox the trades are demo artifacts the autopilot owns. Best
+// effort — a refused cancel just keeps the backoff running.
+func (s *Scheduler) releaseStaleTrades(ctx context.Context, mint string) {
+	if s.Store == nil {
+		return
+	}
+	sbx, err := s.Store.SandboxByMint(ctx, mint)
+	if err != nil || sbx == nil {
+		return // real series: the operator settles or cancels (docs/03-domain.md §4a)
+	}
+	name, err := s.Exec.SeriesName(mint)
+	if err != nil {
+		s.Log.Error("scheduler: stale trades: series name", "series", mint, "err", err)
+		return
+	}
+	raw, err := s.Exec.RunRaw(ctx, "trade:list", "--series", name)
+	if err != nil {
+		s.Log.Error("scheduler: stale trades: trade:list", "series", mint, "err", err)
+		return
+	}
+	var list struct {
+		Trades []map[string]any `json:"trades"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.UseNumber()
+	if err := dec.Decode(&list); err != nil {
+		s.Log.Error("scheduler: stale trades: parse trade:list", "series", mint, "err", err)
+		return
+	}
+	for _, t := range list.Trades {
+		swap, _ := t["swapDvp"].(string)
+		if swap == "" {
+			continue
+		}
+		res, err := s.Exec.Run(ctx, "trade:cancel", "--series", name, "--trade", swap)
+		if err != nil {
+			s.Log.Error("scheduler: stale trade cancel", "series", mint, "trade", swap, "err", err)
+			return
+		}
+		if !res.OK {
+			s.Log.Warn("scheduler: stale trade cancel refused (will retry)", "series", mint, "trade", swap, "err", res.Error)
+			return
+		}
+		s.Log.Info("scheduler: released stale admitted trade", "series", mint, "trade", swap, "sig", res.Signature)
 	}
 }
 
