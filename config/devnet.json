@@ -123,6 +123,12 @@
   ],
   "testAssets": [
     {
+      "symbol": "tKZT",
+      "mint": "HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF",
+      "decimals": 2,
+      "kind": "stablecoin"
+    },
+    {
       "symbol": "KZTE-dev",
       "mint": "7H3MbktQifAeYqKS44ar9ck1c4kQZ3Sgj36bmQzm2atq",
       "decimals": 2,
