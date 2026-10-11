@@ -35,6 +35,10 @@ kp() { tr -d ' \n' < "$1"; }
 {
   echo "RPC_URL=$RPC_URL"
   echo "DEMO_LOGIN=1"
+  # Autopilot (task 1540): the judge sandbox and the curated showcase advance only with the scheduler; autofund pays
+  # coupons from the paying agent unless a series is flagged no_autofund (admin → series scenario).
+  echo "SCHEDULER=1"
+  echo "AUTOFUND=1"
   # absolute links the API hands out: admin password-reset links, organisation invites (platform v2)
   echo "PUBLIC_URL=https://qupon.$HOST"
   [ -z "${QUPON_USERS:-}" ] || echo "QUPON_USERS=$QUPON_USERS"
