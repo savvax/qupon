@@ -25,46 +25,6 @@
       "dayCount": "THIRTY_360",
       "termYears": 5
     },
-    "Almaty-Power-v1": {
-      "mint": "Bs27mdahzGFEJru79jnXkG3UhFMV1aNHTsC7Z6RVkLpW",
-      "cashMint": "tKZT",
-      "isin": "KZ2C0QPN0018",
-      "faceValue": 100000,
-      "couponRateBps": 1000,
-      "frequency": 2,
-      "dayCount": "THIRTY_360",
-      "termYears": 1
-    },
-    "Astana-Metro-v1": {
-      "mint": "AavFshHYkfyCmRj5r1ciYAZs51G4hxFPHMmmT7tgHF4C",
-      "cashMint": "tKZT",
-      "isin": "KZ2C0QPN0026",
-      "faceValue": 100000,
-      "couponRateBps": 1000,
-      "frequency": 2,
-      "dayCount": "THIRTY_360",
-      "termYears": 1
-    },
-    "Aktobe-Mining-v1": {
-      "mint": "HnZtxtegV8FLUsfjEYSCW9S7X9mmqAk8MP6wDb6U78Sc",
-      "cashMint": "tKZT",
-      "isin": "KZ2C0QPN0034",
-      "faceValue": 100000,
-      "couponRateBps": 1000,
-      "frequency": 2,
-      "dayCount": "THIRTY_360",
-      "termYears": 1
-    },
-    "Atyrau-Oil-v1": {
-      "mint": "98vjgPFbKyRVP6wwkJuz9PkDFGS3xjCDAnD4DL9UPME2",
-      "cashMint": "tKZT",
-      "isin": "KZ2C0QPN0042",
-      "faceValue": 100000,
-      "couponRateBps": 1000,
-      "frequency": 2,
-      "dayCount": "THIRTY_360",
-      "termYears": 1
-    },
     "Almaty-Power": {
       "mint": "5tww8A3MXG5VYwabQGoSy7M4wgcXWJMJqu7MhqqQpT34",
       "cashMint": "tKZT",

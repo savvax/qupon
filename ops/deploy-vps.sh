@@ -39,6 +39,10 @@ kp() { tr -d ' \n' < "$1"; }
   # coupons from the paying agent unless a series is flagged no_autofund (admin → series scenario).
   echo "SCHEDULER=1"
   echo "AUTOFUND=1"
+  # Self-curating board (task 91558): feature the showcase and hide every uncurated demo-clock
+  # series without an admin login; HIDE_SERIES imports config/hidden-series.txt at first start.
+  echo "SHOWCASE_AUTOSEED=1"
+  echo "HIDE_SERIES=$(grep -vE '^[[:space:]]*(#|$)' config/hidden-series.txt | paste -sd, -)"
   # absolute links the API hands out: admin password-reset links, organisation invites (platform v2)
   echo "PUBLIC_URL=https://qupon.$HOST"
   [ -z "${QUPON_USERS:-}" ] || echo "QUPON_USERS=$QUPON_USERS"

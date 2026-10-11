@@ -235,6 +235,12 @@ func run() error {
 		}
 	}
 
+	// Self-curating board (task 91558): production runs without an admin account, so the showcase
+	// seed runs on a loop — a new judge sandbox leaves the public board within one tick.
+	if cfg.ShowcaseAutoseed {
+		go autoseedShowcase(ctx, deps, st, logger, 10*time.Minute)
+	}
+
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
 		Handler:           api.New(logger, st, deps),
@@ -401,4 +407,31 @@ func seedPlatform(ctx context.Context, st *store.Store, cfg config.Config, profi
 		}
 	}
 	return nil
+}
+
+// autoseedShowcase curates the public board without an admin (SHOWCASE_AUTOSEED, task 91558): one
+// pass immediately after startup — the board is correct before the first request — then every
+// interval, so a fresh judge sandbox leaves it within one tick. Errors are logged and retried on
+// the next tick; the loop stops with ctx.
+func autoseedShowcase(ctx context.Context, deps api.Deps, st *store.Store, logger *slog.Logger, interval time.Duration) {
+	seed := func() {
+		res, err := api.SeedShowcase(ctx, deps, st)
+		if err != nil {
+			logger.Warn("showcase autoseed failed", "err", err)
+			return
+		}
+		logger.Info("showcase autoseed",
+			"seeded", len(res.Seeded), "hidden", len(res.Hidden), "missing", len(res.Missing))
+	}
+	seed()
+	tick := time.NewTicker(interval)
+	defer tick.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick.C:
+			seed()
+		}
+	}
 }

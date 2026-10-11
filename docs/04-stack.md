@@ -23,6 +23,7 @@
 
 ## Gotchas
 - `anchor` from avm is a proxy that holds a global flock for the whole command: parallel `anchor build`s serialize. The Makefile calls `~/.avm/bin/anchor-1.2.0` directly (`ANCHOR` variable) (2026-10-10).
+- Production curates the public board without an admin: `SHOWCASE_AUTOSEED=1` runs the showcase seed on a loop (feature the showcase, hide uncurated demo-clock series) and `HIDE_SERIES` imports `config/hidden-series.txt` at first start (2026-10-12, task 91558).
 - Devnet demos share the investor/issuer wallets: never run `make demo`, `make demo-plan15` or `make demo-trade` at the same time — `demo-full` checks each holder's cash delta and a concurrent subscribe/trade breaks it (2026-10-09).
 - A Series with `open_action = None` keeps a stale 32-byte tail (Borsh shifts the fields, the max-size account keeps the old bytes); on hooked series the tail is non-zero — decoders must ignore it, never require zero padding (2026-10-09, task 91519).
 - Public devnet RPC (`api.devnet.solana.com`) allows ~10 `getTransaction` per 10 s per IP (`x-ratelimit-method-limit: 10`), JSON-RPC batches included; the proof page paces itself to ~1/s after the first 429 (a series with 30 transactions takes ~35 s; a keyed `NEXT_PUBLIC_RPC_URL` takes ~2 s) (2026-10-09, task 1536).

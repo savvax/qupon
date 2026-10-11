@@ -10,17 +10,18 @@ import (
 // Config is the registrar service configuration. All values come from
 // flags whose defaults fall back to the documented environment variables.
 type Config struct {
-	RPCURL         string // RPC_URL — Solana devnet RPC endpoint
-	ProgramID      string // PROGRAM_ID — qupon_bonds program id
-	DBPath         string // DB_PATH — SQLite file path
-	QuponCLI       string // QUPON_CLI — path to the qupon CLI executable
-	QuponConfig    string // QUPON_CONFIG — base qupon config (series names/mints, baked into the image)
-	ExecConfigPath string // EXEC_CONFIG_PATH — writable config the executor regenerates (base + series registry)
-	DemoLogin      bool   // DEMO_LOGIN — enable one-click demo sign-in (POST /auth/demo) and seed the demo users
-	Users          string // QUPON_USERS — JSON [{"email","name","role","password"}] upserted at startup
-	Port           string // PORT — HTTP listen port
-	DataDir        string // DATA_DIR — uploaded documents (platform v2)
-	HideSeries     string // HIDE_SERIES — mints hidden at first start (comma/space separated; admin panel owns it after)
+	RPCURL           string // RPC_URL — Solana devnet RPC endpoint
+	ProgramID        string // PROGRAM_ID — qupon_bonds program id
+	DBPath           string // DB_PATH — SQLite file path
+	QuponCLI         string // QUPON_CLI — path to the qupon CLI executable
+	QuponConfig      string // QUPON_CONFIG — base qupon config (series names/mints, baked into the image)
+	ExecConfigPath   string // EXEC_CONFIG_PATH — writable config the executor regenerates (base + series registry)
+	DemoLogin        bool   // DEMO_LOGIN — enable one-click demo sign-in (POST /auth/demo) and seed the demo users
+	Users            string // QUPON_USERS — JSON [{"email","name","role","password"}] upserted at startup
+	Port             string // PORT — HTTP listen port
+	DataDir          string // DATA_DIR — uploaded documents (platform v2)
+	HideSeries       string // HIDE_SERIES — mints hidden at first start (comma/space separated; admin panel owns it after)
+	ShowcaseAutoseed bool   // SHOWCASE_AUTOSEED — curate the board on a loop: feature the showcase, hide uncurated demo-clock series
 
 	// Scheduler / autopilot (task 024). Scheduler defaults off; -demo-speed
 	// implies -scheduler with short cadence (2-minute announce lead).
@@ -58,6 +59,7 @@ func FromFlags(args []string) Config {
 		Port:             env("PORT", "8080"),
 		DataDir:          env("DATA_DIR", "/data"),
 		HideSeries:       env("HIDE_SERIES", ""),
+		ShowcaseAutoseed: envBool("SHOWCASE_AUTOSEED"),
 		Scheduler:        envBool("SCHEDULER"),
 		DemoSpeed:        envBool("DEMO_SPEED"),
 		AutoFund:         envBool("AUTOFUND"),
@@ -72,6 +74,7 @@ func FromFlags(args []string) Config {
 	fs.StringVar(&c.QuponConfig, "qupon-config", c.QuponConfig, "path to the base qupon config (QUPON_CONFIG)")
 	fs.StringVar(&c.ExecConfigPath, "exec-config", c.ExecConfigPath, "path of the writable executor config (EXEC_CONFIG_PATH)")
 	fs.StringVar(&c.Port, "port", c.Port, "HTTP listen port (PORT)")
+	fs.BoolVar(&c.ShowcaseAutoseed, "showcase-autoseed", c.ShowcaseAutoseed, "curate the public board on a loop, no admin login needed (SHOWCASE_AUTOSEED)")
 	fs.BoolVar(&c.Scheduler, "scheduler", c.Scheduler, "run the autopilot scheduler (SCHEDULER)")
 	fs.BoolVar(&c.DemoSpeed, "demo-speed", c.DemoSpeed, "demo cadence: implies -scheduler, 2-minute announce lead, autofund (DEMO_SPEED)")
 	fs.BoolVar(&c.AutoFund, "autofund", c.AutoFund, "scheduler funds escrows from the paying agent (AUTOFUND)")

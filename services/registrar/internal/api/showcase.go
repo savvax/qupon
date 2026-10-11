@@ -1,7 +1,9 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"slices"
 	"strings"
@@ -91,101 +93,126 @@ func ValidISIN(isin string) bool {
 	return int(isin[11]-'0') == IsinCheckDigit(isin[:11])
 }
 
+// upstreamError marks a failed chain read inside SeedShowcase: the HTTP handler answers 502
+// (bad gateway) for those and 500 for store failures — the split the endpoint always had.
+type upstreamError struct{ err error }
+
+func (e upstreamError) Error() string { return e.err.Error() }
+func (e upstreamError) Unwrap() error { return e.err }
+
 func mountShowcase(r chi.Router, deps Deps, st *store.Store) {
 	gate := requireRole(deps.Auth, "admin")
 	r.With(gate).Post("/admin/showcase/seed", showcaseSeed(deps, st))
 }
 
-// showcaseSeed marks every showcase series found on chain featured (matched by ISIN) and hides
-// demo-clock series nobody curated (judge sandboxes stay reachable by link but leave the public board).
-// Idempotent: run it again after task 1540 creates or re-creates the data.
+// ShowcaseSeedResult reports what one seed pass did (the endpoint body and the log line share it).
+type ShowcaseSeedResult struct {
+	Seeded  []string `json:"seeded"`  // showcase mints now featured, in board order
+	Hidden  []string `json:"hidden"`  // demo-clock mints hidden from the public board
+	Missing []string `json:"missing"` // showcase ISINs with no matching series on the definition's clock
+}
+
+// SeedShowcase marks every showcase series found on chain featured (matched by ISIN, on the
+// definition's clock, latest issue) and hides demo-clock series nobody curated (judge sandboxes
+// stay reachable by link but leave the public board). Idempotent; extracted from the endpoint
+// body so SHOWCASE_AUTOSEED can run it on a loop without an admin (task 91558).
+func SeedShowcase(ctx context.Context, deps Deps, st *store.Store) (ShowcaseSeedResult, error) {
+	var res ShowcaseSeedResult
+	settings, err := st.ListSeriesSettings(ctx)
+	if err != nil {
+		return res, err
+	}
+	want := map[string]uint32{} // ISIN → the definition's demo clock
+	for _, d := range Showcase {
+		want[d.ISIN] = d.DaySecs
+	}
+	pickedIssue := map[string]int64{} // ISIN → IssueDate of the series picked so far
+	byISIN := map[string]string{}     // ISIN → mint
+	demoMints := []string{}           // every series on the accelerated clock
+	if deps.Read != nil {
+		recs, err := deps.Read.AllSeries(ctx)
+		if err != nil {
+			return res, upstreamError{err}
+		}
+		for _, rec := range recs {
+			isin := strings.TrimRight(string(rec.Series.ISIN[:]), "\x00")
+			// A re-seed leaves the old showcase on chain under the same ISIN: feature the series on the definition's
+			// clock, the most recently issued one (2026-10-11: the 4 s showcase was re-issued at 1 h per day).
+			if clock, ok := want[isin]; ok && rec.Series.DaySecs == clock && rec.Series.IssueDate >= pickedIssue[isin] {
+				byISIN[isin] = rec.Series.Mint.String()
+				pickedIssue[isin] = rec.Series.IssueDate
+			}
+			if rec.Series.DaySecs > 0 {
+				demoMints = append(demoMints, rec.Series.Mint.String())
+			}
+		}
+	} else { // no chain reader: the startup mirror rows carry the same fields as SeriesDTO
+		rows, err := st.ListSeries(ctx)
+		if err != nil {
+			return res, err
+		}
+		for _, row := range rows {
+			var view struct {
+				Mint      string `json:"mint"`
+				ISIN      string `json:"isin"`
+				DemoClock *struct {
+					DaySecs int `json:"daySecs"`
+				} `json:"demoClock"`
+			}
+			if json.Unmarshal(row.Data, &view) == nil {
+				if clock, ok := want[view.ISIN]; ok && view.DemoClock != nil && uint32(view.DemoClock.DaySecs) == clock {
+					byISIN[view.ISIN] = row.Mint
+				}
+				if view.DemoClock != nil {
+					demoMints = append(demoMints, row.Mint)
+				}
+			}
+		}
+	}
+
+	for _, d := range Showcase {
+		mint, ok := byISIN[d.ISIN]
+		if !ok {
+			res.Missing = append(res.Missing, d.ISIN)
+			continue
+		}
+		x := settings[mint]
+		x.SeriesMint, x.Featured, x.Hidden = mint, true, false
+		if err := st.UpsertSeriesSettings(ctx, x); err != nil {
+			return res, err
+		}
+		res.Seeded = append(res.Seeded, mint)
+	}
+	for _, mint := range demoMints {
+		if slices.Contains(res.Seeded, mint) || settings[mint].Featured {
+			continue // the showcase itself, and anything an admin already curated, stay public
+		}
+		x := settings[mint]
+		x.SeriesMint, x.Hidden = mint, true
+		if err := st.UpsertSeriesSettings(ctx, x); err != nil {
+			return res, err
+		}
+		res.Hidden = append(res.Hidden, mint)
+	}
+	return res, nil
+}
+
+// showcaseSeed keeps the endpoint's contract: 502 for chain-read failures, 500 for store
+// failures, the result as JSON and an audit row.
 func showcaseSeed(deps Deps, st *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		settings, err := st.ListSeriesSettings(r.Context())
+		res, err := SeedShowcase(r.Context(), deps, st)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			status := http.StatusInternalServerError
+			var up upstreamError
+			if errors.As(err, &up) {
+				status = http.StatusBadGateway
+			}
+			writeError(w, status, err.Error())
 			return
 		}
-		want := map[string]uint32{} // ISIN → the definition's demo clock
-		for _, d := range Showcase {
-			want[d.ISIN] = d.DaySecs
-		}
-		pickedIssue := map[string]int64{} // ISIN → IssueDate of the series picked so far
-		byISIN := map[string]string{} // ISIN → mint
-		demoMints := []string{}       // every series on the accelerated clock
-		if deps.Read != nil {
-			recs, err := deps.Read.AllSeries(r.Context())
-			if err != nil {
-				writeError(w, http.StatusBadGateway, err.Error())
-				return
-			}
-			for _, rec := range recs {
-				isin := strings.TrimRight(string(rec.Series.ISIN[:]), "\x00")
-				// A re-seed leaves the old showcase on chain under the same ISIN: feature the series on the definition's
-				// clock, the most recently issued one (2026-10-11: the 4 s showcase was re-issued at 1 h per day).
-				if clock, ok := want[isin]; ok && rec.Series.DaySecs == clock && rec.Series.IssueDate >= pickedIssue[isin] {
-					byISIN[isin] = rec.Series.Mint.String()
-					pickedIssue[isin] = rec.Series.IssueDate
-				}
-				if rec.Series.DaySecs > 0 {
-					demoMints = append(demoMints, rec.Series.Mint.String())
-				}
-			}
-		} else { // no chain reader: the startup mirror rows carry the same fields as SeriesDTO
-			rows, err := st.ListSeries(r.Context())
-			if err != nil {
-				writeError(w, http.StatusInternalServerError, err.Error())
-				return
-			}
-			for _, row := range rows {
-				var view struct {
-					Mint      string `json:"mint"`
-					ISIN      string `json:"isin"`
-					DemoClock *struct {
-						DaySecs int `json:"daySecs"`
-					} `json:"demoClock"`
-				}
-				if json.Unmarshal(row.Data, &view) == nil {
-					if clock, ok := want[view.ISIN]; ok && view.DemoClock != nil && uint32(view.DemoClock.DaySecs) == clock {
-						byISIN[view.ISIN] = row.Mint
-					}
-					if view.DemoClock != nil {
-						demoMints = append(demoMints, row.Mint)
-					}
-				}
-			}
-		}
-
-		seeded, missing := []string{}, []string{}
-		for _, d := range Showcase {
-			mint, ok := byISIN[d.ISIN]
-			if !ok {
-				missing = append(missing, d.ISIN)
-				continue
-			}
-			x := settings[mint]
-			x.SeriesMint, x.Featured, x.Hidden = mint, true, false
-			if err := st.UpsertSeriesSettings(r.Context(), x); err != nil {
-				writeError(w, http.StatusInternalServerError, err.Error())
-				return
-			}
-			seeded = append(seeded, mint)
-		}
-		hidden := []string{}
-		for _, mint := range demoMints {
-			if slices.Contains(seeded, mint) || settings[mint].Featured {
-				continue // the showcase itself, and anything an admin already curated, stay public
-			}
-			x := settings[mint]
-			x.SeriesMint, x.Hidden = mint, true
-			if err := st.UpsertSeriesSettings(r.Context(), x); err != nil {
-				writeError(w, http.StatusInternalServerError, err.Error())
-				return
-			}
-			hidden = append(hidden, mint)
-		}
-		audit(st, r, map[string]any{"seeded": seeded, "hidden": hidden, "missing": missing},
+		audit(st, r, map[string]any{"seeded": res.Seeded, "hidden": res.Hidden, "missing": res.Missing},
 			true, "showcase seeded", nil)
-		writeJSON(w, http.StatusOK, map[string]any{"seeded": seeded, "hidden": hidden, "missing": missing})
+		writeJSON(w, http.StatusOK, res)
 	}
 }

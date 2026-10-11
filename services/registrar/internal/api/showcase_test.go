@@ -89,6 +89,35 @@ func TestShowcaseConfigMatchesTable(t *testing.T) {
 	}
 }
 
+// SeedShowcase (the autoseed body, task 91558) does the same curation without the endpoint.
+func TestSeedShowcaseFeaturesAndHides(t *testing.T) {
+	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "showcase.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+
+	res, err := SeedShowcase(t.Context(), Deps{Read: showcaseRead{}}, st)
+	if err != nil {
+		t.Fatal(err)
+	}
+	showcase, sandbox, old := solana.PublicKey{1: 1}.String(), solana.PublicKey{2: 2}.String(),
+		solana.PublicKey{5: 5}.String()
+	if len(res.Seeded) != 1 || res.Seeded[0] != showcase || len(res.Hidden) != 2 || len(res.Missing) != 3 {
+		t.Fatalf("result = %+v", res)
+	}
+	for mint, want := range map[string][2]bool{
+		showcase: {true, false}, // the series on the definition's clock is featured
+		sandbox:   {false, true}, // the uncurated demo-clock series is hidden
+		old:       {false, true}, // the 4 s predecessor under the same ISIN is hidden too
+	} {
+		set, err := st.GetSeriesSettings(t.Context(), mint)
+		if err != nil || set.Featured != want[0] || set.Hidden != want[1] {
+			t.Fatalf("settings %s = %+v (%v), want featured=%v hidden=%v", mint, set, err, want[0], want[1])
+		}
+	}
+}
+
 func TestShowcaseSeedFeaturesAndHides(t *testing.T) {
 	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "showcase.db"))
 	if err != nil {
