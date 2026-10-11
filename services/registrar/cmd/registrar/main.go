@@ -228,7 +228,9 @@ func run() error {
 				PerIPPerHour: envInt("QUPON_SANDBOX_PER_IP_HOUR", 3),
 				PerDay:       envInt("QUPON_SANDBOX_PER_DAY", 30),
 			},
-			Outsider: os.Getenv("QUPON_SANDBOX_OUTSIDER"),
+			// QUPON_SANDBOX_OUTSIDER names the wallet the non_kyc_transfer refusal targets; it falls back
+			// to the demo outsider keypair (QUPON_OUTSIDER_KEYPAIR) — production exports only the latter (task 91556).
+			Outsider: firstNonEmpty(os.Getenv("QUPON_SANDBOX_OUTSIDER"), os.Getenv("QUPON_OUTSIDER_KEYPAIR")),
 		}
 		if !cfg.Scheduler && !cfg.DemoSpeed {
 			logger.Warn("sandbox API enabled but the scheduler is off: a sandbox never advances past its first step (run with --scheduler or --demo-speed)")
@@ -278,6 +280,16 @@ func envInt(name string, def int) int {
 		}
 	}
 	return def
+}
+
+// firstNonEmpty is envInt's string sibling: the first non-empty value, or "".
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 // readModel avoids a typed-nil interface when no PROGRAM_ID is configured.

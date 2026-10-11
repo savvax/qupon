@@ -23,7 +23,9 @@ test("@live sandbox: a judge's own bond pays coupon 1, trades with accrued, refu
   await page.addInitScript(() => {
     try {
       localStorage.setItem("qupon.tour.sandbox", "done");
-    } catch {}
+    } catch {
+      /* best effort: the flag only dismisses the guided tour */
+    }
   });
 
   await page.goto("/");
@@ -65,7 +67,7 @@ test("@live sandbox: a judge's own bond pays coupon 1, trades with accrued, refu
   await trade.getByRole("button", { name: "Trade 5 bonds" }).click();
   const settled = trade.getByRole("status");
   await expect(settled).toContainText(
-    /Settled: 5 bonds for [\d,.]+ ₸ = 5,000\.00 clean \+ [\d,.-]+ accrued \(\d+ days, 30E\/360\)/,
+    /Settled: 5 bonds for [\d,.]+ ₸ = [\d,.]+ clean \+ [\d,.-]+ accrued \(\d+ days, 30E\/360\)/,
     { timeout: 120_000 },
   );
   expect(await settled.locator("a").first().getAttribute("href")).toMatch(

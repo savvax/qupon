@@ -254,9 +254,10 @@ func TestDecide(t *testing.T) {
 
 // fakeChain plays devnet for Tick: one series with a mutable open action.
 type fakeChain struct {
-	series   *chain.Series
-	action   *chain.CorporateAction
-	investor int
+	series       *chain.Series
+	action       *chain.CorporateAction
+	investor     int
+	entitlements []chain.EntitlementRecord
 }
 
 func (f *fakeChain) AllSeries(context.Context) ([]chain.SeriesRecord, error) {
@@ -280,6 +281,11 @@ func (f *fakeChain) FetchInvestorsBySeries(context.Context, solana.PublicKey) ([
 		out[i] = chain.InvestorRecord{Investor: &chain.Investor{Series: kSeries, Owner: solana.PublicKey{byte(i) + 1}}}
 	}
 	return out, nil
+}
+
+// entitlements is the canned PaidToAgent set of the sandbox bank-confirm test; nil for everyone else.
+func (f *fakeChain) FetchEntitlementsByAction(context.Context, solana.PublicKey) ([]chain.EntitlementRecord, error) {
+	return f.entitlements, nil
 }
 
 func newScheduler(t *testing.T, fc *fakeChain, cfg Config) (*Scheduler, *store.Store, string) {
@@ -628,10 +634,12 @@ func TestDecideDemoSeriesRunsOnSeriesDays(t *testing.T) {
 	s.DaySecs = 1
 
 	// 5 series-days of lead: the coupon 5 s away is exactly inside the window
-	// even though the production lead is 120 h.
+	// even though the production lead is 120 h. The record floor stays wall-clock
+	// (task 91556): the announce tx needs seconds to land, so record_at = now+60 s
+	// even though the coupon date itself is only 5 s out.
 	s.NextCouponDate = now0.Add(5 * time.Second).Unix()
 	d := Decide(s, nil, 0, now0, prod)
-	want := Decision{Kind: KindAnnounce, Action: "INTR", RecordAt: s.NextCouponDate, PaymentAt: s.NextCouponDate + 2}
+	want := Decision{Kind: KindAnnounce, Action: "INTR", RecordAt: now0.Add(60 * time.Second).Unix(), PaymentAt: now0.Add(62 * time.Second).Unix()}
 	if d != want {
 		t.Fatalf("demo decision = %+v, want %+v", d, want)
 	}
@@ -756,5 +764,50 @@ func TestTickPayClaimWindow(t *testing.T) {
 	}
 	if !strings.Contains(last, "action:pay") {
 		t.Fatalf("pay argv at +2min = %q, want an action:pay step", last)
+	}
+}
+
+// TestTickSandboxBankConfirm (task 91556): a judge sandbox whose coupon is fully paid except the
+// bank-routed holder gets the paying agent's confirmation automatically — with a SIMULATED reference.
+// A real series in the same state runs nothing (the confirmation stays a human action).
+func TestTickSandboxBankConfirm(t *testing.T) {
+	owner := solana.PublicKey{9}
+	settle := func() *chain.CorporateAction {
+		a := action(4) // Settling
+		a.HoldersPaid = a.HoldersSnapshotted
+		a.BankPending = 1
+		return a
+	}
+	fc := func() *fakeChain {
+		s := series(now0.Unix(), now0.Add(24*time.Hour).Unix())
+		s.OpenAction = &kAction
+		return &fakeChain{series: s, action: settle(), entitlements: []chain.EntitlementRecord{
+			{PDA: solana.PublicKey{8}, Entitlement: &chain.Entitlement{Owner: owner, Status: 3}}, // PaidToAgent
+		}}
+	}
+
+	// No sandbox row: the wait stays a wait, nothing is confirmed.
+	sReal, _, logReal := newScheduler(t, fc(), cfg)
+	sReal.Tick(t.Context())
+	if raw, _ := os.ReadFile(logReal); strings.TrimSpace(string(raw)) != "" {
+		t.Fatalf("real series ran %q, want nothing", raw)
+	}
+
+	// A sandbox-tied series: one payout:confirm-bank per PaidToAgent entitlement, SIMULATED reference.
+	s, st, log := newScheduler(t, fc(), cfg)
+	sbx := store.Sandbox{ID: "sbxbank0", Ticker: "SBX-BANK00", Mint: kMint.String(),
+		CreatedAt: now0.Unix(), ExpiresAt: now0.Add(24 * time.Hour).Unix()}
+	if err := st.InsertSandbox(t.Context(), sbx); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.SetSeriesSandbox(t.Context(), kMint.String(), sbx.ID); err != nil {
+		t.Fatal(err)
+	}
+	s.Tick(t.Context())
+	raw, _ := os.ReadFile(log)
+	line := strings.TrimSpace(string(raw))
+	wantPrefix := "--json payout:confirm-bank --series QPNb1 --index 3 --owner " + owner.String() + " --reference SANDBOX-QPNb1-3-"
+	if !strings.HasPrefix(line, wantPrefix) || !strings.HasSuffix(line, "(SIMULATED)") {
+		t.Fatalf("bank confirm argv = %q, want %s… (SIMULATED)", line, wantPrefix)
 	}
 }

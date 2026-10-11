@@ -56,7 +56,9 @@ func newService(t *testing.T, holders []Holder) (*Service, *store.Store, string,
 	}
 	base := filepath.Join(dir, "base.json")
 	exec := filepath.Join(dir, "exec.json")
-	cfg := `{"series":{}}`
+	// testAssets carries tKZT both as the alias place() falls back to and as a raw mint — the fake
+	// CLI's faucet allow-list (FAKE_CLI_ASSETS) refuses anything else, like resolveTestAsset (task 91556).
+	cfg := `{"series":{},"testAssets":[{"symbol":"tKZT","mint":"tKZT"},{"symbol":"tKZT","mint":"HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF"}]}`
 	if err := os.WriteFile(base, []byte(cfg), 0o644); err != nil {
 		t.Fatalf("write base: %v", err)
 	}
@@ -71,6 +73,7 @@ func newService(t *testing.T, holders []Holder) (*Service, *store.Store, string,
 	log := filepath.Join(dir, "cli.log")
 	t.Setenv("FAKE_CLI_LOG", log)
 	t.Setenv("FAKE_CLI_STATE", filepath.Join(dir, "state")) // the fake CLI then refuses attest/register mismatches
+	t.Setenv("FAKE_CLI_ASSETS", "tKZT,HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF") // faucet allow-list (task 91556)
 	stdout := filepath.Join(dir, "out.json")
 	t.Setenv("FAKE_CLI_STDOUT", stdout)
 	s := &Service{
@@ -144,7 +147,8 @@ func TestCreate(t *testing.T) {
 		"issue --series " + created.Ticker + " --owner ", // placements
 		"--units 10", "--units 25", "--units 65", "--units 5", // 10/25/65 + the wallet's 5
 		"--tax-bps 1500", "payout:route --series " + created.Ticker + " --route bank", // the pension fund
-		"asset:faucet", "kyc:attest",
+		"--bank-ref SANDBOX-" + created.Ticker + "-Nomad-Pension (SIMULATED)", // required for the bank route (task 91556)
+		"asset:faucet --mint tKZT", "kyc:attest", // the faucet mint must be a config testAsset
 	} {
 		if !strings.Contains(argv, want) {
 			t.Errorf("cli argv missing %q", want)
@@ -313,8 +317,10 @@ func TestScenarios(t *testing.T) {
 		_ = keypair(t, dir, strings.TrimSuffix(filepath.Base(h.Keypair), ".json"))
 	}
 	s, st, _, _ := newService(t, holders)
+	// CashMint is a config testAsset — the fake CLI's faucet allow-list refuses anything else (task 91556).
+	tkzt, _ := solana.PublicKeyFromBase58("HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF")
 	read := &fakeReader{series: &chain.Series{
-		Mint: solana.PublicKey{7}, Status: 0, DaySecs: 1, IssueYmd: 20261010, IssueDate: 1_795_996_800,
+		Mint: solana.PublicKey{7}, CashMint: tkzt, Status: 0, DaySecs: 1, IssueYmd: 20261010, IssueDate: 1_795_996_800,
 	}}
 	s.Read = read
 	s.Outsider = keypair(t, dir, "outsider")

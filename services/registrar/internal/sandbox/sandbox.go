@@ -15,6 +15,7 @@ import (
 	"math/big"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	solana "github.com/solana-foundation/solana-go/v2"
@@ -338,7 +339,8 @@ func (s *Service) place(ctx context.Context, ticker, mint string, h Holder, labe
 		}
 	}
 	if h.Bank && h.Keypair != "" {
-		if _, err := s.run(ctx, "payout:route", "--series", ticker, "--route", "bank", "--keypair", h.Keypair); err != nil {
+		bankRef := fmt.Sprintf("SANDBOX-%s-%s (SIMULATED)", ticker, strings.ReplaceAll(h.Label, " ", "-")) // clear text never leaves this process; only its sha256 goes on-chain
+		if _, err := s.run(ctx, "payout:route", "--series", ticker, "--route", "bank", "--bank-ref", bankRef, "--keypair", h.Keypair); err != nil {
 			return fmt.Errorf("%w: bank route %s: %v", ErrExecutor, h.Label, err)
 		}
 	}

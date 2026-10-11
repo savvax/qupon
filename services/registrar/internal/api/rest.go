@@ -358,7 +358,18 @@ func schedule(s *chain.Series, actions []chain.ActionRecord, m money) ([]Schedul
 	if err != nil {
 		return nil, err
 	}
+	// Demo clock (plan 15 D7): a civil date's timestamp is issue + demo-days × day_secs. The real Almaty
+	// midnight of a coupon date lies far beyond a compressed maturity, so the loop broke at once and
+	// every sandbox view carried schedule:null — the page maps over it and crashed (task 91556).
 	toTS := func(d entitlement.YMD) int64 { return d.DaysFromEpoch()*86400 - 5*3600 }
+	label := func(d entitlement.YMD) string { return civil(toTS(d)) }
+	daySecs := int64(86_400)
+	if s.DaySecs > 0 {
+		daySecs = int64(s.DaySecs)
+		issueDays := issue.DaysFromEpoch()
+		toTS = func(d entitlement.YMD) int64 { return s.IssueDate + (d.DaysFromEpoch()-issueDays)*daySecs }
+		label = func(d entitlement.YMD) string { return fmt.Sprintf("%04d-%02d-%02d", d.Y, d.M, d.D) } // the demo civil date
+	}
 	var out []ScheduleItem
 	prev := issue
 	for k := uint32(1); ; k++ {
@@ -382,8 +393,8 @@ func schedule(s *chain.Series, actions []chain.ActionRecord, m money) ([]Schedul
 			perUnit += s.FaceValue
 		}
 		item := ScheduleItem{
-			CouponNumber: int(k), PeriodStart: civil(toTS(prev)), PeriodEnd: civil(endTS),
-			RecordDate: dateTime(endTS), PaymentDate: dateTime(endTS + 2*86400),
+			CouponNumber: int(k), PeriodStart: label(prev), PeriodEnd: label(end),
+			RecordDate: dateTime(endTS), PaymentDate: dateTime(endTS + 2*daySecs),
 			AmountPerUnit: m.amount(perUnit), TotalAmount: m.amount(perUnit * s.TotalIssued), Status: "Projected",
 		}
 		if endTS <= s.PeriodStart {

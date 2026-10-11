@@ -96,11 +96,15 @@ func Decide(s *chain.Series, open *chain.CorporateAction, supply uint64, now tim
 	}
 	// Demo series (plan 15 D7): the same 5-day announce lead and 2-day payment delay, counted in
 	// series-days — a day_secs = 1 series announces 5 s ahead and pays 2 s after the record date,
-	// not after two real days. The record floor shrinks to one series-day for the same reason.
+	// not after two real days. The record floor stays wall-clock, though: announce checks
+	// now < record_at on chain, and one CLI run needs seconds of real time to land (executor queue
+	// + devnet confirm), so a one-series-day floor (1 s) failed every announce of a 1 s-day series
+	// with InvalidDates (task 91556).
 	lead, delay, floor := cfg.Lead, cfg.PaymentDelay, cfg.MinRecordDelay
 	if s.DaySecs > 0 {
 		day := time.Duration(s.DaySecs) * time.Second
-		lead, delay, floor = 5*day, 2*day, min(floor, day)
+		lead, delay = 5*day, 2*day
+		floor = max(floor, announceFloor)
 	}
 	if now.Unix() < s.NextCouponDate-int64(lead.Seconds()) {
 		return waitf("next coupon %s; announce at -%s",
@@ -126,6 +130,8 @@ type Reader interface {
 	FetchCorporateAction(ctx context.Context, pda solana.PublicKey) (*chain.CorporateAction, error)
 	FetchInvestorsBySeries(ctx context.Context, series solana.PublicKey) ([]chain.InvestorRecord, error)
 	FetchMint(ctx context.Context, mint solana.PublicKey) (*chain.Mint, error)
+	// FetchEntitlementsByAction feeds the sandbox bank confirm (which holders sit at PaidToAgent).
+	FetchEntitlementsByAction(ctx context.Context, action solana.PublicKey) ([]chain.EntitlementRecord, error)
 }
 
 type Scheduler struct {
@@ -168,6 +174,11 @@ func (s *Scheduler) Run(ctx context.Context) {
 // demoTick is the loop period while any Active demo series exists (plan 15 D7): a civil day can be
 // one second, so a 30 s tick would sleep through whole coupon periods.
 const demoTick = 2 * time.Second
+
+// announceFloor is the wall-clock margin a demo series keeps between now and record_at: the CLI
+// run that announces takes seconds of real time to land on devnet, and the program checks
+// now < record_at at execution (task 91556).
+const announceFloor = 60 * time.Second
 
 // Tick is one decision pass over every series.
 func (s *Scheduler) Tick(ctx context.Context) {
@@ -230,6 +241,12 @@ func (s *Scheduler) handleSeries(ctx context.Context, rec chain.SeriesRecord, no
 	}
 	d := Decide(series, open, supply, now, cfg)
 	if d.Kind == KindWait {
+		// A judge sandbox walks to maturity unattended: when the only thing left is the paying
+		// agent's bank confirmation, the autopilot plays that agent with a SIMULATED reference
+		// (task 91556). Real series keep the manual POST /actions/{pda}/confirm-bank.
+		if open != nil && open.BankPending > 0 && series.OpenAction != nil {
+			s.confirmSandboxBank(ctx, series.Mint.String(), *series.OpenAction, open)
+		}
 		s.Log.Debug("scheduler wait", "series", series.Mint.String(), "reason", d.Reason)
 		return
 	}
@@ -293,6 +310,58 @@ func (s *Scheduler) claimWindow(ctx context.Context, mint string, index uint32, 
 		return append(args, "--skip-owner", sbx.Wallet)
 	}
 	return args
+}
+
+// confirmSandboxBank plays the paying agent for a judge sandbox whose coupon is fully paid except the
+// bank-routed holders (plan 15 D6: PaidToAgent awaits confirmation). The web mock confirms right after
+// the pay step, so an unattended sandbox must too; the transfer reference is SIMULATED (task 91556).
+// Real series never pass through here — only mints tied to a sandbox row do.
+func (s *Scheduler) confirmSandboxBank(ctx context.Context, mint string, action solana.PublicKey, open *chain.CorporateAction) {
+	if s.Store == nil {
+		return
+	}
+	sbx, err := s.Store.SandboxByMint(ctx, mint)
+	if err != nil || sbx == nil {
+		return
+	}
+	name, err := s.Exec.SeriesName(mint)
+	if err != nil {
+		s.Log.Error("scheduler: sandbox bank confirm: series name", "series", mint, "err", err)
+		return
+	}
+	recs, err := s.Read.FetchEntitlementsByAction(ctx, action)
+	if err != nil {
+		s.Log.Error("scheduler: sandbox bank confirm: entitlements", "series", mint, "err", err)
+		return
+	}
+	for _, rec := range recs {
+		if rec.Entitlement.Status != 3 { // 3 = PaidToAgent: paid to the paying agent, awaiting the bank transfer
+			continue
+		}
+		owner := rec.Entitlement.Owner.String()
+		reference := fmt.Sprintf("SANDBOX-%s-%d-%s (SIMULATED)", name, open.Index, owner[:8])
+		args := []string{"payout:confirm-bank", "--series", name,
+			"--index", strconv.FormatUint(uint64(open.Index), 10), "--owner", owner, "--reference", reference}
+		res, err := s.Exec.Run(ctx, args...)
+		if err != nil {
+			s.Log.Error("scheduler: sandbox bank confirm", "series", mint, "owner", owner, "err", err)
+			return // a spawn/contract failure: retry next tick
+		}
+		if !res.OK {
+			s.Log.Warn("scheduler: sandbox bank confirm refused (will retry)", "series", mint, "owner", owner, "err", res.Error)
+			return
+		}
+		payload, _ := json.Marshal(map[string]any{"step": executor.StepConfirmBank, "ok": true, "sandbox": sbx.ID})
+		mintArg := mint
+		apda := action.String()
+		if _, err := s.Store.InsertActivity(ctx, store.Activity{
+			Ts: s.Now().Unix(), SeriesMint: &mintArg, ActionPDA: &apda, Kind: "scheduler:" + executor.StepConfirmBank,
+			Payload: payload, Sig: res.Signature, Slot: uint64(res.Slot),
+		}); err != nil {
+			s.Log.Error("scheduler: record sandbox bank confirm", "err", err)
+		}
+		s.Log.Info("scheduler step", "series", mint, "step", executor.StepConfirmBank, "owner", owner, "sig", res.Signature, "slot", res.Slot)
+	}
 }
 
 // propose records the decision as a pending approval (deduped per action+step).

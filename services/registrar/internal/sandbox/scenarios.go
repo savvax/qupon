@@ -244,9 +244,11 @@ func (s *Service) dvpTrade(ctx context.Context, x *store.Sandbox, series *chain.
 		return nil, fmt.Errorf("%w: %v", ErrExecutor, err)
 	}
 	sigsRun := []string{create.Signature}
+	// trade:fund --side is seller|buyer (the signing investor's side of the DvP), not the asset: the
+	// seller escrows the bonds, the buyer pays the dirty price.
 	for _, leg := range []struct{ side, keypair string }{
-		{"bond", holders[1].Keypair}, // the seller escrows the bonds…
-		{"cash", holders[0].Keypair}, // …the buyer pays the dirty price
+		{"seller", holders[1].Keypair},
+		{"buyer", holders[0].Keypair},
 	} {
 		res, err := s.run(ctx, "trade:fund", "--series", x.Ticker, "--trade", create.SwapDvp,
 			"--side", leg.side, "--keypair", leg.keypair)
