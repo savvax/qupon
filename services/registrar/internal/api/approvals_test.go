@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -100,6 +101,25 @@ func TestApprovalsListAndApprove(t *testing.T) {
 	}
 	// Bad status filter → 400.
 	getJSON(t, srv.URL+"/approvals?status=zzz", http.StatusBadRequest, nil)
+}
+
+// GET /approvals is back-office only (A91570-5): no session → 401.
+func TestApprovalsRequireRole(t *testing.T) {
+	fc := &fakeChain{action: (&fakeRead{}).action()}
+	_, st, _ := advanceServer(t, fc)
+	// Rebuild the handler without the auto-token wrapper of advanceServer.
+	svc := &auth.Service{Store: st, Now: time.Now, TTL: time.Hour, Limit: auth.NewLimiter(5, time.Minute)}
+	srv := httptest.NewServer(New(slog.New(slog.DiscardHandler), st, Deps{Auth: svc}))
+	t.Cleanup(srv.Close)
+
+	resp, err := http.Get(srv.URL + "/approvals")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("GET /approvals unauthenticated = %d, want 401", resp.StatusCode)
+	}
 }
 
 // TestApproveCompleteRunsEscrowSweep (task 1422): approving a complete/close

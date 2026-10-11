@@ -205,7 +205,7 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 		}
 		all, err := ownerPayouts(r.Context(), deps.Read, st, owners)
 		if err != nil {
-			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", err.Error())
+			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", "chain read failed")
 			return
 		}
 		ps := []reports.Payout{}
@@ -236,7 +236,7 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 		}
 		all, err := ownerPayouts(r.Context(), deps.Read, st, owners)
 		if err != nil {
-			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", err.Error())
+			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", "chain read failed")
 			return
 		}
 		ps := reports.TaxYear(all, year)
@@ -266,7 +266,7 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 		}
 		recs, err := deps.Read.FetchInvestorsBySeries(r.Context(), pda)
 		if err != nil {
-			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", err.Error())
+			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", "chain read failed")
 			return
 		}
 		hs := make([]reports.Holding, 0, len(recs))
@@ -306,12 +306,12 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 		}
 		m, err := cashMoney(r.Context(), deps.Read, st, a.CashMint)
 		if err != nil {
-			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", err.Error())
+			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", "chain read failed")
 			return
 		}
 		ents, err := deps.Read.FetchEntitlementsByAction(r.Context(), pda)
 		if err != nil {
-			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", err.Error())
+			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", "chain read failed")
 			return
 		}
 		ps := make([]reports.Payout, 0, len(ents))

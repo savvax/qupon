@@ -553,6 +553,8 @@ paths:
     get:
       summary: Scheduler proposals awaiting a human decision (approval gate)
       operationId: listApprovals
+      security:
+        - bearerAuth: []
       parameters:
         - name: status
           in: query

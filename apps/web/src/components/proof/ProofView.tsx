@@ -1,6 +1,6 @@
 "use client";
 
-import { createSolanaRpc } from "@solana/kit";
+import { answeredByRpc, createProofRpc } from "@/lib/proof/endpoints";
 import { QUPON_BONDS_PROGRAM_ADDRESS } from "@qupon/client/src/generated";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactNode, useEffect, useState } from "react";
@@ -26,10 +26,6 @@ import {
 } from "@/lib/proof/verify";
 import { formatAmount } from "@/lib/ui/amount";
 import { cx } from "@/lib/ui/cx";
-
-/** Keyless public devnet by default; NEXT_PUBLIC_* is inlined into the bundle, so never a keyed URL here. */
-export const RPC_URL =
-  process.env.NEXT_PUBLIC_RPC_URL ?? "https://api.devnet.solana.com";
 
 /** Devnet cash assets (config/devnet.json cashAssets): the tenge stand-ins print ₸. */
 const CASH_SIGN: Record<string, string> = {
@@ -105,7 +101,7 @@ export function ProofView({ mint }: { mint: string }) {
     let live = true;
     let seq = 0;
     setState({ phase: "loading" });
-    loadProof(createSolanaRpc(RPC_URL), mint, (input) => {
+    loadProof(createProofRpc(), mint, (input) => {
       const n = ++seq;
       void verifyProof(input).then((report) => {
         if (live && n === seq) setState({ phase: "ready", report });
@@ -304,9 +300,10 @@ function Certificate({ report, fmt }: { report?: ProofReport; fmt: Fmt }) {
   const tone = loading ? "wait" : report!.failed > 0 ? "fail" : "pass";
   const rpcHost = (() => {
     try {
-      return new URL(RPC_URL).host;
+      // Which devnet endpoint actually answered the verifier's requests (A91571-5).
+      return new URL(answeredByRpc()).host;
     } catch {
-      return RPC_URL;
+      return answeredByRpc();
     }
   })();
   const fact = (label: string, value: ReactNode) => (

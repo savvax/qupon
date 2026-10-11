@@ -252,7 +252,8 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 	r.With(issuer, write, ownSeries).Post("/issuer/actions/{pda}/fund", issuerFund(deps, st))
 
 	// Scheduler surface (task 024): planned actions + approval gate (approve executes the CLI → registrar only).
-	r.Get("/approvals", listApprovals(st))
+	// /approvals is back-office only (A91570-5): the queue mirrors on-chain state, but role-guard it like the rest.
+	r.With(registrar).Get("/approvals", listApprovals(st))
 	r.With(registrar, write).Post("/registrar/approvals/{id}/approve", approveApproval(deps, st, logger))
 	r.With(registrar, write).Post("/registrar/approvals/{id}/reject", rejectApproval(st))
 	r.With(registrar, write).Post("/approvals/{id}/approve", approveApproval(deps, st, logger))
@@ -388,5 +389,11 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {
+	if status == http.StatusBadGateway {
+		// A91570-3: internal Anchor/RPC strings never reach clients; log them server-side only.
+		slog.Error("upstream call failed", "error", msg)
+		writeErrorCode(w, status, "http_"+strconv.Itoa(status), "chain read failed")
+		return
+	}
 	writeErrorCode(w, status, "http_"+strconv.Itoa(status), msg)
 }
