@@ -208,16 +208,16 @@ func (s *Scheduler) clearBackoff(mint string) {
 	delete(s.backoffs, mint)
 }
 
-// skipped marks an unowned mint as skipped and reports whether it was new
-// (the skip is logged once, not every tick).
-func (s *Scheduler) skipped(mint string) bool {
+// firstSkip marks an unowned mint as skipped and reports whether this is the
+// first tick it was seen unowned (the skip is logged once, not every tick).
+func (s *Scheduler) firstSkip(mint string) bool {
 	s.backoffMu.Lock()
 	defer s.backoffMu.Unlock()
-	if s.skippedMints[mint] {
-		return false
-	}
 	if s.skippedMints == nil {
 		s.skippedMints = map[string]bool{}
+	}
+	if s.skippedMints[mint] {
+		return false
 	}
 	s.skippedMints[mint] = true
 	return true
@@ -281,8 +281,7 @@ func (s *Scheduler) Tick(ctx context.Context) {
 			}
 			mint := rec.Series.Mint.String()
 			if !owned[mint] {
-				if !s.skipped(mint) {
-					s.skippedMints[mint] = true
+				if s.firstSkip(mint) {
 					s.Log.Info("scheduler: skipping series the autopilot does not own (no registry row, sandbox or showcase feature)", "series", mint)
 				}
 				continue

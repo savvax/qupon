@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -929,6 +930,24 @@ func TestTickSkipsUnownedSeries(t *testing.T) {
 	s.Tick(t.Context())
 	if raw, _ := os.ReadFile(log); !strings.Contains(string(raw), "action:pay") {
 		t.Fatalf("owned series did not run: %q", raw)
+	}
+}
+
+// TestTickLogsUnownedSeriesOnce (task 91565): the skip log fires on the first
+// tick only, not on every subsequent tick over the same unowned series.
+func TestTickLogsUnownedSeriesOnce(t *testing.T) {
+	s, st, _ := newScheduler(t, fundedChain(), cfg)
+	s.Now = func() time.Time { return now0.Add(2 * time.Minute) }
+	if err := st.DeleteRegistry(t.Context(), "QPNb1"); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	s.Log = slog.New(slog.NewTextHandler(&buf, nil))
+	const want = "skipping series the autopilot does not own"
+	s.Tick(t.Context())
+	s.Tick(t.Context())
+	if n := strings.Count(buf.String(), want); n != 1 {
+		t.Fatalf("skip log count = %d, want 1:\n%s", n, buf.String())
 	}
 }
 
