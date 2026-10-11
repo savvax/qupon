@@ -10,7 +10,7 @@ test("@live issuer creates a series on devnet and sees it in /issuer/series", as
 }) => {
   test.setTimeout(150_000);
   const stamp = Date.now().toString(36);
-  const name = `E2E-${stamp}`; // ≤ 16 chars, wizard rule
+  const name = `E2E-${stamp}`; // ≤ 16 chars; the E2E- prefix keeps this test series off the public board (showcase seed hides it)
   const isin = `KZ${stamp.toUpperCase()}Q7`; // 2 letters + 9 alnum + digit
 
   await page.goto("/login?next=/issuer");

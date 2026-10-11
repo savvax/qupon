@@ -129,6 +129,7 @@ func SeedShowcase(ctx context.Context, deps Deps, st *store.Store) (ShowcaseSeed
 	pickedIssue := map[string]int64{} // ISIN → IssueDate of the series picked so far
 	byISIN := map[string]string{}     // ISIN → mint
 	demoMints := []string{}           // every series on the accelerated clock
+	e2eMints := []string{}            // live e2e series (ticker E2E-…, task 91559) — tests, never public
 	if deps.Read != nil {
 		recs, err := deps.Read.AllSeries(ctx)
 		if err != nil {
@@ -144,6 +145,10 @@ func SeedShowcase(ctx context.Context, deps Deps, st *store.Store) (ShowcaseSeed
 			}
 			if rec.Series.DaySecs > 0 {
 				demoMints = append(demoMints, rec.Series.Mint.String())
+			}
+			ticker := strings.TrimRight(string(rec.Series.Ticker[:]), "\x00")
+			if strings.HasPrefix(ticker, "E2E-") {
+				e2eMints = append(e2eMints, rec.Series.Mint.String())
 			}
 		}
 	} else { // no chain reader: the startup mirror rows carry the same fields as SeriesDTO
@@ -183,7 +188,7 @@ func SeedShowcase(ctx context.Context, deps Deps, st *store.Store) (ShowcaseSeed
 		}
 		res.Seeded = append(res.Seeded, mint)
 	}
-	for _, mint := range demoMints {
+	for _, mint := range append(slices.Clone(demoMints), e2eMints...) {
 		if slices.Contains(res.Seeded, mint) || settings[mint].Featured {
 			continue // the showcase itself, and anything an admin already curated, stay public
 		}

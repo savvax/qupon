@@ -39,6 +39,8 @@ func (showcaseRead) AllSeries(context.Context) ([]chain.SeriesRecord, error) {
 		// the first showcase run (4 s clock), still on chain under the same ISIN after the re-seed: listed last so a
 		// last-wins match would feature it; the seed must pick the series on the definition's clock and hide this one
 		mk(solana.PublicKey{5: 5}, "KZ2C0QPN0018", "Almaty Power", 4),
+		// a live e2e series (task 91559): real clock, ticker prefix E2E- — must be hidden too
+		mk(solana.PublicKey{6: 6}, "KZ2C0E2E0001", "E2E-1700000000", 0),
 	}, nil
 }
 
@@ -103,13 +105,15 @@ func TestSeedShowcaseFeaturesAndHides(t *testing.T) {
 	}
 	showcase, sandbox, old := solana.PublicKey{1: 1}.String(), solana.PublicKey{2: 2}.String(),
 		solana.PublicKey{5: 5}.String()
-	if len(res.Seeded) != 1 || res.Seeded[0] != showcase || len(res.Hidden) != 2 || len(res.Missing) != 3 {
+	e2e := solana.PublicKey{6: 6}.String()
+	if len(res.Seeded) != 1 || res.Seeded[0] != showcase || len(res.Hidden) != 3 || len(res.Missing) != 3 {
 		t.Fatalf("result = %+v", res)
 	}
 	for mint, want := range map[string][2]bool{
 		showcase: {true, false}, // the series on the definition's clock is featured
 		sandbox:  {false, true}, // the uncurated demo-clock series is hidden
 		old:      {false, true}, // the 4 s predecessor under the same ISIN is hidden too
+		e2e:      {false, true}, // the live e2e series is hidden, real clock or not
 	} {
 		set, err := st.GetSeriesSettings(t.Context(), mint)
 		if err != nil || set.Featured != want[0] || set.Hidden != want[1] {
@@ -141,7 +145,7 @@ func TestShowcaseSeedFeaturesAndHides(t *testing.T) {
 		Missing []string `json:"missing"`
 	}
 	if json.Unmarshal(rec.Body.Bytes(), &out) != nil || len(out.Seeded) != 1 ||
-		len(out.Hidden) != 2 || len(out.Missing) != 3 {
+		len(out.Hidden) != 3 || len(out.Missing) != 3 {
 		t.Fatalf("seed result = %s", rec.Body)
 	}
 
