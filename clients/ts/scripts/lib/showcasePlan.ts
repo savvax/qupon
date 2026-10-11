@@ -48,7 +48,10 @@ export interface PlanOpts {
   /** investor1..3 wallet addresses (kyc:attest / investor:register / vote targets). */
   readonly owners: readonly [string, string, string];
   /** ISINs already on chain (series:list) — those definitions are skipped (idempotent re-runs). */
-  readonly existing?: ReadonlySet<string>;
+  readonly existing?: ReadonlyMap<
+    string,
+    { status: string; daySecs: number; mint: string }
+  >;
   /** keypair resolver: env-var name → path (tests pass a placeholder). */
   readonly kp?: (envVar: string) => string;
 }
@@ -315,7 +318,11 @@ export function buildShowcasePlan(
         ],
       })),
     ];
-    const skip = opts.existing?.has(def.isin) ?? false;
+    // Re-seed when the on-chain series is closed or on another demo clock: only an active series
+    // with the definition's daySecs counts as already seeded (task 91555).
+    const on = opts.existing?.get(def.isin);
+    const skip =
+      on !== undefined && on.status === "active" && on.daySecs === def.daySecs;
     return {
       def,
       name,

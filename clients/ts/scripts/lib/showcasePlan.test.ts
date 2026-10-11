@@ -211,13 +211,43 @@ describe("buildShowcasePlan", () => {
     ]);
   });
 
-  it("skips definitions whose ISIN is already on chain (idempotent re-runs)", () => {
+  it("skips only active series on the same demo clock (task 91555)", () => {
+    const row = (status: string, daySecs: number) => ({
+      status,
+      daySecs,
+      mint: "Mint11111111111111111111111111111",
+    });
+    const skips = (
+      existing: Record<string, ReturnType<typeof row>>,
+    ): boolean[] =>
+      buildShowcasePlan(DEFS, {
+        ...OPTS,
+        existing: new Map(Object.entries(existing)),
+      }).map((s) => s.skip);
+    // active + same clock → skip; closed → re-seed; active on another clock → re-seed
+    expect(skips({ KZ2C0QPN0018: row("active", 3600) })).toEqual([
+      true,
+      false,
+      false,
+      false,
+    ]);
+    expect(skips({ KZ2C0QPN0018: row("closed", 3600) })).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
+    expect(skips({ KZ2C0QPN0018: row("active", 4) })).toEqual([
+      false,
+      false,
+      false,
+      false,
+    ]);
     const plan = buildShowcasePlan(DEFS, {
       ...OPTS,
-      existing: new Set(["KZ2C0QPN0018"]),
+      existing: new Map([["KZ2C0QPN0018", row("active", 3600)]]),
     });
-    expect(plan.map((s) => s.skip)).toEqual([true, false, false, false]);
-    expect(plan[0]!.steps).toEqual([]); // nothing to run
+    expect(plan[0]!.steps).toEqual([]); // nothing to run for a skipped series
     expect(plan[1]!.steps.length).toBeGreaterThan(0);
   });
 });

@@ -2,18 +2,14 @@
  * `make seed-showcase` (task 91542; task 1540 runs it on devnet) — create the public board's four
  * curated demo series from config/showcase.json (the Go Showcase table) and drive each to the state
  * its dossier needs: coupon paid, redemption closed, meeting voting open with two votes, MCAL
- * announced. Idempotent (an ISIN already on chain is skipped via series:list), appends the mints to
+ * announced. Idempotent (an active series on the same clock is skipped via series:list; closed or
+ * other-clock series are re-seeded), writes the mints to
  * config/featured-series.txt, calls the registrar's POST /admin/showcase/seed when QUPON_API_URL +
  * ADMIN_TOKEN are set (prints the curl otherwise) and writes reports/showcase.md.
  * `--dry-run` prints the plan without touching the network.
  */
 import { execFileSync } from "node:child_process";
-import {
-  appendFileSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { addressLink, txLink } from "../src/lib/explorer.js";
@@ -186,13 +182,12 @@ async function runStep(
   });
 }
 
-/** Feature the showcase mints: append the ones missing from config/featured-series.txt. */
+/** Feature exactly the showcase mints: rewrite config/featured-series.txt (drops stale ones). */
 function featureMints(mints: readonly string[]): string[] {
-  const have = new Set(readFileSync(FEATURED, "utf8").split("\n"));
-  const missing = mints.filter((m) => m !== "" && !have.has(m));
-  if (missing.length > 0) appendFileSync(FEATURED, `${missing.join("\n")}\n`);
-  log(`config/featured-series.txt: ${missing.length} mint(s) appended`);
-  return missing;
+  const kept = mints.filter((m) => m !== "");
+  writeFileSync(FEATURED, `${kept.join("\n")}\n`);
+  log(`config/featured-series.txt: ${kept.length} mint(s) written`);
+  return kept;
 }
 
 /** POST /admin/showcase/seed, or print the curl for later (task's fallback path). */
@@ -268,17 +263,17 @@ async function main(): Promise<void> {
   }
   loadEnvFile();
 
-  // Idempotency: match on-chain series by ISIN; remember their mints for featured-series.txt.
+  // Idempotency: only an active series on the definition's clock counts as already seeded —
+  // closed or other-clock series (the old 4 s showcase) are re-planned (task 91555).
   const listed = exec(["series:list"]) as {
-    series?: { mint: string; isin: string }[];
+    series?: { mint: string; isin: string; status: string; daySecs: number }[];
   };
-  const mintOf = new Map(
-    (listed.series ?? []).map((r) => [r.isin, r.mint] as const),
-  );
+  const rows = new Map((listed.series ?? []).map((r) => [r.isin, r] as const));
+  const mintOf = new Map([...rows].map(([isin, r]) => [isin, r.mint] as const));
   const live = buildShowcasePlan(defs, {
     today: today(),
     owners: await owners(),
-    existing: new Set(mintOf.keys()),
+    existing: rows,
     kp: keyPath,
   });
 
@@ -294,10 +289,10 @@ async function main(): Promise<void> {
     if (s.skip) {
       const mint = mintOf.get(s.def.isin) ?? "";
       section.intro.push(
-        `- Already on chain: mint [${mint}](${addressLink(mint)}) — skipped (idempotent).`,
+        `- Already on chain (active, same clock): mint [${mint}](${addressLink(mint)}) — skipped.`,
       );
       section.rows.push({
-        step: "series:list — ISIN already on chain",
+        step: "series:list — active series on the same clock already on chain",
         signatures: [],
         status: "skipped",
       });
