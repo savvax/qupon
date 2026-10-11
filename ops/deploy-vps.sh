@@ -43,6 +43,8 @@ kp() { tr -d ' \n' < "$1"; }
   # series without an admin login; HIDE_SERIES imports config/hidden-series.txt at first start.
   echo "SHOWCASE_AUTOSEED=1"
   echo "HIDE_SERIES=$(grep -vE '^[[:space:]]*(#|$)' config/hidden-series.txt | paste -sd, -)"
+  # Sandbox non_kyc_transfer refusal target: a public address with no investor record (no key needed).
+  echo "QUPON_SANDBOX_OUTSIDER=$(jq -r '.. | objects | .outsider? // empty' config/devnet.json | head -1)"
   # absolute links the API hands out: admin password-reset links, organisation invites (platform v2)
   echo "PUBLIC_URL=https://qupon.$HOST"
   [ -z "${QUPON_USERS:-}" ] || echo "QUPON_USERS=$QUPON_USERS"
