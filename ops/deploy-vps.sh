@@ -58,7 +58,15 @@ kp() { tr -d ' \n' < "$1"; }
   echo "QUPON_INVESTOR_KEYPAIR_JSON=$(kp "${QUPON_INVESTOR_KEYPAIR:-$HOME/.config/qupon/investor3.json}")"
   for n in 1 2 3; do
     eval "p=\${QUPON_INVESTOR${n}_KEYPAIR:-$HOME/.config/qupon/investor${n}.json}"
+    # shellcheck disable=SC2154  # p is assigned via eval
     echo "QUPON_INVESTOR${n}_KEYPAIR_JSON=$(kp "$p")"
+  # Sandbox custodial holders (task 91557): separate wallets so the sandbox's per-wallet SAS
+  # re-attestation (`kyc:attest --replace`) never invalidates the demo investors' registrations.
+  # shellcheck disable=SC2154  # p is assigned via eval
+  eval "p=\${QUPON_SANDBOX_INVESTOR${n}_KEYPAIR:-$HOME/.config/qupon/sandbox-holder${n}.json}"
+  if [ -f "$p" ]; then
+    echo "QUPON_SANDBOX_INVESTOR${n}_KEYPAIR_JSON=$(kp "$p")"
+  fi
   done
 } | "${SSH[@]}" 'umask 077; cat > /opt/qupon/registrar.env'
 "${SSH[@]}" 'umask 077; : > /opt/qupon/web.env' # nothing secret for the web yet; kept for compose's env_file

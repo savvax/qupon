@@ -6,7 +6,7 @@ set -eu
 mkdir -p /data /run/qupon
 chown qupon:qupon /data /run/qupon
 chmod 700 /run/qupon
-for role in REGISTRAR ISSUER PAYING_AGENT KYC_PROVIDER INVESTOR INVESTOR1 INVESTOR2 INVESTOR3; do
+for role in REGISTRAR ISSUER PAYING_AGENT KYC_PROVIDER INVESTOR INVESTOR1 INVESTOR2 INVESTOR3 SANDBOX_INVESTOR1 SANDBOX_INVESTOR2 SANDBOX_INVESTOR3; do
   eval "json=\${QUPON_${role}_KEYPAIR_JSON:-}"
   [ -n "$json" ] || continue
   f="/run/qupon/$(echo "$role" | tr 'A-Z_' 'a-z-').json"
