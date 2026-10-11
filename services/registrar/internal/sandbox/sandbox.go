@@ -270,6 +270,19 @@ func (s *Service) Create(ctx context.Context, wallet, requestID, ip string) (*Cr
 		return nil, fmt.Errorf("%w: %s", ErrExecutor, res.Error)
 	}
 
+	// The CLI wrote the real mint into the exec config; persist it and regenerate the config BEFORE any
+	// further CLI step, or a concurrent writeExecConfig (issuer create, another sandbox, a rollback)
+	// rewrites the entry with the placeholder mint "" and every following step refuses
+	// (task 91562: investor:register — series.<ticker>.mint is not set).
+	if err := s.Store.UpsertRegistry(ctx, store.RegistryRow{Name: ticker, Mint: res.Mint, Terms: terms}); err != nil {
+		s.rollback(ctx, ticker)
+		return nil, fmt.Errorf("record mint: %w", err)
+	}
+	if err := s.rewriteConfig(ctx); err != nil {
+		s.rollback(ctx, ticker)
+		return nil, fmt.Errorf("%w: rewrite config: %v", ErrExecutor, err)
+	}
+
 	// The demo investors (and the visitor's wallet): attest, register, fund, place.
 	holders := s.holders()
 	labels := make([]store.SandboxHolder, 0, len(holders)+1)

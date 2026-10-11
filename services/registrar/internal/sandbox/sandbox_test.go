@@ -157,6 +157,19 @@ func TestCreate(t *testing.T) {
 	// Every investor:register carries exactly the type/residency/tax-bps of the kyc:attest before it
 	// (the fake CLI also refuses a mismatch — this asserts the argv directly; task 91540).
 	attestMatchesRegister(t, argv)
+
+	// Task 91562: the fake CLI's investor:register refuses a series whose exec-config entry has no
+	// mint, so reaching past the placements proves the registry row + exec config already held the
+	// real mint right after series:create — a concurrent rewrite can no longer restore the placeholder.
+	regRows, err := st.ListRegistry(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range regRows {
+		if r.Name == created.Ticker && r.Mint != created.Mint {
+			t.Errorf("registry row %s mint = %q, want %q", r.Name, r.Mint, created.Mint)
+		}
+	}
 	x, err := st.SandboxByID(t.Context(), created.ID)
 	if err != nil || x == nil {
 		t.Fatalf("stored sandbox: %v %v", x, err)
@@ -262,8 +275,14 @@ func TestCreateRollsBackOnCliRefusal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read exec config: %v", err)
 	}
-	if lines, _ := os.ReadFile(log); strings.Contains(string(cfgRaw), tickerOf(string(lines))) && tickerOf(string(lines)) != "" {
-		t.Error("executor config still names the rolled-back ticker")
+	// The registry row is gone (retry cannot hit series_exists), but the exec config KEEPS the
+	// ticker entry with the CLI-written mint: the on-chain series exists, and execconfig.Write no
+	// longer drops entries the CLI wrote directly (task 91562). The scheduler only resolves
+	// mint→name through this file, so the orphan entry is inert.
+	lines, _ := os.ReadFile(log)
+	ticker := tickerOf(string(lines))
+	if ticker != "" && !strings.Contains(string(cfgRaw), ticker) {
+		t.Errorf("exec config dropped the CLI-written entry for %s", ticker)
 	}
 	if n, err := st.CountSandboxesSince(t.Context(), "", 0); err != nil || n != 0 {
 		t.Fatalf("sandboxes after rollback = %d (err %v), want 0", n, err)

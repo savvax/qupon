@@ -72,6 +72,32 @@ if [ "$cmd" = "asset:faucet" ] && [ -n "$FAKE_CLI_ASSETS" ]; then
     *) printf "qupon: mint '%s' is not in config testAssets\n" "$mint" >&2; exit 1 ;;
   esac
 fi
+# investor:register resolves --series by name from its config ($QUPON_CONFIG, set by the executor)
+# and refuses an unset mint, like the real CLI — the prod race task 91562 fixed: a concurrent config
+# rewrite restored the placeholder mint "" mid-onboarding. Works for pretty and compact JSON.
+if [ "$cmd" = "investor:register" ] && [ -n "$QUPON_CONFIG" ] && [ -f "$QUPON_CONFIG" ]; then
+  name=$(flag --series "$@")
+  mint=$(awk -v name="$name" '
+    { buf = buf $0 }
+    END {
+      n = sprintf("\"%s\":", name)
+      i = index(buf, n)
+      if (i == 0) exit
+      rest = substr(buf, i)
+      end = index(rest, "}")
+      m = index(rest, "\"mint\"")
+      if (m == 0 || (end > 0 && m > end)) exit
+      v = substr(rest, m)
+      sub(/^"mint"[ \t]*:[ \t]*"/, "", v)
+      sub(/".*/, "", v)
+      print v
+    }
+  ' "$QUPON_CONFIG")
+  if [ -z "$mint" ]; then
+    printf 'qupon: series.%s.mint is not set in %s\n' "$name" "$QUPON_CONFIG" >&2
+    exit 1
+  fi
+fi
 if [ -n "$FAKE_CLI_STATE" ]; then
   case "$cmd" in
   kyc:attest)
