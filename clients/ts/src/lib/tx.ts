@@ -34,10 +34,19 @@ export function getRpcUrl(): string {
   return process.env.RPC_URL ?? "https://api.devnet.solana.com";
 }
 
+/** JSON.stringify that survives BigInt (kit puts BigInt codes in tx errors): BigInt → string. */
+export function jsonSafe(value: unknown): string {
+  return JSON.stringify(value, (_, v) =>
+    typeof v === "bigint" ? v.toString() : v,
+  );
+}
+
 /** Transient transport failures worth retrying: network errors, HTTP 429 and 5xx. */
 export function isTransient(e: unknown): boolean {
-  const text = `${(e as Error)?.message ?? ""} ${JSON.stringify((e as { context?: unknown })?.context ?? {})}`;
-  return /fetch failed|ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|"statusCode":(429|5\d\d)|HTTP error \((429|5\d\d)\)/i.test(
+  const text = `${(e as Error)?.message ?? ""} ${jsonSafe(
+    (e as { context?: unknown })?.context ?? {},
+  )}`;
+  return /fetch failed|ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|"statusCode":"?(429|5\d\d)"?|HTTP error \((429|5\d\d)\)/i.test(
     text,
   );
 }
@@ -118,7 +127,7 @@ export async function waitForConfirmation(
   for (;;) {
     const status = await signatureStatus(rpc, signature, fallback);
     if (status?.err)
-      throw new Error(`transaction failed: ${JSON.stringify(status.err)}`);
+      throw new Error(`transaction failed: ${jsonSafe(status.err)}`);
     if (
       status?.confirmationStatus === "confirmed" ||
       status?.confirmationStatus === "finalized"

@@ -8,6 +8,7 @@ import {
   computeUnitLimit,
   createRpc,
   isTransient,
+  jsonSafe,
   sendInstructions,
   statusFallbackUrl,
   waitForConfirmation,
@@ -42,6 +43,20 @@ describe("isTransient", () => {
   });
 });
 
+describe("jsonSafe", () => {
+  it("serializes BigInt error codes that would otherwise throw", () => {
+    const err = { InstructionError: [0, { Custom: 6007n }] };
+    expect(() => JSON.stringify(err)).toThrow();
+    expect(jsonSafe(err)).toContain("6007");
+  });
+  it("is used by isTransient on BigInt contexts", () => {
+    expect(
+      isTransient(
+        Object.assign(new Error("x"), { context: { statusCode: 429n } }),
+      ),
+    ).toBe(true);
+  });
+});
 describe("anchorErrorFromLogs", () => {
   it("extracts the program error name, number and message", () => {
     const logs = [
