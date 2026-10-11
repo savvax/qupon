@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildShowcasePlan,
+  matchingMint,
   SHOWCASE_UNITS,
   seriesNameOf,
   type ShowcaseDef,
@@ -212,32 +213,36 @@ describe("buildShowcasePlan", () => {
   });
 
   it("skips only active series on the same demo clock (task 91555)", () => {
-    const row = (status: string, daySecs: number) => ({
+    const row = (
+      status: string,
+      daySecs: number,
+      mint = "Mint11111111111111111111111111111",
+    ) => ({
       status,
       daySecs,
-      mint: "Mint11111111111111111111111111111",
+      mint,
     });
     const skips = (
-      existing: Record<string, ReturnType<typeof row>>,
+      existing: Record<string, ReturnType<typeof row>[]>,
     ): boolean[] =>
       buildShowcasePlan(DEFS, {
         ...OPTS,
         existing: new Map(Object.entries(existing)),
       }).map((s) => s.skip);
     // active + same clock → skip; closed → re-seed; active on another clock → re-seed
-    expect(skips({ KZ2C0QPN0018: row("active", 3600) })).toEqual([
+    expect(skips({ KZ2C0QPN0018: [row("active", 3600)] })).toEqual([
       true,
       false,
       false,
       false,
     ]);
-    expect(skips({ KZ2C0QPN0018: row("closed", 3600) })).toEqual([
+    expect(skips({ KZ2C0QPN0018: [row("closed", 3600)] })).toEqual([
       false,
       false,
       false,
       false,
     ]);
-    expect(skips({ KZ2C0QPN0018: row("active", 4) })).toEqual([
+    expect(skips({ KZ2C0QPN0018: [row("active", 4)] })).toEqual([
       false,
       false,
       false,
@@ -245,9 +250,37 @@ describe("buildShowcasePlan", () => {
     ]);
     const plan = buildShowcasePlan(DEFS, {
       ...OPTS,
-      existing: new Map([["KZ2C0QPN0018", row("active", 3600)]]),
+      existing: new Map([["KZ2C0QPN0018", [row("active", 3600)]]]),
     });
     expect(plan[0]!.steps).toEqual([]); // nothing to run for a skipped series
     expect(plan[1]!.steps.length).toBeGreaterThan(0);
+  });
+
+  it("matches the active same-clock series when an ISIN has old and new rows (task 91555 review)", () => {
+    const old = {
+      status: "closed",
+      daySecs: 4,
+      mint: "0ld0ld0ld0ld0ld0ld0ld0ld0ld0ld0ld0ld0ld",
+    };
+    const fresh = {
+      status: "active",
+      daySecs: 3600,
+      mint: "NewNewNewNewNewNewNewNewNewNewNewNewNewNewNew",
+    };
+    const def = DEFS[0]!;
+    for (const rows of [
+      [fresh, old],
+      [old, fresh],
+    ]) {
+      const plan = buildShowcasePlan(DEFS, {
+        ...OPTS,
+        existing: new Map([[def.isin, rows]]),
+      });
+      expect(plan[0]!.skip).toBe(true); // the active same-clock row wins over the old one
+      expect(plan[0]!.steps).toEqual([]);
+      expect(matchingMint(rows, def)).toBe(fresh.mint);
+    }
+    // no active same-clock row → no match
+    expect(() => matchingMint([old], def)).toThrow();
   });
 });

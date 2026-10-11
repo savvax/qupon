@@ -17,6 +17,7 @@ import { expandHomePath, loadKeypairFromPath } from "../src/lib/keys.js";
 import { loadEnvFile } from "../src/lib/tx.js";
 import {
   buildShowcasePlan,
+  matchingMint,
   type PlanStep,
   type SeriesPlan,
   type ShowcaseDef,
@@ -263,13 +264,33 @@ async function main(): Promise<void> {
   }
   loadEnvFile();
 
+  /** Group series:list rows by ISIN — PDAs are per mint, so a re-seeded ISIN has several rows. */
+  const groupByIsin = (
+    rows: readonly {
+      mint: string;
+      isin: string;
+      status: string;
+      daySecs: number;
+    }[],
+  ): Map<string, { status: string; daySecs: number; mint: string }[]> => {
+    const g = new Map<
+      string,
+      { status: string; daySecs: number; mint: string }[]
+    >();
+    for (const r of rows) {
+      const list = g.get(r.isin) ?? [];
+      list.push({ status: r.status, daySecs: r.daySecs, mint: r.mint });
+      g.set(r.isin, list);
+    }
+    return g;
+  };
+
   // Idempotency: only an active series on the definition's clock counts as already seeded —
   // closed or other-clock series (the old 4 s showcase) are re-planned (task 91555).
   const listed = exec(["series:list"]) as {
     series?: { mint: string; isin: string; status: string; daySecs: number }[];
   };
-  const rows = new Map((listed.series ?? []).map((r) => [r.isin, r] as const));
-  const mintOf = new Map([...rows].map(([isin, r]) => [isin, r.mint] as const));
+  const rows = groupByIsin(listed.series ?? []);
   const live = buildShowcasePlan(defs, {
     today: today(),
     owners: await owners(),
@@ -287,7 +308,7 @@ async function main(): Promise<void> {
     sections.push(section);
     log(`== ${section.title}`);
     if (s.skip) {
-      const mint = mintOf.get(s.def.isin) ?? "";
+      const mint = matchingMint(rows.get(s.def.isin) ?? [], s.def);
       section.intro.push(
         `- Already on chain (active, same clock): mint [${mint}](${addressLink(mint)}) — skipped.`,
       );
@@ -296,19 +317,18 @@ async function main(): Promise<void> {
         signatures: [],
         status: "skipped",
       });
-      continue;
+    } else {
+      for (const st of s.steps) await runStep(s, st, section);
     }
-    for (const st of s.steps) await runStep(s, st, section);
   }
-  // series:create printed each new mint; re-list to map ISIN → mint after the run.
+  // Re-list after the run; per ISIN the matching active same-clock row is the one we feature.
   const after = exec(["series:list"]) as {
-    series?: { mint: string; isin: string }[];
+    series?: { mint: string; isin: string; status: string; daySecs: number }[];
   };
-  for (const r of after.series ?? []) mintOf.set(r.isin, r.mint);
-  const mints = live.map((s) => mintOf.get(s.def.isin) ?? "");
-  const missing = mints.filter((m) => m === "");
-  if (missing.length > 0)
-    throw new Error(`${missing.length} showcase series have no on-chain mint`);
+  const afterRows = groupByIsin(after.series ?? []);
+  const mints = live.map((s) =>
+    matchingMint(afterRows.get(s.def.isin) ?? [], s.def),
+  );
 
   featureMints(mints);
   const seeded = await seedEndpoint();

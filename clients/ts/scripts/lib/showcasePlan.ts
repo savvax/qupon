@@ -47,10 +47,11 @@ export interface PlanOpts {
   readonly today: string;
   /** investor1..3 wallet addresses (kyc:attest / investor:register / vote targets). */
   readonly owners: readonly [string, string, string];
-  /** ISINs already on chain (series:list) — those definitions are skipped (idempotent re-runs). */
+  /** Series rows per ISIN on chain (series:list) — a definition is skipped only when one of its
+   *  rows is active on the definition's clock; PDAs are per mint, so an ISIN can have several. */
   readonly existing?: ReadonlyMap<
     string,
-    { status: string; daySecs: number; mint: string }
+    readonly { status: string; daySecs: number; mint: string }[]
   >;
   /** keypair resolver: env-var name → path (tests pass a placeholder). */
   readonly kp?: (envVar: string) => string;
@@ -243,6 +244,21 @@ function scenarioSteps(
   }
 }
 
+/** The mint of the ISIN's single active series on the definition's clock; throws otherwise. */
+export function matchingMint(
+  rows: readonly { status: string; daySecs: number; mint: string }[],
+  def: Pick<ShowcaseDef, "isin" | "daySecs">,
+): string {
+  const m = rows.flatMap((r) =>
+    r.status === "active" && r.daySecs === def.daySecs ? [r.mint] : [],
+  );
+  if (m.length !== 1)
+    throw new Error(
+      `${def.isin}: expected exactly 1 active series with 1 day = ${def.daySecs} s, found ${m.length}`,
+    );
+  return m[0]!;
+}
+
 /** The full seed plan, in board order (config/showcase.json order = the Go Showcase table order). */
 export function buildShowcasePlan(
   defs: readonly ShowcaseDef[],
@@ -318,11 +334,12 @@ export function buildShowcasePlan(
         ],
       })),
     ];
-    // Re-seed when the on-chain series is closed or on another demo clock: only an active series
-    // with the definition's daySecs counts as already seeded (task 91555).
+    // Re-seed when every on-chain series for the ISIN is closed or on another demo clock: only
+    // an active series with the definition's daySecs counts as already seeded (task 91555).
     const on = opts.existing?.get(def.isin);
     const skip =
-      on !== undefined && on.status === "active" && on.daySecs === def.daySecs;
+      on !== undefined &&
+      on.some((r) => r.status === "active" && r.daySecs === def.daySecs);
     return {
       def,
       name,
