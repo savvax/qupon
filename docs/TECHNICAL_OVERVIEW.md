@@ -96,7 +96,7 @@ Records: 28 event types (one per transition), ISO 20022 `seev.031`/`seev.036` an
 | `declare_default` | anyone | default one series day after a missed payment; late funding cures it |
 | `attach_disclosure` | registrar | anchor the sha256 of the seev.031 notice on the action (once) |
 
-Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). Compute ([`reports/cu-benchmarks.md`](../reports/cu-benchmarks.md)): the heaviest batch at the size the CLI sends is `snapshot_batch` with 8 holders at 82,790 CU — 13.8% of the 600k limit the CLI sets per transaction; the worst measured batch overall (`retire_batch`, 12 holders) is 56,333 CU, 4.0% of the 1.4M per-transaction compute limit; an extra holder costs about 3.7k CU in the worst case. Tests: 116 program tests (LiteSVM integration + unit) including the brief suite and the secondary-trade suite, which runs the devnet binary of the Solana DvP program; Go and TS mirrors of the math; `make verify` gates every merge.
+Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). Compute ([`reports/cu-benchmarks.md`](../reports/cu-benchmarks.md)): the heaviest batch at the size the CLI sends is `snapshot_batch` with 8 holders at 82,790 CU (13.8% of the 600k limit the CLI sets per transaction); the heaviest measured transaction is a 5-holder redemption `pay_batch` (pay + burn) at 84,234 CU, 6.0% of the 1.4M limit; an extra holder costs at most about 14k CU (pay_batch, Token-2022 cash with tax). Tests: 116 program tests (LiteSVM integration + unit) including the brief suite and the secondary-trade suite, which runs the devnet binary of the Solana DvP program; Go and TS mirrors of the math; `make verify` gates every merge.
 
 ## Implemented vs simulated
 
