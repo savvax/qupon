@@ -72,7 +72,7 @@ func newService(t *testing.T, holders []Holder) (*Service, *store.Store, string,
 	t.Cleanup(func() { _ = st.Close() })
 	log := filepath.Join(dir, "cli.log")
 	t.Setenv("FAKE_CLI_LOG", log)
-	t.Setenv("FAKE_CLI_STATE", filepath.Join(dir, "state")) // the fake CLI then refuses attest/register mismatches
+	t.Setenv("FAKE_CLI_STATE", filepath.Join(dir, "state"))                          // the fake CLI then refuses attest/register mismatches
 	t.Setenv("FAKE_CLI_ASSETS", "tKZT,HQWXGhNN3SUuaauG1z3vTjzfHRshJxdRYLF9gzzhFmsF") // faucet allow-list (task 91556)
 	stdout := filepath.Join(dir, "out.json")
 	t.Setenv("FAKE_CLI_STDOUT", stdout)
