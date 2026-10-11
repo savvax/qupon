@@ -106,10 +106,11 @@ func showcaseSeed(deps Deps, st *store.Store) http.HandlerFunc {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		want := map[string]bool{}
+		want := map[string]uint32{} // ISIN → the definition's demo clock
 		for _, d := range Showcase {
-			want[d.ISIN] = true
+			want[d.ISIN] = d.DaySecs
 		}
+		pickedIssue := map[string]int64{} // ISIN → IssueDate of the series picked so far
 		byISIN := map[string]string{} // ISIN → mint
 		demoMints := []string{}       // every series on the accelerated clock
 		if deps.Read != nil {
@@ -120,8 +121,11 @@ func showcaseSeed(deps Deps, st *store.Store) http.HandlerFunc {
 			}
 			for _, rec := range recs {
 				isin := strings.TrimRight(string(rec.Series.ISIN[:]), "\x00")
-				if want[isin] {
+				// A re-seed leaves the old showcase on chain under the same ISIN: feature the series on the definition's
+				// clock, the most recently issued one (2026-10-11: the 4 s showcase was re-issued at 1 h per day).
+				if clock, ok := want[isin]; ok && rec.Series.DaySecs == clock && rec.Series.IssueDate >= pickedIssue[isin] {
 					byISIN[isin] = rec.Series.Mint.String()
+					pickedIssue[isin] = rec.Series.IssueDate
 				}
 				if rec.Series.DaySecs > 0 {
 					demoMints = append(demoMints, rec.Series.Mint.String())
@@ -142,7 +146,7 @@ func showcaseSeed(deps Deps, st *store.Store) http.HandlerFunc {
 					} `json:"demoClock"`
 				}
 				if json.Unmarshal(row.Data, &view) == nil {
-					if want[view.ISIN] {
+					if clock, ok := want[view.ISIN]; ok && view.DemoClock != nil && uint32(view.DemoClock.DaySecs) == clock {
 						byISIN[view.ISIN] = row.Mint
 					}
 					if view.DemoClock != nil {

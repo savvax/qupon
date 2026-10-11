@@ -36,6 +36,9 @@ func (showcaseRead) AllSeries(context.Context) ([]chain.SeriesRecord, error) {
 		mk(solana.PublicKey{2: 2}, "KZ2C0SBX0099", "Judge sandbox", 2),   // demo clock, not curated
 		mk(solana.PublicKey{3: 3}, "KZ2C0QUPON01", "QPNb1", 0),           // real clock: stays public
 		mk(solana.PublicKey{4: 4}, "KZ2C0QUPON02", "QPNb2", 0),           // second real-clock series
+		// the first showcase run (4 s clock), still on chain under the same ISIN after the re-seed: listed last so a
+		// last-wins match would feature it; the seed must pick the series on the definition's clock and hide this one
+		mk(solana.PublicKey{5: 5}, "KZ2C0QPN0018", "Almaty Power", 4),
 	}, nil
 }
 
@@ -109,7 +112,7 @@ func TestShowcaseSeedFeaturesAndHides(t *testing.T) {
 		Missing []string `json:"missing"`
 	}
 	if json.Unmarshal(rec.Body.Bytes(), &out) != nil || len(out.Seeded) != 1 ||
-		len(out.Hidden) != 1 || len(out.Missing) != 3 {
+		len(out.Hidden) != 2 || len(out.Missing) != 3 {
 		t.Fatalf("seed result = %s", rec.Body)
 	}
 
