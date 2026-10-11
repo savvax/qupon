@@ -204,18 +204,19 @@ func sandboxView(r *http.Request, deps Deps, st *store.Store, id string) (*sandb
 
 	now := time.Now()
 	d := &sandboxDetail{
-		ID:         x.ID,
-		Clock:      sandboxClock{DaySecs: series.DaySecs, IssueTs: series.IssueDate},
-		ServerTime: now.UnixMilli(),
-		ExpiresAt:  x.ExpiresAt * 1000,
-		Autofund:   !x.SkipFunding,
-		Series:     seriesDTO(pda, series, m, false),
-		Schedule:   []ScheduleItem{},
-		Actions:    []ActionDTO{},
-		Holders:    []sandboxHolderView{},
-		Activity:   []sandboxActivityView{},
-		Scenarios:  []json.RawMessage{},
-		Links:      linksOf(x.Mint),
+		ID:           x.ID,
+		Clock:        sandboxClock{DaySecs: series.DaySecs, IssueTs: series.IssueDate},
+		ServerTime:   now.UnixMilli(),
+		ExpiresAt:    x.ExpiresAt * 1000,
+		Autofund:     !x.SkipFunding,
+		Series:       seriesDTO(pda, series, m, false),
+		Schedule:     []ScheduleItem{},
+		Actions:      []ActionDTO{},
+		Holders:      []sandboxHolderView{},
+		Entitlements: []EntitlementDTO{}, // null breaks the web contract's array type (task 91561)
+		Activity:     []sandboxActivityView{},
+		Scenarios:    []json.RawMessage{},
+		Links:        linksOf(x.Mint),
 	}
 	if x.Wallet != "" {
 		d.Wallet = &x.Wallet

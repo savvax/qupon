@@ -450,9 +450,10 @@ export function Register({
   const t = useTranslations("sandbox.register");
   const redm = a?.kind === "REDM";
   const snapshotting = a?.status === "RecordStruck";
-  const rows = s.entitlements;
+  const rows = s.entitlements ?? []; // Go DTO may send null (defence in depth, task 91561)
+  const holders = s.holders ?? [];
   const waiting = snapshotting
-    ? s.holders.filter(
+    ? holders.filter(
         (h) => h.units !== "0" && !rows.some((e) => e.owner === h.owner),
       )
     : [];
@@ -928,7 +929,8 @@ export function RoleCard({
       </>
     );
   } else if (role === "registrar") {
-    const bank = s.entitlements.filter((e) => e.status === "PaidToAgent");
+    const ents = s.entitlements ?? [];
+    const bank = ents.filter((e) => e.status === "PaidToAgent");
     body = (
       <>
         <p className="text-sm text-n700">
@@ -955,12 +957,12 @@ export function RoleCard({
       </>
     );
   } else {
-    const holders = s.holders;
+    const holders = s.holders ?? [];
     const sel =
       holders.find((h) => h.owner === pick) ??
       holders.find((h) => h.kind === "wallet") ??
       holders[0]!;
-    const e = s.entitlements.find((x) => x.owner === sel.owner);
+    const e = (s.entitlements ?? []).find((x) => x.owner === sel.owner);
     const paidSig =
       a && e
         ? txOf(s.activity, a.pda, e.owner, ["EntitlementPaid", "PaidToAgent"])

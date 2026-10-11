@@ -158,6 +158,39 @@ func TestSandboxCreateAndCookie(t *testing.T) {
 	}
 }
 
+// TestSandboxDetailSlicesAreNeverNull: a sandbox with no corporate actions must marshal every
+// slice field as [] — the web contract types them as arrays and `.reduce` on null crashes the page
+// (task 91561).
+func TestSandboxDetailSlicesAreNeverNull(t *testing.T) {
+	srv, _, _ := sandboxServer(t)
+	res, out := postSandbox(t, srv.URL, "/demo/sandbox", `{"requestId":"nullfree"}`, "6.6.6.6")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf("create: %d %v", res.StatusCode, out)
+	}
+	get := doGetURL(t, srv.URL, "/demo/sandbox/"+fmt.Sprint(out["id"]))
+	if get.StatusCode != http.StatusOK {
+		t.Fatalf("get: %d %s", get.StatusCode, get.Body)
+	}
+	var d map[string]any
+	if err := json.Unmarshal([]byte(get.Body), &d); err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range []string{"schedule", "actions", "holders", "entitlements", "activity", "scenarios"} {
+		v, ok := d[f]
+		if !ok {
+			t.Errorf("missing field %q", f)
+			continue
+		}
+		if _, isArr := v.([]any); !isArr {
+			t.Errorf("%s = %v, want an array (never null)", f, v)
+		}
+	}
+	// The page crashes on entitlements.reduce before the first snapshot lands — the judge's first view.
+	if ents, _ := d["entitlements"].([]any); len(ents) != 0 {
+		t.Errorf("entitlements = %v, want empty before any snapshot", ents)
+	}
+}
+
 // TestSandboxRateLimitUsesLastForwardedFor: the limit keys on the XFF entry Caddy appends (the last), never
 // the first — the visitor controls that one.
 func TestSandboxRateLimitUsesLastForwardedFor(t *testing.T) {
