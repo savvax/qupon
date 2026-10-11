@@ -30,3 +30,17 @@ Go test above green; web unit/typecheck green; `make verify` green. Commit
 
 ## Finish
 Write `reports/worklog/91561.md` (3–6 lines), commit with `task: 91561`, print `DONE:91561` or `BLOCKED:91561 <reason>`.
+
+## Review feedback (round 1, 2026-10-11 09:46) — fix every blocking item first; your previous work is already committed on this branch
+
+### Summary
+The Go root-cause fix and its test are correct and pass, and the web null guards cover every read. The Dockerfile fix is broken: the new mkdir/chown RUN sits after the existing `USER node`, so it runs as non-root, the image build fails, and the cache dir is never made writable. Move the RUN above the single `USER node` and it can merge.
+
+### Blocking
+- apps/web/Dockerfile:25 — Acceptance item 3 is not met, and the image will not build. The diff inserts the new `RUN mkdir -p ./apps/web/.next/cache && chown -R node:node ./apps/web/.next` after the existing `USER node` on line 25, so the RUN executes as `node`. The files from the earlier COPYs are root-owned, so the mkdir inside `/app/apps/web/.next` fails with EACCES, and a non-root `chown` fails anyway. The build fails at that step, and nothing makes the cache dir writable. The worker also added a second `USER node` (line 28), which shows they missed the existing one.
+  **Fix:** Delete the original `USER node` on line 25 so the order is: COPY standalone, COPY static, `RUN mkdir -p ./apps/web/.next/cache && chown -R node:node ./apps/web/.next` (runs as root), then a single `USER node`, then EXPOSE/CMD. Another option is `COPY --chown=node:node` on both COPY lines, plus a `RUN mkdir` + chown before `USER node`. Check with `docker build -f apps/web/Dockerfile .` locally (do not deploy).
+
+### Acceptance criteria not met
+- Dockerfile: create .next/cache and chown node:node before USER node — The RUN comes after the existing `USER node` (line 25), so it runs as the non-root user and fails. See blocking item.
+
+Design score: 8/10
