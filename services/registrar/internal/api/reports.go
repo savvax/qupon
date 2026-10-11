@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -205,6 +206,7 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 		}
 		all, err := ownerPayouts(r.Context(), deps.Read, st, owners)
 		if err != nil {
+			slog.Error("upstream call failed", "code", "chain_unavailable", "error", err)
 			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", "chain read failed")
 			return
 		}
@@ -236,6 +238,7 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 		}
 		all, err := ownerPayouts(r.Context(), deps.Read, st, owners)
 		if err != nil {
+			slog.Error("upstream call failed", "code", "chain_unavailable", "error", err)
 			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", "chain read failed")
 			return
 		}
@@ -266,6 +269,7 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 		}
 		recs, err := deps.Read.FetchInvestorsBySeries(r.Context(), pda)
 		if err != nil {
+			slog.Error("upstream call failed", "code", "chain_unavailable", "error", err)
 			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", "chain read failed")
 			return
 		}
@@ -306,11 +310,13 @@ func mountReports(r chi.Router, deps Deps, st *store.Store) {
 		}
 		m, err := cashMoney(r.Context(), deps.Read, st, a.CashMint)
 		if err != nil {
+			slog.Error("upstream call failed", "code", "chain_unavailable", "error", err)
 			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", "chain read failed")
 			return
 		}
 		ents, err := deps.Read.FetchEntitlementsByAction(r.Context(), pda)
 		if err != nil {
+			slog.Error("upstream call failed", "code", "chain_unavailable", "error", err)
 			writeErrorCode(w, http.StatusBadGateway, "chain_unavailable", "chain read failed")
 			return
 		}
