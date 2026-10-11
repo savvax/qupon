@@ -70,6 +70,7 @@ func newService(t *testing.T, holders []Holder) (*Service, *store.Store, string,
 	t.Cleanup(func() { _ = st.Close() })
 	log := filepath.Join(dir, "cli.log")
 	t.Setenv("FAKE_CLI_LOG", log)
+	t.Setenv("FAKE_CLI_STATE", filepath.Join(dir, "state")) // the fake CLI then refuses attest/register mismatches
 	stdout := filepath.Join(dir, "out.json")
 	t.Setenv("FAKE_CLI_STDOUT", stdout)
 	s := &Service{
@@ -149,6 +150,9 @@ func TestCreate(t *testing.T) {
 			t.Errorf("cli argv missing %q", want)
 		}
 	}
+	// Every investor:register carries exactly the type/residency/tax-bps of the kyc:attest before it
+	// (the fake CLI also refuses a mismatch — this asserts the argv directly; task 91540).
+	attestMatchesRegister(t, argv)
 	x, err := st.SandboxByID(t.Context(), created.ID)
 	if err != nil || x == nil {
 		t.Fatalf("stored sandbox: %v %v", x, err)
@@ -169,6 +173,47 @@ func TestCreate(t *testing.T) {
 	}
 	if after, _ := os.ReadFile(log); string(after) != before {
 		t.Error("idempotent create ran the CLI again")
+	}
+}
+
+// flagsOf turns a logged argv ("--json kyc:attest --owner X …") into its --flag → value map.
+func flagsOf(fields []string) map[string]string {
+	m := map[string]string{}
+	for i := 0; i+1 < len(fields); i++ {
+		if strings.HasPrefix(fields[i], "--") {
+			m[fields[i]] = fields[i+1]
+		}
+	}
+	return m
+}
+
+// attestMatchesRegister: for every owner, the last kyc:attest's type/residency/tax-bps equals the
+// investor:register's — register_investor refuses otherwise (KycAttestationInvalid, 6031).
+func attestMatchesRegister(t *testing.T, cliLog string) {
+	t.Helper()
+	type attrs struct{ typ, res, tax string }
+	last := map[string]attrs{}
+	for _, line := range strings.Split(cliLog, "\n") {
+		f := strings.Fields(line)
+		if len(f) < 2 {
+			continue
+		}
+		switch f[1] {
+		case "kyc:attest":
+			m := flagsOf(f)
+			last[m["--owner"]] = attrs{m["--type"], m["--residency"], m["--tax-bps"]}
+		case "investor:register":
+			m := flagsOf(f)
+			a, ok := last[m["--owner"]]
+			if !ok {
+				t.Errorf("investor:register for %s without a kyc:attest", m["--owner"])
+				continue
+			}
+			if a.typ != m["--type"] || a.res != m["--residency"] || a.tax != m["--tax-bps"] {
+				t.Errorf("owner %s: attested %s/%s/%s but registered %s/%s/%s",
+					m["--owner"], a.typ, a.res, a.tax, m["--type"], m["--residency"], m["--tax-bps"])
+			}
+		}
 	}
 }
 

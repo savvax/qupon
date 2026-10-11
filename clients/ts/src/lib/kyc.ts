@@ -3,7 +3,7 @@
  * live attestation from the demo KYC provider under these credential/schema addresses (constants.rs mirrors them).
  * The provider is SIMULATED (a devnet keypair, not a licensed KYC firm); the attestation itself is real SAS.
  */
-import { type Address, address, getAddressEncoder } from "@solana/kit";
+import { type Address, type ReadonlyUint8Array, address, getAddressEncoder } from "@solana/kit";
 import { deriveAttestationPda, deriveCredentialPda, deriveSchemaPda } from "sas-lib";
 
 export const KYC_PROVIDER = address("DcXPFyq5GxFc79RqM6xaWcAyrpty4KZJQJoNoEXwdNx9");
@@ -24,6 +24,11 @@ export interface KycAttributes {
 /** Attestation data in schema order (borsh: u8, u8, u16 LE) — what the program compares with the registration. */
 export function encodeKycData(k: KycAttributes): Uint8Array {
 	return new Uint8Array([k.investorType, k.residency, k.taxRateBps & 0xff, (k.taxRateBps >> 8) & 0xff]);
+}
+
+/** Bytewise equality of two encoded KYC attribute blobs (the attestation vs the registration). */
+export function kycDataEquals(a: ReadonlyUint8Array, b: ReadonlyUint8Array): boolean {
+	return a.length === b.length && a.every((v, i) => v === b[i]);
 }
 
 /** The investor's attestation: nonce = the investor's wallet, so one attestation per wallet. */

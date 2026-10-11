@@ -31,10 +31,11 @@ const daySecs = "1"
 
 // face / rate / frequency: the brief's bond (1,000 KZT face, 10 % semi-annual → 500 / 1,250 / 3,250 tKZT).
 const (
-	faceMinor   = 100000
-	rateBps     = 1000
-	frequency   = 2
-	walletUnits = 5 // the visitor's own placement (the web mock's WALLET_UNITS)
+	faceMinor     = 100000
+	rateBps       = 1000
+	frequency     = 2
+	walletUnits   = 5    // the visitor's own placement (the web mock's WALLET_UNITS)
+	visitorTaxBps = 1000 // the visitor's wallet registers as an individual at 10 % withholding
 )
 
 // almaty is the zone issue dates are computed in (KZ has no DST; FixedZone avoids needing tzdata).
@@ -278,7 +279,7 @@ func (s *Service) Create(ctx context.Context, wallet, requestID, ip string) (*Cr
 		}
 	}
 	if wallet != "" {
-		if err := s.place(ctx, ticker, res.Mint, Holder{Keypair: "", Label: "Your wallet", Units: walletUnits, Faucet: 1_000_000},
+		if err := s.place(ctx, ticker, res.Mint, Holder{Keypair: wallet, Label: "Your wallet", Units: walletUnits, TaxBps: visitorTaxBps, Faucet: 1_000_000},
 			&labels); err != nil {
 			s.rollback(ctx, ticker)
 			return nil, err
@@ -305,7 +306,9 @@ func (s *Service) Create(ctx context.Context, wallet, requestID, ip string) (*Cr
 }
 
 // place runs one holder's onboarding: SAS attest (SIMULATED provider), register, cash faucet (the DvP cash
-// leg and the visitor's trades need funding), bank route choice, and the placement itself.
+// leg and the visitor's trades need funding), bank route choice, and the placement itself. The attested KYC
+// attributes are EXACTLY the registered ones — register_investor refuses a mismatch (KycAttestationInvalid, 6031),
+// and the custodial demo investors may already carry older attestations from the demo scripts, hence --replace.
 func (s *Service) place(ctx context.Context, ticker, mint string, h Holder, labels *[]store.SandboxHolder) error {
 	owner := h.Keypair
 	if h.Label != "Your wallet" { // the visitor's wallet is their own address, not a server-held keypair
@@ -315,16 +318,16 @@ func (s *Service) place(ctx context.Context, ticker, mint string, h Holder, labe
 		}
 		owner = pk
 	}
-	if _, err := s.run(ctx, "kyc:attest", "--owner", owner); err != nil {
+	invType, residency, tax := kycOf(h)
+	if _, err := s.run(ctx, "kyc:attest", "--owner", owner, "--type", invType, "--residency", residency, "--tax-bps", tax, "--replace"); err != nil {
 		return fmt.Errorf("%w: attest %s: %v", ErrExecutor, h.Label, err)
 	}
 	route := "wallet"
 	if h.Bank {
 		route = "bank"
 	}
-	tax := strconv.Itoa(h.TaxBps)
 	if _, err := s.run(ctx, "investor:register", "--series", ticker, "--owner", owner,
-		"--type", "legal_entity", "--residency", "resident", "--tax-bps", tax); err != nil {
+		"--type", invType, "--residency", residency, "--tax-bps", tax); err != nil {
 		return fmt.Errorf("%w: register %s: %v", ErrExecutor, h.Label, err)
 	}
 	if h.Faucet > 0 {
@@ -347,6 +350,17 @@ func (s *Service) place(ctx context.Context, ticker, mint string, h Holder, labe
 		Owner: owner, Label: h.Label, Units: h.Units, Route: route, TaxRateBps: h.TaxBps, Kind: "demo",
 	})
 	return nil
+}
+
+// kycOf is the single source of truth for a holder's KYC attributes: what place() attests is exactly what it
+// registers. Custodial demo investors are resident legal entities at the holder's tax rate; the visitor's own
+// wallet is an individual at 10 % (the web mock's default), per the task 91540 spec.
+func kycOf(h Holder) (invType, residency, tax string) {
+	invType = "legal_entity"
+	if h.Label == "Your wallet" {
+		invType = "individual"
+	}
+	return invType, "resident", strconv.Itoa(h.TaxBps)
 }
 
 // cashMintOf resolves the series' cash mint (best-effort: the CLI knows the config's testAssets too).

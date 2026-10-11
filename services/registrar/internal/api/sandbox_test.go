@@ -52,6 +52,7 @@ func sandboxServer(t *testing.T) (*httptest.Server, *store.Store, *sandbox.Servi
 	}
 	t.Cleanup(func() { _ = st.Close() })
 	t.Setenv("FAKE_CLI_LOG", filepath.Join(dir, "cli.log"))
+	t.Setenv("FAKE_CLI_STATE", filepath.Join(dir, "state")) // the fake CLI refuses attest/register mismatches
 	t.Setenv("FAKE_CLI_STDOUT", writeT(t, dir, "ok.json",
 		fmt.Sprintf(`{"ok":true,"signature":"sig1","slot":"7","mint":"%s"}`, fMint)))
 
