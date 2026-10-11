@@ -136,6 +136,19 @@ describe("waitForConfirmation", () => {
       /transaction failed/,
     );
   });
+  it("reports a BigInt custom code from on-chain failure without throwing", async () => {
+    const primary = statusRpc(() => ({
+      value: [
+        {
+          confirmationStatus: "confirmed",
+          err: { InstructionError: [0, { Custom: 6007n }] },
+        },
+      ],
+    }));
+    const p = waitForConfirmation(primary, sig, 5_000);
+    await expect(p).rejects.toThrow(/6007/);
+    await expect(p).rejects.not.toThrow(/serialize a BigInt/);
+  });
   it("throws 'block height exceeded' once the chain passes lastValidBlockHeight", async () => {
     const rpc = {
       getSignatureStatuses: () => ({ send: async () => ({ value: [null] }) }),
@@ -195,6 +208,34 @@ describe("sendInstructions", () => {
     expect(statusI).toBe(4); // no premature throw: polls 1-3 saw null status without failing
     expect(heightI).toBe(3);
   }, 10_000);
+});
+it("surfaces the Anchor error name from logs with a BigInt context (task 91554)", async () => {
+  const payer = await generateKeyPairSigner();
+  const rpc = {
+    getLatestBlockhash: () => ({
+      send: async () => ({
+        value: {
+          blockhash: "1".repeat(32),
+          lastValidBlockHeight: 200n,
+        },
+      }),
+    }),
+    sendTransaction: () => ({
+      send: async () => {
+        throw Object.assign(new Error("Transaction simulation failed"), {
+          context: {
+            logs: [
+              "Program log: AnchorError occurred. Error Code: InvalidDates. Error Number: 6007. Error Message: Invalid dates.",
+            ],
+            code: 6007n,
+          },
+        });
+      },
+    }),
+  } as unknown as QuponRpc;
+  const p = sendInstructions(rpc, payer, [computeUnitLimit(1)], "announce");
+  await expect(p).rejects.toThrow(/InvalidDates \(6007\)/);
+  await expect(p).rejects.not.toThrow(/serialize a BigInt/);
 });
 
 describe("createRpc", () => {
