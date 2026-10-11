@@ -28,6 +28,7 @@ Implement task 1533 of plan 15 exactly as written below (the plan section is cop
 - [ ] Portfolio header: "Claimable now · Next coupon in N days · Received to date", plus a "Claim all" button.
 - [ ] Payout calendar for the next 12 months of record/payment dates (from `/holders/{owner}`).
 - [ ] Positions with clean, accrued and dirty value and YTM (`yield.ts`), plus default/cure badges.
+- [ ] Every payout row shows **gross, withheld tax and net**.
 - [ ] Public `/holder/[address]` page (no login) rendering `/holders/{owner}`.
 - [ ] `walletSigner.ts`: before sending, compare the signed transaction's message bytes with the bytes we built; mismatch → abort with a clear error (unit test with a tampering mock wallet).
 

@@ -23,6 +23,7 @@ Implement task 1537 of plan 15 exactly as written below (the plan section is cop
 
 **Agent:** claude (Opus) · **Depends on:** 1531–1536
 
+Full sweep (`e2e/sweep.spec.ts` extended to kk) every route × en/ru/kk × 1440/390; fix every inconsistency (spacing, truncation, token drift, empty states, motion); write `reports/design/preflight.md` with before/after.
 
 ## Finish
 `make verify` green, commits carry `task: 1537`, `reports/worklog/1537.md` written. Print `DONE:1537` or `BLOCKED:1537 <reason>`.

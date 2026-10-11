@@ -1,11 +1,14 @@
+# Plan 15 — Judge experience: rigorous corporate actions, end to end
 
 > **For agentic workers:** each `### Task NNNN` below is one queue task. `tasks/backlog/NNNN-*.md` carries the task section verbatim plus frontmatter; the human releases a wave by moving files to `tasks/todo/`. Read the task's **Read first**, implement, run the narrowest tests, then `make verify`. Steps use checkbox (`- [ ]`) syntax. Every GLM/Flash task passes an **Opus review gate** before merge (section "Harness"); answer its feedback if the task file contains `## Review feedback`.
 
+**Goal:** exact record date without a long halt, trustless crank, on-chain default & cure, atomic redemption, holder-chosen payouts, accrued interest, a judge sandbox on a demo clock, Kazakh UI, browser-verifiable proofs, and a judge experience and visual design of production quality.
 
 **Architecture:** program changes go into the existing Anchor program as a strict chain (1510 → 1515) that never changes the size of existing accounts (new fields live in `reserved`, new data in new PDAs/events). Off-chain layers (CLI, Go registrar, web) follow; web work starts immediately on mocks. Opus owns design (language v2 + golden screens) and reviews every merged task.
 
 **Tech Stack:** Anchor 1.2 / Token-2022 / LiteSVM · `crates/entitlement` (no_std) · TS `@solana/kit` 8 + Codama · Go 1.26 (chi, SQLite) · Next 15 / Tailwind 4 / next-intl 4 / motion 12 · Playwright · pi + GLM-5.3 workers, Claude Opus reviewer.
 
+**Spec:** `docs/superpowers/plans/2026-10-09-plan15-judge-experience.md` (decisions D1–D11).
 
 ## Global Constraints
 - Devnet only. Never commit secrets. Toolchain pins unchanged (Agave 4.3.0, Anchor 1.2.0, @solana/kit 8.x, Go 1.26, Node 22, pnpm 9).
@@ -494,11 +497,15 @@ Fill the checksum from `https://github.com/gitleaks/gitleaks/releases/download/v
 
 **Agent:** claude (Opus) · **Depends on:** — (mock mode) · use skills `taste` / `frontend-design`
 
+**Inputs:** current UI baseline `reports/ui/sweep/` (re-run sweep first — it is stale); tokens in `apps/web/src/app/globals.css`.
 
+**Must fix:**
 - Scroll-reveal must never hide content: animate transform only, never start at opacity 0. Full-page screenshot, print and slow devices all show the whole page.
 - Hero card shows the last **completed** payout: amount, number of holders, tx link. It never shows "0.00 ₸ · Not paid yet".
 - Header has a single primary CTA "Try it in 3 minutes", plus a "View as: Public · Issuer · Registrar · Investor" switch that goes to the demo roles in one click. Connect-wallet is secondary.
 - Trust layer appears everywhere: a network chip "Devnet · slot N · updated 3 s ago", Implemented/Simulated/Demo-clock provenance chips next to features, and "Export issue audit (CSV)" on the bond dossier.
+- The flow graph (issuer → escrow → holders / tax vault / bank agent, amounts on edges, steppable with tx per step) is the centrepiece of the landing and dossier.
+- Mobile at 390 px: no truncated tables (row cards), a sticky NowBar at the bottom, KPIs in a 2×2 grid.
 
 **Deliverables:**
 - `docs/design/language.md` — principles (institutional, calm, data-dense, provable), type scale, spacing rhythm, color roles (brand green kept, a data-viz palette, status semantics incl. **Defaulted**/**Cured**/**Demo clock**/**Simulated**/**Verified on-chain**), density modes (operator vs public), motion rules, iconography, empty/loading/error patterns, copy tone, provenance chips ("On-chain ✓" / "Simulated" / "Demo clock").
@@ -507,6 +514,7 @@ Fill the checksum from `https://github.com/gitleaks/gitleaks/releases/download/v
 - **Golden screens** (fully built, en/ru, kk strings via keys): landing hero + "Try it in 3 minutes" CTA; bond dossier `/bonds/[mint]`; action console `/registrar/actions/[pda]`; sandbox shell `/sandbox/[id]` (mock data).
 - Gallery `/ui` updated with every primitive in every state.
 
+**Acceptance (self-check + Opus pre-flight later):** design score ≥ 9 (write the review in `reports/design/1530-comparison.md` with shots); no horizontal scroll at 390; reduced-motion safe; contrast AA; `make verify` green.
 
 ---
 
@@ -960,6 +968,7 @@ Every web task: implement against `docs/design/language.md` and the golden scree
 - [ ] Portfolio header: "Claimable now · Next coupon in N days · Received to date", plus a "Claim all" button.
 - [ ] Payout calendar for the next 12 months of record/payment dates (from `/holders/{owner}`).
 - [ ] Positions with clean, accrued and dirty value and YTM (`yield.ts`), plus default/cure badges.
+- [ ] Every payout row shows **gross, withheld tax and net**.
 - [ ] Public `/holder/[address]` page (no login) rendering `/holders/{owner}`.
 - [ ] `walletSigner.ts`: before sending, compare the signed transaction's message bytes with the bytes we built; mismatch → abort with a clear error (unit test with a tampering mock wallet).
 
@@ -1004,6 +1013,7 @@ Every web task: implement against `docs/design/language.md` and the golden scree
 
 **Agent:** claude (Opus) · **Depends on:** 1531–1536
 
+Full sweep (`e2e/sweep.spec.ts` extended to kk) every route × en/ru/kk × 1440/390; fix every inconsistency (spacing, truncation, token drift, empty states, motion); write `reports/design/preflight.md` with before/after.
 
 ### Task 1540: final devnet run, live e2e, deploy (Opus)
 

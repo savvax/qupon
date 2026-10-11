@@ -8,7 +8,8 @@ verify: make verify
 timeout_min: 180
 ---
 ## Goal
-Task 1537's Opus design review (`reports/design/preflight/opus-review.md`) found what still keeps Qupon behind the best
+Task 1537's Opus design review (`reports/design/preflight/opus-review.md`) found what still keeps Qupon's screens
+below the design bar. Implement findings **3, 5, 13, 14** exactly as specified there — each finding names the screen, the defect,
 the exact change (files, tokens/classes, en/ru/kk copy) and why it matters to judges.
 
 ## Read first

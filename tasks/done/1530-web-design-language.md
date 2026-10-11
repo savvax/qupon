@@ -21,11 +21,15 @@ Implement task 1530 of plan 15 exactly as written below (the plan section is cop
 
 **Agent:** claude (Opus) · **Depends on:** — (mock mode) · use skills `taste` / `frontend-design`
 
+**Inputs:** current UI baseline `reports/ui/sweep/` (re-run sweep first — it is stale); tokens in `apps/web/src/app/globals.css`.
 
+**Must fix:**
 - Scroll-reveal must never hide content: animate transform only, never start at opacity 0. Full-page screenshot, print and slow devices all show the whole page.
 - Hero card shows the last **completed** payout: amount, number of holders, tx link. It never shows "0.00 ₸ · Not paid yet".
 - Header has a single primary CTA "Try it in 3 minutes", plus a "View as: Public · Issuer · Registrar · Investor" switch that goes to the demo roles in one click. Connect-wallet is secondary.
 - Trust layer appears everywhere: a network chip "Devnet · slot N · updated 3 s ago", Implemented/Simulated/Demo-clock provenance chips next to features, and "Export issue audit (CSV)" on the bond dossier.
+- The flow graph (issuer → escrow → holders / tax vault / bank agent, amounts on edges, steppable with tx per step) is the centrepiece of the landing and dossier.
+- Mobile at 390 px: no truncated tables (row cards), a sticky NowBar at the bottom, KPIs in a 2×2 grid.
 
 **Deliverables:**
 - `docs/design/language.md` — principles (institutional, calm, data-dense, provable), type scale, spacing rhythm, color roles (brand green kept, a data-viz palette, status semantics incl. **Defaulted**/**Cured**/**Demo clock**/**Simulated**/**Verified on-chain**), density modes (operator vs public), motion rules, iconography, empty/loading/error patterns, copy tone, provenance chips ("On-chain ✓" / "Simulated" / "Demo clock").
@@ -34,6 +38,7 @@ Implement task 1530 of plan 15 exactly as written below (the plan section is cop
 - **Golden screens** (fully built, en/ru, kk strings via keys): landing hero + "Try it in 3 minutes" CTA; bond dossier `/bonds/[mint]`; action console `/registrar/actions/[pda]`; sandbox shell `/sandbox/[id]` (mock data).
 - Gallery `/ui` updated with every primitive in every state.
 
+**Acceptance (self-check + Opus pre-flight later):** design score ≥ 9 (write the review in `reports/design/1530-comparison.md` with shots); no horizontal scroll at 390; reduced-motion safe; contrast AA; `make verify` green.
 
 ## Finish
 `make verify` green, commits carry `task: 1530`, `reports/worklog/1530.md` written. Print `DONE:1530` or `BLOCKED:1530 <reason>`.
