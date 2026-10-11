@@ -2,7 +2,17 @@
 
 Order: Colosseum first (it gives the project link) → Superteam Earn, KASE side track → Superteam Earn, Superteam Kazakhstan general track. Deadline for all three: **2026-10-13 06:59 UTC (11:59 Almaty)**; target Colosseum by Oct 12 20:00, Earn by 21:00. Fields marked `<<FILL: …>>` need the team's own input; everything else is final.
 
-Facts used below (verify before pasting): program `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (devnet, verifiable build — `reports/verified-build.md`), full devnet run with 69 linked transactions — `reports/demo-full.md`, secondary trade through the Solana DvP program with the record-date guard, 21 linked transactions — `reports/demo-trade.md`, 68 program tests, repo https://github.com/savvax/qupon (must be **public** or shared with hackathon@colosseum.com before submitting).
+## Human checklist — every `<<FILL>>` in this file, one place
+
+- [ ] Make https://github.com/savvax/qupon **public** (or shared with hackathon@colosseum.com)
+- [ ] Team names / backgrounds (Colosseum "Team / backgrounds")
+- [ ] Pitch video 2:00 and demo video ≤ 3:00 (YouTube unlisted — Colosseum, Earn, tweet)
+- [ ] Logo 512×512 PNG
+- [ ] Validation conversations (GTM block)
+- [ ] Colosseum project page + profile links; program-registration confirm (general KZ track)
+- [ ] X link for the Earn forms; tweet posted and its link
+
+Facts used below (verify before pasting): program `QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd` (devnet, verifiable build — `reports/verified-build.md`), full devnet run with 60 linked transactions — `reports/demo-full.md`, secondary trade through the Solana DvP program with the record-date guard, 20 linked transactions — `reports/demo-trade.md`, 116 program tests, 28 instructions / 28 events / 44 error codes, repo https://github.com/savvax/qupon (must be **public** or shared with hackathon@colosseum.com before submitting).
 
 ---
 
@@ -22,13 +32,15 @@ Corporate-actions engine for tokenized bonds on Solana
 ```
 Qupon is the corporate-actions engine for tokenized bonds on Solana: identify holders, calculate entitlements, settle, and record the outcome on-chain.
 
-Tokenization solved issuance, not servicing. Every coupon, redemption and bondholder meeting is still a manual reconciliation between issuer, depository and brokers; the industry spends an estimated $58B a year on corporate-action processing and 46% of event data is still handled manually (Chainlink industry initiative; DTCC).
+Tokenization solved issuance, not servicing. Every coupon, redemption and bondholder meeting is still a manual reconciliation between issuer, depository and brokers; the industry spends an estimated $58B a year on corporate-action processing and 46% of event data is still handled manually (DTCC; Chainlink industry initiative).
 
-In Qupon the corporate action is an on-chain object. A bond is a Token-2022 mint that only KYC-attested wallets can hold (frozen by default). For each action (coupon, redemption, early call, bondholder meeting with a terms change) the program pauses the mint at the record date, snapshots every holder and computes gross, tax and net per holder with Kazakhstan conventions (30E/360, rounding once per holder). The issuer pre-funds an escrow, holders are paid in batches, redeemed units are burned, and every transition emits an event. Votes are weighted by the snapshot; an approved proposal changes the coupon on the series and in the token metadata.
+In Qupon the corporate action is an on-chain object. A bond is a Token-2022 mint that only KYC-attested wallets can hold (frozen by default). For each action (coupon, redemption, early call, meeting) the program gates the record date, snapshots every holder and computes gross, tax and net per holder with Kazakhstan conventions (30E/360, rounding once per holder). The issuer pre-funds an escrow, holders are paid in batches, redeemed units are burned, and every transition emits an event. Votes are weighted by the snapshot; an approved proposal changes the coupon on-chain.
 
-Around the engine is a platform: investors sign up, link their own wallet by signature and pass a KYC review that ends in a Solana Attestation Service attestation; holders are notified of every action and payout; bond data comes from kase.kz; settlement runs in any registered token (USDC, or tenge stand-ins for Evo's KZTE); an admin console watches operators and the audit trail. The same build is mainnet-ready behind a typed confirmation.
+Around the engine is a platform: investor accounts with KYC review ending in a Solana Attestation Service attestation, holder notifications, kase.kz data, settlement in any registered token (USDC or tenge stand-ins), an admin console — mainnet-ready.
 
-A Go registrar reconciles the chain and exports ISO 20022 seev.031/seev.036 and KASE-style notices. One command runs every scenario on devnet: 71 linked transactions.
+A Go registrar reconciles the chain and exports ISO 20022 seev.031/seev.036 and KASE-style notices. One command runs every scenario on devnet: 60 linked transactions. Judges need no account: a sandbox bond lives a coupon cycle in minutes, an autopilot services the curated showcase, and a public /proof page re-verifies every action in the browser.
+
+Holders sign their payout routes, missed payments default and cure on-chain, and DvP trades carry accrued interest.
 
 Secondary trades settle on the Solana Foundation's DvP program; Qupon is the servicing layer above.
 
@@ -57,6 +69,8 @@ Market: KASE lists 765 corporate bond issues from 169 issuers with 16.8 trillion
 
 Business model: a per-event fee or basis points on coupon flow, white-labelled for depositories and brokers.
 
+Distribution: white-label through depositories and brokers, whose existing issuer and holder relationships carry the product into every listed issue. The first deployment is a pilot issue on KASE's DFA platform serviced end to end; the same engine is offered to Solana real-world-asset issuers as a hosted servicing API.
+
 Validation: the track is sponsored by the exchange itself. Conversations so far: <<FILL: who you spoke to (role, organisation), what they confirmed>>.
 ```
 
@@ -77,6 +91,7 @@ All code in the repository was written during the hackathon, between 2026-10-05 
 | Description | the Colosseum description above |
 | GitHub | `https://github.com/savvax/qupon` |
 | Website | `https://qupon.85-192-29-7.sslip.io` — public landing and bond board; all three roles in the browser via one-click demo sign-in at `/login` (issuer, registrar, investor — no wallet needed) |
+| X link | `<<FILL: the project's X (Twitter) link>>` |
 | Pitch / demo video | `<<FILL: links>>` |
 | Official hackathon submission confirmation | Yes · `<<FILL: Colosseum project link>>` · `<<FILL: Colosseum profile link>>` |
 
@@ -85,24 +100,31 @@ All code in the repository was written during the hackathon, between 2026-10-05 
 Technical overview (architecture, record-date logic, entitlement calculations, settlement flow, Solana components): https://github.com/savvax/qupon/blob/main/docs/TECHNICAL_OVERVIEW.md
 Full devnet run with an explorer link for every transaction (coupon, redemption, bondholder meeting → terms change, early redemption): https://github.com/savvax/qupon/blob/main/reports/demo-full.md
 Secondary trade settled through the Solana Foundation's DvP program, record date protected (explorer link per transaction): https://github.com/savvax/qupon/blob/main/reports/demo-trade.md
+Judge sandbox — "Try it in 3 minutes": a visitor's own devnet bond whose whole coupon cycle passes in minutes, default and cure included, no sign-in: https://qupon.85-192-29-7.sslip.io/sandbox/new
+Public proof pages that re-verify every action in the browser (plus a static HTML export): https://qupon.85-192-29-7.sslip.io/proof
+Plan-15 instructions on devnet, one report (holder-signed payout routes, default + cure, disclosure hash on-chain, DvP trades with accrued interest, pay + burn in one instruction): https://github.com/savvax/qupon/blob/main/reports/demo-plan15.md
+Curated showcase series serviced end to end by the autopilot: https://github.com/savvax/qupon/blob/main/reports/showcase.md
 Program: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd (devnet, verifiable build).
 Product tour with screenshots of every role on devnet: https://github.com/savvax/qupon#product-tour--every-role-in-the-browser
 Platform v2 (accounts, KYC with on-chain attestation, kase.kz data, tenge cash assets, notifications, admin, mainnet-ready): https://github.com/savvax/qupon#platform-v2--accounts-kyc-kase-data-cash-assets-admin
 Live deployment check with screenshots: https://github.com/savvax/qupon/blob/main/reports/live-v2.md
-Implemented vs simulated (same wording as the site's table):
+Implemented vs simulated (canonical table — docs/TECHNICAL_OVERVIEW.md, copied verbatim):
 
 | Element | Status |
 |---|---|
-| Bond token, holder registry, record date, entitlements, coupon payment, redemption, burn and close, voting, terms change, on-chain events | **Implemented** — Running on Solana devnet. |
-| Cash leg | **Test tokens** — Real token transfers from an admin-managed registry: devnet USDC (Circle), tKZT and two tenge stand-ins (KZTE-dev, dKZT) with an investor faucet. Evo's KZTE is pre-registered for mainnet, off until its official mint is added. |
-| KYC | **Review simulated** — Investors upload documents and a registrar decides by hand — no licensed KYC vendor. Approval is real: a Solana Attestation Service attestation and the on-chain registration. |
-| ISO 20022 seev.031 / seev.036 | **Delivery simulated** — Generated from on-chain state; Swift delivery is replaced by downloadable files. |
-| ARDFM registration of a terms change | **Simulated** — Represented by a registrar signature step. |
-| KASE | **Read only** — Bond data is read from kase.kz and cached; the disclosure notice and package are generated automatically — submission to KASE is simulated. |
-| Mainnet | **Ready, not deployed** — Network profile, write confirmations and a dry-run deploy script are in place; everything runs on devnet. |
-| Secondary settlement | **Implemented** — Trades between registered investors settle on devnet through the Solana Foundation's DvP program; Qupon admits the escrow, refuses a record date while a trade is open and can return the bonds to the seller. Order matching and a trading venue are not included. |
-| Term-sheet import | **Experimental** — pasted KASE text is parsed into series terms by an LLM (Z.ai GLM) with a SIMULATED regex fallback; every field is confirmed by the issuer before issuance. |
-| Multisig issuer approval (Squads) | **Roadmap** — Planned. |
+| Bond token, holder registry, record date, entitlement math, coupon payment, redemption, burn/close, voting, terms change, on-chain events | **Implemented on Solana devnet** |
+| Cash leg | Real token transfers: USDC devnet (Circle) and test tKZT (Token-2022); fiat KZT and Evo/digital tenge are **simulated** by our mint |
+| KYC | **Attested on-chain, provider simulated**: a KYC-provider keypair issues a Solana Attestation Service attestation per wallet (type, residency, tax rate); `register_investor` refuses a wallet without a live, matching attestation. The provider is a demo keypair, not a licensed KYC firm |
+| KYC document review | **Simulated vendor**: documents are uploaded and stored (content-addressed, owner/registrar access only); a registrar decides by hand. Approval produces real SAS attestations and registrations on devnet |
+| ISO 20022 seev.031 / seev.036 | Generated from on-chain state; Swift network delivery **simulated** (downloadable files) |
+| ARDFM registration of terms change | **Simulated** by registrar signature step |
+| KASE disclosure notice | Generated automatically; publication on kase.kz **not** integrated |
+| kase.kz | **Read integration** with public kase.kz data (bond terms, schedule, market data — cached); disclosure-package **submission simulated** |
+| Secondary settlement | **Implemented on Solana devnet** through the Solana Foundation's DvP program: Qupon admits the trade's bond escrow, refuses a record date while a trade is open and can return escrowed bonds to the seller. Order matching and a trading venue are not included |
+| Term-sheet import | **Experimental** — pasted KASE text is parsed into series terms by an LLM (Z.ai GLM) with a SIMULATED regex fallback; every field is confirmed by the issuer before issuance |
+| Multisig issuer approval (Squads) | Demo: a 2-of-3 Squads vault is the paying agent and funds a coupon (`make demo-squads`, report `reports/demo-squads.md`); multisig registrar is roadmap |
+| Digital tenge / KZT tokens | Devnet stand-ins KZTE-dev and dKZT (our mints, faucet for investors); Evo KZTE on mainnet is registered as a disabled asset pending its official mint — **no mainnet deployment** |
+| Mainnet | **Ready, not deployed** — one code base with a network profile per deployment, typed write confirmations and a dry-run deploy script; everything runs on devnet |
 
 Meeting thresholds (quorum 50%, approval ⅔ of votes cast) are series configuration, not a statement of Kazakh law.
 ```
@@ -117,7 +139,7 @@ Same fields as above; additionally: program registration done by Oct 8 (`<<FILL:
 
 ## Tweet (≤ 280 characters)
 ```
-Tokenization doesn't end at issuance. Qupon services tokenized bonds on @solana: record date → per-holder entitlements → coupons, redemption, votes → ISO 20022. 71 devnet txs, one command. For the @KASE_official × @SuperteamKZ track at @ColosseumOrg <<FILL: repo or video link>>
+Tokenization doesn't end at issuance. Qupon services tokenized bonds on @solana: record date → per-holder entitlements → coupons, redemption, votes → ISO 20022. 60 devnet txs, one command. For the @KASE_official × @SuperteamKZ track at @ColosseumOrg <<FILL: repo or video link>>
 ```
 
 ## Weekly 1-minute updates (Colosseum)

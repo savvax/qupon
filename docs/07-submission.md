@@ -20,7 +20,7 @@ Order: Colosseum first (gives the project link) → Earn KASE side track → Ear
 - [ ] Scope checkbox + KYC acknowledgement (Kazakhstan document ready for Sumsub after winning)
 - [ ] General KZ track: program registration done by Oct 8; pitch ≤ 2:00; demo ≤ 3:00; every member's Colosseum profile complete
 
-> **Final texts:** [`docs/SUBMISSION_FINAL.md`](SUBMISSION_FINAL.md) has the copy-paste block for every form field (task 038). The drafts below are kept for history.
+> **Final texts:** [`docs/SUBMISSION_FINAL.md`](SUBMISSION_FINAL.md) has the copy-paste block for every form field (task 038). The drafts below are kept for history and are **superseded** by it — links and validation entries live only in the final text.
 
 ## Draft: product description (EN, ≤ 300 words — superseded by SUBMISSION_FINAL.md)
 Qupon is the corporate‑actions engine for tokenized bonds on Solana. Tokenization solved issuance; it did not solve servicing. Every coupon, redemption and bondholder meeting is still a manual, multi‑party reconciliation: the industry spends ~$58B a year on corporate actions, 46% of event data is processed by hand, and over 45% of brokers have lost ≥ $1M to a single error (DTCC, ValueExchange). On Solana, no RWA issuer emits standardized corporate‑action events.
@@ -30,7 +30,7 @@ Qupon makes the corporate action a first‑class on‑chain object. A bond is a 
 Built for the KASE × Superteam Kazakhstan side track. KASE is Kazakhstan's first registered digital‑asset platform operator, builds on Solana and launches tokenized debt first; the Central Securities Depository may now keep the register of tokenized holders. Qupon is the servicing layer that platform will need.
 
 ## Draft: GTM and demand validation
-Wedge: KASE's DFA platform (launch December 2026, tokenized NBK notes first, bonds next) and the Central Securities Depository as registrar of DFA holders — one pilot issue serviced end‑to‑end on Solana. Second market: Solana RWA issuers (sovereign and corporate bonds) that distribute yield ad hoc today. Business model: per‑event fee or basis points on coupon flow, white‑label for CSDs/brokers. Validation: the track is sponsored by the exchange itself; conversations with [names/roles John collects during the week]; 765 listed corporate bond issues, 169 issuers, 16.8 trn KZT outstanding, 5M+ retail accounts in nominee holding.
+Wedge: KASE's DFA platform (launch December 2026, tokenized NBK notes first, bonds next) and the Central Securities Depository as registrar of DFA holders — one pilot issue serviced end‑to‑end on Solana. Second market: Solana RWA issuers (sovereign and corporate bonds) that distribute yield ad hoc today. Business model: per‑event fee or basis points on coupon flow, white‑label for CSDs/brokers. Validation: the track is sponsored by the exchange itself; conversations are listed in the final text ([`docs/SUBMISSION_FINAL.md`](SUBMISSION_FINAL.md), validation field); 765 listed corporate bond issues, 169 issuers, 16.8 trn KZT outstanding, 5M+ retail accounts in nominee holding.
 
 ## Draft: pre‑existing code disclosure
 All code in the repository was written between 2026‑10‑05 and 2026‑10‑12 (see commit history). Third‑party open‑source used as dependencies: Anchor, SPL Token‑2022, @solana/kit and @solana-program clients (Codama‑generated code is checked in under `clients/ts/src/generated`), solana‑go, chi, modernc sqlite, Next.js, wallet‑adapter. AI coding agents (Claude Code, GLM via pi) were used by the team under the team's direction; design, specifications, review and all product decisions are the team's.
@@ -42,4 +42,4 @@ All code in the repository was written between 2026‑10‑05 and 2026‑10‑12
 Issuance + KYC gate (30 s) → coupon run with pause/snapshot/entitlements 500/1,250/3,250, fund, pay, complete, explorer, seev.036, KASE notice (60 s) → meeting: proposal 10%→12%, three votes, finalize, metadata updated (40 s) → redemption: principal + final coupon, burn, mint closed (30 s) → implemented‑vs‑simulated, repo, program id (20 s).
 
 ## Tweet (≤ 280 chars)
-Tokenization doesn't end at issuance. We built Qupon — a corporate‑actions engine for tokenized bonds on @solana: record date → entitlements → coupon/redemption/voting → ISO 20022, for the @KASE_official × @SuperteamKZ track at @ColosseumOrg Crypto World's Fair. Demo + code: [link]
+Tokenization doesn't end at issuance. We built Qupon — a corporate‑actions engine for tokenized bonds on @solana: record date → entitlements → coupon/redemption/voting → ISO 20022, for the @KASE_official × @SuperteamKZ track at @ColosseumOrg Crypto World's Fair. Demo + code: see the tweet block in [`docs/SUBMISSION_FINAL.md`](SUBMISSION_FINAL.md).

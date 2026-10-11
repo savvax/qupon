@@ -1,6 +1,6 @@
 # Qupon — technical overview
 
-Corporate-actions engine for tokenized bonds on Solana: **identify holders → calculate entitlements → execute settlement → record on-chain**. Everything below runs on devnet: program [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet) (Anchor 1.2; verifiable build and on-chain IDL — [`reports/verified-build.md`](../reports/verified-build.md)). One command (`make demo`) runs coupon, redemption, bondholder meeting → terms change and early redemption; [`reports/demo-full.md`](../reports/demo-full.md) links all 71 transactions.
+Corporate-actions engine for tokenized bonds on Solana: **identify holders → calculate entitlements → execute settlement → record on-chain**. Everything below runs on devnet: program [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet) (Anchor 1.2; verifiable build and on-chain IDL — [`reports/verified-build.md`](../reports/verified-build.md)). One command (`make demo`) runs coupon, redemption, bondholder meeting → terms change and early redemption; [`reports/demo-full.md`](../reports/demo-full.md) links all 60 transactions. Judges can start without an account: the landing page's “Try it in 3 minutes” issues a sandbox bond on a compressed clock, the bond board's showcase series are serviced by an autopilot, and every series has a public /proof page that re-verifies each action in the browser.
 
 ## 1. Architecture
 
@@ -60,7 +60,7 @@ Integer minor units, u128 intermediates, rounding **once per holder**, and Σ gr
 | Issuer funds 5,000.00 → holders paid → reconciled, register resumed | [fund](https://explorer.solana.com/tx/SbWkZPAzaQVWDgrg7b9FNyQdMnAP5sB632yxpSpr9WL4nkmUCzMrH5UGnQmgjJUYiAHx8ZgHyVYmKKJMgL69XtL?cluster=devnet) · [pay](https://explorer.solana.com/tx/4timJdNAASBt2MTVgWR9ryUxk5SAeaDdKxw3dFEwdv1KDEnWKmYNtzy4ivY3hpVrX8nqeDG3fA4ooaHumQUFJzye?cluster=devnet) · [complete](https://explorer.solana.com/tx/31LCKEnF9aBkfHYPDvcceHDcQ1YigKYqF6sV8C6uuJK5RWKQdyk6XLKXGsWTsM8t4kHz3TuAF61zjoyrmDQ4WWbZ?cluster=devnet) |
 | At maturity: principal 10,000 + final coupon (after the meeting raised the rate to 12%: 600) = **10,600.00** | [pay](https://explorer.solana.com/tx/5dGhg7BjH5pFrVX2gGpGXVUFua94FmDQrexZ4TvvKzuC9q3c2TTz9kkB7biiKK51gkU8xhr5DCs8EdYkV594yMQR?cluster=devnet) · [burn](https://explorer.solana.com/tx/5EyyhishaQbpTAG4xP6FeY7HGBsk8Wv4tibn5RqqToyvvzixYVUFKvUSk1XCFcuiJ17sMHJoZmWf7SZyuEFAC8pd?cluster=devnet) · [close](https://explorer.solana.com/tx/3a7g7HtY68C1t4kEhLYJCnKak9fWVPcbEH4YaQoSbPcPBczhyfLrp9Nv2Lr5dTQ9d7EgAXk5HWmby3XhVkvsM2N6?cluster=devnet) |
 
-The literal brief figures (500 and 10,000 + 500) are also asserted by the tests `coupon_10_bonds_is_500` and `redemption_pays_principal_plus_final_coupon` (`programs/qupon_bonds/tests/brief.rs`).
+The literal brief figures (500 and 10,000 + 500) are also asserted by the tests `coupon_10_bonds_is_500` and `redemption_pays_principal_plus_final_coupon` (`programs/qupon_bonds/tests/brief.rs`). The brief writes its example in US dollars; the run above reproduces the same numbers 1:1 with KZT labels (face 1,000 ₸), and the early-call scenario repeats them in USDC on the BTRK-demo series — same math, different settlement asset.
 
 ## 4. Settlement flow
 
@@ -71,8 +71,9 @@ The literal brief figures (500 and 10,000 + 500) are also asserted by the tests 
 5. Bondholder meeting: `cast_vote` weighted by snapshot units → `finalize_meeting` (quorum and approval are series configuration, not asserted as law) → `apply_terms_change` updates the rate on the series and in the token metadata; the registrar's signature stands in for the ARDFM registration (SIMULATED).
 
 6. Secondary trades: two registered investors trade bonds against the series' cash asset through the Solana Foundation's DvP program (`dvp34bdb…`), which moves both legs in one transaction with the registrar as settlement authority. Qupon does not call that program. Bond accounts are frozen by default, so its escrow can hold bonds only after `admit_trade`; a paused mint blocks DvP settle, cancel and reclaim alike, so `strike_record` fails with `TradesInFlight` until every admitted trade is settled or cancelled and released; if the DvP program cannot refund (a party closed an account, a cash issuer froze one), `release_trade(force)` returns the bonds to the seller as permanent delegate. Devnet run: [`reports/demo-trade.md`](../reports/demo-trade.md).
+7. Plan-15 servicing (all on devnet — [`reports/demo-plan15.md`](../reports/demo-plan15.md)): the holder chooses where payouts go with their own signature (`set_payout_route`; a bank-routed payout goes to the paying agent, and `confirm_bank_payout` records the SIMULATED transfer's reference hash — the registrar cannot redirect a holder's money); anyone can `declare_default` one series day after a missed payment date when the escrow is short, and the issuer's late `fund_action` cures it — the record-date holders keep their claims while the bond keeps trading; `attach_disclosure` anchors the sha256 of the seev.031 notice on the action once; a redemption's `pay_batch` pays principal + final coupon and burns the units in one instruction; new series gate their record date with a transfer hook (`init_hook` / `execute`) instead of pausing the mint, so trading never stops.
 
-Records: 20 event types (one per transition), ISO 20022 `seev.031`/`seev.036` and a KASE-style EN/RU notice generated from chain state.
+Records: 28 event types (one per transition), ISO 20022 `seev.031`/`seev.036` and a KASE-style EN/RU notice generated from chain state.
 
 ## 5. Solana components
 
@@ -90,8 +91,12 @@ Records: 20 event types (one per transition), ISO 20022 `seev.031`/`seev.036` an
 | `sweep_escrow` | operator | finished action's leftover escrow → issuer, escrow closed |
 | `cast_vote` / `finalize_meeting` / `apply_terms_change` | investor / registrar / registrar | meeting and terms change |
 | `admit_trade` / `release_trade` | registrar or paying agent | thaw the bond escrow of a Solana DvP trade between two registered investors / drop the admission (forced: return escrowed bonds to the seller) |
+| `init_hook` / `execute` | registrar / program | transfer-hook record-date gate for new series (the register never pauses; transfers are refused only inside the gate) |
+| `set_payout_route` / `confirm_bank_payout` | holder / paying agent | the holder alone chooses wallet or bank payout route (bank details hashed on-chain); the agent confirms the SIMULATED bank transfer |
+| `declare_default` | anyone | default one series day after a missed payment; late funding cures it |
+| `attach_disclosure` | registrar | anchor the sha256 of the seev.031 notice on the action (once) |
 
-Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). Compute: the heaviest batch the CLI sends (retiring 12 frozen holders) uses about 134k compute units, 22% of the 600k limit set on each transaction, and an extra holder costs about 10k in the worst case — [`reports/cu-benchmarks.md`](../reports/cu-benchmarks.md). Tests: 68 program tests (LiteSVM integration + unit) including the brief suite and the secondary-trade suite, which runs the devnet binary of the Solana DvP program; Go and TS mirrors of the math; `make verify` gates every merge.
+Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). Compute ([`reports/cu-benchmarks.md`](../reports/cu-benchmarks.md)): the heaviest batch at the size the CLI sends is `snapshot_batch` with 8 holders at 82,790 CU — 13.8% of the 600k limit the CLI sets per transaction; the worst measured batch overall (`retire_batch`, 12 holders) is 56,333 CU, 4.0% of the 1.4M per-transaction compute limit; an extra holder costs about 3.7k CU in the worst case. Tests: 116 program tests (LiteSVM integration + unit) including the brief suite and the secondary-trade suite, which runs the devnet binary of the Solana DvP program; Go and TS mirrors of the math; `make verify` gates every merge.
 
 ## Implemented vs simulated
 
@@ -100,12 +105,18 @@ Security model and audit notes: [`docs/SECURITY_NOTES.md`](SECURITY_NOTES.md). C
 | Bond token, holder registry, record date, entitlement math, coupon payment, redemption, burn/close, voting, terms change, on-chain events | **Implemented on Solana devnet** |
 | Cash leg | Real token transfers: USDC devnet (Circle) and test tKZT (Token-2022); fiat KZT and Evo/digital tenge are **simulated** by our mint |
 | KYC | **Attested on-chain, provider simulated**: a KYC-provider keypair issues a Solana Attestation Service attestation per wallet (type, residency, tax rate); `register_investor` refuses a wallet without a live, matching attestation. The provider is a demo keypair, not a licensed KYC firm |
+| KYC document review | **Simulated vendor**: documents are uploaded and stored (content-addressed, owner/registrar access only); a registrar decides by hand. Approval produces real SAS attestations and registrations on devnet |
 | ISO 20022 seev.031 / seev.036 | Generated from on-chain state; Swift network delivery **simulated** (downloadable files) |
 | ARDFM registration of terms change | **Simulated** by registrar signature step |
 | KASE disclosure notice | Generated automatically; publication on kase.kz **not** integrated |
+| kase.kz | **Read integration** with public kase.kz data (bond terms, schedule, market data — cached); disclosure-package **submission simulated** |
 | Secondary settlement | **Implemented on Solana devnet** through the Solana Foundation's DvP program: Qupon admits the trade's bond escrow, refuses a record date while a trade is open and can return escrowed bonds to the seller. Order matching and a trading venue are not included |
 | Term-sheet import | **Experimental** — pasted KASE text is parsed into series terms by an LLM (Z.ai GLM) with a SIMULATED regex fallback; every field is confirmed by the issuer before issuance |
-| Multisig issuer approval (Squads) | Demo: 2-of-3 Squads vault as paying agent funds a coupon (`make demo-squads`); multisig registrar is roadmap |
+| Multisig issuer approval (Squads) | Demo: a 2-of-3 Squads vault is the paying agent and funds a coupon (`make demo-squads`, report `reports/demo-squads.md`); multisig registrar is roadmap |
+| Digital tenge / KZT tokens | Devnet stand-ins KZTE-dev and dKZT (our mints, faucet for investors); Evo KZTE on mainnet is registered as a disabled asset pending its official mint — **no mainnet deployment** |
+| Mainnet | **Ready, not deployed** — one code base with a network profile per deployment, typed write confirmations and a dry-run deploy script; everything runs on devnet |
+
+This table is canonical: `README.md` and `docs/SUBMISSION_FINAL.md` copy it verbatim.
 
 ## Limitations and next steps
 

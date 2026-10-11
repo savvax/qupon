@@ -23,10 +23,10 @@ KYC: `register_investor` requires a Solana Attestation Service attestation for t
 - **Record date**: `strike_record` only at `clock ≥ record_at`; it pauses the mint, so no transfer, mint or burn can change the register while the snapshot is taken; `finalize_snapshot` requires Σ snapshotted units == mint supply and the exact-fraction rounding bound (each holder rounded half-up once).
 - **Settlement**: pay only from a fully funded escrow (`Underfunded`); each entitlement is paid once (status flag re-read per account, so a holder listed twice in one batch is paid once); `complete_action` requires every holder paid and `total_paid == total_net + total_principal`.
 - **Redemption order** pay → complete (resume) → retire → close is enforced by statuses; `close_series` requires supply 0 and runs once (the mint account is gone afterwards).
-- **Batches** are bounded (snapshot 8, pay 10, retire 12) and idempotent.
+- **Batches** are bounded (snapshot 8, pay 5, retire 12) and idempotent.
 - **Griefing**: escrow / tax-vault ATAs are `init_if_needed` (their PDAs are predictable — a pre-created ATA must not block `announce_action` / `init_series`); Entitlement PDAs are created with a pre-funding-safe helper; units moved after the redemption resume into an un-snapshotted registered wallet are retired through an `[Investor, ATA]` pair so nobody can block `close_series`.
 - **Arithmetic**: all money math in u128 with checked conversions; counters use `checked_add`; no `unwrap`/`expect` in handlers.
-- **Events** on every state transition (18 types) for an independent audit trail.
+- **Events** on every state transition (28 types) for an independent audit trail.
 
 ## Known limitations (documented, out of scope for the prototype)
 
