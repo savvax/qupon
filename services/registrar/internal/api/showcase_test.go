@@ -108,8 +108,8 @@ func TestSeedShowcaseFeaturesAndHides(t *testing.T) {
 	}
 	for mint, want := range map[string][2]bool{
 		showcase: {true, false}, // the series on the definition's clock is featured
-		sandbox:   {false, true}, // the uncurated demo-clock series is hidden
-		old:       {false, true}, // the 4 s predecessor under the same ISIN is hidden too
+		sandbox:  {false, true}, // the uncurated demo-clock series is hidden
+		old:      {false, true}, // the 4 s predecessor under the same ISIN is hidden too
 	} {
 		set, err := st.GetSeriesSettings(t.Context(), mint)
 		if err != nil || set.Featured != want[0] || set.Hidden != want[1] {
