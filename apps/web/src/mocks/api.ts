@@ -156,7 +156,11 @@ const series: SeriesDTO[] = [
     quorumBps: 5000,
     approvalBps: 6667,
     openAction: s.actionPda,
-    demoClock: { daySecs: 4, issueTs: 1_791_000_000, issueDate: "2026-10-09" },
+    demoClock: {
+      daySecs: 3600,
+      issueTs: 1_791_000_000,
+      issueDate: "2026-10-09",
+    },
     featured: true,
     explorerUrl: explorer(s.mint),
   })),

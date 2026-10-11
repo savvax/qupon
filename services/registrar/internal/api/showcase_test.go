@@ -32,10 +32,10 @@ func (showcaseRead) AllSeries(context.Context) ([]chain.SeriesRecord, error) {
 		return chain.SeriesRecord{PDA: fSeries, Series: s}
 	}
 	return []chain.SeriesRecord{
-		mk(solana.PublicKey{1: 1}, "KZ2C0QPN0018", "Almaty Power", 4),  // showcase coupon
-		mk(solana.PublicKey{2: 2}, "KZ2C0SBX0099", "Judge sandbox", 2), // demo clock, not curated
-		mk(solana.PublicKey{3: 3}, "KZ2C0QUPON01", "QPNb1", 0),         // real clock: stays public
-		mk(solana.PublicKey{4: 4}, "KZ2C0QUPON02", "QPNb2", 0),         // second real-clock series
+		mk(solana.PublicKey{1: 1}, "KZ2C0QPN0018", "Almaty Power", 3600), // showcase coupon
+		mk(solana.PublicKey{2: 2}, "KZ2C0SBX0099", "Judge sandbox", 2),   // demo clock, not curated
+		mk(solana.PublicKey{3: 3}, "KZ2C0QUPON01", "QPNb1", 0),           // real clock: stays public
+		mk(solana.PublicKey{4: 4}, "KZ2C0QUPON02", "QPNb2", 0),           // second real-clock series
 	}, nil
 }
 

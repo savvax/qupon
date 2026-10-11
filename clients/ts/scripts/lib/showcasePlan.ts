@@ -102,10 +102,10 @@ function scenarioSteps(
     },
   ];
   switch (def.scenario) {
-    case "coupon": // first coupon paid end to end
+    case "coupon": // first coupon paid end to end, in minutes (explicit dates — no derived ~7-day wait, task 91553)
       return [
         {
-          label: `action:announce INTR ${corp("INTR")} — the demo clock derives record/payment dates`,
+          label: `action:announce INTR ${corp("INTR")} — record/payment 1 min/2 min out (pay before period end is allowed)`,
           args: [
             "action:announce",
             ...series,
@@ -113,6 +113,10 @@ function scenarioSteps(
             "INTR",
             "--corp-id",
             corp("INTR"),
+            "--record-at",
+            "+60",
+            "--payment-at",
+            "+120",
             ...as("QUPON_REGISTRAR_KEYPAIR"),
           ],
         },
@@ -131,10 +135,10 @@ function scenarioSteps(
           args: ["action:complete", ...series, ...as("QUPON_OUTSIDER_KEYPAIR")],
         },
       ];
-    case "redemption": // redeemed, burned and closed at maturity
+    case "redemption": // redeemed, burned and closed now (record/payment 1 min/2 min out, task 91553)
       return [
         {
-          label: `action:announce REDM ${corp("REDM")} — principal + final coupon at maturity`,
+          label: `action:announce REDM ${corp("REDM")} — principal + final coupon, paid before maturity`,
           args: [
             "action:announce",
             ...series,
@@ -142,6 +146,10 @@ function scenarioSteps(
             "REDM",
             "--corp-id",
             corp("REDM"),
+            "--record-at",
+            "+60",
+            "--payment-at",
+            "+120",
             ...as("QUPON_REGISTRAR_KEYPAIR"),
           ],
         },
@@ -178,7 +186,7 @@ function scenarioSteps(
             "--record-at",
             "+30",
             "--voting-ends-at",
-            "+5400",
+            "+259200", // ~3 real days ahead on the 1 h clock — voting stays open through the judging weekend
             "--new-rate-bps",
             "1200",
             "--corp-id",
@@ -208,7 +216,7 @@ function scenarioSteps(
           ],
         },
       ];
-    case "early_call": // MCAL announced; the dossier shows the notice
+    case "early_call": // MCAL announced; record/payment ~1 real day ahead — the autopilot completes it (task 91553)
       return [
         {
           label: `action:announce MCAL ${corp("MCAL")} — call on ${fmt(addMonths(issue, Math.floor(def.maturityMonths / 2)))} (before the first coupon)`,
@@ -221,6 +229,10 @@ function scenarioSteps(
             fmt(addMonths(issue, Math.floor(def.maturityMonths / 2))),
             "--corp-id",
             corp("MCAL"),
+            "--record-at",
+            "+86400",
+            "--payment-at",
+            "+90000",
             ...as("QUPON_REGISTRAR_KEYPAIR"),
           ],
         },

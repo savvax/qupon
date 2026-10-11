@@ -17,7 +17,7 @@ const DEFS: readonly ShowcaseDef[] = [
     rateBps: 1000,
     frequency: 2,
     maturityMonths: 12,
-    daySecs: 4,
+    daySecs: 3600,
   },
   {
     scenario: "redemption",
@@ -27,7 +27,7 @@ const DEFS: readonly ShowcaseDef[] = [
     rateBps: 1000,
     frequency: 2,
     maturityMonths: 6,
-    daySecs: 4,
+    daySecs: 3600,
   },
   {
     scenario: "meeting",
@@ -37,7 +37,7 @@ const DEFS: readonly ShowcaseDef[] = [
     rateBps: 1000,
     frequency: 2,
     maturityMonths: 9,
-    daySecs: 4,
+    daySecs: 3600,
   },
   {
     scenario: "early_call",
@@ -47,7 +47,7 @@ const DEFS: readonly ShowcaseDef[] = [
     rateBps: 1000,
     frequency: 2,
     maturityMonths: 8,
-    daySecs: 4,
+    daySecs: 3600,
   },
 ];
 
@@ -100,7 +100,7 @@ describe("buildShowcasePlan", () => {
           "--cash",
           "tkzt",
           "--demo-day-secs",
-          "4",
+          "3600",
         ]),
       );
       // maturity = issue + maturityMonths civil months (2026-10-09 → 2027-10-09, 2027-04-09, 2027-07-09, 2027-06-09)
@@ -134,6 +134,11 @@ describe("buildShowcasePlan", () => {
     expect(join(coupon.steps)).toEqual(
       expect.arrayContaining(["action:announce", "--kind", "INTR"]),
     );
+    // Explicit near-term dates (task 91553): on the 1 h clock the derived record would sit ~7 real
+    // days out, so every scenario pins its own timestamps — now < record ≤ payment holds at run time.
+    expect(join(coupon.steps)).toEqual(
+      expect.arrayContaining(["--record-at", "+60", "--payment-at", "+120"]),
+    );
     expect(coupon.steps[coupon.steps.length - 1]!.args?.[0]).toBe(
       "action:complete",
     ); // first coupon paid
@@ -143,6 +148,9 @@ describe("buildShowcasePlan", () => {
     const redemption = plan[1]!;
     expect(join(redemption.steps)).toEqual(
       expect.arrayContaining(["--kind", "REDM"]),
+    );
+    expect(join(redemption.steps)).toEqual(
+      expect.arrayContaining(["--record-at", "+60", "--payment-at", "+120"]),
     );
     expect(redemption.steps.slice(-2).map((s) => s.args?.[0])).toEqual([
       "action:retire",
@@ -161,6 +169,15 @@ describe("buildShowcasePlan", () => {
       ["against", "$QUPON_INVESTOR2_KEYPAIR"],
     ]);
     expect(join(meeting.steps)).toContain("meeting:announce");
+    // voting open ~3 real days (259 200 s); record 30 s out so the snapshot follows at once
+    expect(join(meeting.steps)).toEqual(
+      expect.arrayContaining([
+        "--record-at",
+        "+30",
+        "--voting-ends-at",
+        "+259200",
+      ]),
+    );
     expect(join(meeting.steps)).not.toContain("meeting:finalize"); // voting stays open
 
     const earlyCall = plan[3]!;
@@ -168,6 +185,15 @@ describe("buildShowcasePlan", () => {
     expect(announce).toEqual(
       expect.arrayContaining(["--kind", "MCAL", "--call-date", "2027-02-09"]),
     ); // issue + 4 months < first coupon (+6)
+    // record/payment ~1 real day ahead — the autopilot completes the call after they pass
+    expect(announce).toEqual(
+      expect.arrayContaining([
+        "--record-at",
+        "+86400",
+        "--payment-at",
+        "+90000",
+      ]),
+    );
     expect(
       earlyCall.steps.filter((s) => s.args).map((s) => s.args![0]),
     ).toEqual([

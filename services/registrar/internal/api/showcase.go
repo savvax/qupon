@@ -11,8 +11,8 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
 )
 
-// The curated public showcase (plan 15, task 1535): four demo series on the accelerated clock, one per
-// corporate-action scenario, each with a distinct human ticker and an ISIN of the form KZ2C0QPN000N whose
+// The curated public showcase (plan 15, task 1535): four demo series on the judging-length clock (one
+// civil day = 1 h, task 91553), one per corporate-action scenario, each with a distinct human ticker and an ISIN of the form KZ2C0QPN000N whose
 // last digit is a valid Luhn check digit. Task 1540 creates the data on devnet from these definitions —
 // the serial 1..4 doubles as the board order, because GET /series lists featured series by ISIN
 // (rest.go). The seed endpoint marks the four featured and hides judge sandboxes (demo-clock series no
@@ -36,13 +36,13 @@ type ShowcaseSeries struct {
 // Showcase is the single definition of the public board's curated series, in board order.
 var Showcase = []ShowcaseSeries{
 	{Scenario: "coupon", Ticker: "Almaty Power", ISIN: "KZ2C0QPN0018",
-		FaceMinor: 100_000, RateBps: 1000, Frequency: 2, MaturityMonths: 12, DaySecs: 4},
+		FaceMinor: 100_000, RateBps: 1000, Frequency: 2, MaturityMonths: 12, DaySecs: 3600},
 	{Scenario: "redemption", Ticker: "Astana Metro", ISIN: "KZ2C0QPN0026",
-		FaceMinor: 100_000, RateBps: 1000, Frequency: 2, MaturityMonths: 6, DaySecs: 4},
+		FaceMinor: 100_000, RateBps: 1000, Frequency: 2, MaturityMonths: 6, DaySecs: 3600},
 	{Scenario: "meeting", Ticker: "Aktobe Mining", ISIN: "KZ2C0QPN0034",
-		FaceMinor: 100_000, RateBps: 1000, Frequency: 2, MaturityMonths: 9, DaySecs: 4},
+		FaceMinor: 100_000, RateBps: 1000, Frequency: 2, MaturityMonths: 9, DaySecs: 3600},
 	{Scenario: "early_call", Ticker: "Atyrau Oil", ISIN: "KZ2C0QPN0042",
-		FaceMinor: 100_000, RateBps: 1000, Frequency: 2, MaturityMonths: 8, DaySecs: 4},
+		FaceMinor: 100_000, RateBps: 1000, Frequency: 2, MaturityMonths: 8, DaySecs: 3600},
 }
 
 // IsinCheckDigit returns the Luhn check digit of an 11-character ISIN base (ISO 6166: letters become

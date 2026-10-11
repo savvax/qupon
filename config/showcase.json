@@ -7,7 +7,7 @@
     "rateBps": 1000,
     "frequency": 2,
     "maturityMonths": 12,
-    "daySecs": 4
+    "daySecs": 3600
   },
   {
     "scenario": "redemption",
@@ -17,7 +17,7 @@
     "rateBps": 1000,
     "frequency": 2,
     "maturityMonths": 6,
-    "daySecs": 4
+    "daySecs": 3600
   },
   {
     "scenario": "meeting",
@@ -27,7 +27,7 @@
     "rateBps": 1000,
     "frequency": 2,
     "maturityMonths": 9,
-    "daySecs": 4
+    "daySecs": 3600
   },
   {
     "scenario": "early_call",
@@ -37,6 +37,6 @@
     "rateBps": 1000,
     "frequency": 2,
     "maturityMonths": 8,
-    "daySecs": 4
+    "daySecs": 3600
   }
 ]

@@ -218,6 +218,7 @@ function writeReport(
   sections: readonly Section[],
   seeded: string,
   mints: readonly string[],
+  daySecs: number,
 ): void {
   const body = sections.flatMap((s) => [
     `## ${s.title}`,
@@ -235,7 +236,7 @@ function writeReport(
   const md = [
     "# Qupon — the curated public showcase on Solana devnet (`make seed-showcase`)",
     "",
-    `Four demo series on the accelerated clock (1 civil day = 4 s), one per corporate-action scenario, issued from config/showcase.json — the single Go Showcase table (task 1535). Cluster devnet · run ${new Date().toISOString()}.`,
+    `Four demo series on the accelerated clock (1 civil day = ${daySecs} s), one per corporate-action scenario, issued from config/showcase.json — the single Go Showcase table (task 1535). Cluster devnet · run ${new Date().toISOString()}.`,
     "",
     `**Result:** ${seeded}`,
     "",
@@ -316,7 +317,7 @@ async function main(): Promise<void> {
 
   featureMints(mints);
   const seeded = await seedEndpoint();
-  writeReport(sections, seeded, mints);
+  writeReport(sections, seeded, mints, live[0]?.def.daySecs ?? 0);
   log(`report written to ${REPORT}`);
   console.log(
     JSON.stringify({ ok: true, mints, report: REPORT, featured: true }),
