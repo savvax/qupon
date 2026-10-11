@@ -232,6 +232,7 @@
     "DefaultCured": "Дефолт устранён: {action}",
     "TradeAdmitted": "Сделка DvP допущена: {units} облигаций, {seller} → {buyer}",
     "TradeAccrued": "Расчёт {units} облигаций за {cash} ₸, из них НКД {accrued} ₸",
+    "scheduler": "Автопилот: {step}",
     "refused": "Перевод на кошелёк без KYC отклонён: {error}"
   },
   "start": {

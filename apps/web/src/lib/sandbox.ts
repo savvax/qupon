@@ -25,10 +25,7 @@ import type {
 import { boPost } from "./boClient";
 
 export type ScenarioKind =
-  | "skip_funding"
-  | "cure"
-  | "non_kyc_transfer"
-  | "dvp_trade";
+  "skip_funding" | "cure" | "non_kyc_transfer" | "dvp_trade";
 export const SCENARIOS: ScenarioKind[] = [
   "skip_funding",
   "cure",
@@ -163,8 +160,29 @@ export async function pollSandbox(id: string): Promise<Sandbox | null> {
 /** Activity rows from the Go store may name their action `action_pda` (see ActivityLike): read both as `actionPda`. */
 export const normalizeSandbox = (s: Sandbox): Sandbox => ({
   ...s,
-  activity: s.activity.map((e) => ({ ...e, actionPda: e.actionPda ?? e.action_pda ?? null })),
+  activity: s.activity.map((e) => ({
+    ...e,
+    actionPda: e.actionPda ?? e.action_pda ?? null,
+  })),
 });
+
+/** The autopilot's audit rows (`scheduler:pay_batch`, …) name their step, not an indexed event kind (task 91564). */
+export const isSchedulerStep = (kind: string) => kind.startsWith("scheduler:");
+
+/** "scheduler:pay_batch" → "pay batch", the {step} of the sandbox.tx.scheduler sentence (task 91564). */
+export const schedulerStep = (kind: string) =>
+  kind.slice("scheduler:".length).replaceAll("_", " ");
+
+/** Feed rows: a `scheduler:*` audit row is dropped when the indexed event of the same transaction is
+ *  present — one sentence and one explorer link per devnet transaction (task 91564). */
+export function dedupeFeedActivity(activity: ActivityLike[]): ActivityLike[] {
+  const indexed = new Set(
+    activity.filter((e) => !isSchedulerStep(e.kind)).map((e) => e.sig),
+  );
+  return activity.filter(
+    (e) => !isSchedulerStep(e.kind) || !indexed.has(e.sig),
+  );
+}
 
 export const SANDBOX_ID = /^[\w-]{1,40}$/;
 /** The visitor's sandbox: httpOnly cookie (value = sandbox id, 24 h) set by the proxy on create. */

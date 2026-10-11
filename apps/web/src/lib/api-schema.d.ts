@@ -3403,7 +3403,7 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
-                /** @description Narrow the feed to one series' events. Rows name their series either by the bond mint or by the Series account PDA; both keys match. Used by the public dossier journal, which the global window (newest N) can push older bonds out of. */
+                /** @description Narrow the feed to one series' events. Rows name their series either by the bond mint or by the Series account PDA; both keys match (the PDA is derived from the mint, not read from the boot-time series mirror). Must be a base58 pubkey, else 400. Used by the public dossier journal, which the global window (newest N) can push older bonds out of. */
                 mint?: string;
             };
             header?: never;

@@ -232,6 +232,7 @@
     "DefaultCured": "Default on {action} cured",
     "TradeAdmitted": "Admit a DvP trade: {units} bonds, {seller} → {buyer}",
     "TradeAccrued": "Settle {units} bonds for {cash} ₸ incl. {accrued} ₸ accrued",
+    "scheduler": "Autopilot: {step}",
     "refused": "Transfer to a wallet without KYC refused: {error}"
   },
   "start": {

@@ -101,6 +101,38 @@ func TestListActivityReturnsNewestRows(t *testing.T) {
 	}
 }
 
+func TestListSeriesActivity(t *testing.T) {
+	ctx := context.Background()
+	st, err := Open(ctx, filepath.Join(t.TempDir(), "series-activity.db"))
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	defer func() { _ = st.Close() }()
+
+	// No `series` row at all: a series created after boot must still see its events (task 91564).
+	mint, pda := "MintAAA", "SeriesPDAofMintAAA"
+	other := "MintBBB"
+	insert := func(kind, series, sig string) {
+		t.Helper()
+		if _, err := st.InsertActivity(ctx, Activity{
+			Ts: 1, Kind: kind, Sig: sig, SeriesMint: &series, Payload: json.RawMessage(`{}`),
+		}); err != nil {
+			t.Fatalf("insert %s: %v", kind, err)
+		}
+	}
+	insert("scheduler:announce", mint, "sigA") // scheduler audit row, keyed by the mint
+	insert("SeriesInitialized", pda, "sigB")   // ingested event, keyed by the Series PDA
+	insert("SeriesInitialized", other, "sigC") // another series: must not match
+
+	rows, err := st.ListSeriesActivity(ctx, mint, pda, 100)
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(rows) != 2 || rows[0].Sig != "sigA" || rows[1].Sig != "sigB" {
+		t.Fatalf("rows = %+v, want sigA+sigB (both keys, oldest first, other series excluded)", rows)
+	}
+}
+
 func TestActionSignatures(t *testing.T) {
 	ctx := context.Background()
 	st, err := Open(ctx, filepath.Join(t.TempDir(), "sigs.db"))

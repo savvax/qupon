@@ -146,11 +146,26 @@ func New(logger *slog.Logger, st *store.Store, deps Deps) http.Handler {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
 		// Optional mint: narrow the feed to one series (the public dossier journal; sandbox floods the
-		// global window). Matches rows keyed by the bond mint or the Series PDA (ListSeriesActivity).
+		// global window). Matches rows keyed by the bond mint or the Series PDA (ListSeriesActivity);
+		// the PDA is derived from the mint, not read from the boot-time series mirror (task 91564).
 		var events []store.Activity
 		var err error
 		if mint := r.URL.Query().Get("mint"); mint != "" {
-			events, err = st.ListSeriesActivity(ctx, mint, limit)
+			key, perr := solana.PublicKeyFromBase58(mint)
+			if perr != nil {
+				writeError(w, http.StatusBadRequest, "mint must be a base58 pubkey")
+				return
+			}
+			if deps.Read == nil {
+				writeError(w, http.StatusServiceUnavailable, "chain reader not configured (set PROGRAM_ID)")
+				return
+			}
+			pda, perr := deps.Read.SeriesPDA(key)
+			if perr != nil {
+				writeError(w, http.StatusBadGateway, perr.Error())
+				return
+			}
+			events, err = st.ListSeriesActivity(ctx, mint, pda.String(), limit)
 		} else {
 			events, err = st.ListActivity(ctx, limit)
 		}

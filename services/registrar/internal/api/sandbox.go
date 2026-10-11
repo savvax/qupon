@@ -256,7 +256,7 @@ func sandboxView(r *http.Request, deps Deps, st *store.Store, id string) (*sandb
 	}
 	d.Next = sandboxNext(r.Context(), series, openAction(actions), x.SkipFunding, now, deps.Read)
 
-	if rows, err := st.ListSeriesActivity(r.Context(), x.Mint, 100); err == nil {
+	if rows, err := st.ListSeriesActivity(r.Context(), x.Mint, pda.String(), 100); err == nil {
 		for i := len(rows) - 1; i >= 0; i-- { // newest first
 			d.Activity = append(d.Activity, sandboxActivityView{
 				ID: rows[i].ID, Ts: rows[i].Ts, Kind: rows[i].Kind, Sig: rows[i].Sig,

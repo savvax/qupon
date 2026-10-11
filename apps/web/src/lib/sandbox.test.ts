@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { bondDate } from "./sandbox";
+import type { ActivityLike } from "./api";
+import {
+  bondDate,
+  dedupeFeedActivity,
+  isSchedulerStep,
+  schedulerStep,
+} from "./sandbox";
 
 // The dossier's "as of" date for a demo-clock series (task 1535 review): the yield block must
 // use the bond's own calendar, not the real one — a showcase bond (daySecs 4) ages 10 civil
@@ -27,5 +33,31 @@ describe("bondDate", () => {
       day: 0,
       date: "2026-10-09",
     });
+  });
+});
+
+describe("feed rows (task 91564)", () => {
+  const ev = (id: number, kind: string, sig: string): ActivityLike => ({
+    id,
+    ts: id,
+    kind,
+    sig,
+  });
+
+  it("drops a scheduler row whose transaction also has its indexed event", () => {
+    const rows = dedupeFeedActivity([
+      ev(1, "SeriesInitialized", "sig1"),
+      ev(2, "scheduler:pay_batch", "sig2"),
+      ev(3, "EntitlementPaid", "sig2"), // same devnet transaction as the audit row
+      ev(4, "scheduler:announce", "sig4"), // no indexed event yet: stays
+    ]);
+    expect(rows.map((r) => r.id)).toEqual([1, 3, 4]);
+  });
+
+  it("labels a remaining scheduler row as a sentence, never the raw kind", () => {
+    expect(isSchedulerStep("scheduler:pay_batch")).toBe(true);
+    expect(isSchedulerStep("EntitlementPaid")).toBe(false);
+    expect(schedulerStep("scheduler:pay_batch")).toBe("pay batch");
+    expect(schedulerStep("scheduler:snapshot_batch")).toBe("snapshot batch");
   });
 });

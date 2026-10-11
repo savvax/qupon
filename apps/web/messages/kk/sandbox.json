@@ -232,6 +232,7 @@
     "DefaultCured": "Дефолт жойылды: {action}",
     "TradeAdmitted": "DvP мәмілесіне рұқсат: {units} облигация, {seller} → {buyer}",
     "TradeAccrued": "{units} облигация {cash} ₸-ге есептелді, оның ішінде ЖКТ {accrued} ₸",
+    "scheduler": "Автопилот: {step}",
     "refused": "KYC-сіз әмиянға аударымнан бас тартылды: {error}"
   },
   "start": {

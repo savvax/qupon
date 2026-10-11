@@ -388,10 +388,16 @@ func (c *Client) FetchActionsBySeries(ctx context.Context, series solana.PublicK
 	return out, nil
 }
 
-// SeriesPDA derives ["series", mint] under the program.
-func (c *Client) SeriesPDA(mint solana.PublicKey) (solana.PublicKey, error) {
-	pda, _, err := solana.FindProgramAddress([][]byte{[]byte("series"), mint[:]}, c.program)
+// SeriesPDA derives ["series", mint] under the program — shared by every caller that must match ingested
+// events (keyed by the PDA) against a bond mint, without the boot-time `series` mirror (task 91564).
+func SeriesPDA(program, mint solana.PublicKey) (solana.PublicKey, error) {
+	pda, _, err := solana.FindProgramAddress([][]byte{[]byte("series"), mint[:]}, program)
 	return pda, err
+}
+
+// SeriesPDA derives ["series", mint] under the client's program.
+func (c *Client) SeriesPDA(mint solana.PublicKey) (solana.PublicKey, error) {
+	return SeriesPDA(c.program, mint)
 }
 
 // USDCDevnet is Circle's devnet USDC mint; any other cash mint is the test tenge (tKZT).

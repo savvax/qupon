@@ -102,16 +102,18 @@ func TestActivityLimit(t *testing.T) {
 }
 
 func TestActivityMint(t *testing.T) {
-	h, st := newTestServer(t)
-	srv := httptest.NewServer(h)
-	defer srv.Close()
-
-	// Rows name their series either by the bond mint (scheduler/sandbox writes)
-	// or by the Series PDA (ingested on-chain events) — both must match the filter.
-	if err := st.UpsertSeries(t.Context(), "MintAAA", []byte(`{"pda":"PdaAAA"}`)); err != nil {
-		t.Fatalf("upsert series: %v", err)
+	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "activity-mint.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
 	}
-	mint, pda, other := "MintAAA", "PdaAAA", "MintBBB"
+	t.Cleanup(func() { _ = st.Close() })
+	// The PDA is derived from the mint (task 91564), so the server needs the chain reader.
+	srv := httptest.NewServer(New(slog.New(slog.DiscardHandler), st, Deps{Read: fakeRead{}}))
+	t.Cleanup(srv.Close)
+
+	// Rows name their series either by the bond mint (scheduler/sandbox writes) or by the Series PDA
+	// (ingested on-chain events) — both must match the filter with NO boot-time series row (task 91564).
+	mint, pda, other := fMint.String(), fSeries.String(), solana.PublicKey{9: 9}.String()
 	for _, a := range []store.Activity{
 		{Kind: "scheduler:announce", SeriesMint: &mint, Payload: []byte("{}"), Sig: "sigA"},
 		{Kind: "ActionCompleted", SeriesMint: &pda, Payload: []byte("{}"), Sig: "sigB"},
@@ -141,8 +143,16 @@ func TestActivityMint(t *testing.T) {
 		return out.Events
 	}
 
-	if all, got := get(srv.URL+"/activity"), get(srv.URL+"/activity?mint=MintAAA"); len(all) != 3 || len(got) != 2 {
+	if all, got := get(srv.URL+"/activity"), get(srv.URL+"/activity?mint="+mint); len(all) != 3 || len(got) != 2 {
 		t.Fatalf("mint filter = %d events (feed %d), want 2 of 3", len(got), len(all))
+	}
+	resp, err := http.Get(srv.URL + "/activity?mint=not-base58!")
+	if err != nil {
+		t.Fatalf("get activity: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("invalid mint status = %d, want 400", resp.StatusCode)
 	}
 }
 

@@ -21,6 +21,9 @@ import { buildClaimIx } from "@/lib/portal";
 import {
   addDays,
   bondDate,
+  dedupeFeedActivity,
+  isSchedulerStep,
+  schedulerStep,
   type Sandbox,
   type SandboxAction,
   type SandboxEntitlement,
@@ -1097,6 +1100,10 @@ export function Feed({
       cash: money(p.cash_amount),
       accrued: money(p.accrued),
     };
+    if (isSchedulerStep(e.kind)) {
+      // the autopilot's audit rows render a sentence, never the raw kind (task 91564)
+      return tx("scheduler", { step: schedulerStep(e.kind) });
+    }
     return tx.has(e.kind) ? tx(e.kind, v) : e.kind;
   };
   const refused = s.scenarios
@@ -1110,7 +1117,8 @@ export function Feed({
       actor: "anyone" as Actor,
     }));
   const rows = [
-    ...s.activity.map((e) => ({
+    // a `scheduler:*` audit row whose transaction also has its indexed event is dropped (task 91564)
+    ...dedupeFeedActivity(s.activity).map((e) => ({
       key: `${e.id}:${e.sig}`,
       text: label(e),
       sig: e.sig,

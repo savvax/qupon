@@ -55,6 +55,9 @@ test("@live sandbox: a judge's own bond pays coupon 1, trades with accrued, refu
 
   // every step of that coupon was a real devnet transaction
   const feed = page.getByRole("region", { name: "Transactions" });
+  // the feed collapses to 6 rows (preflight #11): expand before counting (task 91564)
+  const showAll = feed.getByRole("button", { name: /Show all \d+/ });
+  if (await showAll.isVisible()) await showAll.click();
   const links = feed.locator("a[href^='https://explorer.solana.com/tx/']");
   expect(await links.count()).toBeGreaterThanOrEqual(8);
   for (const href of await links.evaluateAll((as) =>
