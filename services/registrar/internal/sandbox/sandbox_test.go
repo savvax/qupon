@@ -376,3 +376,17 @@ func TestAmountOf(t *testing.T) {
 		t.Fatalf("amountOf(500000) = %+v", b)
 	}
 }
+
+// Production regression (2026-10-11): the container exports only QUPON_INVESTOR<n>_KEYPAIR.
+func TestHolderKeypairFallsBackToDemoInvestors(t *testing.T) {
+	t.Setenv("QUPON_SANDBOX_INVESTOR1_KEYPAIR", "")
+	t.Setenv("QUPON_INVESTOR1_KEYPAIR", "/run/qupon/investor1.json")
+	t.Setenv("QUPON_SANDBOX_INVESTOR2_KEYPAIR", "/custom/two.json")
+	t.Setenv("QUPON_INVESTOR2_KEYPAIR", "/run/qupon/investor2.json")
+	if got := holderKeypair(1); got != "/run/qupon/investor1.json" {
+		t.Fatalf("holder 1 = %q, want the demo investor fallback", got)
+	}
+	if got := holderKeypair(2); got != "/custom/two.json" {
+		t.Fatalf("holder 2 = %q, want the sandbox-specific path", got)
+	}
+}

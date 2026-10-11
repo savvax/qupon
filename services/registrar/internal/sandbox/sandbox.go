@@ -91,7 +91,7 @@ func DefaultHolders() []Holder {
 	out := make([]Holder, len(base))
 	for i, b := range base {
 		out[i] = Holder{
-			Keypair: os.Getenv("QUPON_SANDBOX_INVESTOR" + strconv.Itoa(i+1) + "_KEYPAIR"),
+			Keypair: holderKeypair(i + 1),
 			Label:   b.label, Units: b.units, Bank: b.bank, TaxBps: b.tax, Faucet: 2_000_000,
 		}
 	}
@@ -396,4 +396,14 @@ func (s *Service) run(ctx context.Context, args ...string) (executor.Result, err
 		return res, fmt.Errorf("cli %s refused: %s", args[0], res.Error)
 	}
 	return res, nil
+}
+
+// holderKeypair is the custodial demo holder n's keypair path: QUPON_SANDBOX_INVESTOR<n>_KEYPAIR, else the devnet demo
+// investor QUPON_INVESTOR<n>_KEYPAIR that the container entrypoint writes from QUPON_INVESTOR<n>_KEYPAIR_JSON — on
+// production only the latter exists, and every POST /demo/sandbox failed with "read keypair : open : no such file".
+func holderKeypair(n int) string {
+	if p := os.Getenv("QUPON_SANDBOX_INVESTOR" + strconv.Itoa(n) + "_KEYPAIR"); p != "" {
+		return p
+	}
+	return os.Getenv("QUPON_INVESTOR" + strconv.Itoa(n) + "_KEYPAIR")
 }
