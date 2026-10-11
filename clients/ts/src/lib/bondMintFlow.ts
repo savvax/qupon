@@ -117,7 +117,11 @@ export async function ensureBondMint(opts: { rpc: QuponRpc; cfgPath: string; nam
 	);
 	log(`mint created (tx ${createSig})`);
 	const seriesEntry = { ...sc, mint };
-	updateConfig(cfgPath, { series: { ...cfg.series, [name]: seriesEntry } });
+	updateConfig(cfgPath, c => {
+		const series = (c.series ?? {}) as Record<string, QuponSeriesConfig>;
+		series[name] = { ...(series[name] ?? {}), ...seriesEntry };
+		c.series = series;
+	});
 	log(`series.${name}.mint written to ${cfgPath}`);
 
 	// tx 2 — additional metadata fields (registrar = update authority)

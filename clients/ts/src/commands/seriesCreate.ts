@@ -99,22 +99,22 @@ async function runSeriesCreate(opts: CreateOpts, cmd: Command): Promise<void> {
 	loadEnvFile();
 	const rpc = createRpc();
 	const cfgPath = configPath();
-	const cfg = loadConfig(cfgPath);
-	// 1 — write the config entry (mint empty) so ensureBondMint and the metadata fields see the terms
-	updateConfig(cfgPath, {
-		series: {
-			...cfg.series,
-			[terms.name]: {
-				mint: "",
-				cashMint: terms.cashMint,
-				isin: terms.isin,
-				faceValue: Number(terms.faceValue),
-				couponRateBps: terms.couponRateBps,
-				frequency: terms.frequency,
-				dayCount: terms.dayCount,
-				termYears: termYearsOf(terms.issueDate, terms.maturityDate),
-			},
-		},
+	// 1 — write the config entry (mint empty) so ensureBondMint and the metadata fields see the terms.
+	// updateConfig re-reads under a lock: never spread a `cfg` loaded at command start (task 91560).
+	updateConfig(cfgPath, c => {
+		const series = (c.series ?? {}) as Record<string, Record<string, unknown>>;
+		series[terms.name] = {
+			...(series[terms.name] ?? {}),
+			mint: "",
+			cashMint: terms.cashMint,
+			isin: terms.isin,
+			faceValue: Number(terms.faceValue),
+			couponRateBps: terms.couponRateBps,
+			frequency: terms.frequency,
+			dayCount: terms.dayCount,
+			termYears: termYearsOf(terms.issueDate, terms.maturityDate),
+		};
+		c.series = series;
 	});
 	// 2 — create the Token-2022 bond mint (idempotent)
 	const bond = await ensureBondMint({ rpc, cfgPath, name: terms.name });

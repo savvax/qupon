@@ -153,7 +153,9 @@ async function main(): Promise<void> {
   const fundSig = await sendInstructions(rpc, registrar, fundInstructions, "fund tKZT");
   log(`funded ${holders.length} wallets (tx ${fundSig})`);
 
-  updateConfig(cfgPath, { tkztMint: mint });
+  updateConfig(cfgPath, c => {
+    c.tkztMint = mint;
+  });
   log(`tkztMint written to ${cfgPath}`);
   console.log(
     JSON.stringify({

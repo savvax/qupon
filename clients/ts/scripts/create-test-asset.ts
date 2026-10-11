@@ -18,7 +18,7 @@ import {
   type KeyPairSigner,
 } from "@solana/kit";
 import { getCreateMintInstructionPlan } from "@solana-program/token";
-import { configPath, loadConfig, updateConfig, type TestAsset } from "../src/lib/config.js";
+import { configPath, loadConfig, updateConfig, type CashAssetPreset, type TestAsset } from "../src/lib/config.js";
 import { loadKeypair } from "../src/lib/keys.js";
 import { createRpc, loadEnvFile, sendInstructions, type QuponRpc } from "../src/lib/tx.js";
 import { TOKEN_PROGRAM_ADDRESS, fetchMint } from "@solana-program/token";
@@ -115,11 +115,15 @@ async function main(): Promise<void> {
   }
 
   const entry: TestAsset = { symbol, mint, decimals, kind: kind as TestAsset["kind"] };
-  updateConfig(cfgPath, { testAssets: [...existing, entry] });
+  updateConfig(cfgPath, c => {
+    const assets = (c.testAssets as TestAsset[] | undefined) ?? [];
+    c.testAssets = [...assets, entry];
+  });
   // Registry preset (GET /assets, wizard picker) — the Go service seeds `cashAssets` on start.
-  updateConfig(cfgPath, {
-    cashAssets: [
-      ...(loadConfig(cfgPath).cashAssets ?? []).filter(a => a.mint !== mint),
+  updateConfig(cfgPath, c => {
+    const presets = (c.cashAssets as CashAssetPreset[] | undefined) ?? [];
+    c.cashAssets = [
+      ...presets.filter(a => a.mint !== mint),
       {
         symbol,
         name,
@@ -131,7 +135,7 @@ async function main(): Promise<void> {
         mintAuthority: registrar.address,
         enabled: true,
       },
-    ],
+    ];
   });
   log(`testAssets + cashAssets written to ${cfgPath}`);
   console.log(JSON.stringify({ symbol, mint, created: true, mintTx: mintSig ?? null, decimals, kind }));

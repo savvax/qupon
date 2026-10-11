@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { closeSync, openSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { isAddress } from "@solana/kit";
 
 /** Shape of `config/devnet.json` — public keys only, never secrets. */
@@ -171,14 +171,59 @@ export function tkztMintSet(c: QuponConfig): boolean {
   return c.tkztMint !== "" && !c.tkztMint.startsWith(PLACEHOLDER);
 }
 
-/** Mutate one top-level key and write back with stable 2-space formatting. */
-export function updateConfig(path: string, patch: Record<string, unknown>): void {
-  let c: Record<string, unknown>;
-  try {
-    c = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
-  } catch (e) {
-    throw new Error(`cannot read or parse config '${path}': ${(e as Error).message}`, { cause: e });
+const LOCK_RETRY_MS = 75;
+const LOCK_TIMEOUT_MS = 30_000;
+const LOCK_STALE_MS = 60_000;
+
+/** Synchronous sleep — `updateConfig` stays sync for its CLI callers. */
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Mutate the config under an exclusive `<path>.lock` and write it back atomically
+ * (tmp file + rename), so concurrent CLI runs never lose each other's entries
+ * (task 91560: two parallel `series:create` runs dropped one side's series).
+ * `mutate` receives the FRESH parsed object — mutate only your own nested entry
+ * (`c.series[name] = { ...(c.series[name] ?? {}), ...fields }`), never spread a
+ * config read at command start. A lock older than 60 s (crashed writer) is broken.
+ */
+export function updateConfig(path: string, mutate: (c: Record<string, unknown>) => void): void {
+  const lock = `${path}.lock`;
+  const deadline = Date.now() + LOCK_TIMEOUT_MS;
+  for (;;) {
+    try {
+      closeSync(openSync(lock, "wx"));
+      writeFileSync(lock, `${process.pid}\n`);
+      break;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
+      try {
+        if (Date.now() - statSync(lock).mtimeMs > LOCK_STALE_MS) {
+          rmSync(lock, { force: true });
+          continue; // stale lock broken — race for it again
+        }
+      } catch {
+        // lock vanished between open and stat — try to create it
+      }
+      if (Date.now() > deadline) {
+        throw new Error(`cannot acquire config lock '${lock}' after ${LOCK_TIMEOUT_MS / 1000}s`, { cause: e });
+      }
+      sleepSync(LOCK_RETRY_MS);
+    }
   }
-  Object.assign(c, patch);
-  writeFileSync(path, `${JSON.stringify(c, null, 2)}\n`);
+  try {
+    let c: Record<string, unknown>;
+    try {
+      c = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+    } catch (e) {
+      throw new Error(`cannot read or parse config '${path}': ${(e as Error).message}`, { cause: e });
+    }
+    mutate(c);
+    const tmp = `${path}.${process.pid}.tmp`;
+    writeFileSync(tmp, `${JSON.stringify(c, null, 2)}\n`);
+    renameSync(tmp, path);
+  } finally {
+    rmSync(lock, { force: true });
+  }
 }
