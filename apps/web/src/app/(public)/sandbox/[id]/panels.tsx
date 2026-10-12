@@ -217,6 +217,7 @@ export function Scenarios({
   error,
   onRun,
   locale,
+  readOnly,
 }: {
   s: Sandbox;
   a: SandboxAction | null;
@@ -224,6 +225,8 @@ export function Scenarios({
   error: { kind: ScenarioKind; text: string } | null;
   onRun: (kind: ScenarioKind) => void;
   locale: Locale;
+  /** replay (task 91587): no buttons — the recorded results appear by themselves */
+  readOnly?: boolean;
 }) {
   const t = useTranslations("sandbox.try");
   const money = (minor: string | bigint) => formatAmount(minor, 2, locale);
@@ -363,18 +366,23 @@ export function Scenarios({
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-start gap-x-3 gap-y-1 pt-3">
-              <Button
-                size="sm"
-                variant={kind === "cure" && !off ? "primary" : "secondary"}
-                disabled={!!off}
-                loading={busy === kind}
-                onClick={() => onRun(kind)}
-              >
-                {t(`${kind}.button`)}
-              </Button>
-              {off && <span className="text-xs text-n500">{off}</span>}
-            </div>
+            {/* replay keeps the three subgrid rows (the spacer holds the button's) — a recording has no buttons */}
+            {readOnly ? (
+              <span className="pt-3" />
+            ) : (
+              <div className="flex flex-wrap items-start gap-x-3 gap-y-1 pt-3">
+                <Button
+                  size="sm"
+                  variant={kind === "cure" && !off ? "primary" : "secondary"}
+                  disabled={!!off}
+                  loading={busy === kind}
+                  onClick={() => onRun(kind)}
+                >
+                  {t(`${kind}.button`)}
+                </Button>
+                {off && <span className="text-xs text-n500">{off}</span>}
+              </div>
+            )}
             {res || err ? (
               <div
                 role="status"
@@ -802,6 +810,7 @@ export function RoleCard({
   name,
   onCure,
   busy,
+  readOnly,
 }: {
   role: Role;
   s: Sandbox;
@@ -811,6 +820,8 @@ export function RoleCard({
   name: (owner: string) => string;
   onCure: () => void;
   busy: ScenarioKind | null;
+  /** replay (task 91587): the issuer's cure button is live-only */
+  readOnly?: boolean;
 }) {
   const t = useTranslations("sandbox.role");
   const tstep = useTranslations("steps.do");
@@ -898,7 +909,8 @@ export function RoleCard({
                 amt(0n)
               )}
             </Row>
-            {a.status === "Defaulted" ? (
+            {/* replay: the cure button is live-only — the recording already shows its own cure, if any */}
+            {a.status === "Defaulted" && !readOnly ? (
               <Button
                 className="mt-3"
                 block

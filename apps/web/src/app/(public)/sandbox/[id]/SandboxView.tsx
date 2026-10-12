@@ -41,6 +41,8 @@ import {
 
 const ROLES: Role[] = ["anyone", "issuer", "registrar", "investor"];
 const POLL_MS = 2000;
+/** replay: the virtual clock advances frame by frame, so the view follows it more often than a live poll */
+const REPLAY_POLL_MS = 250;
 
 /** Σ net + tax + principal of the action's snapshot: what the escrow must hold. */
 export const requiredOf = (a: SandboxAction) =>
@@ -56,11 +58,17 @@ export function SandboxView({
   initial,
   locale,
   mock,
+  source,
+  replay,
 }: {
   initial: Sandbox;
   locale: Locale;
   /** mock registrar (e2e, local dev): fixture signatures, labelled as such */
   mock: boolean;
+  /** replay (task 91587): the current recorded frame instead of pollSandbox; the registrar is never called */
+  source?: () => Promise<Sandbox | null>;
+  /** replay: read-only — the scenario, cure and claim buttons are hidden; the recorded results stay */
+  replay?: boolean;
 }) {
   const t = useTranslations("sandbox");
   const [s, setS] = useState(initial);
@@ -76,22 +84,26 @@ export function SandboxView({
   const tErr = useTranslations("errors");
 
   const refresh = useCallback(async () => {
-    const fresh = await pollSandbox(initial.id);
+    const fresh = await (source ? source() : pollSandbox(initial.id));
     if (!fresh) return setGone(true);
     setSkew(fresh.serverTime - Date.now());
     setS(fresh);
     setStale(false);
-  }, [initial.id]);
+  }, [initial.id, source]);
 
   useEffect(() => {
     setSkew(initial.serverTime - Date.now());
-    const id = setInterval(() => {
-      if (!document.hidden) refresh().catch(() => setStale(true));
-    }, POLL_MS);
+    const id = setInterval(
+      () => {
+        if (!document.hidden) refresh().catch(() => setStale(true));
+      },
+      replay ? REPLAY_POLL_MS : POLL_MS,
+    );
     return () => clearInterval(id);
-  }, [refresh, initial.serverTime]);
+  }, [refresh, initial.serverTime, replay]);
 
   const run = async (kind: ScenarioKind) => {
+    if (replay) return; // a recording cannot be interfered with (and must not call the API)
     setBusy(kind);
     setScenarioError(null);
     try {
@@ -112,7 +124,9 @@ export function SandboxView({
   };
 
   const a = currentAction(s);
-  const claim = useClaim(s, a);
+  const claimRaw = useClaim(s, a);
+  // replay: no live claim — the recorded run's own claim, if any, is already in the frames
+  const claim = replay ? { ...claimRaw, button: undefined } : claimRaw;
   const toClient = (serverMs: number) => serverMs - skew;
   const money = (minor: bigint | string) => formatAmount(minor, 2, locale);
   const name = (owner: unknown) =>
@@ -202,7 +216,8 @@ export function SandboxView({
             action: n,
             amount: money(required - BigInt(a.escrowBalance?.minor ?? "0")),
           },
-          action: (
+          // a recording cannot cure anything: the cure button is a live-only action
+          action: replay ? undefined : (
             <Button loading={busy === "cure"} onClick={() => run("cure")}>
               {t("btn.cure", {
                 amount: money(required - BigInt(a.escrowBalance?.minor ?? "0")),
@@ -576,6 +591,7 @@ export function SandboxView({
           error={scenarioError}
           onRun={run}
           locale={locale}
+          readOnly={replay}
         />
       </section>
 
@@ -624,6 +640,7 @@ export function SandboxView({
               name={name}
               onCure={() => run("cure")}
               busy={busy}
+              readOnly={replay}
             />
           </section>
           <div data-tour="feed">

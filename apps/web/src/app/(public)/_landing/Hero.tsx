@@ -46,6 +46,13 @@ export async function Hero({ live }: { live: Live }) {
                 <a href={OVERVIEW_URL}>{t("hero.overview")}</a>
               </Button>
             </div>
+            {/* task 91587: the recorded run needs no devnet at view time — a fallback when devnet is slow */}
+            <Link
+              href="/sandbox/replay"
+              className="mt-4 inline-block w-fit text-sm font-semibold text-g300 underline decoration-g700/40 underline-offset-4 hover:decoration-g300"
+            >
+              {t("hero.replay")}
+            </Link>
           </div>
 
           <HeroLifecycle last={last} locale={locale} />

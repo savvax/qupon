@@ -269,6 +269,7 @@
     "throttledTitle": "Sandbox limit reached",
     "throttled": "Three sandboxes per visitor per hour keep devnet fees in check. Try again in a few minutes, or read how a bond lives on Qupon meanwhile.",
     "retry": "Try again",
+    "replay": "Watch a recorded run instead",
     "learn": "How a bond lives on Qupon",
     "bonds": "Browse the bonds"
   },
@@ -278,5 +279,28 @@
     "cta": "Start a new sandbox",
     "bonds": "Browse the bonds"
   },
-  "issuerOf": "Issuer of {ticker}"
+  "issuerOf": "Issuer of {ticker}",
+  "replay": {
+    "meta": "Sandbox replay",
+    "banner": "<replay>REPLAY</replay> — a real devnet run recorded {date}. Every signature opens on Solana Explorer.",
+    "liveCta": "Run your own live",
+    "loading": "Loading the recording…",
+    "missingTitle": "No replay recorded yet",
+    "missing": "The recorded run is not published yet. Start your own live sandbox on devnet — creating it takes about a minute.",
+    "play": "Play",
+    "pause": "Pause",
+    "restart": "Restart",
+    "steps": {
+      "issued": "Issue",
+      "announced": "Announce",
+      "snapshot": "Snapshot",
+      "funding": "Fund",
+      "skipped": "Skip",
+      "defaulted": "Default",
+      "funded": "Escrow",
+      "paying": "Pay",
+      "paid": "Paid",
+      "redeemed": "Redeem"
+    }
+  }
 }

@@ -112,7 +112,11 @@ export function SandboxStart({
                 {t("retry")}
               </Button>
             )}
+            {/* task 91587: devnet busy or throttled — the recorded run always plays */}
             <Button asChild variant={throttled ? "primary" : "secondary"}>
+              <Link href="/sandbox/replay">{t("replay")}</Link>
+            </Button>
+            <Button asChild variant="secondary">
               <Link href="/learn">{t("learn")}</Link>
             </Button>
             <Button asChild variant="secondary">
