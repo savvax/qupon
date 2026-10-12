@@ -167,5 +167,8 @@ test("the registrar board has a Defaulted column and alerts for overdue funding 
   await expect(
     page.getByText(/In default — the issuer cures it by funding/),
   ).toBeVisible();
-  await expect(page.getByText(/2 bank payouts await/)).toBeVisible();
+  // bankPending copy was de-pluralized for locale stability ("{count} × bank payout …")
+  await expect(
+    page.getByText(/2 × bank payout with the paying agent/),
+  ).toBeVisible();
 });

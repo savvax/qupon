@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { signInAs } from "./session";
 
 /**
  * EXPERIMENTAL term-sheet import (task 042) in mock mode: paste KASE text →
@@ -9,12 +10,10 @@ const BTRK_TEXT = `Bonds KZ2C00018703 (BTRKb33) of National Managing Holding Bai
 face value – 1,000 tenge; coupon rate – 15.95% per annum; coupon payment frequency – semi-annual; 30/360;
 circulation period – 03.07.2026 – 03.07.2031.`;
 
-test.beforeEach(async ({ page }) => {
-  await page.goto("/login?next=/issuer");
-  await page.getByRole("button", { name: /Issuer/ }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Demo issuer",
-  );
+// The demo sign-in UI is covered by login.spec; wizard specs use the mock session cookie — the login
+// server action starves on a loaded machine and failed this file late in full-suite runs.
+test.beforeEach(async ({ page, baseURL }) => {
+  await signInAs(page, "issuer", baseURL);
 });
 
 test("pasted term sheet is parsed, reviewed and applied to the wizard", async ({
@@ -63,7 +62,5 @@ test("pasted term sheet is parsed, reviewed and applied to the wizard", async ({
 
   // Proceeds to issuance: 5 years semi-annual → 10 coupons in the schedule step.
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(
-    page.getByRole("heading", { name: /10 coupons/ }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: /10 coupons/ })).toBeVisible();
 });

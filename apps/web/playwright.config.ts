@@ -20,7 +20,8 @@ export default defineConfig({
   testDir: "./e2e",
   // Outside apps/web: failure artifacts must not wake next dev's watcher mid-run (routes 404).
   outputDir: "/tmp/qupon-e2e-results",
-  timeout: 60_000,
+  timeout: 120_000, // a cold next-dev route compile can eat most of a minute on a loaded machine
+  expect: { timeout: 10_000 }, // 5 s default loses to on-demand route compilation under load
   // The UX audit (e2e/ux-audit.spec.ts, task 1106) only runs on request: `pnpm e2e --grep @audit`.
   grepInvert: process.env.AUDIT ? undefined : /@audit/,
   workers: 1, // next dev compiles routes on demand — serial keeps a cold dev server reliable

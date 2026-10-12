@@ -18,7 +18,8 @@ test("sign-up lands on /investor with the onboarding banner", async ({
   ).toBeDisabled();
   await page.getByLabel("Password").fill("steppe-bonds-2026");
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page).toHaveURL(/\/investor$/);
+  // Cold on-demand compile of /investor under load takes >10 s in full-suite runs; same assertion, wider budget.
+  await expect(page).toHaveURL(/\/investor$/, { timeout: 60_000 });
   // one onboarding block: the devnet checklist, its current step is KYC (the mock member has a wallet)
   await expect(
     page.locator("section[aria-labelledby^=onboarding]"),

@@ -11,7 +11,8 @@ test.use({ reducedMotion: "reduce" });
 const MINT = "QpNb1Dem0BondMint1111111111111111111111111111";
 const INTR = "ActnINTR0001Dem0PDA111111111111111111111111111";
 
-const nowBar = (page: Page) => page.getByRole("region", { name: "Now", exact: true });
+const nowBar = (page: Page) =>
+  page.getByRole("region", { name: "Now", exact: true });
 const tourCard = (page: Page) => page.locator("[data-tour-card]");
 
 // status fixture → [NowBar title, who may push it]
@@ -23,16 +24,22 @@ const EXPECTED: [string, RegExp, string][] = [
   ["Funded", /^Next: Pay holders · QPNb1$/, "Anyone"],
   ["Settling", /^Next: Confirm bank payout · QPNb1$/, "Paying agent"],
   ["Retiring", /^Next: Retire bonds · QPNb1$/, "Anyone"],
-  ["VotingOpen", /^QPNb1: holders are voting$/, "Holder"],
+  // preflight #29: no actor chip while no step can be pushed — a waiting vote no longer shows "Holder"
+  ["VotingOpen", /^QPNb1: holders are voting$/, ""],
   ["Completed", /^QPNb1: every step is on-chain$/, ""],
 ];
 
-test("the NowBar shows the next step and who may push it for each status fixture", async ({ page }) => {
+test("the NowBar shows the next step and who may push it for each status fixture", async ({
+  page,
+}) => {
   await page.goto("/ui");
   for (const [status, title, actor] of EXPECTED) {
-    const bar = page.locator(`[data-fixture="${status}"]`).getByRole("region", { name: "Now", exact: true });
+    const bar = page
+      .locator(`[data-fixture="${status}"]`)
+      .getByRole("region", { name: "Now", exact: true });
     await expect(bar.locator("p").first(), status).toHaveText(title);
-    if (actor) await expect(bar.getByText(actor, { exact: true }), status).toBeVisible();
+    if (actor)
+      await expect(bar.getByText(actor, { exact: true }), status).toBeVisible();
   }
   const fixture = (s: string) => page.locator(`[data-fixture="${s}"]`);
   // permissionless steps say so; time gates count down; a default is the loudest state
@@ -40,7 +47,9 @@ test("the NowBar shows the next step and who may push it for each status fixture
   await expect(fixture("Announced")).toContainText(/Record date\s*in /);
   await expect(fixture("SnapshotComplete")).toContainText("Payment date");
   await expect(fixture("VotingOpen")).toContainText(/Voting ends\s*in /);
-  await expect(fixture("Defaulted").locator("section")).toHaveClass(/bg-err-bg/);
+  await expect(fixture("Defaulted").locator("section")).toHaveClass(
+    /bg-err-bg/,
+  );
   await expect(fixture("Completed")).toContainText("Done");
 });
 
@@ -52,7 +61,9 @@ test("each cabinet shell has one NowBar: registrar, issuer, investor; the consol
   await page.goto("/registrar/actions");
   await expect(nowBar(page)).toHaveCount(1);
   await expect(nowBar(page)).toContainText(/^Now.*Next: /);
-  await expect(nowBar(page).getByRole("link", { name: "Open action" })).toBeVisible();
+  await expect(
+    nowBar(page).getByRole("link", { name: "Open action" }),
+  ).toBeVisible();
   await page.goto(`/registrar/actions/${INTR}`);
   await expect(nowBar(page)).toHaveCount(1);
 
@@ -64,7 +75,9 @@ test("each cabinet shell has one NowBar: registrar, issuer, investor; the consol
   await page.goto("/investor/statements");
   await expect(nowBar(page)).toContainText("bondholder meeting");
   await expect(nowBar(page).getByText("Holder", { exact: true })).toBeVisible();
-  await expect(nowBar(page).getByRole("link", { name: "Vote" })).toHaveAttribute("href", "/investor/meetings");
+  await expect(
+    nowBar(page).getByRole("link", { name: "Vote" }),
+  ).toHaveAttribute("href", "/investor/meetings");
 });
 
 test("the registrar tour opens on its home page, steps, closes, stays closed and restarts from help", async ({
@@ -100,7 +113,10 @@ test("the registrar tour opens on its home page, steps, closes, stays closed and
   await expect(card).toHaveCount(0);
 });
 
-test("issuer, investor and sandbox tours have 6 to 9 steps", async ({ page, baseURL }) => {
+test("issuer, investor and sandbox tours have 6 to 9 steps", async ({
+  page,
+  baseURL,
+}) => {
   for (const [who, path, total] of [
     ["issuer", "/issuer", 7],
     ["investor", "/investor", 7],
@@ -129,21 +145,30 @@ test("a glossary term opens and closes from the keyboard", async ({ page }) => {
   await expect(term).toBeFocused();
 });
 
-test("/learn walks one coupon and lists the glossary in en, ru and kk", async ({ page, baseURL }) => {
+test("/learn walks one coupon and lists the glossary in en, ru and kk", async ({
+  page,
+  baseURL,
+}) => {
   for (const [loc, h1] of [
     ["en", "How a bond lives on Qupon"],
     ["ru", "Как живёт облигация на Qupon"],
     ["kk", "Qupon-да облигация қалай өмір сүреді"],
   ] as const) {
-    await page.context().addCookies([{ name: "NEXT_LOCALE", value: loc, url: baseURL ?? "" }]);
+    await page
+      .context()
+      .addCookies([{ name: "NEXT_LOCALE", value: loc, url: baseURL ?? "" }]);
     await page.goto("/learn");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(h1);
-    expect(await page.locator("#glossary dt").count()).toBeGreaterThanOrEqual(20);
+    expect(await page.locator("#glossary dt").count()).toBeGreaterThanOrEqual(
+      20,
+    );
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/learn");
   const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
 });

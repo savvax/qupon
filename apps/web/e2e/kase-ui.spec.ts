@@ -63,7 +63,7 @@ test("bond page shows the KASE panel with source and quote time; RU renders", as
   const panel = page.getByTestId("kase-panel");
   await expect(panel).toBeVisible();
   await expect(panel.getByText("KASE · TEBNb10")).toBeVisible();
-  await expect(panel.getByText("67.52%")).toBeVisible();
+  await expect(panel.getByText("67.52%", { exact: true })).toBeVisible(); // the bid/offer row also contains it
   await expect(panel.getByText(/Source: kase\.kz · fetched/)).toBeVisible();
   await expect(panel.getByText(/No recent trades/)).toBeVisible();
   await expect(panel.getByText(/securities of 48 titles/)).toBeVisible();

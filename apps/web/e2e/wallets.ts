@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { getBase58Encoder } from "@solana/kit";
 
 /** Test addresses (the brief's investors) used as the fake wallets' accounts. */
@@ -6,6 +6,21 @@ export const ADDRESSES = [
   "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo",
   "7XVBxDqctEz5mMXieqJ7swAa2UbBK2hBSwvoXc9ntLau",
 ] as const;
+
+/** The specs set this flag to make the fake wallet's connect() reject like a user refusal. */
+declare global {
+  interface Window {
+    __rejectConnect?: boolean;
+  }
+}
+
+/** The cabinet tour cards are role="dialog" too: close the investor tour so dialog assertions see only the wallet dialog. */
+export async function dismissTour(page: Page) {
+  const card = page.locator("[data-tour-card]");
+  await expect(card).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(card).toHaveCount(0);
+}
 
 /**
  * Register fake Wallet Standard wallets before the app loads (as browser extensions do), so the wallet UX sees
@@ -48,10 +63,7 @@ export async function injectWallets(page: Page, names: string[]) {
           "standard:connect": {
             version: "1.0.0",
             connect: async () => {
-              if (
-                (window as unknown as { __rejectConnect?: boolean })
-                  .__rejectConnect
-              )
+              if (window.__rejectConnect)
                 throw new Error("User rejected the request.");
               accounts = [account];
               for (const l of listeners.change ?? []) l({ accounts });

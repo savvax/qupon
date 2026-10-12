@@ -20,7 +20,11 @@ export PATH="$HOME/.cargo/bin:$PATH"; rustup update stable >/dev/null
 
 say "agave 4.3.0"
 export PATH="$HOME/.local/share/solana/install/active_release/bin:$PATH"
-if ! solana --version 2>/dev/null | grep -q ' 4\.3\.'; then sh -c "$(curl -sSfL https://release.anza.xyz/v4.3.0/install)"; fi
+if ! solana --version 2>/dev/null | grep -q ' 4\.3\.'; then
+  sh -c "$(curl -sSfL https://release.anza.xyz/v4.3.0/install)"
+  # The installer can leave active_release on an older Agave (A91569-4); init repoints it (idempotent).
+  "$HOME/.local/share/solana/install/active_release/bin/agave-install" init 4.3.0
+fi
 solana config set -u devnet >/dev/null
 
 say "anchor 1.2.0 via avm (otter-sec/anchor)"
@@ -44,7 +48,8 @@ fi
 corepack enable >/dev/null 2>&1 || npm i -g corepack; corepack prepare pnpm@9 --activate
 
 say "go 1.26"
-if ! go version 2>/dev/null | grep -q 'go1\.25'; then
+GOMOD_PIN=$(awk '$1=="go"{print $2; exit}' "$(dirname "$0")/../services/registrar/go.mod"); GOMINOR=${GOMOD_PIN%.*} # single source: services/registrar/go.mod
+if ! go version 2>/dev/null | grep -q "go${GOMINOR}"; then
   if [ "$OS" = "Darwin" ]; then brew install go; else
     GOV=1.26.0; ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
     curl -fsSL "https://go.dev/dl/go${GOV}.linux-${ARCH}.tar.gz" -o /tmp/go.tgz && sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf /tmp/go.tgz

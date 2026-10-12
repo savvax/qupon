@@ -10,7 +10,8 @@ v cargo "$(cargo --version 2>/dev/null | awk '{print $2}')"
 v rustc "$(rustc --version 2>/dev/null | awk '{print $2}')"
 N=$(node --version 2>/dev/null); v node "${N:-MISSING}"; [[ "$N" == v22* ]] || { echo "  !! need Node 22"; ok=1; }
 v pnpm "$(pnpm --version 2>/dev/null || echo MISSING)"
-G=$(go version 2>/dev/null | awk '{print $3}'); v go "${G:-MISSING}"; [[ "$G" == go1.25* ]] || { echo "  !! need Go 1.25"; ok=1; }
+GOMOD_PIN=$(awk '$1=="go"{print $2; exit}' "$(dirname "$0")/../services/registrar/go.mod"); GOMINOR=${GOMOD_PIN%.*} # single source: services/registrar/go.mod
+G=$(go version 2>/dev/null | awk '{print $3}'); v go "${G:-MISSING}"; [[ "$G" == "go${GOMINOR}"* ]] || { echo "  !! need Go ${GOMINOR} (pinned in services/registrar/go.mod)"; ok=1; }
 v pi "$(pi --version 2>/dev/null || echo MISSING)"
 v surfpool "$(surfpool --version 2>/dev/null | head -1 || echo MISSING)"
 v jq "$(jq --version 2>/dev/null || echo MISSING)"

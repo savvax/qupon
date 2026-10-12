@@ -29,8 +29,12 @@ test("registrar creates a trade at par, sees it, and settles the ready one", asy
 }) => {
   await signInAs(page, "registrar", baseURL);
   await page.goto("/registrar");
-  await page.getByRole("link", { name: "Trades" }).first().click();
-  await expect(page).toHaveURL(/\/registrar\/trades/);
+  // a click before hydration is lost: retry until the navigation really happens
+  await expect(async () => {
+    const trades = page.getByRole("link", { name: "Trades" }).first();
+    if (await trades.isVisible()) await trades.click();
+    await expect(page).toHaveURL(/\/registrar\/trades/, { timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
   await expect(page.getByRole("heading", { name: "Trades" })).toBeVisible();
   // The fixture trades live on QPNb1; the showcase series (task 1535) are also pickable
   // and the first of them is selected by default. Radix select: a click before hydration is

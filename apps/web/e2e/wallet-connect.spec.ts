@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { ADDRESSES, injectWallets } from "./wallets";
+import { ADDRESSES, dismissTour, injectWallets } from "./wallets";
 
 const header = (page: import("@playwright/test").Page) =>
   page.locator("header").first();
@@ -8,6 +8,7 @@ test("no wallet installed: install links, mobile deep links and a read-only view
   page,
 }) => {
   await page.goto("/investor");
+  await dismissTour(page); // the tour card is a second role=dialog on this page
   await expect(
     page.getByText(/No Solana wallet found in this browser/),
   ).toBeVisible();
@@ -69,6 +70,7 @@ test("several wallets: the dialog lists the detected ones and connects the chose
 }) => {
   await injectWallets(page, ["Phantom", "Solflare"]);
   await page.goto("/investor");
+  await dismissTour(page); // the tour card is a second role=dialog on this page
   await expect(page.getByText(/2 Solana wallets found/)).toBeVisible();
   await page.getByRole("button", { name: "Connect wallet" }).last().click();
   const dialog = page.getByRole("dialog");
@@ -91,9 +93,10 @@ test("a rejected connection is explained and can be retried", async ({
 }) => {
   await injectWallets(page, ["Phantom", "Solflare"]);
   await page.addInitScript(() => {
-    (window as unknown as { __rejectConnect: boolean }).__rejectConnect = true;
+    window.__rejectConnect = true;
   });
   await page.goto("/investor");
+  await dismissTour(page); // the tour card is a second role=dialog on this page
   await page.getByRole("button", { name: "Connect wallet" }).last().click();
   await page
     .getByRole("dialog")
@@ -103,7 +106,7 @@ test("a rejected connection is explained and can be retried", async ({
     page.getByRole("alert").filter({ hasText: /cancelled|could not connect/ }),
   ).toBeVisible();
   await page.evaluate(() => {
-    (window as unknown as { __rejectConnect: boolean }).__rejectConnect = false;
+    window.__rejectConnect = false;
   });
   await page
     .getByRole("dialog")
