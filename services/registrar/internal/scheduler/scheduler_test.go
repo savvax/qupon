@@ -3,6 +3,7 @@ package scheduler
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -997,5 +998,43 @@ func TestTickReleasesStaleSandboxTrade(t *testing.T) {
 	raw, _ := os.ReadFile(log)
 	if !strings.Contains(string(raw), "trade:list --series QPNb1") || !strings.Contains(string(raw), "trade:cancel --series QPNb1 --trade Trade1") {
 		t.Fatalf("sandbox cli log = %q, want trade:list then trade:cancel Trade1", raw)
+	}
+}
+
+// byMintsChain is a chain reader that can read series by mint (the production chain.Client can):
+// a full scan must then never run.
+type byMintsChain struct {
+	*fakeChain
+	asked [][]solana.PublicKey
+}
+
+func (b *byMintsChain) AllSeries(context.Context) ([]chain.SeriesRecord, error) {
+	return nil, errors.New("full scan on a reader that reads by mint")
+}
+
+func (b *byMintsChain) SeriesByMints(_ context.Context, mints []solana.PublicKey) ([]chain.SeriesRecord, error) {
+	b.asked = append(b.asked, mints)
+	var out []chain.SeriesRecord
+	for _, m := range mints {
+		if m == b.series.Mint {
+			out = append(out, chain.SeriesRecord{PDA: kSeries, Series: b.series})
+		}
+	}
+	return out, nil
+}
+
+// The tick reads only the owned series (one getMultipleAccounts), not every Series on the program.
+func TestTickReadsOwnedSeriesByMint(t *testing.T) {
+	fc := fundedChain()
+	s, _, log := newScheduler(t, fc, cfg)
+	bm := &byMintsChain{fakeChain: fc}
+	s.Read = bm
+	s.Now = func() time.Time { return now0.Add(2 * time.Minute) } // past the payment date → pay
+	s.Tick(t.Context())
+	if len(bm.asked) != 1 || len(bm.asked[0]) != 1 || bm.asked[0][0] != kMint {
+		t.Fatalf("SeriesByMints asked %v, want [[%s]]", bm.asked, kMint)
+	}
+	if raw, _ := os.ReadFile(log); !strings.Contains(string(raw), "action:pay") {
+		t.Fatalf("owned series did not run: %q", raw)
 	}
 }

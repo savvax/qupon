@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -257,7 +258,12 @@ const announceFloor = 60 * time.Second
 // Tick is one decision pass over every series.
 func (s *Scheduler) Tick(ctx context.Context) {
 	s.lastTick.Store(s.now().UnixNano())
-	recs, err := s.Read.AllSeries(ctx)
+	owned, err := s.ownedMints(ctx)
+	if err != nil {
+		s.Log.Error("scheduler: owned series", "err", err) // drive everything, the pre-91563 behaviour
+		owned = nil
+	}
+	recs, err := s.listSeries(ctx, owned)
 	if err != nil {
 		s.Log.Error("scheduler: list series", "err", err)
 		return
@@ -272,32 +278,39 @@ func (s *Scheduler) Tick(ctx context.Context) {
 			s.Log.Error("scheduler: series scenarios", "err", err) // fall back to the global autofund
 		}
 	}
-	if owned, err := s.ownedMints(ctx); err != nil {
-		s.Log.Error("scheduler: owned series", "err", err) // drive everything, the pre-91563 behaviour
-	} else {
-		s.prefetch(ctx, recs, owned)
-		for _, rec := range recs {
-			if ctx.Err() != nil {
-				return
-			}
-			mint := rec.Series.Mint.String()
-			if !owned[mint] {
-				if s.firstSkip(mint) {
-					s.Log.Info("scheduler: skipping series the autopilot does not own (no registry row, sandbox or showcase feature)", "series", mint)
-				}
-				continue
-			}
-			s.handleSeries(ctx, rec, noFund[mint])
-		}
-		return
-	}
-	s.prefetch(ctx, recs, nil)
+	s.prefetch(ctx, recs, owned)
 	for _, rec := range recs {
 		if ctx.Err() != nil {
 			return
 		}
-		s.handleSeries(ctx, rec, noFund[rec.Series.Mint.String()])
+		mint := rec.Series.Mint.String()
+		if owned != nil && !owned[mint] {
+			if s.firstSkip(mint) {
+				s.Log.Info("scheduler: skipping series the autopilot does not own (no registry row, sandbox or showcase feature)", "series", mint)
+			}
+			continue
+		}
+		s.handleSeries(ctx, rec, noFund[mint])
 	}
+}
+
+// listSeries reads the series to drive: with an owned set and a chain.Client only those accounts
+// (getMultipleAccounts), otherwise a full scan (tests, no store, or the owned lookup failed).
+func (s *Scheduler) listSeries(ctx context.Context, owned map[string]bool) ([]chain.SeriesRecord, error) {
+	r, ok := s.Read.(interface {
+		SeriesByMints(ctx context.Context, mints []solana.PublicKey) ([]chain.SeriesRecord, error)
+	})
+	if !ok || owned == nil {
+		return s.Read.AllSeries(ctx)
+	}
+	mints := make([]solana.PublicKey, 0, len(owned))
+	for m := range owned {
+		if k, err := solana.PublicKeyFromBase58(m); err == nil { // a malformed store row never blocks the rest
+			mints = append(mints, k)
+		}
+	}
+	slices.SortFunc(mints, func(a, b solana.PublicKey) int { return bytes.Compare(a[:], b[:]) })
+	return r.SeriesByMints(ctx, mints)
 }
 
 // prefetch batches the open actions and bond mints handleSeries reads into one getMultipleAccounts per tick

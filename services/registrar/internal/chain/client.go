@@ -80,9 +80,62 @@ type prefetchCache struct {
 
 const prefetchTTL = 2 * time.Second
 
-// Prefetch reads keys with getMultipleAccounts (100 per call) for the GetAccount calls that follow.
+// Prefetch reads keys with getMultipleAccounts for the GetAccount calls that follow.
 func (c *Client) Prefetch(ctx context.Context, keys []solana.PublicKey) error {
+	accs, err := c.getMultiple(ctx, keys)
+	if err != nil {
+		return fmt.Errorf("prefetch: %w", err)
+	}
 	data := make(map[solana.PublicKey][]byte, len(keys))
+	for i, acc := range accs {
+		data[keys[i]] = nil
+		if acc != nil {
+			data[keys[i]] = acc.Data.GetBinary()
+		}
+	}
+	c.pre.mu.Lock()
+	c.pre.data, c.pre.at = data, time.Now()
+	c.pre.mu.Unlock()
+	return nil
+}
+
+// SeriesByMints reads the Series accounts of mints with getMultipleAccounts; mints without one are skipped.
+// The scheduler reads the series it drives this way instead of scanning every Series each tick — public
+// devnet rate-limits getProgramAccounts hardest ("Too many requests for a specific RPC call", 2026-10-12).
+func (c *Client) SeriesByMints(ctx context.Context, mints []solana.PublicKey) ([]SeriesRecord, error) {
+	pdas := make([]solana.PublicKey, len(mints))
+	for i, m := range mints {
+		pda, err := SeriesPDA(c.program, m)
+		if err != nil {
+			return nil, err
+		}
+		pdas[i] = pda
+	}
+	accs, err := c.getMultiple(ctx, pdas)
+	if err != nil {
+		return nil, fmt.Errorf("read series: %w", err)
+	}
+	out := make([]SeriesRecord, 0, len(accs))
+	for i, acc := range accs {
+		if acc == nil {
+			continue
+		}
+		body, err := stripDiscriminator(acc.Data.GetBinary(), "Series")
+		if err != nil {
+			return nil, fmt.Errorf("read series %s: %w", pdas[i], err)
+		}
+		s, err := DecodeSeries(body)
+		if err != nil {
+			return nil, fmt.Errorf("read series %s: %w", pdas[i], err)
+		}
+		out = append(out, SeriesRecord{PDA: pdas[i], Series: s})
+	}
+	return out, nil
+}
+
+// getMultiple is getMultipleAccounts in chunks of 100 (the RPC maximum); a nil entry = account absent.
+func (c *Client) getMultiple(ctx context.Context, keys []solana.PublicKey) ([]*rpc.Account, error) {
+	out := make([]*rpc.Account, 0, len(keys))
 	for chunk := range slices.Chunk(keys, 100) {
 		var res *rpc.GetMultipleAccountsResult
 		err := c.withRetry(ctx, func() (err error) {
@@ -90,22 +143,14 @@ func (c *Client) Prefetch(ctx context.Context, keys []solana.PublicKey) error {
 			return err
 		})
 		if err != nil {
-			return fmt.Errorf("prefetch %d accounts: %w", len(chunk), err)
+			return nil, err
 		}
 		if len(res.Value) != len(chunk) {
-			return fmt.Errorf("prefetch: %d accounts answered for %d keys", len(res.Value), len(chunk))
+			return nil, fmt.Errorf("%d accounts answered for %d keys", len(res.Value), len(chunk))
 		}
-		for i, acc := range res.Value {
-			data[chunk[i]] = nil
-			if acc != nil {
-				data[chunk[i]] = acc.Data.GetBinary()
-			}
-		}
+		out = append(out, res.Value...)
 	}
-	c.pre.mu.Lock()
-	c.pre.data, c.pre.at = data, time.Now()
-	c.pre.mu.Unlock()
-	return nil
+	return out, nil
 }
 
 func (c *Client) prefetched(key solana.PublicKey) ([]byte, bool) {
