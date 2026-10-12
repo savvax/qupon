@@ -35,18 +35,31 @@ describe("loadProof + verifyProof on recorded devnet data", () => {
     "records the plan-15 series from devnet",
     async () => {
       const map: Record<string, unknown> = {};
+      // The public node sustains ~1 req/s per IP: pace the recorder and retry refusals, else a throttled
+      // run silently drops transactions from the fixture (task 91579).
+      let nextSend = 0;
       const rpc = createSolanaRpcFromTransport(async ({ payload }) => {
         const p = payload as Payload;
-        const res = await fetch(RPC, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: wireJson(payload),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = (await res.json()) as { result?: { meta?: Record<string, unknown> } };
-        if (json.result?.meta) delete json.result.meta.logMessages; // unused, and most of the bytes
-        map[rpcKey(p.method, p.params)] = json.result;
-        return json as never;
+        for (let i = 0; ; i++) {
+          const wait = nextSend - Date.now();
+          if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+          nextSend = Math.max(nextSend, Date.now()) + 1050;
+          const res = await fetch(RPC, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: wireJson(payload),
+          });
+          if (res.ok) {
+            const json = (await res.json()) as {
+              result?: { meta?: Record<string, unknown> };
+            };
+            if (json.result?.meta) delete json.result.meta.logMessages; // unused, and most of the bytes
+            map[rpcKey(p.method, p.params)] = json.result;
+            return json as never;
+          }
+          if (i >= 8) throw new Error(`HTTP ${res.status}`);
+          nextSend = Math.max(nextSend, Date.now()) + 1500 * (i + 1);
+        }
       });
       expect(await loadProof(rpc, PLAN15_MINT)).not.toBeNull();
       expect(await loadProof(rpc, LEGACY_MINT)).not.toBeNull();
@@ -55,54 +68,75 @@ describe("loadProof + verifyProof on recorded devnet data", () => {
     300_000,
   );
 
-  it.skipIf(!existsSync(FIXTURE))("every check passes on the real series", async () => {
-    const map = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, unknown>;
-    const seen: number[] = [];
-    const input = await loadProof(replayRpc(map), PLAN15_MINT, (p) => seen.push(p.txDone));
-    expect(input).not.toBeNull();
-    const report = await verifyProof(input!);
-    const failed = report.actions.flatMap((a) =>
-      a.checks.filter((c) => c.status === "fail").map((c) => `${a.corpId}:${c.id}`),
-    );
-    expect(failed).toEqual([]);
-    expect(report.failed).toBe(0);
-    expect(seen[0]).toBe(0); // accounts first, then one update per transaction
-    expect(seen.at(-1)).toBe(input!.txTotal);
+  it.skipIf(!existsSync(FIXTURE))(
+    "every check passes on the real series",
+    async () => {
+      const map = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<
+        string,
+        unknown
+      >;
+      const seen: number[] = [];
+      const input = await loadProof(replayRpc(map), PLAN15_MINT, (p) =>
+        seen.push(p.txDone),
+      );
+      expect(input).not.toBeNull();
+      const report = await verifyProof(input!);
+      const failed = report.actions.flatMap((a) =>
+        a.checks
+          .filter((c) => c.status === "fail")
+          .map((c) => `${a.corpId}:${c.id}`),
+      );
+      expect(failed).toEqual([]);
+      expect(report.failed).toBe(0);
+      expect(seen[0]).toBe(0); // accounts first, then one update per transaction
+      expect(seen.at(-1)).toBe(input!.txTotal);
 
-    const [intr, redm] = report.actions;
-    // The brief's numbers: 10 / 25 / 65 bonds → 500.00 / 1,250.00 / 3,250.00 ₸.
-    expect(intr!.holders.map((h) => [h.units, h.onchain.net])).toEqual([
-      [65n, 325_000n],
-      [25n, 125_000n],
-      [10n, 50_000n],
-    ]);
-    const ids = (a: typeof intr) => Object.fromEntries(a!.checks.map((c) => [c.id, c.status]));
-    expect(ids(intr)).toMatchObject({
-      entitlements: "pass",
-      supply: "pass",
-      hash: "pass",
-      totals: "pass",
-      funded: "pass",
-      payouts: "pass",
-      default: "pass",
-      bank: "pass",
-      disclosure: "pass",
-    });
-    expect(intr!.hashScheme).toBe(1);
-    // Redemption: principal + final coupon, units burned in the same pay_batch, supply then 0 (mint closed).
-    expect(redm!.holders.every((h) => h.onchain.principal === h.units * 100_000n)).toBe(true);
-    expect(input!.bondSupply).toBeNull();
-  });
+      const [intr, redm] = report.actions;
+      // The brief's numbers: 10 / 25 / 65 bonds → 500.00 / 1,250.00 / 3,250.00 ₸.
+      expect(intr!.holders.map((h) => [h.units, h.onchain.net])).toEqual([
+        [65n, 325_000n],
+        [25n, 125_000n],
+        [10n, 50_000n],
+      ]);
+      const ids = (a: typeof intr) =>
+        Object.fromEntries(a!.checks.map((c) => [c.id, c.status]));
+      expect(ids(intr)).toMatchObject({
+        entitlements: "pass",
+        supply: "pass",
+        hash: "pass",
+        totals: "pass",
+        funded: "pass",
+        payouts: "pass",
+        default: "pass",
+        bank: "pass",
+        disclosure: "pass",
+      });
+      expect(intr!.hashScheme).toBe(1);
+      // Redemption: principal + final coupon, units burned in the same pay_batch, supply then 0 (mint closed).
+      expect(
+        redm!.holders.every((h) => h.onchain.principal === h.units * 100_000n),
+      ).toBe(true);
+      expect(input!.bondSupply).toBeNull();
+    },
+  );
 
-  it.skipIf(!existsSync(FIXTURE))("scheme 0: the owner-ordered rolling hash matches a legacy series", async () => {
-    const map = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, unknown>;
-    const report = await verifyProof((await loadProof(replayRpc(map), LEGACY_MINT))!);
-    expect(report.actions.length).toBeGreaterThanOrEqual(3);
-    for (const a of report.actions) {
-      expect(a.hashScheme).toBe(0);
-      expect(a.checks.filter((c) => c.status === "fail")).toEqual([]);
-      expect(a.checks.find((c) => c.id === "hash")?.status).toBe("pass");
-    }
-    expect(report.input.series.data.hook).toBe(0);
-  });
+  it.skipIf(!existsSync(FIXTURE))(
+    "scheme 0: the owner-ordered rolling hash matches a legacy series",
+    async () => {
+      const map = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<
+        string,
+        unknown
+      >;
+      const report = await verifyProof(
+        (await loadProof(replayRpc(map), LEGACY_MINT))!,
+      );
+      expect(report.actions.length).toBeGreaterThanOrEqual(3);
+      for (const a of report.actions) {
+        expect(a.hashScheme).toBe(0);
+        expect(a.checks.filter((c) => c.status === "fail")).toEqual([]);
+        expect(a.checks.find((c) => c.id === "hash")?.status).toBe("pass");
+      }
+      expect(report.input.series.data.hook).toBe(0);
+    },
+  );
 });

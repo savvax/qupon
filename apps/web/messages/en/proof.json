@@ -20,6 +20,7 @@
     "fail": "{n, plural, one {# check failed} other {# checks failed}}",
     "loading": "Reading devnet…",
     "progress": "Transactions {done} of {total}",
+    "eta": "≈ {sec} s left",
     "sub": "{actions, plural, one {# corporate action} other {# corporate actions}} · {txs, plural, one {# transaction} other {# transactions}}",
     "at": "Verified {when}"
   },

@@ -47,6 +47,22 @@ describe("proof RPC fallback", () => {
     expect(answeredByRpc()).toBe(A);
   });
 
+  it("spreads consecutive requests across endpoints (round-robin, task 91579)", async () => {
+    globalThis.fetch = (async (url: string | URL | Request) =>
+      new Response(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          result: String(url) === A ? 42 : 4242,
+        }),
+        { status: 200 },
+      )) as typeof fetch;
+    const rpc = createProofRpc([A, B]);
+    await expect(rpc.getSlot().send()).resolves.toBe(42n); // starts at the first endpoint
+    await expect(rpc.getSlot().send()).resolves.toBe(4242n); // …then the second, so parallel walks share the load
+    await expect(rpc.getSlot().send()).resolves.toBe(42n);
+  });
+
   it("throws when every endpoint refuses", async () => {
     globalThis.fetch = (async () =>
       new Response("{}", { status: 503 })) as typeof fetch;

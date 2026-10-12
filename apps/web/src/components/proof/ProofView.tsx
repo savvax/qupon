@@ -3,7 +3,7 @@
 import { answeredByRpc, createProofRpc } from "@/lib/proof/endpoints";
 import { QUPON_BONDS_PROGRAM_ADDRESS } from "@qupon/client/src/generated";
 import { useLocale, useTranslations } from "next-intl";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { ScopeGrid } from "@/app/(public)/_landing/sections";
 import { Address } from "@/components/ui/Address";
 import { Badge } from "@/components/ui/Badge";
@@ -285,6 +285,20 @@ function Certificate({ report, fmt }: { report?: ProofReport; fmt: Fmt }) {
   const [verifiedAt, setVerifiedAt] = useState<number | null>(null);
   const input = report?.input;
   const loading = !input || input.txDone < input.txTotal;
+  // ETA from the observed read rate (task 91579: the judge sees how long the history walk still needs).
+  const startedAt = useRef(0);
+  if (input && startedAt.current === 0) startedAt.current = Date.now();
+  const eta =
+    input && input.txDone > 2 && input.txDone < input.txTotal
+      ? Math.max(
+          1,
+          Math.round(
+            (((Date.now() - startedAt.current) / input.txDone) *
+              (input.txTotal - input.txDone)) /
+              1000,
+          ),
+        )
+      : null;
   useEffect(() => {
     if (!loading) setVerifiedAt(Math.floor(Date.now() / 1000));
   }, [loading]);
@@ -449,6 +463,11 @@ function Certificate({ report, fmt }: { report?: ProofReport; fmt: Fmt }) {
                     }}
                   />
                 </div>
+                {eta != null && (
+                  <p className="num mt-1.5 text-xs text-n500">
+                    {t("seal.eta", { sec: eta })}
+                  </p>
+                )}
               </>
             )}
           </div>

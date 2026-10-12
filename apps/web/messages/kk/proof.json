@@ -20,6 +20,7 @@
     "fail": "{n, plural, other {# тексеру өтпеді}}",
     "loading": "Devnet оқылуда…",
     "progress": "Транзакциялар: {done} / {total}",
+    "eta": "≈ {sec} с қалды",
     "sub": "{actions, plural, other {# корпоративті әрекет}} · {txs, plural, other {# транзакция}}",
     "at": "Тексерілді: {when}"
   },

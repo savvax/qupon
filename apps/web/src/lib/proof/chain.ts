@@ -31,7 +31,7 @@ import {
   getSeriesDecoder,
   identifyQuponBondsInstruction,
 } from "@qupon/client/src/generated";
-import { seriesPda } from "@qupon/client/src/lib/pda";
+import { seriesPda, entitlementPda } from "@qupon/client/src/lib/pda";
 
 export type Decoded<T> = { address: Address; data: T };
 
@@ -86,30 +86,16 @@ const memcmp = (offset: number, bytes: ReadonlyUint8Array | string) => ({
 const startsWith = (data: ReadonlyUint8Array, prefix: ReadonlyUint8Array) =>
   prefix.every((b, i) => data[i] === b);
 
-/**
- * While a node is rate-limiting us every request waits (one shared pause instead of each worker hammering), and
- * once it has refused once, requests go out at most one per 1.1 s — the public node's pace.
- */
-let pauseUntil = 0;
-let throttled = false;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Retry transient RPC failures (the public devnet node answers 429 beyond ~10 `getTransaction` per 10 s). */
+/** Retry transient RPC failures (the transport in endpoints.ts already paces per node) with backoff. */
 async function retry<T>(fn: () => Promise<T>, tries = 12): Promise<T> {
   for (let i = 0; ; i++) {
-    let wait = pauseUntil - Date.now();
-    while (wait > 0) {
-      await sleep(wait);
-      wait = pauseUntil - Date.now();
-    }
-    if (throttled) pauseUntil = Date.now() + 1100;
     try {
       return await fn();
     } catch (e) {
       if (i >= tries - 1) throw e;
-      throttled = true;
-      const ms = Math.min(500 * 2 ** i, 5000) * (0.75 + Math.random() / 2);
-      pauseUntil = Math.max(pauseUntil, Date.now() + ms);
+      await sleep(Math.min(500 * 2 ** i, 5000) * (0.75 + Math.random() / 2));
     }
   }
 }
@@ -124,6 +110,7 @@ async function pool<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>) {
         const k = next++;
         out[k] = await fn(items[k] as T);
       }
+      return undefined; // worker value unused — Promise.all only awaits settlement
     }),
   );
   return out;
@@ -131,7 +118,9 @@ async function pool<T, R>(items: T[], n: number, fn: (t: T) => Promise<R>) {
 
 function ixName(data: string): string | null {
   try {
-    return QuponBondsInstruction[identifyQuponBondsInstruction(b58.encode(data))];
+    return QuponBondsInstruction[
+      identifyQuponBondsInstruction(b58.encode(data))
+    ];
   } catch {
     return null; // not one of ours (another program sharing the id is impossible, but stay total)
   }
@@ -149,7 +138,10 @@ type RawTx = {
   blockTime: bigint | number | null;
   meta: {
     err: unknown;
-    loadedAddresses?: { writable: readonly string[]; readonly: readonly string[] };
+    loadedAddresses?: {
+      writable: readonly string[];
+      readonly: readonly string[];
+    };
     innerInstructions?: readonly { instructions: readonly RawIx[] }[] | null;
     preTokenBalances?: readonly RawBal[] | null;
     postTokenBalances?: readonly RawBal[] | null;
@@ -218,9 +210,10 @@ async function allSignatures(rpc: ProofRpc, addr: Address) {
 
 /**
  * Read one bond series from the chain: the Series, its investors and corporate actions, every action's
- * entitlements, the bond and cash mints, then every transaction that touched the series. `onUpdate` fires once the
- * accounts are in and again after each transaction (a public node serves ~1 `getTransaction`/s), so the page shows
- * the account checks at once and the ledger checks when the history is complete.
+ * entitlements, the bond and cash mints, then every transaction that touched the series (fetched ~7 at a
+ * time across the RPC endpoints, so a public node's rate limit slows the walk instead of stalling it).
+ * `onUpdate` fires once the accounts are in and again after each transaction, so the page shows the account
+ * checks at once and the ledger checks when the history is complete.
  */
 export async function loadProof(
   rpc: ProofRpc,
@@ -260,27 +253,45 @@ export async function loadProof(
   for (const c of children) {
     const data = asBytes(c.account.data);
     if (startsWith(data, CORPORATE_ACTION_DISCRIMINATOR))
-      actions.push({ address: c.pubkey, data: getCorporateActionDecoder().decode(data) });
+      actions.push({
+        address: c.pubkey,
+        data: getCorporateActionDecoder().decode(data),
+      });
     else if (startsWith(data, INVESTOR_DISCRIMINATOR))
-      investors.push({ address: c.pubkey, data: getInvestorDecoder().decode(data) });
+      investors.push({
+        address: c.pubkey,
+        data: getInvestorDecoder().decode(data),
+      });
   }
   actions.sort((a, b) => a.data.index - b.data.index);
 
+  // Entitlements are PDAs of (action, owner): derive them for every action × registered investor and read
+  // them with one batched getMultipleAccounts per 100 (task 91579) instead of one getProgramAccounts per
+  // action. A missed entitlement cannot slip through silently — the action's own totals and hash checks
+  // compare Σ entitlements against what the program recorded and fail loudly on any gap.
+  const owners = [...new Set(investors.map((i) => String(i.data.owner)))];
+  const entAddrs = await Promise.all(
+    actions.flatMap((a) =>
+      owners.map((o) => entitlementPda(a.address, address(o))),
+    ),
+  );
   const entitlements: Record<string, Decoded<Entitlement>[]> = {};
-  await pool(actions, 3, async (a) => {
+  for (let k = 0; k < entAddrs.length; k += 100) {
+    const chunk = entAddrs.slice(k, k + 100);
     const rows = await retry(() =>
-      rpc
-        .getProgramAccounts(program, {
-          encoding: "base64",
-          filters: [memcmp(0, ENTITLEMENT_DISCRIMINATOR), memcmp(9, a.address)],
-        })
-        .send(),
+      rpc.getMultipleAccounts(chunk, { encoding: "base64" }).send(),
     );
-    entitlements[a.address] = rows.map((r) => ({
-      address: r.pubkey,
-      data: getEntitlementDecoder().decode(asBytes(r.account.data)),
-    }));
-  });
+    rows.value.forEach((acc, j) => {
+      if (!acc) return; // this (action, owner) pair has no entitlement — never snapshotted
+      const data = asBytes(acc.data);
+      if (!startsWith(data, ENTITLEMENT_DISCRIMINATOR)) return;
+      const e = getEntitlementDecoder().decode(data);
+      (entitlements[String(e.action)] ??= []).push({
+        address: chunk[j] as Address,
+        data: e,
+      });
+    });
+  }
 
   // SPL mint layout: supply u64 at 36, decimals u8 at 44 (same for Token and Token-2022).
   const [bondMint, cashMint] = mints.value;
@@ -305,16 +316,27 @@ export async function loadProof(
   onUpdate?.(snapshot());
   await pool(
     sigs.map((s, i) => [s.signature, i] as const),
-    3,
+    7,
     async ([signature, i]) => {
-      const raw = await retry(() =>
-        rpc
-          .getTransaction(signature, {
-            encoding: "json",
-            maxSupportedTransactionVersion: 0,
-          })
-          .send(),
-      );
+      // A node without the full history answers null for a signature we know exists (it came from
+      // getSignaturesForAddress) — retry so another endpoint can serve it; only a null from all of them
+      // counts as "nowhere to be read" (the affected checks will say so) (task 91579).
+      let raw: unknown = null;
+      try {
+        raw = await retry(async () => {
+          const r = await rpc
+            .getTransaction(signature, {
+              encoding: "json",
+              maxSupportedTransactionVersion: 0,
+            })
+            .send();
+          if (r === null) throw new Error(`node did not serve ${signature}`);
+          return r;
+        }, 6);
+      } catch {
+        raw = null; // no endpoint could serve it
+      }
+      // SAFETY: the transport returns the node's `getTransaction` json-encoding result, which matches RawTx.
       loaded[i] = raw ? parseTx(signature, raw as unknown as RawTx) : null;
       txDone++;
       onUpdate?.(snapshot());

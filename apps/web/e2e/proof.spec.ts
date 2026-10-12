@@ -16,9 +16,12 @@ const RECORDED = JSON.parse(
   readFileSync(path.join(__dirname, "fixtures/proof-rpc.json"), "utf8"),
 ) as Record<string, unknown>;
 
+/** Both default public devnet endpoints (endpoints.ts round-robins between them, task 91579). */
+const RPC_HOSTS = ["api.devnet.solana.com", "solana-devnet.api.onfinality.io"];
+
 async function mockRpc(page: Page, map = RECORDED) {
   await page.route(
-    (url) => url.host === "api.devnet.solana.com",
+    (url) => RPC_HOSTS.includes(url.host),
     async (route) => {
       const req = JSON.parse(route.request().postData() ?? "{}") as {
         id: string;
@@ -119,15 +122,20 @@ test("legacy series: the owner-ordered rolling hash (scheme 0) verifies", async 
 
 test("a tampered entitlement is caught", async ({ page, baseURL }) => {
   // Add one minor unit to the first entitlement's net (Entitlement: 8 disc + 1 bump + 32 action + 32 owner +
-  // units, gross, tax → net at byte 97) in the recorded getProgramAccounts answer.
+  // units, gross, tax → net at byte 97) in the recorded getMultipleAccounts answer (task 91579: entitlements
+  // are read as derived PDAs in one batched call, not one getProgramAccounts per action).
   const map = structuredClone(RECORDED);
   const key = Object.keys(map).find(
-    (k) => k.startsWith("getProgramAccounts") && k.includes('"offset":0'),
+    (k) =>
+      k.startsWith("getMultipleAccounts") &&
+      (JSON.parse(k.slice(k.indexOf(" ") + 1))[0] as unknown[]).length > 2,
   )!;
-  const rows = map[key] as { account: { data: [string, string] } }[];
-  const bytes = Buffer.from(rows[0]!.account.data[0], "base64");
+  const rows = (map[key] as { value: ({ data: [string, string] } | null)[] })
+    .value;
+  const row = rows.find((r) => r && r.data[0].length >= 172)!; // entitlement accounts are 129 bytes
+  const bytes = Buffer.from(row.data[0], "base64");
   bytes.writeBigUInt64LE(bytes.readBigUInt64LE(97) + 1n, 97);
-  rows[0]!.account.data[0] = bytes.toString("base64");
+  row.data[0] = bytes.toString("base64");
   await mockRpc(page, map);
   await page
     .context()
