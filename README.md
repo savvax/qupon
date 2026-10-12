@@ -10,6 +10,13 @@
 - 116 program tests (LiteSVM integration + unit), the brief's worked example as named tests, shared test vectors checked in Rust, Go and TypeScript
 - Judge path, no sign-in: a **sandbox** bond that lives a whole coupon cycle in minutes, a curated **showcase** serviced by an autopilot and a **/proof** page that re-verifies every action in the browser — see [Try it](#try-it--the-judge-path)
 
+## Guides — EN / RU
+
+| | English | Русский |
+| --- | --- | --- |
+| **Setup and run** — toolchain, `.env`, devnet keys, the whole stack with one command (`make up`), mock mode, tests, troubleshooting | [docs/guides/SETUP.en.md](docs/guides/SETUP.en.md) | [docs/guides/SETUP.ru.md](docs/guides/SETUP.ru.md) |
+| **User scenarios** — every role and feature with a real Phantom wallet on devnet: issuance, KYC, subscription, coupon, meeting vote, payout route, trades, admin, sandbox (screenshots + GIFs) | [docs/guides/USAGE.en.md](docs/guides/USAGE.en.md) | [docs/guides/USAGE.ru.md](docs/guides/USAGE.ru.md) |
+
 ## Try it — the judge path
 
 - **Sandbox — “Try it in 3 minutes”**: [/sandbox/new](https://qupon.fun/sandbox/new) issues the visitor **their own bond on devnet** on a compressed demo clock (a bond day passes in seconds, a whole coupon cycle in minutes). Watch the autopilot run record date → snapshot → fund → pay, view it as issuer / registrar / investor, skip the funding to see the default declared and then cured, and claim a payout with your own wallet (`?wallet=<address>` adds you as a holder). No sign-in needed.
@@ -184,7 +191,10 @@ bash ops/wallets.sh            # devnet keypairs; fund via faucet.solana.com / f
 make demo-coupon               # S1 on devnet → reports/demo-coupon.md
 make demo                      # S0–S4 on devnet → reports/demo-full.md
 make api                       # Go registrar on :8080 (REST + ISO 20022 + notices)
+make up                        # ONE COMMAND: registrar API + web app on devnet → http://localhost:3000 (MOCK=1 make up: UI only, no keys)
 ```
+
+Step by step, with every option: [setup guide](docs/guides/SETUP.en.md) ([RU](docs/guides/SETUP.ru.md)).
 
 ### UI without keys (mock mode)
 
