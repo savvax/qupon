@@ -4,7 +4,7 @@ Date: 2026-10-05 · Owner: lead · Deadline: submission 2026-10-12 20:00 Almaty 
 
 ## 1. Goal and success criteria
 
-Turn the working prototype (console + investor portal + Go registrar API, live at https://qupon.85-192-29-7.sslip.io)
+Turn the working prototype (console + investor portal + Go registrar API, live at https://qupon.185-216-25-91.sslip.io)
 into a product a judge, an issuer, a registrar and an investor can use end to end in the browser, with a design that
 reads as "KASE, but better".
 

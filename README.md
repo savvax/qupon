@@ -12,21 +12,21 @@
 
 ## Try it — the judge path
 
-- **Sandbox — “Try it in 3 minutes”**: [/sandbox/new](https://qupon.85-192-29-7.sslip.io/sandbox/new) issues the visitor **their own bond on devnet** on a compressed demo clock (a bond day passes in seconds, a whole coupon cycle in minutes). Watch the autopilot run record date → snapshot → fund → pay, view it as issuer / registrar / investor, skip the funding to see the default declared and then cured, and claim a payout with your own wallet (`?wallet=<address>` adds you as a holder). No sign-in needed.
+- **Sandbox — “Try it in 3 minutes”**: [/sandbox/new](https://qupon.185-216-25-91.sslip.io/sandbox/new) issues the visitor **their own bond on devnet** on a compressed demo clock (a bond day passes in seconds, a whole coupon cycle in minutes). Watch the autopilot run record date → snapshot → fund → pay, view it as issuer / registrar / investor, skip the funding to see the default declared and then cured, and claim a payout with your own wallet (`?wallet=<address>` adds you as a holder). No sign-in needed.
 - **Curated showcase with autopilot**: the public bond board features four seeded series (`make seed-showcase`) that the registrar's autopilot loop services end to end on its own schedule — announce, record date, snapshot, pay, complete — [`reports/showcase.md`](reports/showcase.md).
-- **/proof — in-browser verification**: every series has a public certificate page that rereads devnet over RPC and recomputes every check **in your browser** (snapshot fingerprint, per-holder math, escrow money in/out), with an explorer link per transaction; `pnpm build:proof` exports the same pages as static HTML ([picker](https://qupon.85-192-29-7.sslip.io/proof)).
+- **/proof — in-browser verification**: every series has a public certificate page that rereads devnet over RPC and recomputes every check **in your browser** (snapshot fingerprint, per-holder math, escrow money in/out), with an explorer link per transaction; `pnpm build:proof` exports the same pages as static HTML ([picker](https://qupon.185-216-25-91.sslip.io/proof)).
 - **Plan-15 servicing instructions**, all live on devnet ([`reports/demo-plan15.md`](reports/demo-plan15.md)): holder-signed payout routes (`set_payout_route`; bank-routed payouts go to the paying agent, which confirms with `confirm_bank_payout` — transfer SIMULATED), default and cure (`declare_default` one series day after a missed payment, late funding cures it and the record-date holders are paid), the seev.031 disclosure hash anchored on-chain (`attach_disclosure`), DvP trades that carry accrued interest (`TradeAccrued`), and redemptions that pay and burn in one instruction.
 - The UI speaks **English, Russian and Kazakh**.
 
 ## Product tour — every role in the browser
 
-The whole engine is driven from the web app at **https://qupon.85-192-29-7.sslip.io**, in English, Russian or Kazakh, on a laptop or a phone. Open [/login](https://qupon.85-192-29-7.sslip.io/login) and sign in with one click — **demo issuer**, **demo registrar** or **demo investor** (the demo investor is a server-signed custodial wallet, labelled as such on every screen; connect your own wallet instead if you prefer).
+The whole engine is driven from the web app at **https://qupon.185-216-25-91.sslip.io**, in English, Russian or Kazakh, on a laptop or a phone. Open [/login](https://qupon.185-216-25-91.sslip.io/login) and sign in with one click — **demo issuer**, **demo registrar** or **demo investor** (the demo investor is a server-signed custodial wallet, labelled as such on every screen; connect your own wallet instead if you prefer).
 
 | Role | Cabinet | What you can do |
 | --- | --- | --- |
-| Issuer | [`/issuer`](https://qupon.85-192-29-7.sslip.io/issuer) | create a bond series in a 3-step wizard (terms → schedule preview → issue on-chain), announce a coupon / redemption / early call, call a bondholder meeting, fund the escrow |
-| Registrar | [`/registrar`](https://qupon.85-192-29-7.sslip.io/registrar) | onboard an investor (SAS KYC attestation, SIMULATED provider, + on-chain registration), run record date → snapshot → pay → complete step by step, reconcile, download ISO 20022 and the KASE notice, browse the audit trail, create and settle secondary trades on the Solana DvP program (`/registrar/trades`) |
-| Investor | [`/investor`](https://qupon.85-192-29-7.sslip.io/investor) | portfolio with a tx link per payment, subscribe at par, fund your leg of a secondary trade, vote in meetings, seev.036 statements |
+| Issuer | [`/issuer`](https://qupon.185-216-25-91.sslip.io/issuer) | create a bond series in a 3-step wizard (terms → schedule preview → issue on-chain), announce a coupon / redemption / early call, call a bondholder meeting, fund the escrow |
+| Registrar | [`/registrar`](https://qupon.185-216-25-91.sslip.io/registrar) | onboard an investor (SAS KYC attestation, SIMULATED provider, + on-chain registration), run record date → snapshot → pay → complete step by step, reconcile, download ISO 20022 and the KASE notice, browse the audit trail, create and settle secondary trades on the Solana DvP program (`/registrar/trades`) |
+| Investor | [`/investor`](https://qupon.185-216-25-91.sslip.io/investor) | portfolio with a tx link per payment, subscribe at par, fund your leg of a secondary trade, vote in meetings, seev.036 statements |
 
 Every action step confirms with a toast carrying its explorer link. The screenshots below are real devnet runs driven through this UI (local registrar + the deployed program; log: [`reports/live-check-local.md`](reports/live-check-local.md)):
 
@@ -40,7 +40,7 @@ Every action step confirms with a toast carrying its explorer link. The screensh
 
 The deployed site is checked the same way — live e2e 4/4 and a full coupon through the cabinets on production: [`reports/live-deploy.md`](reports/live-deploy.md), screenshots in [`reports/ui/live/`](reports/ui/live).
 
-Every page × EN/RU/KK × 1440/390 px is swept by `apps/web/e2e/sweep.spec.ts` (no console errors — that is where missing translations surface — and no horizontal scroll at 390 px); the 323 shots live in [`reports/ui/sweep/`](reports/ui/sweep). Public pages need no sign-in: [landing](https://qupon.85-192-29-7.sslip.io/) · [bond board](https://qupon.85-192-29-7.sslip.io/bonds).
+Every page × EN/RU/KK × 1440/390 px is swept by `apps/web/e2e/sweep.spec.ts` (no console errors — that is where missing translations surface — and no horizontal scroll at 390 px); the 323 shots live in [`reports/ui/sweep/`](reports/ui/sweep). Public pages need no sign-in: [landing](https://qupon.185-216-25-91.sslip.io/) · [bond board](https://qupon.185-216-25-91.sslip.io/bonds).
 
 ## Platform v2 — accounts, KYC, KASE data, cash assets, admin
 
@@ -185,18 +185,19 @@ make api                       # Go registrar on :8080 (REST + ISO 20022 + notic
 
 | What | URL |
 | --- | --- |
-| Site (landing, bond board) | https://qupon.85-192-29-7.sslip.io |
-| Sign in — one-click demo issuer, registrar or investor | https://qupon.85-192-29-7.sslip.io/login |
-| Registrar API                                               | https://api.85-192-29-7.sslip.io/healthz (OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
+| Site (landing, bond board) | https://qupon.185-216-25-91.sslip.io |
+| Sign in — one-click demo issuer, registrar or investor | https://qupon.185-216-25-91.sslip.io/login |
+| Registrar API                                               | https://api.185-216-25-91.sslip.io/healthz (OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
 
-One VPS, Docker Compose: registrar API (Go + the `qupon` CLI as executor), web app (Next.js) and Caddy (automatic HTTPS;
-`sslip.io` resolves the hostnames to the server IP). The web app reads devnet state; wallet actions are signed in the
+One VPS, Docker Compose: registrar API (Go + the `qupon` CLI as executor) and web app (Next.js), behind HTTPS (own Caddy on
+the old box, the box's shared reverse proxy on the primary; `sslip.io` resolves the hostnames to the server IP). The web app reads devnet state; wallet actions are signed in the
 browser; back-office writes go through a session proxy (`/api/bo/*`): the session token lives only in an httpOnly cookie
 and every operator-key action is role-checked by the Go API. Deploy or update with one command (needs ssh access and the
 devnet keypairs in `.env`):
 
 ```bash
-ops/deploy-vps.sh root@85.192.29.7    # rsync → server-side secrets (mode 600) → docker compose build/up → health check
+ops/deploy-vps.sh                                 # primary: user@185.216.25.91 (compose.shared.yml, /home/user/qupon)
+COMPOSE=compose.yml QUPON_DIR=/opt/qupon ops/deploy-vps.sh root@85.192.29.7    # old box, fallback
 ```
 
 Fresh demo data (every demo coupon consumes one scheduled period): `make demo-seed` creates a new series with three
@@ -204,7 +205,7 @@ KYC'd holders (10 / 25 / 65 bonds) and nothing announced; `REINDEX=1 ops/deploy-
 cabinets list it.
 
 Env reference: [`.env.example`](.env.example) (root) and [`services/registrar/.env.example`](services/registrar/.env.example). Server-side secrets written by the deploy script to
-/opt/qupon/registrar.env (mode 600): `RPC_URL`, `DEMO_LOGIN=1`, `QUPON_USERS`, and the operator keypair JSON arrays the
+$QUPON_DIR/registrar.env (mode 600; `/home/user/qupon` on the primary, `/opt/qupon` on the old box): `RPC_URL`, `DEMO_LOGIN=1`, `QUPON_USERS`, and the operator keypair JSON arrays the
 executor signs with — registrar, issuer, paying agent, KYC provider (`~/.config/qupon/kyc-provider.json`) and the demo
 investor's custodial wallet (`~/.config/qupon/investor3.json`, powers `POST /demo/investor/*`).
 

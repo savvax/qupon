@@ -48,7 +48,7 @@
 **Files:** `docs/SUBMISSION_FINAL.md` (replace section "Superteam Earn — Superteam Kazakhstan general track"), `docs/00-brief.md:79-81` (add form facts), `docs/07-submission.md:21` (checklist line), `docs/05-plan.md` (one row: "Plan 5 → `docs/superpowers/plans/2026-10-06-plan5-kz-general-track.md`").
 **Depends on:** Task 1 answers (use the defaults if still open).
 
-- [ ] Replace the stub ("Same fields as above; additionally…") with a per-field table, 11 rows, in this order: Link to Your Submission = Colosseum project page `<<FILL>>` · Tweet Link `<<FILL>>` · Project Name = `Qupon` · Project Description = block below · Project Github Link = `https://github.com/savvax/qupon` · Project Website = `https://qupon.85-192-29-7.sslip.io` · Project X Link = per Task 1 (default: leave empty) · Link to pitch deck or video = pitch video YouTube link `<<FILL>>` · "Did you submit…" = `Yes — submitted <<FILL: date>>, project page <<FILL: link>>` · Link to Colosseum project `<<FILL>>` · Link to Colosseum profile `<<FILL>>`.
+- [ ] Replace the stub ("Same fields as above; additionally…") with a per-field table, 11 rows, in this order: Link to Your Submission = Colosseum project page `<<FILL>>` · Tweet Link `<<FILL>>` · Project Name = `Qupon` · Project Description = block below · Project Github Link = `https://github.com/savvax/qupon` · Project Website = `https://qupon.185-216-25-91.sslip.io` · Project X Link = per Task 1 (default: leave empty) · Link to pitch deck or video = pitch video YouTube link `<<FILL>>` · "Did you submit…" = `Yes — submitted <<FILL: date>>, project page <<FILL: link>>` · Link to Colosseum project `<<FILL>>` · Link to Colosseum profile `<<FILL>>`.
 - [ ] Description (≤ 300 words before the Team line; verify with `wc -w`); every number already appears in `docs/SUBMISSION_FINAL.md` or `README.md`:
   ```
   Qupon is the corporate-actions engine for tokenized bonds on Solana: identify holders, calculate entitlements, settle, and record the outcome on-chain.
@@ -63,7 +63,7 @@
 
   Team. <<FILL: one line per member — role, relevant experience>> <<FILL if true per Task 1: This is our first Colosseum hackathon.>>
 
-  Technical overview: https://github.com/savvax/qupon/blob/main/docs/TECHNICAL_OVERVIEW.md · Demo run with an explorer link per transaction: https://github.com/savvax/qupon/blob/main/reports/demo-full.md · Live: https://qupon.85-192-29-7.sslip.io
+  Technical overview: https://github.com/savvax/qupon/blob/main/docs/TECHNICAL_OVERVIEW.md · Demo run with an explorer link per transaction: https://github.com/savvax/qupon/blob/main/reports/demo-full.md · Live: https://qupon.185-216-25-91.sslip.io
   ```
   If Task 1 chose no license, replace "is open source" with "has a public repository". If registration could not be done, append: `We did not find the program registration form; this Earn submission is our registration.`
 - [ ] `docs/00-brief.md` §general track: add "Earn form has no 'Anything else' field — links go in the description; 'Link to your pitch deck or Loom/video presentation' = pitch video; prizes 4–6 are best student / first-time / idea".

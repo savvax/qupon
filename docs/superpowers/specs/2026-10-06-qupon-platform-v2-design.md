@@ -1,7 +1,7 @@
 # Qupon platform v2 — accounts, admin, KZT stablecoins, KASE data, networks, motion
 
 **Status:** design approved in conversation 2026-10-06 ("go"); this document is the written spec.
-**Builds on:** `docs/superpowers/specs/2026-10-05-qupon-product-design.md` (product v1, deployed at https://qupon.85-192-29-7.sslip.io).
+**Builds on:** `docs/superpowers/specs/2026-10-05-qupon-product-design.md` (product v1, deployed at https://qupon.185-216-25-91.sslip.io).
 **Deadline:** submission 2026-10-12 20:00 Almaty. Lead + GLM workers through the task queue.
 
 ## 1. Goal and success criteria

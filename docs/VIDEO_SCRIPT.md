@@ -1,6 +1,6 @@
 # Demo video script — Qupon (≤ 3:00, EN)
 
-Voice-over ≈ 265 words — unhurried (~90 wpm) so the UI has room to breathe; never more than 420 (140 wpm). Record on the live site (https://qupon.85-192-29-7.sslip.io) with a devnet wallet (Phantom/Solflare) for the investor and the one-click demo roles for issuer and registrar; numbers from `reports/demo-full.md` (brief vectors: 10/25/65 units, 1,000 KZT face, 10% semi-annual).
+Voice-over ≈ 265 words — unhurried (~90 wpm) so the UI has room to breathe; never more than 420 (140 wpm). Record on the live site (https://qupon.185-216-25-91.sslip.io) with a devnet wallet (Phantom/Solflare) for the investor and the one-click demo roles for issuer and registrar; numbers from `reports/demo-full.md` (brief vectors: 10/25/65 units, 1,000 KZT face, 10% semi-annual).
 
 | # | Time | On screen | VO |
 |---|------|-----------|----|

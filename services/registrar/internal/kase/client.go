@@ -27,7 +27,7 @@ var (
 )
 
 // userAgent identifies the registrar to kase.kz (their ops can find the contact).
-const userAgent = "Qupon/1.0 (+https://qupon.85-192-29-7.sslip.io)"
+const userAgent = "Qupon/1.0 (+https://qupon.185-216-25-91.sslip.io)"
 
 // ValidCode admits tickers and issuer codes into URLs: ^[A-Za-z0-9]{2,12}$.
 func ValidCode(s string) bool {

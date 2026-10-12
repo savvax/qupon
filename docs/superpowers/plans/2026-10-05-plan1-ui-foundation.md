@@ -666,7 +666,7 @@ export function visibleColumns<T extends { hideBelow?: Bp }>(cols: T[], bp: Bp):
 
 - [ ] **Step 3:** `/bonds`: H1 "Bonds", lead, filters (Tabs: Active · All), DataTable (Ticker+ISIN, Face, Coupon, Frequency, Next coupon, Status), closed series in "All" only; row links to `/bonds/[mint]`. `error.tsx`: EmptyState "Registrar API unavailable" + Retry (`router.refresh()`).
 - [ ] **Step 4:** `/bonds/[mint]`: header (ticker, ISIN, Badge status, Address mint), Kpis (Face, Coupon, Next coupon, Units issued), Tabs: Schedule (table) · Corporate actions (table with Badge + explorer links; registrar-only actions not shown) · Terms (definition list).
-- [ ] **Step 5:** e2e `e2e/bonds.spec.ts`: list shows ≥1 row (against deployed API: `API_URL=https://api.85-192-29-7.sslip.io`), clicking opens the bond page with three tabs; with `API_URL=http://127.0.0.1:9` the page shows the unavailable state (no Next error overlay).
+- [ ] **Step 5:** e2e `e2e/bonds.spec.ts`: list shows ≥1 row (against deployed API: `API_URL=https://api.185-216-25-91.sslip.io`), clicking opens the bond page with three tabs; with `API_URL=http://127.0.0.1:9` the page shows the unavailable state (no Next error overlay).
 - [ ] **Step 6: commit** `feat(web): public bond board and bond page`
 
 ---

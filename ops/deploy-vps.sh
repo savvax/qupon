@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One command: deploy the registrar API + console to a VPS with Docker Compose and Caddy (automatic HTTPS).
-#   ops/deploy-vps.sh [root@host]          (default root@85.192.29.7; QUPON_HOST overrides <ip-dashes>.sslip.io)
+#   ops/deploy-vps.sh                          (primary: user@185.216.25.91 — defaults COMPOSE=compose.shared.yml, QUPON_DIR=/home/user/qupon)
+#   COMPOSE=compose.yml QUPON_DIR=/opt/qupon ops/deploy-vps.sh root@85.192.29.7    (old box, fallback; QUPON_HOST overrides <ip-dashes>.sslip.io)
 #   REINDEX=1 ops/deploy-vps.sh            restart the registrar only, so it indexes series made by `make demo-seed`
 # The server needs docker + docker compose. Secrets go over ssh stdin into /opt/qupon/*.env (mode 600) — never
 # into git, argv or logs: RPC_URL (keyed devnet RPC), QUPON_USERS (back-office accounts, optional) and the devnet
@@ -8,9 +9,14 @@
 # DEMO_LOGIN=1 enables demo sign-in.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$ROOT"
-TARGET="${1:-${VPS_TARGET:-root@85.192.29.7}}"
+TARGET="${1:-${VPS_TARGET:-user@185.216.25.91}}"
 IP="${TARGET#*@}"
 HOST="${QUPON_HOST:-${IP//./-}.sslip.io}"
+# Primary-box defaults: shared compose (no Caddy of our own) under /home/user/qupon. The old box keeps
+# /opt/qupon + compose.yml and is deployed with both variables set explicitly (see the header).
+if [ "$IP" = 185.216.25.91 ]; then
+  : "${COMPOSE:=compose.shared.yml}" "${QUPON_DIR:=/home/user/qupon}"
+fi
 [ -f .env ] && set -a && source .env && set +a
 : "${RPC_URL:?RPC_URL (keyed devnet RPC) missing in .env}"
 SSH=(ssh -o BatchMode=yes "$TARGET")

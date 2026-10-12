@@ -292,7 +292,7 @@ describe("schedulePreview", () => {
 
 - [ ] **Step 1:** delete legacy, add redirects, fix imports; `make verify`.
 - [ ] **Step 2:** `sweep.spec.ts`: for every route (public + each cabinet with demo sign-in) × locale (en, ru) × width (1440, 390): no console errors, no `[` + `]`-wrapped or dotted raw message keys visible (`/\b[a-z]+\.[a-zA-Z]+\b/` on text nodes from next-intl misses), no horizontal overflow; screenshots to `reports/ui/sweep/<route>-<locale>-<width>.png`.
-- [ ] **Step 3:** deploy `ops/deploy-vps.sh`; run all e2e specs against `E2E_BASE_URL=https://qupon.85-192-29-7.sslip.io`.
+- [ ] **Step 3:** deploy `ops/deploy-vps.sh`; run all e2e specs against `E2E_BASE_URL=https://qupon.185-216-25-91.sslip.io`.
 - [ ] **Step 4: commit** `feat(web): retire legacy console; redirects; RU and mobile sweep`
 
 ---
