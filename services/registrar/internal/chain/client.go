@@ -10,20 +10,28 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math/rand/v2"
+	"net/http"
+	"os"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/borsh"
 	solana "github.com/solana-foundation/solana-go/v2"
 	"github.com/solana-foundation/solana-go/v2/rpc"
+	"github.com/solana-foundation/solana-go/v2/rpc/jsonrpc"
 )
 
 const (
-	rpcTimeout      = 30 * time.Second
-	rpcAttempts     = 3
-	retryBaseWait   = 250 * time.Millisecond
-	defaultCommitm_ = rpc.CommitmentConfirmed // Alpenglow: confirmed ≈ finalized
+	rpcTimeout         = 30 * time.Second
+	rpcAttempts        = 3
+	retryBaseWait      = 250 * time.Millisecond
+	rateLimitAttempts  = 4                      // HTTP 429 gets one more try — the shared devnet key is rate-limited (task 91583)
+	rateLimitBaseWait  = 500 * time.Millisecond // 429 backoff base: 0.5 s, 1 s, 2 s with jitter
+	defaultGPACacheTTL = 3 * time.Second
+	defaultCommitm_    = rpc.CommitmentConfirmed // Alpenglow: confirmed ≈ finalized
 )
 
 // Client reads on-chain accounts over JSON-RPC. Safe for concurrent use.
@@ -31,14 +39,53 @@ type Client struct {
 	rpc     *rpc.Client
 	program solana.PublicKey
 	log     *slog.Logger
+	cache   gpaCache
+	// rateLimitBase is the HTTP-429 backoff base; a field only so tests shrink it.
+	rateLimitBase time.Duration
+}
+
+// gpaCache memoizes getProgramAccount scans (task 91583): both registrar boxes
+// share one rate-limited devnet RPC key, and every scheduler tick plus many API
+// reads re-scan the same accounts. Key = discriminator + memcmp filters.
+type gpaCache struct {
+	mu      sync.Mutex
+	ttl     time.Duration // RPC_GPA_CACHE_TTL; 0 disables caching
+	entries map[string]gpaEntry
+	flying  map[string]*gpaFlight // singleflight: identical concurrent scans share one RPC request
+	now     func() time.Time      // injectable clock (tests)
+}
+
+type gpaEntry struct {
+	recs []AccountRecord
+	at   time.Time
+}
+
+// gpaFlight is one in-progress scan; concurrent callers wait on done.
+type gpaFlight struct {
+	done chan struct{}
+	recs []AccountRecord
+	err  error
 }
 
 // NewClient builds a chain reader for rpcURL (devnet endpoint) and program.
+// Program-account scans are cached for RPC_GPA_CACHE_TTL (default 3 s, "0"
+// disables) — every CLI step invalidates the cache (task 91583).
 func NewClient(rpcURL string, program solana.PublicKey, log *slog.Logger) *Client {
+	ttl := defaultGPACacheTTL
+	if v := os.Getenv("RPC_GPA_CACHE_TTL"); v != "" {
+		d, err := time.ParseDuration(v)
+		if err != nil {
+			log.Warn("invalid RPC_GPA_CACHE_TTL, using default", "err", err)
+		} else {
+			ttl = d
+		}
+	}
 	return &Client{
-		rpc:     NewRPC(rpcURL, rpcTimeout), // every call passes Commitment: defaultCommitm_ explicitly
-		program: program,
-		log:     log,
+		rpc:           NewRPC(rpcURL, rpcTimeout), // every call passes Commitment: defaultCommitm_ explicitly
+		program:       program,
+		log:           log,
+		cache:         gpaCache{ttl: ttl, entries: map[string]gpaEntry{}, flying: map[string]*gpaFlight{}, now: time.Now},
+		rateLimitBase: rateLimitBaseWait,
 	}
 }
 
@@ -112,7 +159,75 @@ func (c *Client) GetAccountWithOwner(ctx context.Context, key solana.PublicKey) 
 
 // GetProgramAccounts scans program accounts by Anchor discriminator plus
 // optional memcmp filters (ANDed). Discriminator filter sits at offset 0.
+// Results are cached for the cache TTL and returned as copies; concurrent
+// identical scans share one RPC request (task 91583).
 func (c *Client) GetProgramAccounts(
+	ctx context.Context,
+	disc [8]byte,
+	memcmp []rpc.RPCFilterMemcmp,
+) ([]AccountRecord, error) {
+	if c.cache.ttl <= 0 {
+		return c.scanProgramAccounts(ctx, disc, memcmp)
+	}
+	key := gpaKey(disc, memcmp)
+	c.cache.mu.Lock()
+	if e, ok := c.cache.entries[key]; ok && c.cache.now().Sub(e.at) < c.cache.ttl {
+		c.cache.mu.Unlock()
+		return cloneRecords(e.recs), nil
+	}
+	if fl, ok := c.cache.flying[key]; ok { // an identical scan is already in flight — wait for it
+		c.cache.mu.Unlock()
+		select {
+		case <-fl.done:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+		return cloneRecords(fl.recs), fl.err
+	}
+	fl := &gpaFlight{done: make(chan struct{})}
+	c.cache.flying[key] = fl
+	c.cache.mu.Unlock()
+
+	recs, err := c.scanProgramAccounts(ctx, disc, memcmp)
+
+	c.cache.mu.Lock()
+	fl.recs, fl.err = recs, err
+	if err == nil {
+		c.cache.entries[key] = gpaEntry{recs: recs, at: c.cache.now()}
+	}
+	delete(c.cache.flying, key)
+	c.cache.mu.Unlock()
+	close(fl.done)
+	return cloneRecords(recs), err
+}
+
+// InvalidateProgramAccounts drops every cached scan: any CLI step may have
+// changed chain state (wired to the executor completion hook, task 91583).
+func (c *Client) InvalidateProgramAccounts() {
+	c.cache.mu.Lock()
+	clear(c.cache.entries)
+	c.cache.mu.Unlock()
+}
+
+func gpaKey(disc [8]byte, memcmp []rpc.RPCFilterMemcmp) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "%x", disc)
+	for _, m := range memcmp {
+		fmt.Fprintf(&b, "|%d:%s", m.Offset, m.Bytes)
+	}
+	return b.String()
+}
+
+func cloneRecords(recs []AccountRecord) []AccountRecord {
+	out := make([]AccountRecord, len(recs))
+	for i, r := range recs {
+		out[i] = AccountRecord{Pubkey: r.Pubkey, Data: bytes.Clone(r.Data)}
+	}
+	return out
+}
+
+// scanProgramAccounts is the uncached RPC scan behind GetProgramAccounts.
+func (c *Client) scanProgramAccounts(
 	ctx context.Context,
 	disc [8]byte,
 	memcmp []rpc.RPCFilterMemcmp,
@@ -333,11 +448,14 @@ func stripDiscriminator(data []byte, name string) ([]byte, error) {
 	return data[8:], nil
 }
 
-// withRetry re-runs call on transport/RPC errors with linear backoff.
-// Not-found and context errors are not retried.
+// withRetry re-runs call on transport/RPC errors. Not-found and context
+// errors are not retried. HTTP 429 (the shared devnet key is rate-limited)
+// backs off exponentially with jitter and gets one extra attempt; other errors
+// keep the quick linear retry (task 91583).
 func (c *Client) withRetry(ctx context.Context, call func() error) error {
 	var err error
-	for attempt := 1; attempt <= rpcAttempts; attempt++ {
+	attempts := rpcAttempts
+	for attempt := 1; attempt <= attempts; attempt++ {
 		if err = call(); err == nil {
 			return nil
 		}
@@ -345,17 +463,42 @@ func (c *Client) withRetry(ctx context.Context, call func() error) error {
 			errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 			return err
 		}
-		if attempt == rpcAttempts {
+		rateLimited := isRateLimited(err)
+		if rateLimited {
+			attempts = rateLimitAttempts
+		}
+		if attempt == attempts {
 			break
 		}
-		c.log.Warn("rpc call failed, retrying", "attempt", attempt, "err", err)
+		wait := retryBaseWait * time.Duration(attempt)
+		if rateLimited {
+			wait = rateLimitBackoff(c.rateLimitBase, attempt)
+		}
+		c.log.Warn("rpc call failed, retrying", "attempt", attempt, "rate_limited", rateLimited, "err", err)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(retryBaseWait * time.Duration(attempt)):
+		case <-time.After(wait):
 		}
 	}
-	return fmt.Errorf("rpc failed after %d attempts: %w", rpcAttempts, err)
+	return fmt.Errorf("rpc failed after %d attempts: %w", attempts, err)
+}
+
+// isRateLimited reports an HTTP 429 from the RPC node. The solana-go client
+// surfaces a non-2xx body it cannot decode as *jsonrpc.HTTPError; it does not
+// expose Retry-After, so the backoff below is time-based only.
+func isRateLimited(err error) bool {
+	var httpErr *jsonrpc.HTTPError
+	return errors.As(err, &httpErr) && httpErr.Code == http.StatusTooManyRequests
+}
+
+// rateLimitBackoff is the 429 wait before retry `attempt`: base doubled per
+// attempt (0.5 s, 1 s, 2 s …), jittered ±25% so the two registrar boxes that
+// share one RPC key do not retry in lockstep.
+func rateLimitBackoff(base time.Duration, attempt int) time.Duration {
+	wait := base << (attempt - 1)
+	jittered := time.Duration(float64(wait) * (0.75 + 0.5*rand.Float64()))
+	return max(jittered, time.Millisecond)
 }
 
 // ActionRecord pairs a CorporateAction PDA with its decoded state.

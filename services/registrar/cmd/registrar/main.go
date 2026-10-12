@@ -144,6 +144,10 @@ func run() error {
 		return fmt.Errorf("write executor config: %w", err)
 	}
 	exec := executor.New(cfg.QuponCLI, cfg.ExecConfigPath, logger)
+	if chainClient != nil {
+		// Task 91583: every CLI step changes chain state — drop cached program-account scans.
+		exec.OnStepDone = chainClient.InvalidateProgramAccounts
+	}
 
 	if err := seedUsers(ctx, st, cfg); err != nil {
 		return fmt.Errorf("seed users: %w", err)

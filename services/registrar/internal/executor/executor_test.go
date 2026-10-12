@@ -2,12 +2,19 @@ package executor
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	solana "github.com/solana-foundation/solana-go/v2"
 
 	"github.com/qupon-kz/qupon/services/registrar/internal/chain"
 )
@@ -113,6 +120,47 @@ func TestRunCliFailureJsonError(t *testing.T) {
 	}
 	if res.OK || res.Error != "TooEarly: record date not reached" {
 		t.Fatalf("res = %+v, want ok:false with the JSON error", res)
+	}
+}
+
+// Task 91583: a completed CLI step fires OnStepDone — main.go wires it to
+// chain.Client.InvalidateProgramAccounts so cached program-account scans never
+// go stale after a write. This test composes both sides against a fake RPC.
+func TestStepDoneInvalidatesScanCache(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": 1, "result": []any{}})
+	}))
+	defer srv.Close()
+	program, err := solana.PublicKeyFromBase58("QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cl := chain.NewClient(srv.URL, program, slog.New(slog.DiscardHandler))
+
+	dir := t.TempDir()
+	stdout := writeFile(t, dir, "out.json", `{"ok":true,"signature":"sig","slot":1}`+"\n")
+	t.Setenv("FAKE_CLI_STDOUT", stdout)
+	e := New(fakeCLI(t), "testdata/devnet.json", nil)
+	e.OnStepDone = cl.InvalidateProgramAccounts
+
+	scan := func() {
+		disc, derr := chain.AccountDiscriminator("Series")
+		if derr != nil {
+			t.Fatal(derr)
+		}
+		if _, err := cl.GetProgramAccounts(t.Context(), disc, nil); err != nil {
+			t.Fatalf("GetProgramAccounts: %v", err)
+		}
+	}
+	scan() // primes the cache
+	if _, err := e.Run(t.Context(), "action:strike", "--series", "QPNb1", "--index", "1"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	scan() // must hit the RPC again: the step invalidated the cache
+	if n := calls.Load(); n != 2 {
+		t.Errorf("rpc calls = %d, want 2 (cache invalidated after the executor step)", n)
 	}
 }
 

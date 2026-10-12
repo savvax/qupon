@@ -127,14 +127,14 @@ type Result struct {
 	Logs        []string   `json:"logs"`
 }
 
-// Executor execs the qupon CLI. Safe for concurrent use (no shared state).
 type Executor struct {
-	bin     string        // $QUPON_CLI
-	cfgPath string        // writable config the executor regenerates (base + series registry)
-	timeout time.Duration // per-invocation cap (Timeout)
-	log     *slog.Logger
-	slots   chan struct{} // at most cap(slots) CLI processes at once (1 vCPU box); others queue on their context
-	waiting atomic.Int64  // runs blocked on a free slot — Stats reports them as queued (/admin/system)
+	bin        string        // $QUPON_CLI
+	cfgPath    string        // writable config the executor regenerates (base + series registry)
+	timeout    time.Duration // per-invocation cap (Timeout)
+	log        *slog.Logger
+	slots      chan struct{} // at most cap(slots) CLI processes at once (1 vCPU box); others queue on their context
+	waiting    atomic.Int64  // runs blocked on a free slot — Stats reports them as queued (/admin/system)
+	OnStepDone func()        // runs after every completed CLI invocation — main.go wires it to the chain scan cache invalidation (task 91583)
 }
 
 // MaxConcurrent bounds parallel CLI runs: each is a node process, and a burst of writes must not exhaust the host.
@@ -278,6 +278,12 @@ func (e *Executor) RunRaw(ctx context.Context, args ...string) ([]byte, error) {
 // cancellation are Go errors; a non-zero exit is returned through err with
 // the captured stderr so callers decide how to interpret it.
 func (e *Executor) exec(ctx context.Context, args []string) ([]byte, string, error) {
+	if e.OnStepDone != nil {
+		// Every CLI invocation can change chain state (also mid-failure: batches
+		// are sequential transactions) — drop cached program-account scans once
+		// it finishes, whatever the outcome (task 91583).
+		defer e.OnStepDone()
+	}
 	e.waiting.Add(1)
 	select {
 	case e.slots <- struct{}{}:
