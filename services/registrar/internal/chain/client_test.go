@@ -8,8 +8,10 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	solana "github.com/solana-foundation/solana-go/v2"
 	"github.com/solana-foundation/solana-go/v2/rpc"
@@ -409,5 +411,120 @@ func TestIsRateLimitedJSONRPC429(t *testing.T) {
 	}
 	if isRateLimited(&jsonrpc.RPCError{Code: -32603}) {
 		t.Fatal("JSON-RPC -32603 treated as rate limited")
+	}
+}
+
+// Task 91585: a 429 arms one client-wide cool-down, so a concurrent caller's
+// first attempt also waits — the RPC IP actually cools down instead of being
+// hammered by whichever caller has not been rate-limited yet.
+func TestRateLimitCoolDownSharedAcrossCalls(t *testing.T) {
+	const base = 40 * time.Millisecond // jitter low bound → ≥ 30 ms of quiet
+	first429 := make(chan struct{})
+	var once sync.Once
+	var mu sync.Mutex
+	var hitTimes []time.Duration
+	start := time.Now()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := len(hitTimes) + 1
+		mu.Lock()
+		hitTimes = append(hitTimes, time.Since(start))
+		mu.Unlock()
+		if n == 1 {
+			_ = json.NewEncoder(w).Encode(map[string]any{ // JSON-RPC 429, like public devnet
+				"jsonrpc": "2.0", "id": 1,
+				"error": map[string]any{"code": 429, "message": "Connection rate limits exceeded"},
+			})
+			once.Do(func() { close(first429) })
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0", "id": 1,
+			"result": map[string]any{
+				"context": map[string]any{"slot": 1},
+				"value":   accountValueJSON(t, []byte("x")),
+			},
+		})
+	}))
+	defer srv.Close()
+
+	cl := testClient(t, srv.URL)
+	cl.rateLimitBase = base
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if _, err := cl.GetAccount(t.Context(), pk(t, testProgram)); err != nil {
+			t.Errorf("first GetAccount: %v", err)
+		}
+	}()
+	<-first429
+	for deadline := time.Now().Add(time.Second); ; { // the 429 arms the gate once the client reads it
+		cl.cool.mu.Lock()
+		armed := !cl.cool.until.IsZero()
+		cl.cool.mu.Unlock()
+		if armed {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("cool-down never armed after the 429")
+		}
+		time.Sleep(time.Millisecond)
+	}
+	wg.Add(1)
+	go func() { // starts while the gate is closed → its first attempt must wait
+		defer wg.Done()
+		if _, err := cl.GetAccount(t.Context(), pk(t, testProgram)); err != nil {
+			t.Errorf("second GetAccount: %v", err)
+		}
+	}()
+	wg.Wait()
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(hitTimes) < 3 {
+		t.Fatalf("server hits = %d, want ≥ 3 (429, retry, gated call)", len(hitTimes))
+	}
+	if gap := hitTimes[1] - hitTimes[0]; gap < 25*time.Millisecond {
+		t.Errorf("first hit after the 429 came after only %v, want ≥ 0.75×%v (cool-down not shared)", gap, base)
+	}
+}
+
+// A non-429 failure keeps the quick linear retry and must not arm the cool-down.
+func TestNon429FailureDoesNotCoolDown(t *testing.T) {
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) == 1 {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0", "id": 1,
+			"result": map[string]any{
+				"context": map[string]any{"slot": 1},
+				"value":   accountValueJSON(t, []byte("y")),
+			},
+		})
+	}))
+	defer srv.Close()
+
+	cl := testClient(t, srv.URL)
+	cl.rateLimitBase = 40 * time.Millisecond
+	if _, err := cl.GetAccount(t.Context(), pk(t, testProgram)); err != nil {
+		t.Fatalf("GetAccount with one 500: %v", err)
+	}
+	cl.cool.mu.Lock()
+	armed := !cl.cool.until.IsZero()
+	cl.cool.mu.Unlock()
+	if armed {
+		t.Error("non-429 failure armed the cool-down")
+	}
+
+	t0 := time.Now() // gate closed → the next call hits the server immediately
+	if _, err := cl.GetAccount(t.Context(), pk(t, testProgram)); err != nil {
+		t.Fatalf("second GetAccount: %v", err)
+	}
+	if d := time.Since(t0); d > 20*time.Millisecond {
+		t.Errorf("second GetAccount took %v, want immediate (no cool-down)", d)
 	}
 }

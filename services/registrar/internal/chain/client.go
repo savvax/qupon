@@ -43,6 +43,10 @@ type Client struct {
 	pre     prefetchCache
 	// rateLimitBase is the HTTP-429 backoff base; a field only so tests shrink it.
 	rateLimitBase time.Duration
+	// cool is the client-wide 429 gate (task 91585): every RPC attempt of every
+	// caller waits for it, so scheduler, ingest-driven reads and API handlers
+	// stop hammering the IP together once devnet rate-limits one of them.
+	cool coolDown
 }
 
 // gpaCache memoizes getProgramAccount scans (task 91583): both registrar boxes
@@ -79,6 +83,47 @@ type prefetchCache struct {
 }
 
 const prefetchTTL = 2 * time.Second
+
+// coolDown is the shared "no RPC until" timestamp set by any rate-limited
+// error. Zero value is ready to use.
+type coolDown struct {
+	mu    sync.Mutex
+	until time.Time
+}
+
+// push moves the gate to now+wait, never earlier; returns the gate it set and
+// whether a fresh episode started (the client was idle) so the caller logs once
+// per episode, not once per call.
+func (cd *coolDown) push(wait time.Duration) (time.Time, bool) {
+	until := time.Now().Add(wait)
+	cd.mu.Lock()
+	defer cd.mu.Unlock()
+	if !until.After(cd.until) {
+		return cd.until, false
+	}
+	fresh := !time.Now().Before(cd.until) // was idle → new episode
+	cd.until = until
+	return until, fresh
+}
+
+// wait blocks until the gate opens or ctx is done.
+func (cd *coolDown) wait(ctx context.Context) error {
+	for {
+		cd.mu.Lock()
+		d := time.Until(cd.until)
+		cd.mu.Unlock()
+		if d <= 0 {
+			return nil
+		}
+		t := time.NewTimer(d)
+		select {
+		case <-ctx.Done():
+			t.Stop()
+			return ctx.Err()
+		case <-t.C:
+		}
+	}
+}
 
 // Prefetch reads keys with getMultipleAccounts for the GetAccount calls that follow.
 func (c *Client) Prefetch(ctx context.Context, keys []solana.PublicKey) error {
@@ -558,11 +603,16 @@ func stripDiscriminator(data []byte, name string) ([]byte, error) {
 // withRetry re-runs call on transport/RPC errors. Not-found and context
 // errors are not retried. HTTP 429 (the shared devnet key is rate-limited)
 // backs off exponentially with jitter and gets one extra attempt; other errors
-// keep the quick linear retry (task 91583).
+// keep the quick linear retry (task 91583). Every 429 also arms a client-wide
+// cool-down that all callers wait out before any attempt, first ones included,
+// so the IP can actually cool down (task 91585).
 func (c *Client) withRetry(ctx context.Context, call func() error) error {
 	var err error
 	attempts := rpcAttempts
 	for attempt := 1; attempt <= attempts; attempt++ {
+		if err = c.cool.wait(ctx); err != nil {
+			return err
+		}
 		if err = call(); err == nil {
 			return nil
 		}
@@ -573,6 +623,10 @@ func (c *Client) withRetry(ctx context.Context, call func() error) error {
 		rateLimited := isRateLimited(err)
 		if rateLimited {
 			attempts = rateLimitAttempts
+			until, fresh := c.cool.push(rateLimitBackoff(c.rateLimitBase, attempt))
+			if fresh {
+				c.log.Warn("rpc rate-limited, cooling down", "until", until.UTC().Format(time.RFC3339))
+			}
 		}
 		if attempt == attempts {
 			break
