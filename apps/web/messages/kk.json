@@ -650,6 +650,11 @@
       "failed": "Сәтсіз",
       "signatures": "Қолтаңбалар",
       "emptyEvents": "Әлі блокчейндік оқиғалар жоқ.",
+      "actor": {
+        "advance": "Консоль",
+        "scheduler": "Автопилот",
+        "approval": "Мақұлдау"
+      },
       "emptyAudit": "Әлі оператор жазулары тіркелмеген.",
       "unreachable": "Аудит ізі қолжетімсіз. Біраздан соң қайта көріңіз."
     },
@@ -922,7 +927,8 @@
       "votes": "Дауыс беру",
       "meet_finalize": "Нәтиже",
       "apply": "Шарттар қолданылды",
-      "declare_default": "Дефолт жарияланды"
+      "declare_default": "Дефолт жарияланды",
+      "confirm_bank": "Банк төлемі расталды"
     },
     "detail": {
       "snapshotted": "{count, plural, other {# ұстаушы}} снапшотталды",

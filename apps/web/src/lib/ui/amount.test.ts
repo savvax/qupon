@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   currencyDecimals,
   formatAmount,
+  formatMoney,
   majorToMinor,
   renderDecimals,
 } from "./amount";
@@ -41,6 +42,18 @@ describe("currencyDecimals (the one table)", () => {
     expect(currencyDecimals("USDC")).toBe(6);
     expect(currencyDecimals("tUSDC")).toBe(6);
     expect(currencyDecimals("XSU")).toBe(2); // unknown → 2
+  });
+});
+
+describe("formatMoney (the one number–sign spacing rule, A91567-7)", () => {
+  it("puts an NBSP before the sign in every locale — never glued, never a breaking space", () => {
+    expect(formatMoney("1,000.00", "tKZT")).toBe("1,000.00\u00a0₸");
+    expect(formatMoney("10\u202f000,00", "KZT")).toBe("10\u202f000,00\u00a0₸");
+    expect(formatMoney("12.50", "USDC")).toBe("12.50\u00a0USDC");
+  });
+  it("accepts a raw sign (the proof page maps cash mints) and drops it when empty", () => {
+    expect(formatMoney("3,250.00", "₸")).toBe("3,250.00\u00a0₸");
+    expect(formatMoney("100", "")).toBe("100");
   });
 });
 

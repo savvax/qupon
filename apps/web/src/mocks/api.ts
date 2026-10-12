@@ -70,6 +70,8 @@ const SHOWCASE_SERIES = [
     maturity: "2027-04-09",
     coupons: 1,
     actionPda: "ActnMTR0002Dem0PDA111111111111111111111111111",
+    // mirrors prod, where the 6-month accelerated life ended: the completed redemption showcase (A91567-3)
+    status: "Closed" as const,
   },
   {
     mint: "MngAktbDem0Mint11111111111111111111111111111",
@@ -151,7 +153,10 @@ const series: SeriesDTO[] = [
     issueDate: "2026-10-09",
     maturityDate: s.maturity,
     nextCouponDate: "2027-04-09T00:00:00+05:00",
-    status: "Active",
+    // Astana-Metro mirrors prod: its 6-month accelerated life ended — the closed redemption showcase (A91567-3)
+    status: ("status" in s
+      ? s.status
+      : ("Active" as const)) as SeriesDTO["status"],
     totalIssued: "100",
     quorumBps: 5000,
     approvalBps: 6667,
@@ -776,6 +781,16 @@ const activity = [
     owner: INVESTOR_OWNERS[2],
     net: "6825000",
   }),
+  // Go-side audit rows (live-sweep A91567-5): a console advance step and an autopilot sweep —
+  // the feed must render them as sentences, never the raw instruction enum
+  ev(20, 1803884700, "advance:pay_batch", ACTION_PDA_1, SIGS[2]!, {
+    step: "pay_batch",
+    ok: true,
+  }),
+  ev(21, 1803885000, "scheduler:sweep_escrow", ACTION_PDA_1, SIGS[0]!, {
+    step: "sweep_escrow",
+    ok: true,
+  }),
 ];
 
 /** Back-office fixtures (Plan 3 Task 5): operator audit trail + scheduler approvals. */
@@ -1132,18 +1147,22 @@ export function mockGet(path: string): Promise<unknown> {
 
 /** Plain-text fixture downloads (notice, ISO XML) for mock mode. */
 export function mockGetText(path: string): Promise<string> {
-  const noticeMatch = /^\/actions\/([^/]+)\/notice\?lang=(en|ru)$/.exec(path);
+  const noticeMatch = /^\/actions\/([^/]+)\/notice\?lang=(en|ru|kk)$/.exec(
+    path,
+  );
   if (noticeMatch) {
     const found = Object.values(actions)
       .flat()
       .find((a) => a.pda === noticeMatch[1]);
     if (!found)
       return Promise.reject(new Api404(`action ${noticeMatch[1]} not found`));
-    const text =
-      noticeMatch[2] === "ru"
-        ? `УВЕДОМЛЕНИЕ (ДЕМО)\n${found.corpId} · процентный платёж · запись ${found.recordAt.slice(0, 10)}\nКУПОН: 10.00% · на единицу 50.00 KZT\nSIMULATED — публикация на kase.kz не подключена\n`
-        : `NOTICE (DEMO)\n${found.corpId} · interest payment · record ${found.recordAt.slice(0, 10)}\nCOUPON: 10.00% · per unit 50.00 KZT\nSIMULATED — publication on kase.kz not integrated\n`;
-    return delay(text);
+    // SIMULATED KASE notices — one template per locale, like the registrar's notice package (live-sweep A91567-4)
+    const notice = {
+      en: `NOTICE (DEMO)\n${found.corpId} · interest payment · record ${found.recordAt.slice(0, 10)}\nCOUPON: 10.00% · per unit 50.00 KZT\nSIMULATED — publication on kase.kz not integrated\n`,
+      ru: `УВЕДОМЛЕНИЕ (ДЕМО)\n${found.corpId} · процентный платёж · запись ${found.recordAt.slice(0, 10)}\nКУПОН: 10.00% · на единицу 50.00 KZT\nSIMULATED — публикация на kase.kz не подключена\n`,
+      kk: `ХАБАРЛАМА (ДЕМО)\n${found.corpId} · пайыздық төлем · тіркелу ${found.recordAt.slice(0, 10)}\nКУПОН: 10.00% · бірлікке 50.00 KZT\nSIMULATED — kase.kz-те жариялау қосылмаған\n`,
+    }[noticeMatch[2] as "en" | "ru" | "kk"];
+    return delay(notice);
   }
   if (path.endsWith(".xml")) {
     return delay(

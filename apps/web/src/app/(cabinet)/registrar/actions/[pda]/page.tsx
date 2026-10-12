@@ -2,7 +2,7 @@ import { Pulse } from "@/components/motion/Pulse";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
-import { toLocale } from "@/i18n/locale";
+import { type Locale, toLocale } from "@/i18n/locale";
 import type { ReactNode } from "react";
 import { Address } from "@/components/ui/Address";
 import { Amount } from "@/components/ui/Amount";
@@ -103,18 +103,27 @@ export default async function RegistrarActionPage({
     if (status === 404 || status === 400) notFound();
     throw e;
   });
-  const [series, entitlements, activity, noticeEn, noticeRu, kaseCheck, bank] =
+  // SIMULATED KASE notice in the visitor's locale first, then the other two for the toggle (A91567-4:
+  // a RU page must not open on the English template; the Go notice endpoint serves en/ru/kk).
+  const noticeFallback: Record<Locale, string> = {
+    en: "notice unavailable",
+    ru: "уведомление недоступно",
+    kk: "хабарлама қолжетімсіз",
+  };
+  const notice = (lang: Locale) =>
+    getNoticeText(pda, lang).catch(() => noticeFallback[lang]);
+  const [series, entitlements, activity, notices, kaseCheck, bank] =
     await Promise.all([
       getSeries(action.seriesMint).catch(() => null),
       listEntitlements(pda).catch(() => [] as EntitlementDTO[]),
       listActivity(200),
-      getNoticeText(pda, "en").catch(() => "notice unavailable"),
-      getNoticeText(pda, "ru").catch(() => "уведомление недоступно"),
+      Promise.all([notice("en"), notice("ru"), notice("kk")]),
       // kase.kz outages degrade the card, never the page
       getKaseCheck(pda).catch(() => null),
       // bank-routed payouts awaiting the paying agent (plan 15 D6); failures hide the panel, never block
       getBankPending(pda).catch(() => null),
     ]);
+  const [noticeEn, noticeRu, noticeKk] = notices;
   const locale = toLocale(await getLocale());
   const [t, ts, tk, tstep, tt, tm, tnow] = await Promise.all([
     getTranslations("action"),
@@ -846,7 +855,14 @@ export default async function RegistrarActionPage({
           </div>
         </Panel>
 
-        {isCash && <NoticePanel en={noticeEn} ru={noticeRu} />}
+        {isCash && (
+          <NoticePanel
+            en={noticeEn}
+            ru={noticeRu}
+            kk={noticeKk}
+            locale={locale}
+          />
+        )}
 
         <DisclosureHashPanel pda={pda} anchored={action.disclosureHash} />
 

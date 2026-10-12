@@ -39,6 +39,7 @@ import {
   formatInt,
 } from "@/lib/format";
 import { getKaseSeriesTicker } from "@/lib/kase";
+import { activityKindLabel } from "@/lib/ui/badge";
 import { moneyFlowOf } from "@/lib/moneyFlow";
 import { getNetwork } from "@/lib/network";
 import { type AuditRow, ExportAuditButton } from "./ExportAuditButton";
@@ -112,12 +113,13 @@ export default async function BondPage({
   const locale = toLocale(await getLocale());
   // Series linked in series_settings to a KASE ticker get the market panel; failures never block the page.
   const kaseTicker = await getKaseSeriesTicker(mint);
-  const [t, ts, tk, tDoc, tm] = await Promise.all([
+  const [t, ts, tk, tDoc, tm, tRoot] = await Promise.all([
     getTranslations("bond"),
     getTranslations("status"),
     getTranslations("landing.kinds"),
     getTranslations("org.publicDocs"),
     getTranslations("kit.money"),
+    getTranslations(),
   ]);
   const freq = FREQ_KEY[series.frequency]
     ? t(FREQ_KEY[series.frequency]!)
@@ -567,7 +569,7 @@ export default async function BondPage({
     return {
       at: formatDateTime(new Date(ev.ts * 1000).toISOString()),
       shown: formatDateTime(new Date(ev.ts * 1000).toISOString(), locale),
-      event: ts.has(ev.kind) ? ts(ev.kind) : ev.kind,
+      event: activityKindLabel(ev.kind, tRoot), // advance:/scheduler: audit rows too (A91567-5)
       action: a?.corpId ?? "",
       slot: ev.slot,
       sig: ev.sig,

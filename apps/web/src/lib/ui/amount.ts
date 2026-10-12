@@ -38,6 +38,13 @@ export const CURRENCY_SIGN: Record<string, string> = {
   KZT: "₸",
   USDC: "USDC",
 };
+
+/** Money + its sign with ONE spacing rule everywhere: NBSP between the number and ₸/USDC, every page,
+ * every locale (live-sweep A91567-7: the board's Amount and the proof certificate must not differ). */
+export function formatMoney(amount: string, currencyOrSign: string): string {
+  const sign = CURRENCY_SIGN[currencyOrSign] ?? currencyOrSign;
+  return sign ? `${amount}\u00a0${sign}` : amount;
+}
 /** The ONE minor-unit decimals table (every currency the registry/mocks use); keep format.ts free of a second one. */
 export const CURRENCY_DECIMALS: Record<string, number> = {
   tKZT: 2,

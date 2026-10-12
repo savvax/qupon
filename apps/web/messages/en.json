@@ -650,6 +650,11 @@
       "failed": "Failed",
       "signatures": "Signatures",
       "emptyEvents": "No on-chain events yet.",
+      "actor": {
+        "advance": "Console",
+        "scheduler": "Autopilot",
+        "approval": "Approval"
+      },
       "emptyAudit": "No operator writes recorded yet.",
       "unreachable": "The audit trail is unavailable. Try again in a moment."
     },
@@ -922,7 +927,8 @@
       "votes": "Voting",
       "meet_finalize": "Result",
       "apply": "Terms applied",
-      "declare_default": "Default declared"
+      "declare_default": "Default declared",
+      "confirm_bank": "Bank payout confirmed"
     },
     "detail": {
       "snapshotted": "{count, plural, one {# holder} other {# holders}} snapshotted",

@@ -134,6 +134,22 @@ test("the disclosure hash panel re-hashes the served seev.031 in the browser", a
   ).toHaveCount(2);
 });
 
+test("the SIMULATED KASE notice opens in the visitor's locale (A91567-4)", async ({
+  page,
+  baseURL,
+}) => {
+  await page
+    .context()
+    .addCookies([{ name: "NEXT_LOCALE", value: "ru", url: baseURL ?? "" }]);
+  await page.goto(`/registrar/actions/${INTR}`);
+  // a RU page opens on the RU template, labelled SIMULATED — not the English notice
+  await expect(page.getByText(/УВЕДОМЛЕНИЕ \(ДЕМО\)/)).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(page.getByText(/SIMULATED — публикация/)).toBeVisible();
+  await expect(page.getByText(/NOTICE \(DEMO\)/)).toHaveCount(0);
+});
+
 test("the registrar board has a Defaulted column and alerts for overdue funding and the bank", async ({
   page,
 }) => {

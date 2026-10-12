@@ -28,7 +28,7 @@ import {
   listTrades,
   withTradeErrors,
 } from "@/lib/trades";
-import { CURRENCY_SIGN, currencyDecimals, formatAmount } from "@/lib/ui/amount";
+import { currencyDecimals, formatAmount, formatMoney } from "@/lib/ui/amount";
 import { useRunWrite } from "@/lib/useRunWrite";
 import {
   portalRpc,
@@ -190,7 +190,14 @@ export function OpenTrades({ rows }: { rows: SeriesRow[] }) {
                     : side === "seller"
                       ? t("open.deliver", { units })
                       : t("open.pay", {
-                          amount: `${formatAmount(cash.minor, currencyDecimals(cash.currency), locale)} ${CURRENCY_SIGN[cash.currency] ?? cash.currency}`,
+                          amount: formatMoney(
+                            formatAmount(
+                              cash.minor,
+                              currencyDecimals(cash.currency),
+                              locale,
+                            ),
+                            cash.currency,
+                          ),
                         })}
                 </Button>
               )}

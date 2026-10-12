@@ -24,7 +24,7 @@ import {
   hex,
   verifyProof,
 } from "@/lib/proof/verify";
-import { formatAmount } from "@/lib/ui/amount";
+import { formatAmount, formatMoney } from "@/lib/ui/amount";
 import { cx } from "@/lib/ui/cx";
 
 /** Devnet cash assets (config/devnet.json cashAssets): the tenge stand-ins print ₸. */
@@ -56,7 +56,7 @@ function useFmt(report?: ProofReport) {
     locale,
     num,
     money: (minor: bigint) =>
-      `${formatAmount(minor, dec, locale)}${sign ? ` ${sign}` : ""}`,
+      formatMoney(formatAmount(minor, dec, locale), sign),
     when: (unix: bigint | number) =>
       formatDateTime(new Date(Number(unix) * 1000).toISOString(), locale),
     pct: (bps: number) => bpsToPercent(bps, locale),

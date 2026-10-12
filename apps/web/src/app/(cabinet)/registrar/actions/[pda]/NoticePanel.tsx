@@ -3,14 +3,26 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { type Locale } from "@/i18n/locale";
 import { cx } from "@/lib/ui/cx";
 
-/** KASE-style disclosure notice in EN/RU with copy. Publication on kase.kz is simulated. */
-export function NoticePanel({ en, ru }: { en: string; ru: string }) {
+/** KASE-style disclosure notice in EN/RU/KK with copy. Publication on kase.kz is simulated.
+ * Opens on the visitor's locale (live-sweep A91567-4: a RU page must not show the EN template). */
+export function NoticePanel({
+  en,
+  ru,
+  kk,
+  locale,
+}: {
+  en: string;
+  ru: string;
+  kk: string;
+  locale: Locale;
+}) {
   const t = useTranslations("action.notice");
-  const [lang, setLang] = useState<"en" | "ru">("en");
+  const [lang, setLang] = useState<Locale>(locale);
   const [copied, setCopied] = useState(false);
-  const text = lang === "en" ? en : ru;
+  const text = { en, ru, kk }[lang];
   return (
     <div className="rounded-card border border-n200 bg-n0 p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -20,7 +32,7 @@ export function NoticePanel({ en, ru }: { en: string; ru: string }) {
           aria-label={t("language")}
           className="inline-flex rounded-btn bg-n100 p-0.5"
         >
-          {(["en", "ru"] as const).map((l) => (
+          {(["en", "ru", "kk"] as const).map((l) => (
             <button
               key={l}
               type="button"

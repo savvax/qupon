@@ -7,6 +7,7 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Tabs } from "@/components/ui/Tabs";
 import type { ActivityLike } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
+import { activityKindLabel } from "@/lib/ui/badge";
 
 /** One operator write (Go GET /registrar/audit): who ran what, with which result. */
 export type AuditItem = {
@@ -43,13 +44,18 @@ export function ActivityTabs({
   const t = useTranslations("registrar.activity");
   const locale = useLocale();
   const roles = useTranslations("cabinet.roles");
+  // root scope: activityKindLabel reads status.*, steps.done.*, landing.kinds.* and the actor keys
+  const tr = useTranslations();
+  const kindBadge = (kind: string) => (
+    <Badge status={kind}>{activityKindLabel(kind, tr)}</Badge>
+  );
 
   const eventCols: Column<ActivityLike>[] = [
     { key: "ts", header: t("time"), render: (r) => almaty(r.ts, locale) },
     {
       key: "kind",
       header: t("kind"),
-      render: (r) => <Badge status={r.kind} />,
+      render: (r) => kindBadge(r.kind),
     },
     {
       key: "series",
@@ -78,7 +84,7 @@ export function ActivityTabs({
   const eventPhoneRow = (r: ActivityLike) => (
     <div className="space-y-1.5 text-sm">
       <div className="flex items-center justify-between gap-3">
-        <Badge status={r.kind} />
+        {kindBadge(r.kind)}
         {almaty(r.ts, locale)}
       </div>
       <div className="flex items-center justify-between gap-3">

@@ -27,6 +27,9 @@ test("activity: on-chain events and the operator audit, EN + RU, 1440 + 390", as
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Activity");
   const onchain = page.getByRole("table").first();
   await expect(onchain).toContainText("Action announced");
+  // Go-side audit rows (advance:/scheduler:) read as sentences, never raw instruction enums (A91567-5)
+  await expect(onchain).toContainText("Console: Paid");
+  await expect(onchain).toContainText("Autopilot: Escrow swept");
   await page.screenshot({
     path: "../../reports/ui/activity-en-1440.png",
     fullPage: true,
@@ -42,6 +45,10 @@ test("activity: on-chain events and the operator audit, EN + RU, 1440 + 390", as
   await page.getByRole("radio", { name: "Русский" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Журнал");
   await expect(audit).toContainText("Успешно");
+  // back on the on-chain tab, the audit rows are Russian sentences too (A91567-5)
+  await page.getByRole("tab", { name: "В блокчейне" }).click();
+  await expect(onchain).toContainText("Консоль: Выплачено");
+  await expect(onchain).toContainText("Автопилот: Эскроу возвращён");
   await page.screenshot({
     path: "../../reports/ui/activity-ru-1440.png",
     fullPage: true,

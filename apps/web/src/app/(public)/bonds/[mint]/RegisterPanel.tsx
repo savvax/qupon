@@ -11,7 +11,7 @@ import { GlossaryTerm } from "@/components/ui/GlossaryTerm";
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
 import { couponGross } from "@/lib/accrual";
 import { bpsToPercent, formatDate, shortKey } from "@/lib/format";
-import { CURRENCY_SIGN, formatAmount, renderDecimals } from "@/lib/ui/amount";
+import { formatAmount, formatMoney, renderDecimals } from "@/lib/ui/amount";
 import { cx } from "@/lib/ui/cx";
 
 type Money = { minor: string; currency: string };
@@ -280,7 +280,14 @@ export function RegisterPanel({
                 <div className="num mt-1 font-semibold text-n900">
                   {t("calc.formula", {
                     units: open.units,
-                    face: `${formatAmount(set.faceMinor, renderDecimals(set.faceMinor, open.gross.currency), locale)} ${CURRENCY_SIGN[open.gross.currency] ?? open.gross.currency}`,
+                    face: formatMoney(
+                      formatAmount(
+                        set.faceMinor,
+                        renderDecimals(set.faceMinor, open.gross.currency),
+                        locale,
+                      ),
+                      open.gross.currency,
+                    ),
                     rate: bpsToPercent(set.rateBps, locale),
                     days: set.days,
                   })}

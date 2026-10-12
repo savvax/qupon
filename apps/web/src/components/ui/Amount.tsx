@@ -30,7 +30,9 @@ export function Amount({
       title={`${units} minor units`}
     >
       {formatAmount(units, d, locale)}
-      <span className="ml-1 text-[0.85em] font-medium text-n500">
+      {/* NBSP, not a margin: the number–sign spacing survives copy/paste and text dumps (A91567-7) */}
+      {"\u00a0"}
+      <span className="text-[0.85em] font-medium text-n500">
         {CURRENCY_SIGN[currency] ?? currency}
       </span>
     </span>

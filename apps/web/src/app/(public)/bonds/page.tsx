@@ -196,22 +196,10 @@ export default async function BondsPage() {
         <StableText>{t("lead")}</StableText>
       </p>
       <div className="mt-6">
+        {/* "All" first and default (live-sweep A91567-3): the completed redemption showcase (a Closed
+            featured series) is the strongest on-chain evidence — it must not hide behind a chip. */}
         <Tabs
-          defaultValue="active"
           items={[
-            {
-              value: "active",
-              label: t("filterActive"),
-              content: (
-                <DataTable
-                  columns={columns}
-                  rows={active}
-                  rowKey={(s) => s.mint}
-                  empty={t("emptyActive")}
-                  phoneRow={phoneRow}
-                />
-              ),
-            },
             {
               value: "all",
               label: t("filterAll"),
@@ -219,6 +207,19 @@ export default async function BondsPage() {
                 <DataTable
                   columns={columns}
                   rows={ordered}
+                  rowKey={(s) => s.mint}
+                  empty={t("emptyActive")}
+                  phoneRow={phoneRow}
+                />
+              ),
+            },
+            {
+              value: "active",
+              label: t("filterActive"),
+              content: (
+                <DataTable
+                  columns={columns}
+                  rows={active}
                   rowKey={(s) => s.mint}
                   empty={t("emptyActive")}
                   phoneRow={phoneRow}
