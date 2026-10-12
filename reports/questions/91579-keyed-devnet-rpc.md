@@ -23,4 +23,4 @@ into the VPS deployment. Options:
    secret; the static `build:proof` export keeps using the keyless public endpoints).
 
 **Default taken:** stay keyless (current committed behavior); judges see progress + ETA and the
-walk settles in ~40–60 s from a fresh IP.
+walk settles in ~30–55 s from a fresh IP (measured back-to-back vs base, 2026-10-12 r1: 33.0 s / 51.7 s, 0×429).

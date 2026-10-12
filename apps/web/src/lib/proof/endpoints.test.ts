@@ -63,6 +63,47 @@ describe("proof RPC fallback", () => {
     await expect(rpc.getSlot().send()).resolves.toBe(42n);
   });
 
+  const OF = "https://solana-devnet.api.onfinality.io/public";
+
+  it("never sends history reads to a history-less lane (91579)", async () => {
+    let ofCalled = false;
+    globalThis.fetch = (async (url: string | URL | Request) => {
+      if (String(url) === OF) {
+        ofCalled = true;
+        return new Response(
+          JSON.stringify({ jsonrpc: "2.0", id: 1, result: null }),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        JSON.stringify({ jsonrpc: "2.0", id: 1, result: { slot: 1 } }),
+        { status: 200 },
+      );
+    }) as typeof fetch;
+    const rpc = createProofRpc([OF, A]);
+    // getTransaction on OnFinality answers `null` as a success — the walk must skip that lane entirely.
+    await expect(
+      rpc.getTransaction("1" as never, { encoding: "json" } as never).send(),
+    ).resolves.toEqual({ slot: 1n });
+    expect(ofCalled).toBe(false);
+    expect(answeredByRpc()).toBe(A);
+  });
+
+  it("still uses a history-less lane for non-history reads (91579)", async () => {
+    globalThis.fetch = (async (url: string | URL | Request) =>
+      new Response(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          result: String(url) === OF ? 7 : 9,
+        }),
+        { status: 200 },
+      )) as typeof fetch;
+    const rpc = createProofRpc([OF, A]);
+    await expect(rpc.getSlot().send()).resolves.toBe(7n); // OnFinality is fine for account reads
+    expect(answeredByRpc()).toBe(OF);
+  });
+
   it("throws when every endpoint refuses", async () => {
     globalThis.fetch = (async () =>
       new Response("{}", { status: 503 })) as typeof fetch;

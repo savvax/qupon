@@ -31,9 +31,18 @@ const setAnsweredBy = (url: string) => {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Pacing floor/ceiling per endpoint (ms between requests): public nodes refill ~1 req/s per IP. */
-const MIN_INTERVAL = 700;
+/** Pacing floor/ceiling per endpoint: api.devnet refills ~1 req/s per IP, so pacing it faster (the old
+ *  700 ms) only buys 429s whose adaptive doubling costs more than the requests saved (91579 r1). */
+const MIN_INTERVAL = 1000;
 const MAX_INTERVAL = 4000;
+/** OnFinality's public lane tolerates ~0.5 req/s — pacing it from 700 ms just earns a 429 storm (91579 r1). */
+const floorInterval = (url: string) =>
+  url.includes("onfinality") ? 2000 : MIN_INTERVAL;
+/** OnFinality's public lane keeps no devnet history: `getTransaction` answers null and
+ *  `getSignaturesForAddress` answers `[]` — a success that would silently truncate the walk.
+ *  History reads therefore never go there (probe, 2026-10-12; task 91579). */
+const servesHistory = (url: string) => !url.includes("onfinality");
+const HISTORY_METHODS = new Set(["getTransaction", "getSignaturesForAddress"]);
 const FETCH_TIMEOUT = 10_000;
 
 /**
@@ -49,30 +58,57 @@ export function createProofRpc(
   const lanes = endpoints.map((url) => ({
     url,
     nextSendAt: 0,
-    interval: MIN_INTERVAL,
+    interval: floorInterval(url),
+    tail: Promise.resolve() as Promise<unknown>,
   }));
+  // SSRF guard: lanes come from the RPC_ENDPOINTS constant or build-time env — allow https only.
+  for (const { url } of lanes) {
+    let protocol = "";
+    try {
+      protocol = new URL(url).protocol;
+    } catch {
+      // malformed env URL — the guard below rejects it with a clear message
+    }
+    if (protocol !== "https:")
+      throw new Error(`non-https RPC endpoint: ${url}`);
+  }
+  // A lane is a serial queue: waiters chain on `tail`, so N concurrent requests space out at
+  // `interval` instead of waking from the same sleep and firing as a herd (a herd is a guaranteed
+  // 429 burst on a public node — measured, task 91579 r1).
+  const sendOn = (lane: (typeof lanes)[number], payload: unknown) => {
+    const run = lane.tail.then(async () => {
+      await sleep(Math.max(0, lane.nextSendAt - Date.now()));
+      lane.nextSendAt = Date.now() + lane.interval;
+      // SAFETY: no user input reaches this URL — lanes come from the RPC_ENDPOINTS constant or the
+      // build-time NEXT_PUBLIC_RPC_URLS env, and this fetch runs in the visitor's browser, not on a server.
+      const res = await fetch(lane.url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: wireJson(payload),
+        signal: AbortSignal.timeout(FETCH_TIMEOUT),
+      });
+      const json = (await res.json()) as { error?: unknown };
+      if (!res.ok || json.error != null) throw new Error(`HTTP ${res.status}`);
+      lane.interval = Math.max(
+        floorInterval(lane.url),
+        Math.round(lane.interval * 0.9),
+      );
+      setAnsweredBy(lane.url);
+      return json as never;
+    });
+    lane.tail = run.catch(() => undefined); // keep the queue alive after a failed request
+    return run;
+  };
   return createSolanaRpcFromTransport(async ({ payload }) => {
     let lastErr: unknown;
     // Each transport call tries every endpoint at most once (chain.ts retries the rest with backoff).
+    const isHistory = HISTORY_METHODS.has(
+      (payload as { method?: string }).method ?? "",
+    );
     for (const lane of [...lanes].sort((a, b) => a.nextSendAt - b.nextSendAt)) {
-      const wait = lane.nextSendAt - Date.now();
-      if (wait > 0) await sleep(wait);
-      lane.nextSendAt = Math.max(lane.nextSendAt, Date.now()) + lane.interval;
+      if (isHistory && !servesHistory(lane.url)) continue; // would answer null/[] as success
       try {
-        // SAFETY: no user input reaches this URL — lanes come from the RPC_ENDPOINTS constant or the
-        // build-time NEXT_PUBLIC_RPC_URLS env, and this fetch runs in the visitor's browser, not on a server.
-        const res = await fetch(lane.url, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: wireJson(payload),
-          signal: AbortSignal.timeout(FETCH_TIMEOUT),
-        });
-        const json = (await res.json()) as { error?: unknown };
-        if (!res.ok || json.error != null)
-          throw new Error(`HTTP ${res.status}`);
-        lane.interval = Math.max(MIN_INTERVAL, Math.round(lane.interval * 0.9));
-        setAnsweredBy(lane.url);
-        return json as never;
+        return await sendOn(lane, payload);
       } catch (e) {
         lastErr = e;
         lane.interval = Math.min(MAX_INTERVAL, lane.interval * 2); // a refusing node gets gentler pacing
