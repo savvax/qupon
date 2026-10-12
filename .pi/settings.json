@@ -1,8 +1,0 @@
-{
-  "defaultProvider": "zai",
-  "defaultModel": "glm-5.3",
-  "defaultThinkingLevel": "high",
-  "compaction": { "enabled": true, "reserveTokens": 40000, "keepRecentTokens": 60000 },
-  "retry": { "enabled": true, "maxRetries": 4, "baseDelayMs": 3000 },
-  "quietStartup": true
-}

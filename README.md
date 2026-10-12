@@ -279,7 +279,3 @@ The IDL is also readable in the [explorer's IDL tab](https://explorer.solana.com
 ## Roadmap
 
 Token ACL (sRFC-37) instead of the custom registry thaw · order matching for secondary trades (their settlement already runs on Solana DvP) · a Squads multisig registrar (a 2-of-3 Squads vault already funds a coupon as paying agent — [reports/demo-squads.md](reports/demo-squads.md)) · a licensed KYC provider issuing the SAS attestations · confidential coupon amounts · tax-vault remittance · KASE disclosure publication through an IRIS account · mainnet launch with Evo KZTE (or a bank deposit token) as the cash leg once the official mint and operator wallets are in place.
-
-## License
-
-MIT.
