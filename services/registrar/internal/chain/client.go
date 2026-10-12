@@ -40,6 +40,7 @@ type Client struct {
 	program solana.PublicKey
 	log     *slog.Logger
 	cache   gpaCache
+	pre     prefetchCache
 	// rateLimitBase is the HTTP-429 backoff base; a field only so tests shrink it.
 	rateLimitBase time.Duration
 }
@@ -66,6 +67,55 @@ type gpaFlight struct {
 	done chan struct{}
 	recs []AccountRecord
 	err  error
+}
+
+// prefetchCache holds the accounts the last Prefetch read in one getMultipleAccounts; GetAccount serves them
+// for prefetchTTL. The scheduler prefetches every open action and bond mint once per tick: two getAccountInfo
+// per series every 2 s spent the keyed RPC's whole quota (2026-10-12).
+type prefetchCache struct {
+	mu   sync.Mutex
+	at   time.Time
+	data map[solana.PublicKey][]byte // nil value = account absent
+}
+
+const prefetchTTL = 2 * time.Second
+
+// Prefetch reads keys with getMultipleAccounts (100 per call) for the GetAccount calls that follow.
+func (c *Client) Prefetch(ctx context.Context, keys []solana.PublicKey) error {
+	data := make(map[solana.PublicKey][]byte, len(keys))
+	for chunk := range slices.Chunk(keys, 100) {
+		var res *rpc.GetMultipleAccountsResult
+		err := c.withRetry(ctx, func() (err error) {
+			res, err = c.rpc.GetMultipleAccountsWithOpts(ctx, chunk, &rpc.GetMultipleAccountsOpts{Commitment: defaultCommitm_})
+			return err
+		})
+		if err != nil {
+			return fmt.Errorf("prefetch %d accounts: %w", len(chunk), err)
+		}
+		if len(res.Value) != len(chunk) {
+			return fmt.Errorf("prefetch: %d accounts answered for %d keys", len(res.Value), len(chunk))
+		}
+		for i, acc := range res.Value {
+			data[chunk[i]] = nil
+			if acc != nil {
+				data[chunk[i]] = acc.Data.GetBinary()
+			}
+		}
+	}
+	c.pre.mu.Lock()
+	c.pre.data, c.pre.at = data, time.Now()
+	c.pre.mu.Unlock()
+	return nil
+}
+
+func (c *Client) prefetched(key solana.PublicKey) ([]byte, bool) {
+	c.pre.mu.Lock()
+	defer c.pre.mu.Unlock()
+	if time.Since(c.pre.at) > prefetchTTL {
+		return nil, false
+	}
+	d, ok := c.pre.data[key]
+	return d, ok
 }
 
 // NewClient builds a chain reader for rpcURL (devnet endpoint) and program.
@@ -114,6 +164,9 @@ func (c *Client) GetAccount(ctx context.Context, key solana.PublicKey) ([]byte, 
 // historical query — snapshot balances are read as current balances while the
 // mint is paused (docs/03-domain.md §4).
 func (c *Client) GetAccountAt(ctx context.Context, key solana.PublicKey, minSlot uint64) ([]byte, error) {
+	if d, ok := c.prefetched(key); ok && minSlot == 0 {
+		return d, nil
+	}
 	var out []byte
 	err := c.withRetry(ctx, func() error {
 		opts := &rpc.GetAccountInfoOpts{Commitment: defaultCommitm_}
@@ -213,6 +266,9 @@ func (c *Client) InvalidateProgramAccounts() {
 	clear(c.cache.entries)
 	clear(c.cache.flying) // new callers start a fresh scan instead of joining a stale flight
 	c.cache.mu.Unlock()
+	c.pre.mu.Lock()
+	c.pre.data = nil
+	c.pre.mu.Unlock()
 }
 
 func gpaKey(disc [8]byte, memcmp []rpc.RPCFilterMemcmp) string {
@@ -490,12 +546,15 @@ func (c *Client) withRetry(ctx context.Context, call func() error) error {
 	return fmt.Errorf("rpc failed after %d attempts: %w", attempts, err)
 }
 
-// isRateLimited reports an HTTP 429 from the RPC node. The solana-go client
-// surfaces a non-2xx body it cannot decode as *jsonrpc.HTTPError; it does not
-// expose Retry-After, so the backoff below is time-based only.
+// isRateLimited reports a 429 from the RPC node: an HTTP 429 the solana-go client
+// cannot decode (*jsonrpc.HTTPError) or a JSON-RPC error with code 429 (public
+// devnet: "Connection rate limits exceeded"). Retry-After is not exposed, so the
+// backoff below is time-based only.
 func isRateLimited(err error) bool {
 	var httpErr *jsonrpc.HTTPError
-	return errors.As(err, &httpErr) && httpErr.Code == http.StatusTooManyRequests
+	var rpcErr *jsonrpc.RPCError
+	return errors.As(err, &httpErr) && httpErr.Code == http.StatusTooManyRequests ||
+		errors.As(err, &rpcErr) && rpcErr.Code == http.StatusTooManyRequests
 }
 
 // rateLimitBackoff is the 429 wait before retry `attempt`: base doubled per

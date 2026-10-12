@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 
 	solana "github.com/solana-foundation/solana-go/v2"
 	"github.com/solana-foundation/solana-go/v2/rpc"
+	"github.com/solana-foundation/solana-go/v2/rpc/jsonrpc"
 )
 
 const testProgram = "QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd"
@@ -366,5 +368,46 @@ func TestFetchByOwnerMemcmpAndSort(t *testing.T) {
 	}
 	if m := gotFilters[1].Memcmp; m == nil || m.Offset != 41 || solana.PublicKey(m.Bytes) != owner {
 		t.Errorf("owner memcmp = %+v, want offset 41 key %s", gotFilters[1].Memcmp, owner)
+	}
+}
+
+// One getMultipleAccounts serves the GetAccount calls that follow; an absent account stays (nil, nil).
+func TestPrefetchServesGetAccount(t *testing.T) {
+	present, absent := pk(t, "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"), pk(t, "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo")
+	var methods []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Method string `json:"method"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		methods = append(methods, req.Method)
+		_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": 1, "result": map[string]any{
+			"context": map[string]any{"slot": 1}, "value": []any{accountValueJSON(t, []byte{7, 8}), nil},
+		}})
+	}))
+	defer srv.Close()
+
+	cl := testClient(t, srv.URL)
+	if err := cl.Prefetch(t.Context(), []solana.PublicKey{present, absent}); err != nil {
+		t.Fatal(err)
+	}
+	if d, err := cl.GetAccount(t.Context(), present); err != nil || !bytes.Equal(d, []byte{7, 8}) {
+		t.Fatalf("GetAccount(present) = (%v, %v)", d, err)
+	}
+	if d, err := cl.GetAccount(t.Context(), absent); err != nil || d != nil {
+		t.Fatalf("GetAccount(absent) = (%v, %v), want (nil, nil)", d, err)
+	}
+	if len(methods) != 1 || methods[0] != "getMultipleAccounts" {
+		t.Fatalf("RPC calls = %v, want one getMultipleAccounts", methods)
+	}
+}
+
+// Public devnet answers its rate limit as a JSON-RPC error with code 429, not an HTTP 429.
+func TestIsRateLimitedJSONRPC429(t *testing.T) {
+	if !isRateLimited(fmt.Errorf("wrapped: %w", &jsonrpc.RPCError{Code: 429, Message: "Connection rate limits exceeded"})) {
+		t.Fatal("JSON-RPC 429 not treated as rate limited")
+	}
+	if isRateLimited(&jsonrpc.RPCError{Code: -32603}) {
+		t.Fatal("JSON-RPC -32603 treated as rate limited")
 	}
 }

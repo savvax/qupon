@@ -275,6 +275,7 @@ func (s *Scheduler) Tick(ctx context.Context) {
 	if owned, err := s.ownedMints(ctx); err != nil {
 		s.Log.Error("scheduler: owned series", "err", err) // drive everything, the pre-91563 behaviour
 	} else {
+		s.prefetch(ctx, recs, owned)
 		for _, rec := range recs {
 			if ctx.Err() != nil {
 				return
@@ -290,11 +291,35 @@ func (s *Scheduler) Tick(ctx context.Context) {
 		}
 		return
 	}
+	s.prefetch(ctx, recs, nil)
 	for _, rec := range recs {
 		if ctx.Err() != nil {
 			return
 		}
 		s.handleSeries(ctx, rec, noFund[rec.Series.Mint.String()])
+	}
+}
+
+// prefetch batches the open actions and bond mints handleSeries reads into one getMultipleAccounts per tick
+// (chain.Client only; nil owned = every series). On failure handleSeries falls back to single reads.
+func (s *Scheduler) prefetch(ctx context.Context, recs []chain.SeriesRecord, owned map[string]bool) {
+	p, ok := s.Read.(interface {
+		Prefetch(ctx context.Context, keys []solana.PublicKey) error
+	})
+	if !ok {
+		return
+	}
+	var keys []solana.PublicKey
+	for _, r := range recs {
+		if r.Series.OpenAction != nil && (owned == nil || owned[r.Series.Mint.String()]) {
+			keys = append(keys, *r.Series.OpenAction, r.Series.Mint)
+		}
+	}
+	if len(keys) == 0 {
+		return
+	}
+	if err := p.Prefetch(ctx, keys); err != nil {
+		s.Log.Warn("scheduler: prefetch", "err", err)
 	}
 }
 
