@@ -55,6 +55,9 @@ kp() { tr -d ' \n' < "$1"; }
   # coupons from the paying agent unless a series is flagged no_autofund (admin → series scenario).
   echo "SCHEDULER=1"
   echo "AUTOFUND=1"
+  # In-process RPC gateway (task 91586): registrar + every CLI run share one paced, cached
+  # connection path to the RPC endpoint instead of hitting it with fresh TLS connections each.
+  echo "RPC_GATEWAY=1"
   # Program-account scans cached 10 s (every CLI step still invalidates): public devnet rate-limits getProgramAccounts.
   echo "RPC_GPA_CACHE_TTL=10s"
   # Self-curating board (task 91558): feature the showcase and hide every uncurated demo-clock

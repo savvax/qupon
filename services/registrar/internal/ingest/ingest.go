@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -61,7 +62,7 @@ func NewPoller(rpcURL string, program solana.PublicKey, st *store.Store, log *sl
 	// Keyed RPCs can fail history methods while account reads work (Helius devnet: -32603 on
 	// getSignaturesForAddress/getSignatureStatuses, 2026-10-05); public devnet answers them, rate-limited.
 	var fallback *rpc.Client
-	if rpcURL != rpc.DevNet_RPC {
+	if rpcURL != rpc.DevNet_RPC && !localRPC(rpcURL) {
 		fallback = rpc.New(rpc.DevNet_RPC)
 	}
 	return &Poller{
@@ -74,6 +75,21 @@ func NewPoller(rpcURL string, program solana.PublicKey, st *store.Store, log *sl
 		pageSize:    defaultPageSize,
 		backfillCap: defaultBackfillCap,
 	}
+}
+
+// localRPC reports whether rpcURL points at this machine: a loopback RPC is the
+// in-process gateway (RPC_GATEWAY=1, task 91586), which fronts devnet itself —
+// a direct public fallback would bypass its pacing and 429 absorption.
+func localRPC(rpcURL string) bool {
+	u, err := url.Parse(rpcURL)
+	if err != nil {
+		return false
+	}
+	switch u.Hostname() {
+	case "127.0.0.1", "localhost", "::1":
+		return true
+	}
+	return false
 }
 
 // Run polls until ctx is cancelled; each failure is logged and retried next tick.

@@ -538,6 +538,23 @@ func TestPollFreshNotFoundUsesFallback(t *testing.T) {
 	}
 }
 
+// Behind the in-process RPC gateway (a loopback rpcURL, task 91586) the poller
+// must not open a direct public-devnet fallback: it would bypass the gateway's
+// pacing and 429 absorption.
+func TestNoPublicFallbackBehindLocalGateway(t *testing.T) {
+	st, err := store.Open(t.Context(), filepath.Join(t.TempDir(), "ingest.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = st.Close() })
+	program := solana.MustPublicKeyFromBase58("QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd")
+	for _, url := range []string{"http://127.0.0.1:8899", "http://localhost:8899"} {
+		if p := NewPoller(url, program, st, slog.New(slog.DiscardHandler)); p.fallback != nil {
+			t.Errorf("NewPoller(%q) opened a direct public-devnet fallback", url)
+		}
+	}
+}
+
 // A not-found signature without a BlockTime ages out of freshWindow from the
 // moment the poller first met it, instead of blocking the cursor forever (task 1420).
 func TestPollNilBlockTimeAgesOut(t *testing.T) {

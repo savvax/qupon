@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -30,6 +31,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"github.com/qupon-kz/qupon/services/registrar/internal/notice"
 	"github.com/qupon-kz/qupon/services/registrar/internal/reconcile"
+	"github.com/qupon-kz/qupon/services/registrar/internal/rpcgw"
 	"github.com/qupon-kz/qupon/services/registrar/internal/sandbox"
 	"github.com/qupon-kz/qupon/services/registrar/internal/scheduler"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
@@ -104,6 +106,33 @@ func run() error {
 		logger.Warn("approval sweep failed", "err", err)
 	} else if n > 0 {
 		logger.Info("reset running approvals to pending", "count", n)
+	}
+
+	// RPC gateway (task 91586): public devnet rate-limits per IP, and the registrar
+	// plus every `qupon` CLI run used to hit it independently with fresh TLS
+	// connections (~130 429s/min). With RPC_GATEWAY=1 the gateway fronts
+	// cfg.RPCURL and everything below — chain client, poller, CLI subprocesses
+	// (via RPC_URL/RPC_FALLBACK_URL) — talks to it on loopback; only it talks to
+	// devnet: paced, cached, deduped, 429-absorbed. Off = today's behaviour.
+	realRPC := cfg.RPCURL // the startup log keeps printing the redacted real upstream
+	var gwErr chan error  // nil (never fires) when the gateway is off
+	if os.Getenv("RPC_GATEWAY") == "1" {
+		gwAddr := os.Getenv("RPC_GATEWAY_ADDR")
+		if gwAddr == "" {
+			gwAddr = "127.0.0.1:8899"
+		}
+		gw := rpcgw.New(cfg.RPCURL, logger)
+		gwErr = make(chan error, 1)
+		go func() { gwErr <- gw.ListenAndServe(ctx, gwAddr) }()
+		if err := waitListening(gwAddr, 2*time.Second); err != nil {
+			return fmt.Errorf("rpc gateway on %s: %w", gwAddr, err)
+		}
+		cfg.RPCURL = "http://" + gwAddr
+		// CLI subprocesses inherit os.Environ() (internal/executor) and their status
+		// fallback reads RPC_FALLBACK_URL (clients/ts/src/lib/tx.ts) — both go through
+		// the gateway so nothing bypasses its pacing.
+		_ = os.Setenv("RPC_URL", cfg.RPCURL)
+		_ = os.Setenv("RPC_FALLBACK_URL", cfg.RPCURL)
 	}
 
 	// One chain client feeds the poller, the startup series index, the
@@ -260,7 +289,7 @@ func run() error {
 	errCh := make(chan error, 1)
 	go func() { errCh <- srv.ListenAndServe() }()
 	logger.Info("registrar listening",
-		"version", version, "port", cfg.Port, "db", cfg.DBPath, "rpc", redactURL(cfg.RPCURL), "program", cfg.ProgramID, "cli", cfg.QuponCLI)
+		"version", version, "port", cfg.Port, "db", cfg.DBPath, "rpc", redactURL(realRPC), "program", cfg.ProgramID, "cli", cfg.QuponCLI)
 
 	select {
 	case <-ctx.Done():
@@ -273,6 +302,8 @@ func run() error {
 			return nil
 		}
 		return err
+	case err := <-gwErr:
+		return fmt.Errorf("rpc gateway: %w", err)
 	}
 }
 
@@ -321,6 +352,23 @@ func redactURL(u string) string {
 		return u[:i] + "?…"
 	}
 	return u
+}
+
+// waitListening dials addr until the gateway accepts connections (it binds in
+// its own goroutine); the chain client's first call must not race the bind.
+func waitListening(addr string, wait time.Duration) error {
+	deadline := time.Now().Add(wait)
+	for {
+		conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+		if err == nil {
+			_ = conn.Close()
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return fmt.Errorf("not listening: %w", err)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
 }
 
 // noticeReader is nil (endpoint answers 503) when no PROGRAM_ID is configured;
