@@ -9,7 +9,8 @@ export async function boFetch<T>(
 ): Promise<T> {
   if (MOCK_SESSIONS) return (await mockGet(path)) as T;
   const token = await sessionToken();
-  const res = await fetch(`${apiBase()}${path}`, {
+  // some callers pass "admin/…" without the leading slash (base + path would glue into "…:8080admin/…")
+  const res = await fetch(`${apiBase()}/${path.replace(/^\//, "")}`, {
     ...init,
     cache: "no-store",
     headers: {

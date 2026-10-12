@@ -7,6 +7,7 @@
  */
 import {
   type Address,
+  address,
   type Instruction,
   type Transaction,
   type TransactionModifyingSigner,
@@ -98,6 +99,20 @@ function bytesEqual(a: ReadonlyUint8Array, b: ReadonlyUint8Array): boolean {
   return a.length === b.length && a.every((byte, i) => byte === b[i]);
 }
 
+const COMPUTE_BUDGET = address("ComputeBudget111111111111111111111111111111");
+function computeBudgetIx(tag: 2 | 3, value: number): Instruction {
+  const data = new Uint8Array(tag === 2 ? 5 : 9);
+  data[0] = tag;
+  new DataView(data.buffer).setUint32(1, value, true); // u32 limit / low half of the u64 price
+  return { programAddress: COMPUTE_BUDGET, data };
+}
+/** Explicit compute budget: without it Phantom prepends its own SetComputeUnitLimit/Price before signing, the
+ * message bytes change and the byte-compare guard above refuses the transaction (found driving real Phantom). */
+export const WALLET_COMPUTE_BUDGET: Instruction[] = [
+  computeBudgetIx(2, 400_000), // SetComputeUnitLimit
+  computeBudgetIx(3, 1_000), // SetComputeUnitPrice, micro-lamports per CU
+];
+
 /** v0 message with the wallet as fee payer (and signer of its instruction accounts). */
 export function walletTransactionMessage(
   signer: TransactionModifyingSigner,
@@ -108,7 +123,11 @@ export function walletTransactionMessage(
     createTransactionMessage({ version: 0 }),
     (m) => setTransactionMessageFeePayerSigner(signer, m),
     (m) => setTransactionMessageLifetimeUsingBlockhash(blockhash, m),
-    (m) => appendTransactionMessageInstructions(instructions, m),
+    (m) =>
+      appendTransactionMessageInstructions(
+        [...WALLET_COMPUTE_BUDGET, ...instructions],
+        m,
+      ),
   );
 }
 

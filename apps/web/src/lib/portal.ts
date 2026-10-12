@@ -232,8 +232,9 @@ export async function buildSubscribeIx(
       mint: account.cashMint,
     })
   )[0];
+  // base64: devnet refuses base58 for accounts over 128 bytes (Token-2022 accounts with extensions)
   const { value: issuerCashAccount } = await rpc
-    .getAccountInfo(issuerCash, { commitment: "confirmed" })
+    .getAccountInfo(issuerCash, { commitment: "confirmed", encoding: "base64" })
     .send();
   if (issuerCashAccount === null) {
     throw new Error(
