@@ -147,6 +147,43 @@ func TestGPACacheInvalidation(t *testing.T) {
 	}
 }
 
+// A scan already in flight when a CLI step finishes must not repopulate the
+// cache with pre-write state: invalidation retires it and the next read
+// re-scans (review round 1).
+func TestGPACacheInvalidationDropsInFlightScan(t *testing.T) {
+	release := make(chan struct{})
+	var calls atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) == 1 {
+			<-release // hold the pre-step scan open across the invalidation
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0", "id": 1,
+			"result": []map[string]any{seriesRow(t, seriesPDA(t))},
+		})
+	}))
+	defer srv.Close()
+	cl := testClient(t, srv.URL)
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := cl.AllSeries(t.Context())
+		done <- err
+	}()
+	time.Sleep(50 * time.Millisecond) // the first scan is now in flight
+	cl.InvalidateProgramAccounts()
+	close(release)
+	if err := <-done; err != nil {
+		t.Fatalf("pre-step AllSeries: %v", err)
+	}
+	if _, err := cl.AllSeries(t.Context()); err != nil {
+		t.Fatalf("AllSeries after invalidate: %v", err)
+	}
+	if n := calls.Load(); n != 2 {
+		t.Errorf("rpc calls = %d, want 2 (in-flight scan retired by invalidation)", n)
+	}
+}
+
 // N concurrent identical scans collapse into one RPC request (singleflight).
 func TestGPASingleflight(t *testing.T) {
 	release := make(chan struct{})

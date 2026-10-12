@@ -52,6 +52,7 @@ type gpaCache struct {
 	ttl     time.Duration // RPC_GPA_CACHE_TTL; 0 disables caching
 	entries map[string]gpaEntry
 	flying  map[string]*gpaFlight // singleflight: identical concurrent scans share one RPC request
+	gen     uint64                // bumped on invalidation: scans started before it are stale
 	now     func() time.Time      // injectable clock (tests)
 }
 
@@ -186,16 +187,19 @@ func (c *Client) GetProgramAccounts(
 	}
 	fl := &gpaFlight{done: make(chan struct{})}
 	c.cache.flying[key] = fl
+	gen := c.cache.gen // survives invalidations only if none happens during the scan
 	c.cache.mu.Unlock()
 
 	recs, err := c.scanProgramAccounts(ctx, disc, memcmp)
 
 	c.cache.mu.Lock()
 	fl.recs, fl.err = recs, err
-	if err == nil {
+	if err == nil && c.cache.gen == gen { // a step finished meanwhile → don't cache stale rows
 		c.cache.entries[key] = gpaEntry{recs: recs, at: c.cache.now()}
 	}
-	delete(c.cache.flying, key)
+	if c.cache.flying[key] == fl { // invalidation cleared the map; a fresh flight may own the key
+		delete(c.cache.flying, key)
+	}
 	c.cache.mu.Unlock()
 	close(fl.done)
 	return cloneRecords(recs), err
@@ -205,7 +209,9 @@ func (c *Client) GetProgramAccounts(
 // changed chain state (wired to the executor completion hook, task 91583).
 func (c *Client) InvalidateProgramAccounts() {
 	c.cache.mu.Lock()
+	c.cache.gen++ // retire scans in flight: they must not repopulate the cache
 	clear(c.cache.entries)
+	clear(c.cache.flying) // new callers start a fresh scan instead of joining a stale flight
 	c.cache.mu.Unlock()
 }
 
