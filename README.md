@@ -8,12 +8,28 @@
 - 116 program tests (LiteSVM integration + unit), the brief's worked example as named tests, shared test vectors checked in Rust, Go and TypeScript
 - Judge path, no sign-in: a **sandbox** bond that lives a whole coupon cycle in minutes, a curated **showcase** serviced by an autopilot and a **/proof** page that re-verifies every action in the browser — see [Try it](#try-it--the-judge-path)
 
+## For judges — full access
+
+Everything runs on Solana **devnet**; no real money moves. Nothing to install.
+
+| What | How |
+| --- | --- |
+| **Administrator (full access)** | https://qupon.fun/login → *Sign in with email* with the judge account sent with the submission. The admin account passes every role check, so it opens all cabinets — `/admin`, `/registrar`, `/issuer`, `/investor` — plus users, organisations, series visibility, cash assets, system health, audit log |
+| Issuer, registrar, investor | https://qupon.fun/login → *Demo* → one click per role (the demo investor is a custodial wallet) |
+| Your own wallet | Phantom / Solflare / Backpack switched to devnet (Phantom: Settings → Developer Settings → Testnet Mode), SOL from https://faucet.solana.com. Then the full investor path, approving yourself: sign up at `/signup` → **Link a wallet** (signs a message) → **Verification**: upload any PDF/PNG, pick the issues → sign out, sign in as *Demo → Registrar* (or the judge admin) → **KYC queue** → **Approve** (real SAS attestation + registration) → sign back in as yourself → **Get tKZT** → **Placement → Subscribe** (Phantom) → vote in **Meetings**, set a **payout route**, trade through **Solana DvP** ([how](docs/guides/DVP.en.md)) |
+| No sign-in at all | [sandbox](https://qupon.fun/sandbox/new) (your own bond, a whole life in minutes; `?wallet=<address>` places 5 bonds to your wallet), [bond board](https://qupon.fun/bonds), [proof pages](https://qupon.fun/proof) |
+| Step-by-step guides | [user scenarios](docs/guides/USAGE.en.md) ([RU](docs/guides/USAGE.ru.md)) · [DvP](docs/guides/DVP.en.md) ([RU](docs/guides/DVP.ru.md)) · [run it locally](docs/guides/SETUP.en.md) ([RU](docs/guides/SETUP.ru.md)) |
+
+Demo data is shared by every visitor. Organisation features that the shared demo issuer cannot change (team invites,
+document uploads) work for an organisation account: create one in **Admin → Organisations** and **Admin → Users**.
+
 ## Guides — EN / RU
 
 | | English | Русский |
 | --- | --- | --- |
 | **Setup and run** — toolchain, `.env`, devnet keys, the whole stack with one command (`make up`), mock mode, tests, troubleshooting | [docs/guides/SETUP.en.md](docs/guides/SETUP.en.md) | [docs/guides/SETUP.ru.md](docs/guides/SETUP.ru.md) |
 | **User scenarios** — every role and feature with a real Phantom wallet on devnet: issuance, KYC, subscription, coupon, meeting vote, payout route, trades, admin, sandbox (screenshots + GIFs) | [docs/guides/USAGE.en.md](docs/guides/USAGE.en.md) | [docs/guides/USAGE.ru.md](docs/guides/USAGE.ru.md) |
+| **DvP** — how primary placement and secondary trades settle delivery-versus-payment through the Solana DvP program, with the record-date guard and a live devnet run | [docs/guides/DVP.en.md](docs/guides/DVP.en.md) | [docs/guides/DVP.ru.md](docs/guides/DVP.ru.md) |
 
 ## Try it — the judge path
 

@@ -358,6 +358,8 @@ in the sandbox ([§18](#18-the-sandbox-a-whole-bond-life-in-minutes)): **Skip fu
 
 ## 14. Secondary trades (Solana DvP)
 
+Full description of how DvP is used (primary placement and secondary trades, checks, record-date guard, accrued interest, a live devnet run): [DvP guide](DVP.en.md).
+
 Trades between two registered investors of a series settle through the Solana Foundation's **DvP** program: bonds
 against cash in one transaction.
 
