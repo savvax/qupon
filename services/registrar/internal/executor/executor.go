@@ -216,17 +216,9 @@ func (e *Executor) Stats() (running, queued int) {
 
 // Run execs `bin --json args…`. A CLI failure (non-zero exit) is a normal
 // Result{OK:false, Error:…}; only spawn/timeout/contract failures return a
-// Go error.
+// Go error. The executor slot is taken once, in exec: taking it here too made two concurrent Runs each hold one of
+// the two slots and wait forever for a second (sandbox create vs the autopilot).
 func (e *Executor) Run(ctx context.Context, args ...string) (Result, error) {
-	e.waiting.Add(1)
-	select {
-	case e.slots <- struct{}{}:
-		e.waiting.Add(-1)
-		defer func() { <-e.slots }()
-	case <-ctx.Done():
-		e.waiting.Add(-1)
-		return Result{}, fmt.Errorf("cli %s: waiting for a free executor slot: %w", strings.Join(args, " "), ctx.Err())
-	}
 	res, err := e.run(ctx, args...)
 	res.Error = redactKeys(res.Error)
 	if err != nil && keyParam.MatchString(err.Error()) {

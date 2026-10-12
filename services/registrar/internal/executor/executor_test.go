@@ -354,3 +354,17 @@ func TestLogArgsMasksBankDetails(t *testing.T) {
 		t.Fatalf("logArgs = %q", got)
 	}
 }
+
+// One CLI already running (the autopilot) must leave room for a second caller (sandbox create): Run used to take a
+// slot and exec a second one, so two concurrent Runs held both slots and waited forever (prod sandbox hang, 2026-10-12).
+func TestRunWithOneSlotBusyDoesNotDeadlock(t *testing.T) {
+	t.Setenv("FAKE_CLI_STDOUT", writeFile(t, t.TempDir(), "out.json", `{"ok":true,"signature":"sig","slot":"1"}`+"\n"))
+	e := New(fakeCLI(t), "testdata/devnet.json", nil)
+	e.slots <- struct{}{} // another CLI holds one of the MaxConcurrent slots
+	defer func() { <-e.slots }()
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	if _, err := e.Run(ctx, "action:strike", "--series", "QPNb1", "--index", "1"); err != nil {
+		t.Fatalf("run with one slot busy: %v", err)
+	}
+}
