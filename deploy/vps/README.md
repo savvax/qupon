@@ -4,10 +4,9 @@
 
 ```bash
 ops/deploy-vps.sh                                                              # primary: user@185.216.25.91 (compose.shared.yml, /home/user/qupon)
-COMPOSE=compose.yml QUPON_DIR=/opt/qupon ops/deploy-vps.sh root@85.192.29.7   # old box, kept as fallback
 ```
 
-`QUPON_HOST` overrides the `<ip-dashes>.sslip.io` hostname derivation on either box.
+`QUPON_HOST` overrides the `<ip-dashes>.sslip.io` hostname derivation.
 
 ## Watchdog
 

@@ -201,15 +201,14 @@ pnpm e2e                                # mock-mode Playwright suite (starts its
 | Sign in — one-click demo issuer, registrar or investor | https://qupon.185-216-25-91.sslip.io/login |
 | Registrar API                                               | https://api.185-216-25-91.sslip.io/healthz (OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
 
-One VPS, Docker Compose: registrar API (Go + the `qupon` CLI as executor) and web app (Next.js), behind HTTPS (own Caddy on
-the old box, the box's shared reverse proxy on the primary; `sslip.io` resolves the hostnames to the server IP). The web app reads devnet state; wallet actions are signed in the
+One VPS, Docker Compose: registrar API (Go + the `qupon` CLI as executor) and web app (Next.js), behind HTTPS (the box's shared
+reverse proxy; `sslip.io` resolves the hostnames to the server IP). The web app reads devnet state; wallet actions are signed in the
 browser; back-office writes go through a session proxy (`/api/bo/*`): the session token lives only in an httpOnly cookie
 and every operator-key action is role-checked by the Go API. Deploy or update with one command (needs ssh access and the
 devnet keypairs in `.env`):
 
 ```bash
 ops/deploy-vps.sh                                 # primary: user@185.216.25.91 (compose.shared.yml, /home/user/qupon)
-COMPOSE=compose.yml QUPON_DIR=/opt/qupon ops/deploy-vps.sh root@85.192.29.7    # old box, fallback
 ```
 
 Fresh demo data (every demo coupon consumes one scheduled period): `make demo-seed` creates a new series with three
@@ -217,7 +216,7 @@ KYC'd holders (10 / 25 / 65 bonds) and nothing announced; `REINDEX=1 ops/deploy-
 cabinets list it.
 
 Env reference: [`.env.example`](.env.example) (root) and [`services/registrar/.env.example`](services/registrar/.env.example). Server-side secrets written by the deploy script to
-$QUPON_DIR/registrar.env (mode 600; `/home/user/qupon` on the primary, `/opt/qupon` on the old box): `RPC_URL`, `DEMO_LOGIN=1`, `QUPON_USERS`, and the operator keypair JSON arrays the
+$QUPON_DIR/registrar.env (mode 600; `/home/user/qupon` on the primary, `/opt/qupon` by default elsewhere): `RPC_URL`, `DEMO_LOGIN=1`, `QUPON_USERS`, and the operator keypair JSON arrays the
 executor signs with — registrar, issuer, paying agent, KYC provider (`~/.config/qupon/kyc-provider.json`) and the demo
 investor's custodial wallet (`~/.config/qupon/investor3.json`, powers `POST /demo/investor/*`).
 
