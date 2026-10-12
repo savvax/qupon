@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
-import { NextIntlClientProvider } from "next-intl";
 import { getLocale } from "next-intl/server";
 import "./globals.css";
 import Providers from "@/components/Providers";
-import { AltLabelsProvider } from "@/components/i18n/StableLabel";
-import { altLabelMap } from "@/i18n/altLabels";
-import { LOCALES, type Locale, loadMessages } from "@/i18n/request";
+import { ScopedIntl } from "@/components/i18n/ScopedIntl";
+import { type Locale } from "@/i18n/request";
 import { getNetwork } from "@/lib/network";
 
 const manrope = Manrope({
@@ -44,24 +42,35 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * Client messages every route needs (the shell + Providers tree lives above any page provider): toasts, wallet,
+ * network guard, error/not-found boundaries, the public shell's stabilized nav/footer labels. Everything else is
+ * scoped per route by <ScopedIntl> (task 91575: 676 KB → ~250 KB landing HTML).
+ */
+const GLOBAL_PATHS = [
+  "common",
+  "errors.crash",
+  "wallet.button",
+  "wallet.dialog",
+  "network.confirm",
+  "kit.network",
+  "bonds.unavailable",
+] as const;
+
+/** Stabilized labels of the root tree (shells render above any page provider): nav/footer texts + wallet/toasts. */
+const GLOBAL_MAP_PATHS = ["common", "nav", "footer", "wallet.button"] as const;
+
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const locale = (await getLocale()) as Locale;
   const network = await getNetwork();
-  // Controls reserve the width of the longest label across ALL other locales (spec §5.8).
-  const others = await Promise.all(
-    LOCALES.filter((l) => l !== locale).map((l) => loadMessages(l as Locale)),
-  );
-  const altLabels = altLabelMap(await loadMessages(locale), ...others);
   return (
     <html lang={locale} className={manrope.variable}>
       <body className="min-h-screen font-sans">
-        <NextIntlClientProvider>
-          <AltLabelsProvider map={altLabels}>
-            <Providers network={network}>{children}</Providers>
-          </AltLabelsProvider>
-        </NextIntlClientProvider>
+        <ScopedIntl paths={GLOBAL_PATHS} mapPaths={GLOBAL_MAP_PATHS}>
+          <Providers network={network}>{children}</Providers>
+        </ScopedIntl>
       </body>
     </html>
   );

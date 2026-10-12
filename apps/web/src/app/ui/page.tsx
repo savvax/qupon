@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ScopedIntl } from "@/components/i18n/ScopedIntl";
 import { Address } from "@/components/ui/Address";
 import { Amount } from "@/components/ui/Amount";
 import { Badge } from "@/components/ui/Badge";
@@ -69,7 +70,8 @@ function Section({
   );
 }
 
-export default function GalleryPage() {
+/** Dev gallery shows every component, including all-kit ones: keep the full message set (task 91575). */
+function GalleryTree() {
   return (
     <main className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6">
       <h1 className="text-2xl font-bold">UI gallery</h1>
@@ -279,5 +281,13 @@ export default function GalleryPage() {
 
       <GalleryDemo />
     </main>
+  );
+}
+
+export default function GalleryPage() {
+  return (
+    <ScopedIntl>
+      <GalleryTree />
+    </ScopedIntl>
   );
 }

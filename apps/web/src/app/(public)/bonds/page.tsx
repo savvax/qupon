@@ -1,4 +1,5 @@
 import { StableText } from "@/components/i18n/StableLabel";
+import { ScopedIntl } from "@/components/i18n/ScopedIntl";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Amount } from "@/components/ui/Amount";
@@ -36,7 +37,7 @@ const STAGE_STYLE: Record<BoardStage, string> = {
 };
 
 /** Public bond board (task 1535): the curated showcase first, then every other public series. */
-export default async function BondsPage() {
+async function BondsTree() {
   const locale = (await getLocale()) as Locale;
   const [t, ts] = await Promise.all([
     getTranslations("bonds"),
@@ -230,5 +231,16 @@ export default async function BondsPage() {
         />
       </div>
     </div>
+  );
+}
+
+/** task 91575: ship only this route's client namespaces. */
+const SCOPE = ["bonds", "common", "status", "kit.prov"] as const;
+
+export default function BondsPage() {
+  return (
+    <ScopedIntl paths={SCOPE}>
+      <BondsTree />
+    </ScopedIntl>
   );
 }

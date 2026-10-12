@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { ScopedIntl } from "@/components/i18n/ScopedIntl";
 import Link from "next/link";
 import { ActionFlow } from "@/components/ui/ActionFlow";
 import { Address } from "@/components/ui/Address";
@@ -53,7 +54,7 @@ const explorer = (sig: string) =>
  * then the whole glossary (`#glossary`, linked from the help menu). The brief's numbers throughout; en/ru/kk from
  * the `learn` and `kit.glossary` messages.
  */
-export default async function LearnPage() {
+async function LearnTree() {
   const [t, tg, locale] = await Promise.all([
     getTranslations("learn"),
     getTranslations("kit.glossary"),
@@ -412,5 +413,25 @@ export default async function LearnPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** task 91575: ship only this route's client namespaces. */
+const SCOPE = [
+  "learn",
+  "common",
+  "status",
+  "kit.flow",
+  "kit.glossary",
+  "kit.rail",
+  "kit.money",
+  "kit.prov",
+] as const;
+
+export default function LearnPage() {
+  return (
+    <ScopedIntl paths={SCOPE}>
+      <LearnTree />
+    </ScopedIntl>
   );
 }

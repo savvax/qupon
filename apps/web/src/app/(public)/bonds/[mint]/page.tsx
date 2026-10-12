@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ScopedIntl } from "@/components/i18n/ScopedIntl";
 import { Icon } from "@/components/shell/icons";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -75,7 +76,7 @@ const DAY_COUNT: Record<string, string> = {
   ACT_ACT: "ACT/ACT",
 };
 
-export default async function BondPage({
+async function BondTree({
   params,
   searchParams,
 }: {
@@ -870,5 +871,22 @@ export default async function BondPage({
         </section>
       )}
     </div>
+  );
+}
+
+/** task 91575: ship only this route's client namespaces. */
+const SCOPE = ["bonds", "bond", "common", "status", "steps.do", "kit"] as const;
+
+export default function BondPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ mint: string }>;
+  searchParams: Promise<{ tab?: string; rec?: string }>;
+}) {
+  return (
+    <ScopedIntl paths={SCOPE}>
+      <BondTree params={params} searchParams={searchParams} />
+    </ScopedIntl>
   );
 }

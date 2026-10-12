@@ -8,6 +8,7 @@ import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Kpi } from "@/components/ui/Kpi";
 import { ProvenanceChip } from "@/components/ui/ProvenanceChip";
+import { ScopedIntl } from "@/components/i18n/ScopedIntl";
 import {
   getHolder,
   type HolderEntitlement,
@@ -32,7 +33,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function HolderPage({
+async function HolderTree({
   params,
 }: {
   params: Promise<{ address: string }>;
@@ -317,5 +318,20 @@ export default async function HolderPage({
         </section>
       )}
     </div>
+  );
+}
+
+/** task 91575: ship only this route's client namespaces. */
+const SCOPE = ["holder", "common", "status", "kit.prov"] as const;
+
+export default function HolderPage({
+  params,
+}: {
+  params: Promise<{ address: string }>;
+}) {
+  return (
+    <ScopedIntl paths={SCOPE}>
+      <HolderTree params={params} />
+    </ScopedIntl>
   );
 }

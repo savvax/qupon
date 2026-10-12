@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { StableText } from "@/components/i18n/StableLabel";
+import { ScopedIntl } from "@/components/i18n/ScopedIntl";
 import { ROLE_HOME, getSession } from "@/lib/session";
 import { InviteForm } from "./InviteForm";
 
@@ -10,11 +11,7 @@ export async function generateMetadata() {
 }
 
 /** One-time team invite link (task 807): creates the account inside the inviting organisation. */
-export default async function InvitePage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
+async function InviteTree({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const user = await getSession();
   if (user) redirect(ROLE_HOME[user.role]);
@@ -38,5 +35,20 @@ export default async function InvitePage({
         </a>
       </p>
     </div>
+  );
+}
+
+/** task 91575: ship only this route's client namespaces. */
+const SCOPE = ["org.invitePage", "common"] as const;
+
+export default function InvitePage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  return (
+    <ScopedIntl paths={SCOPE}>
+      <InviteTree params={params} />
+    </ScopedIntl>
   );
 }

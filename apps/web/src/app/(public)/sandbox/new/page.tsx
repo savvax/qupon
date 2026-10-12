@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { apiGet } from "@/lib/api";
 import { SANDBOX_COOKIE, SANDBOX_ID } from "@/lib/sandbox";
 import { SandboxStart } from "./SandboxStart";
+import { ScopedIntl } from "@/components/i18n/ScopedIntl";
 
 export async function generateMetadata() {
   const t = await getTranslations("sandbox");
@@ -15,7 +16,7 @@ export async function generateMetadata() {
  * creates (Start over); `?wallet=<address>` includes that wallet as a fourth holder. Creation runs in the browser,
  * so a link prefetch never creates anything.
  */
-export default async function NewSandbox({
+async function NewSandboxTree({
   searchParams,
 }: {
   searchParams: Promise<{ fresh?: string; wallet?: string }>;
@@ -30,4 +31,19 @@ export default async function NewSandbox({
     if (alive) redirect(`/sandbox/${id}`);
   }
   return <SandboxStart fresh={!!fresh} wallet={wallet ?? null} />;
+}
+
+/** task 91575: ship only this route's client namespaces. */
+const SCOPE = ["sandbox.start", "common", "kit.prov"] as const;
+
+export default function NewSandbox({
+  searchParams,
+}: {
+  searchParams: Promise<{ fresh?: string; wallet?: string }>;
+}) {
+  return (
+    <ScopedIntl paths={SCOPE}>
+      <NewSandboxTree searchParams={searchParams} />
+    </ScopedIntl>
+  );
 }

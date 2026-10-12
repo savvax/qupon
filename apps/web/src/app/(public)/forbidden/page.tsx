@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { SignOutButton } from "@/components/shell/SignOutButton";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ScopedIntl } from "@/components/i18n/ScopedIntl";
 import { ROLE_HOME, type Role } from "@/lib/session";
 import { metaTitle } from "@/lib/meta";
 
@@ -10,7 +11,7 @@ export async function generateMetadata() {
   return { title: await metaTitle("forbidden") };
 }
 
-export default async function Forbidden({
+async function ForbiddenTree({
   searchParams,
 }: {
   searchParams: Promise<{ role?: string }>;
@@ -35,5 +36,20 @@ export default async function Forbidden({
         }
       />
     </div>
+  );
+}
+
+/** task 91575: ship only this route's client namespaces. */
+const SCOPE = ["forbidden", "common"] as const;
+
+export default function Forbidden({
+  searchParams,
+}: {
+  searchParams: Promise<{ role?: string }>;
+}) {
+  return (
+    <ScopedIntl paths={SCOPE}>
+      <ForbiddenTree searchParams={searchParams} />
+    </ScopedIntl>
   );
 }
