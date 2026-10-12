@@ -54,3 +54,17 @@ en/ru/kk for UI strings.
 ## Finish
 Commit `feat(web): 3-minute sandbox replay of a recorded devnet run` (`task: 91587`), write `reports/worklog/91587.md`,
 print `DONE:91587` or `BLOCKED:91587 <reason>`.
+
+## Review feedback (round 1, 2026-10-12 17:06) — fix every blocking item first; your previous work is already committed on this branch
+
+### Summary
+Not ready to merge: one blocking issue. Outside mock mode, the footer network chip polls the public devnet RPC every 15 s on /sandbox/replay, which breaks the rule that the page makes no RPC request. The fix: NetworkChip skips live polling on the replay route, plus a test for that. Everything else meets the acceptance criteria: the recorder, the replay page (read-only SandboxView via source/replay), the 3 s gap cap and 180 s limit, the en/ru/kk banner, both entry points, the unit test, and a mock e2e with real assertions. I could not run the tests myself (test commands were denied in this session), so I'm relying on the orchestrator's green make verify. The replay route's screenshots also failed: the page never reached network idle within the timeout. The design score of 8 is therefore based on the code and the page's accessibility snapshot.
+
+### Blocking
+- apps/web/src/components/ui/NetworkChip.tsx:39 — Outside mock mode, the replay page still polls a Solana RPC. PublicShell.tsx:161 renders `<NetworkChip live={!MOCK_API} />` on every public route, /sandbox/replay included. With `live` set, NetworkChip POSTs `getSlot` to https://api.devnet.solana.com once on mount and then every 15 s. That breaks the criterion 'The page makes NO request to the registrar API or any Solana RPC', and the replay exists precisely because the public RPC is slow or rate-limited. The e2e can't catch this because it runs in mock mode, where `live` is false.
+  **Fix:** In NetworkChip, read `usePathname()` (next/navigation) and compute `const poll = live && !/\/sandbox\/replay$/.test(pathname)`. Use `poll` instead of `live` in the effect at line 39 and in its dependency list. Add a vitest or e2e check that the chip makes no `getSlot` fetch on /sandbox/replay when `live` is true. One way: render NetworkChip with live and a mocked pathname of '/sandbox/replay', and assert that `fetch` was not called.
+
+### Acceptance criteria not met
+- The page makes no request to the registrar API or any Solana RPC — In non-mock mode the footer NetworkChip (PublicShell.tsx:161, live={!MOCK_API}) polls api.devnet.solana.com every 15 s on this page. The e2e only runs in mock mode, so it misses this.
+
+Design score: 8/10
