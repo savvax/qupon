@@ -22,6 +22,8 @@ WORKDIR /app
 ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1
 COPY --from=build /src/apps/web/.next/standalone ./
 COPY --from=build /src/apps/web/.next/static ./apps/web/.next/static
+# standalone output does not include public/ (the /sandbox/replay recording, task 91587)
+COPY --from=build /src/apps/web/public ./apps/web/public
 # The prerender cache dir must be writable by the runtime user (task 91561)
 RUN mkdir -p ./apps/web/.next/cache && chown -R node:node ./apps/web/.next
 USER node
