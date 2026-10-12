@@ -1,7 +1,5 @@
 # Qupon — corporate actions for tokenized bonds on Solana
 
-[![CI](https://github.com/savvax/qupon/actions/workflows/ci.yml/badge.svg)](https://github.com/savvax/qupon/actions/workflows/ci.yml)
-
 **Qupon is the corporate-actions engine for tokenized bonds: identify holders → calculate entitlements → settle → record, on-chain, following Kazakhstan market rules and emitting ISO 20022 messages.** Built for the KASE × Superteam Kazakhstan side track of Colosseum's Crypto World's Fair. Devnet only.
 
 - Program: [`QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd`](https://explorer.solana.com/address/QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd?cluster=devnet) (Anchor 1.2, Token-2022) — verifiable build, IDL published on-chain
@@ -117,6 +115,19 @@ flowchart LR
 | Registrar service | `services/registrar`        | Go: chain reader, reconciler, ISO 20022, notices, REST read models  |
 | Web app           | `apps/web`                  | Next.js public site + issuer / registrar / investor cabinets        |
 | Test vectors      | `fixtures/entitlement.json` | One contract for Rust, Go and TS                                    |
+
+## Technologies
+
+| Layer | Technologies |
+| --- | --- |
+| Blockchain | Solana devnet (Agave 4.3), **Token-2022** (Pausable, PermanentDelegate, DefaultAccountState, MintCloseAuthority, MetadataPointer + TokenMetadata, transfer hook), **Solana Attestation Service** (KYC attestations), **Solana DvP** (Solana Foundation, secondary trades), **Squads v4** (multisig paying agent), USDC devnet (Circle) |
+| On-chain program | Rust, **Anchor 1.2** (`anchor_spl::token_interface`), `no_std` entitlement crate (u128 integer math), **LiteSVM** tests, Surfpool, `solana-verify` reproducible build, IDL via the Program Metadata Program |
+| TypeScript client + CLI | **@solana/kit 8**, **Codama** (generated client from the IDL), `@solana-program/token-2022`, `@sqds/multisig`, Node 22, pnpm 9, tsx, Vitest |
+| Registrar service | **Go 1.26**, chi router, SQLite (`modernc.org/sqlite`), Solana JSON-RPC + event ingest, in-process RPC gateway, scheduler (autopilot), ISO 20022 seev.031 / seev.036 XML, KASE notices, OpenAPI 3 (Redocly lint), golangci-lint |
+| Web app | **Next.js 15** (App Router, server components), **React 19**, **Tailwind CSS 4**, next-intl (EN / RU / KK), Radix UI, Solana **wallet-adapter** + Wallet Standard (Phantom, Solflare, Backpack), Playwright e2e, Vitest |
+| Data and integrations | kase.kz public bond data (cached read), Z.ai GLM (experimental term-sheet parsing), Helius / public devnet RPC |
+| Infrastructure | Docker Compose on a VPS, Caddy (HTTPS), Cloudflare, GitHub Actions, gitleaks |
+| Build process | Claude Code (lead) + pi agents on Z.ai GLM working a task queue (`tasks/`, `ops/orchestrate.sh`) |
 
 ## Record-date mechanism
 
