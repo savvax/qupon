@@ -1,8 +1,8 @@
 /** Clock tests against fixtures/entitlement.json `clock_cases` (plan 15 D7). */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { daysFromEpoch, ymd } from "./daycount.js";
-import { ALMATY_CLOCK, CivilClock, civilFromDays, demoAnchor, seriesClock, unpackYmd } from "./clock.js";
+import { ymd } from "./daycount.js";
+import { CivilClock, seriesClock, unpackYmd } from "./clock.js";
 
 interface ClockCase {
 	id: string;
@@ -75,23 +75,5 @@ describe("seriesClock (program SeriesClock::of)", () => {
 		expect(c.ts({ y: 2027, m: 10, d: 9 })).toBe(1_791_000_365);
 		expect(c.addMonths(1_791_000_000, 6)).toBe(1_791_000_182);
 		expect(unpackYmd(20260831)).toEqual({ y: 2026, m: 8, d: 31 });
-	});
-});
-
-describe("demoAnchor (CLI demo-calendar anchoring, task 91574)", () => {
-	it("an issue date of today anchors at now — the previous behaviour every other caller relies on", () => {
-		const nowSecs = Math.floor(Date.now() / 1000);
-		const today = ALMATY_CLOCK.floorCivil(nowSecs);
-		expect(demoAnchor(1, nowSecs, today)).toBe(nowSecs);
-	});
-	it("a backdated issue date anchors today at now, so the first coupon (issue + 6 months) lands near", () => {
-		const nowSecs = Math.floor(Date.now() / 1000);
-		const today = ALMATY_CLOCK.floorCivil(nowSecs);
-		const issue = civilFromDays(daysFromEpoch(today) - 164); // the sandbox's shifted calendar: 6 months − 18 days
-		const clock = CivilClock.demo(1, demoAnchor(1, nowSecs, issue), issue);
-		expect(clock.floorCivil(nowSecs)).toEqual(today); // the calendar card shows today, Day ~164 of 365
-		const firstCoupon = clock.addMonths(demoAnchor(1, nowSecs, issue), 6);
-		expect(firstCoupon - nowSecs).toBeGreaterThanOrEqual(10);
-		expect(firstCoupon - nowSecs).toBeLessThanOrEqual(30); // announce (5-series-day lead) ≤ 30 s after create
 	});
 });

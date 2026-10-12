@@ -3,7 +3,7 @@ import { address, type Address, type Base64EncodedBytes, type Instruction, type 
 import { fetchMaybeMint } from "@solana-program/token-2022";
 import { Option, type Command } from "commander";
 import { getInitHookInstructionAsync, getInitSeriesInstructionAsync, QUPON_BONDS_PROGRAM_ADDRESS, SERIES_DISCRIMINATOR, getSeriesDecoder, type Series } from "../generated/index.js";
-import { CivilClock, demoAnchor } from "../lib/clock.js";
+import { CivilClock } from "../lib/clock.js";
 import { packYmd } from "../lib/daycount.js";
 import { mintIsHooked } from "../lib/hook.js";
 import { seriesPda } from "../lib/pda.js";
@@ -64,18 +64,15 @@ export async function initSeries(
 	const mint = opts.mint ?? address(sc.mint);
 	const cashMint = resolveCashMint(cfg, sc.cashMint);
 	const cashTokenProgram = await tokenProgramOfMint(rpc, cashMint);
-	// Real clock: Almaty midnights, issue_ymd derived on-chain. Demo clock: the calendar mirrors the real
-	// civil calendar compressed — TODAY maps to now (lib/clock.ts demoAnchor), so a backdated --issue-date is
-	// an honest "issued N demo-days ago" (the sandbox lands its first coupon seconds after create, task
-	// 91574) — and the maturity comes from the same clock the program uses (plan 15 D7).
+	// Real clock: Almaty midnights, issue_ymd derived on-chain. Demo clock: anchored now, the calendar starts at
+	// --issue-date and the maturity comes from the same clock the program uses (plan 15 D7).
 	const daySecs = opts.demoDaySecs ?? 0;
 	const issueYmd = parseYmd(opts.issueDate, "--issue-date");
 	const maturityYmd = parseYmd(opts.maturityDate, "--maturity-date");
 	let issueDate = almatyMidnight(issueYmd);
 	let maturityDate = almatyMidnight(maturityYmd);
 	if (daySecs > 0) {
-		const nowSecs = Math.floor(Date.now() / 1000);
-		issueDate = BigInt(demoAnchor(daySecs, nowSecs, issueYmd));
+		issueDate = BigInt(Math.floor(Date.now() / 1000));
 		maturityDate = BigInt(CivilClock.demo(daySecs, Number(issueDate), issueYmd).ts(maturityYmd));
 		log(`demo clock: 1 day = ${daySecs}s, maturity in ${maturityDate - issueDate}s`);
 	}

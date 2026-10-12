@@ -1,6 +1,5 @@
 // Package sandbox is the one-click judge sandbox (plan 15, task 1524): a visitor POSTs /demo/sandbox and gets
-// a bond series of their own on a demo clock (1 s per civil day, calendar backdated one coupon period so
-// the first payout lands within the promised 3 minutes — task 91574), pre-loaded with the three custodial demo
+// a bond series of their own on a demo clock (1 s per civil day), pre-loaded with the three custodial demo
 // investors of the brief (10 / 25 / 65 bonds) plus, optionally, their own wallet. The service never holds
 // business logic: it drives the qupon CLI through the executor, and the autopilot walks the series to maturity.
 package sandbox
@@ -30,21 +29,6 @@ import (
 // daySecs is the sandbox demo clock: one civil day per second, so a 1-year bond (2 semi-annual coupons)
 // runs its whole life — issue, coupon, default, cure, redemption — in under seven minutes.
 const daySecs = "1"
-
-// firstCouponDays is the demo-calendar distance from create to the first coupon date (task 91574, audit
-// A91571-3): the calendar starts one coupon period minus this many days in, so the autopilot announces
-// ~15 s after create and coupon 1 is paid ≈ 2 min after the click. Day N of M, accrued interest and the
-// maturity (~4 min) all follow the same shifted calendar, so the page stays honest.
-const firstCouponDays = 18
-
-// demoTerms is the sandbox's shifted demo calendar: issued 6 months − firstCouponDays ago, maturing one
-// year after issue. The CLI anchors today's civil date at now (lib/clock.ts demoAnchor), so the first
-// coupon (issue + 6 months on the demo clock) lands firstCouponDays after create whatever the month
-// lengths are (±1 day around month ends — see TestDemoTerms).
-func demoTerms(now time.Time) (issue, maturity time.Time) {
-	issue = now.AddDate(0, -6, firstCouponDays)
-	return issue, issue.AddDate(1, 0, 0)
-}
 
 // face / rate / frequency: the brief's bond (1,000 KZT face, 10 % semi-annual → 500 / 1,250 / 3,250 tKZT).
 const (
@@ -257,7 +241,7 @@ func (s *Service) Create(ctx context.Context, wallet, requestID, ip string) (*Cr
 	ticker := "SBX-" + suffix
 	isin := "KZSBX" + suffix + "7" // KZ + 9 alphanumerics + a check digit
 	now := s.now().In(almaty)
-	issue, maturity := demoTerms(now)
+	maturity := now.AddDate(1, 0, 0)
 
 	// Reserve the name in the registry exactly like POST /issuer/series, then run the CLI.
 	terms, err := json.Marshal(map[string]any{
@@ -275,7 +259,7 @@ func (s *Service) Create(ctx context.Context, wallet, requestID, ip string) (*Cr
 		"series:create", "--name", ticker, "--isin", isin,
 		"--face", strconv.Itoa(faceMinor), "--rate-bps", strconv.Itoa(rateBps),
 		"--frequency", strconv.Itoa(frequency), "--day-count", "THIRTY_360",
-		"--issue-date", issue.Format("2006-01-02"), "--maturity-date", maturity.Format("2006-01-02"),
+		"--issue-date", now.Format("2006-01-02"), "--maturity-date", maturity.Format("2006-01-02"),
 		"--cash", "tkzt", "--demo-day-secs", daySecs)
 	if err != nil {
 		s.rollback(ctx, ticker)

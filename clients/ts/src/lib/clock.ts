@@ -99,15 +99,6 @@ export function unpackYmd(v: number): Ymd {
 /** The real series clock: Almaty midnights (UTC+5, no DST). */
 export const ALMATY_CLOCK = CivilClock.real(5 * 3_600);
 
-/** Demo-clock anchor timestamp: today's civil date (Almaty) maps to `nowSecs`, so a backdated issue
- *  date is an honest "issued N demo-days ago" instead of "issued now" (task 91574 — the judge sandbox
- *  backdates its issue so the first coupon lands seconds after create). An issue date of today anchors
- *  at `nowSecs` exactly, which is the previous behaviour every other caller relies on. */
-export function demoAnchor(daySecs: number, nowSecs: number, issue: Ymd): number {
-	const elapsed = daysFromEpoch(ALMATY_CLOCK.floorCivil(nowSecs)) - daysFromEpoch(issue);
-	return nowSecs - elapsed * daySecs;
-}
-
 /** The clock a series runs on — `programs/qupon_bonds/src/clock.rs` `SeriesClock::of` (day_secs 0 = real clock). */
 export function seriesClock(s: { daySecs: number; issueDate: bigint | number; issueYmd: number }): CivilClock {
 	return s.daySecs === 0 ? ALMATY_CLOCK : CivilClock.demo(s.daySecs, Number(s.issueDate), unpackYmd(s.issueYmd));

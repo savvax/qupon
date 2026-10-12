@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 // Live e2e for the judge sandbox (task 91543): the whole journey on the deployment — the landing CTA issues
 // this browser's own devnet sandbox (the test's context is fresh, so its qupon_sandbox cookie is its own), the
-// demo clock starts one coupon period in (task 91574), so coupon 1 lands ~2 minutes in and the bond year runs in ~5. No mocks anywhere.
+// demo clock runs a bond year in ~6 minutes, and the scenarios change the real chain. No mocks anywhere.
 test.skip(!process.env.E2E_BASE_URL, "live e2e: set E2E_BASE_URL");
 
 const nowBar = (page: Page) =>
@@ -17,7 +17,7 @@ test("@live sandbox: a judge's own bond pays coupon 1, trades with accrued, refu
 }: {
   page: Page;
 }) => {
-  // create + 3 investors × (attest, register, faucet, place) + coupon 1 ≈ 2 minutes (task 91574); maturity closes at ~5.
+  // create + 3 investors × (attest, register, faucet, place) + coupon 1 ≈ 4 minutes; maturity closes at ~6.
   test.setTimeout(600_000);
   // the tour would cover the feed (same dismissal as the mock-mode spec)
   await page.addInitScript(() => {
@@ -46,7 +46,7 @@ test("@live sandbox: a judge's own bond pays coupon 1, trades with accrued, refu
   await expect(calendar).toContainText(/1 day = 1 s/);
   await expect(calendar).toContainText(/Day \d+ of \d+/);
 
-  // coupon 1: announce ~15 s after create → record → snapshot → fund → pay — ≤ 3 minutes (task 91574).
+  // coupon 1: announce → record → snapshot → fund → pay (one holder via the paying agent) — ≤ 7 minutes.
   // The page polls itself every 2 s; expect() polls the DOM until the Now bar flips to "paid".
   await expect(nowBar(page).locator("p").first()).toContainText(
     /Coupon 1 paid: [\d,]+\.\d{2} ₸ to 3 holders and [\d,]+\.\d{2} ₸ to the tax vault/,
