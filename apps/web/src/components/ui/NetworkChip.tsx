@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useNetwork } from "@/components/network/NetworkContext";
 import { formatGroupedInt } from "@/lib/format";
@@ -28,6 +29,9 @@ export function NetworkChip({
 }) {
   const t = useTranslations("kit.network");
   const network = useNetwork();
+  const pathname = usePathname();
+  // Task 91587: the replay page must issue no RPC request at view time — never poll there.
+  const poll = live && !/\/sandbox\/replay$/.test(pathname ?? "");
   const [slot, setSlot] = useState(initialSlot);
   const [at, setAt] = useState<number | null>(null);
   const [now, setNow] = useState<number | null>(null);
@@ -36,9 +40,9 @@ export function NetworkChip({
     setAt(Date.now());
     setNow(Date.now());
     const tick = setInterval(() => setNow(Date.now()), 1000);
-    if (!live) return () => clearInterval(tick);
+    if (!poll) return () => clearInterval(tick);
     const url = RPC[network.network];
-    const poll = () =>
+    const fetchSlot = () =>
       fetch(url!, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -52,13 +56,13 @@ export function NetworkChip({
           }
         })
         .catch(() => {}); // the chip is evidence, not a dependency
-    void poll();
-    const id = setInterval(poll, 15_000);
+    void fetchSlot();
+    const id = setInterval(fetchSlot, 15_000);
     return () => {
       clearInterval(tick);
       clearInterval(id);
     };
-  }, [live, network.network]);
+  }, [poll, network.network]);
 
   const age =
     at !== null && now !== null
@@ -79,7 +83,7 @@ export function NetworkChip({
         className={cx(
           "size-1.5 shrink-0 rounded-full",
           network.mainnet ? "bg-err-fg" : "bg-g500",
-          live && "qp-live",
+          poll && "qp-live",
         )}
       />
       <span
