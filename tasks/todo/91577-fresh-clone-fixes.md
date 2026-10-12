@@ -30,3 +30,17 @@ name other hackathon participants.
 
 ## Finish
 Commit with `task: 91577`, write `reports/worklog/91577.md` (3–6 lines), print `DONE:91577` or `BLOCKED:91577 <reason>`.
+
+## Review feedback (round 1, 2026-10-12 09:41) — fix every blocking item first; your previous work is already committed on this branch
+
+### Summary
+Verdict: fail, on one point. The README tells a fresh-clone user that mock mode is the default for `pnpm dev`, but it is not: they must copy .env.example to .env.local or set API_MOCKING. The other fixes are sound. Doctor and bootstrap read the Go pin from go.mod, bootstrap runs agave-install init, and the e2e fixes update stale copy to the shipped messages without weakening assertions. I ran no tests and took no screenshots, because no app UI code changed.
+
+### Blocking
+- README.md:191 — The README block says `pnpm dev  # mock mode is the default in dev`. That's false. `apps/web/src/lib/api.ts:32-35` turns mock on only when NODE_ENV=development AND (API_MOCKING or NEXT_PUBLIC_API_MOCKING) == "enabled". No committed .env.development or next.config sets these, and the `dev` script is plain `next dev`. On a fresh clone, `pnpm dev` therefore calls the real registrar at http://localhost:8080 and fails. That misses the A91569-6 requirement to start the web in mock mode. Only `pnpm e2e` works, because playwright.config.ts sets the env itself.
+  **Fix:** In the README mock-mode block, add `cp .env.example .env.local   # mock-mode vars` before `pnpm dev`. Change the `pnpm dev` comment to `# mock mode via .env.local → http://localhost:3000`. Alternatively, use the one-liner `API_MOCKING=enabled NEXT_PUBLIC_API_MOCKING=enabled pnpm dev`. Touch only these lines.
+
+### Acceptance criteria not met
+- A91569-6: README 'UI without keys (mock mode)' block: playwright install, start web in mock mode, run e2e — The block exists, but its `pnpm dev` step does not start mock mode on a fresh clone because no env is set (see blocking).
+
+Design score: 8/10
