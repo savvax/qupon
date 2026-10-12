@@ -188,8 +188,9 @@ The web app runs with no keys and no registrar service — fixture mock, full UI
 ```bash
 cd apps/web && pnpm install
 pnpm exec playwright install chromium   # once, for the e2e suite
-pnpm dev                               # mock mode is the default in dev → http://localhost:3000
-pnpm e2e                               # mock-mode Playwright suite (starts its own dev server on :3210)
+cp .env.example .env.local              # mock-mode vars
+pnpm dev                                # mock mode via .env.local → http://localhost:3000
+pnpm e2e                                # mock-mode Playwright suite (starts its own dev server on :3210)
 ```
 
 ## Deployed (devnet)
