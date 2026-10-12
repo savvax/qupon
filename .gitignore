@@ -32,5 +32,3 @@ apps/web/.vitest/
 apps/web/.vitest/
 .superpowers/
 
-# task 91587: the real sandbox recording is committed by the lead only
-apps/web/public/replay/sandbox.json
