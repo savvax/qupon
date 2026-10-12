@@ -73,16 +73,21 @@ type gpaFlight struct {
 	err  error
 }
 
-// prefetchCache holds the accounts the last Prefetch read in one getMultipleAccounts; GetAccount serves them
-// for prefetchTTL. The scheduler prefetches every open action and bond mint once per tick: two getAccountInfo
-// per series every 2 s spent the keyed RPC's whole quota (2026-10-12).
+// prefetchCache holds accounts read in one getMultipleAccounts by Prefetch; GetAccount serves each for
+// prefetchTTL. The scheduler prefetches every open action and bond mint once per tick (two getAccountInfo per
+// series every 2 s spent the keyed RPC's whole quota, 2026-10-12); /holders prefetches a holder's positions.
+// Callers add entries side by side — one Prefetch never evicts another's.
 type prefetchCache struct {
 	mu   sync.Mutex
-	at   time.Time
-	data map[solana.PublicKey][]byte // nil value = account absent
+	data map[solana.PublicKey]prefetched // Data nil = account absent
 }
 
-const prefetchTTL = 2 * time.Second
+type prefetched struct {
+	data []byte
+	at   time.Time
+}
+
+const prefetchTTL = 5 * time.Second
 
 // coolDown is the shared "no RPC until" timestamp set by any rate-limited
 // error. Zero value is ready to use.
@@ -131,16 +136,24 @@ func (c *Client) Prefetch(ctx context.Context, keys []solana.PublicKey) error {
 	if err != nil {
 		return fmt.Errorf("prefetch: %w", err)
 	}
-	data := make(map[solana.PublicKey][]byte, len(keys))
-	for i, acc := range accs {
-		data[keys[i]] = nil
-		if acc != nil {
-			data[keys[i]] = acc.Data.GetBinary()
+	now := time.Now()
+	c.pre.mu.Lock()
+	defer c.pre.mu.Unlock()
+	if c.pre.data == nil {
+		c.pre.data = make(map[solana.PublicKey]prefetched, len(keys))
+	}
+	for k, e := range c.pre.data {
+		if now.Sub(e.at) > prefetchTTL {
+			delete(c.pre.data, k)
 		}
 	}
-	c.pre.mu.Lock()
-	c.pre.data, c.pre.at = data, time.Now()
-	c.pre.mu.Unlock()
+	for i, acc := range accs {
+		e := prefetched{at: now}
+		if acc != nil {
+			e.data = acc.Data.GetBinary()
+		}
+		c.pre.data[keys[i]] = e
+	}
 	return nil
 }
 
@@ -201,11 +214,11 @@ func (c *Client) getMultiple(ctx context.Context, keys []solana.PublicKey) ([]*r
 func (c *Client) prefetched(key solana.PublicKey) ([]byte, bool) {
 	c.pre.mu.Lock()
 	defer c.pre.mu.Unlock()
-	if time.Since(c.pre.at) > prefetchTTL {
+	e, ok := c.pre.data[key]
+	if !ok || time.Since(e.at) > prefetchTTL {
 		return nil, false
 	}
-	d, ok := c.pre.data[key]
-	return d, ok
+	return e.data, true
 }
 
 // NewClient builds a chain reader for rpcURL (devnet endpoint) and program.

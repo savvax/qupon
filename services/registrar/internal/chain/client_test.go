@@ -528,3 +528,29 @@ func TestNon429FailureDoesNotCoolDown(t *testing.T) {
 		t.Errorf("second GetAccount took %v, want immediate (no cool-down)", d)
 	}
 }
+
+// Two callers prefetch side by side (the scheduler's tick and a /holders request): the second never evicts the first.
+func TestPrefetchKeepsEarlierEntries(t *testing.T) {
+	a, b := pk(t, "9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"), pk(t, "DL8G16FCURnanykUGN95iDXr3gKmxZ94xGU3xt5ZaJEo")
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_ = json.NewEncoder(w).Encode(map[string]any{"jsonrpc": "2.0", "id": 1, "result": map[string]any{
+			"context": map[string]any{"slot": 1}, "value": []any{accountValueJSON(t, []byte{byte(calls)})},
+		}})
+	}))
+	defer srv.Close()
+
+	cl := testClient(t, srv.URL)
+	for _, k := range []solana.PublicKey{a, b} {
+		if err := cl.Prefetch(t.Context(), []solana.PublicKey{k}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if d, err := cl.GetAccount(t.Context(), a); err != nil || !bytes.Equal(d, []byte{1}) {
+		t.Fatalf("GetAccount(a) = (%v, %v), want [1] from the first prefetch", d, err)
+	}
+	if calls != 2 {
+		t.Fatalf("RPC calls = %d, want 2 (both reads served from the prefetch)", calls)
+	}
+}

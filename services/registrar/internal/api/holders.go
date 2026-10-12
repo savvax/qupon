@@ -18,6 +18,7 @@ import (
 	"github.com/qupon-kz/qupon/services/registrar/internal/entitlement"
 	"github.com/qupon-kz/qupon/services/registrar/internal/network"
 	"github.com/qupon-kz/qupon/services/registrar/internal/store"
+	solana "github.com/solana-foundation/solana-go/v2"
 )
 
 var payoutRouteNames = []string{"wallet", "bank"}
@@ -127,6 +128,7 @@ func mountHolders(r chi.Router, rm ReadModel, st *store.Store) {
 			Entitlements:    []HolderEntitlementDTO{},
 			UpcomingPayouts: []UpcomingPayoutDTO{},
 		}
+		prefetchPositions(ctx, rm, investors)
 		now := time.Now().Unix()
 		for _, rec := range investors {
 			inv := rec.Investor
@@ -195,6 +197,13 @@ func mountHolders(r chi.Router, rm ReadModel, st *store.Store) {
 		for _, rec := range entRecs {
 			actions = append(actions, rec.Entitlement.Action.String())
 		}
+		if p, ok := rm.(prefetcher); ok {
+			keys := make([]solana.PublicKey, 0, len(entRecs))
+			for _, rec := range entRecs {
+				keys = append(keys, rec.Entitlement.Action)
+			}
+			_ = p.Prefetch(ctx, keys) // best effort: the loop below falls back to single reads
+		}
 		paidTx, err := st.HolderPaidTx(ctx, owner.String(), actions)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
@@ -252,4 +261,39 @@ func paymentAfter(s *chain.Series, record int64) (int64, error) {
 		return 0, err
 	}
 	return clk.Ts(pay)
+}
+
+// prefetcher is the batch read chain.Client offers (getMultipleAccounts); fakes in tests may lack it.
+type prefetcher interface {
+	Prefetch(ctx context.Context, keys []solana.PublicKey) error
+	PayoutRoutePDA(investor solana.PublicKey) (solana.PublicKey, error)
+}
+
+// prefetchPositions reads every account the positions loop needs in two getMultipleAccounts calls — a demo
+// holder sits in 100+ series, and four single reads per position at the RPC gateway's pace outran the 30 s
+// budget (502 on /holders, 2026-10-12). Best effort: a failed prefetch leaves the single reads.
+func prefetchPositions(ctx context.Context, rm ReadModel, investors []chain.InvestorRecord) {
+	p, ok := rm.(prefetcher)
+	if !ok || len(investors) == 0 {
+		return
+	}
+	keys := make([]solana.PublicKey, 0, 3*len(investors))
+	for _, rec := range investors {
+		keys = append(keys, rec.Investor.Series, rec.Investor.BondATA)
+		if pda, err := p.PayoutRoutePDA(rec.PDA); err == nil {
+			keys = append(keys, pda)
+		}
+	}
+	if p.Prefetch(ctx, keys) != nil {
+		return
+	}
+	var opens []solana.PublicKey
+	for _, rec := range investors {
+		if s, err := rm.FetchSeries(ctx, rec.Investor.Series); err == nil && s != nil && s.OpenAction != nil {
+			opens = append(opens, *s.OpenAction)
+		}
+	}
+	if len(opens) > 0 {
+		_ = p.Prefetch(ctx, opens)
+	}
 }

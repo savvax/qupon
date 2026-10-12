@@ -588,6 +588,13 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 			fail(w, err)
 			return
 		}
+		// Same series as the public list (hidden and sandbox series left out): scanning the actions of every
+		// series on the program, test leftovers included, took over a minute through the RPC gateway.
+		settings, err := st.ListSeriesSettings(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
 		type seriesSchedule struct {
 			Mint           string         `json:"mint"`
 			Ticker         string         `json:"ticker"`
@@ -597,6 +604,9 @@ func mountReadModels(r chi.Router, rm ReadModel, st *store.Store) {
 		}
 		out := make([]seriesSchedule, 0, len(recs))
 		for _, rec := range recs {
+			if set := settings[rec.Series.Mint.String()]; set.Hidden || set.SandboxID != "" {
+				continue
+			}
 			m, err := cashMoney(r.Context(), rm, st, rec.Series.CashMint)
 			if err != nil {
 				fail(w, err)
