@@ -32,3 +32,4 @@ apps/web/.vitest/
 apps/web/.vitest/
 .superpowers/
 
+.data/

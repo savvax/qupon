@@ -82,8 +82,8 @@ demo-trade: ## devnet: fresh series, a secondary trade settled by Solana DvP, th
 demo-squads: ## devnet: a 2-of-3 Squads vault is the paying agent and funds a coupon (fund_action via proposal/approve/execute) — writes reports/demo-squads.md
 	cd clients/ts && pnpm tsx scripts/demo-squads.ts
 
-api: ## run the Go registrar locally (loads .env, defaults PROGRAM_ID from config/devnet.json)
-	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
+api: ## run the Go registrar locally (loads .env, defaults PROGRAM_ID from config/devnet.json; API_RPC_URL overrides RPC_URL)
+	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; export RPC_URL=$${API_RPC_URL:-$$RPC_URL}; \
 	PROGRAM_ID=$${PROGRAM_ID:-$$(jq -r .programId config/devnet.json)}; \
 	QUPON_CLI=$${QUPON_CLI:-$$PWD/ops/qupon}; QUPON_CONFIG=$${QUPON_CONFIG:-$$PWD/config/devnet.json}; \
 	EXEC_CONFIG_PATH=$${EXEC_CONFIG_PATH:-/tmp/qupon-exec-config.json}; \
@@ -91,6 +91,9 @@ api: ## run the Go registrar locally (loads .env, defaults PROGRAM_ID from confi
 
 openapi-lint: ## lint the registrar OpenAPI spec
 	npx --yes @redocly/cli@2.62.0 lint services/registrar/openapi.yaml
+
+up: ## ONE COMMAND: registrar API + web app on devnet with demo sign-in (MOCK=1: web on fixtures, no keys)
+	bash ops/up.sh
 
 web: ## run the web app locally
 	cd apps/web && pnpm dev
@@ -107,4 +110,4 @@ secrets-scan: ## gitleaks full-history secret scan (same as the CI secrets job; 
 		exit 1; \
 	fi
 
-.PHONY: help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-plan15 demo-ui demo-trade demo-squads seed-showcase api web status secrets-scan
+.PHONY: up help program-keypair fixtures doctor verify build test-program test-go test-ts client deploy demo-coupon demo demo-plan15 demo-ui demo-trade demo-squads seed-showcase api web status secrets-scan
