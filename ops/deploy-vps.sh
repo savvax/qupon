@@ -18,6 +18,8 @@ if [ "$IP" = 185.216.25.91 ]; then
   : "${COMPOSE:=compose.shared.yml}" "${QUPON_DIR:=/home/user/qupon}"
 fi
 [ -f .env ] && set -a && source .env && set +a
+# DEPLOY_RPC_URL overrides .env's RPC_URL for the server only (e.g. https://api.devnet.solana.com when the key's quota is spent)
+RPC_URL="${DEPLOY_RPC_URL:-${RPC_URL:-}}"
 : "${RPC_URL:?RPC_URL (keyed devnet RPC) missing in .env}"
 SSH=(ssh -o BatchMode=yes "$TARGET")
 # QUPON_DIR (default /opt/qupon) holds src/ and the env files. COMPOSE=compose.shared.yml runs without a Caddy of our
