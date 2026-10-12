@@ -14,21 +14,29 @@ HOST="${QUPON_HOST:-${IP//./-}.sslip.io}"
 [ -f .env ] && set -a && source .env && set +a
 : "${RPC_URL:?RPC_URL (keyed devnet RPC) missing in .env}"
 SSH=(ssh -o BatchMode=yes "$TARGET")
+# QUPON_DIR (default /opt/qupon) holds src/ and the env files. COMPOSE=compose.shared.yml runs without a Caddy of our
+# own, next to another project whose reverse proxy fronts our two hosts (deploy/vps/compose.shared.yml).
+QDIR="${QUPON_DIR:-/opt/qupon}"
+if [ "${COMPOSE:-compose.yml}" = compose.shared.yml ]; then
+  DC="docker compose -f compose.shared.yml"; REG=qupon-registrar; WEB=qupon-web
+else
+  DC="docker compose"; REG=registrar; WEB=web
+fi
 
 if [ "${REINDEX:-}" = 1 ]; then
   # New series created outside the app (make demo-seed): the registrar indexes every Series account at startup.
-  "${SSH[@]}" 'cd /opt/qupon/src/deploy/vps && docker compose restart registrar'
+  "${SSH[@]}" "cd $QDIR/src/deploy/vps && $DC restart $REG"
   curl -fsS -m 30 --retry 10 --retry-delay 3 --retry-all-errors "https://api.$HOST/healthz" >/dev/null && echo "registrar re-indexed"
   exit 0
 fi
 
-echo "== source → $TARGET:/opt/qupon/src"
-"${SSH[@]}" 'mkdir -p /opt/qupon/src'
+echo "== source → $TARGET:$QDIR/src"
+"${SSH[@]}" "mkdir -p $QDIR/src"
 # /reports (screenshots, 18 MB+) never reaches an image; anchored — internal/reports and the reports pages must ship
 rsync -az --delete \
   --exclude .git --exclude node_modules --exclude target --exclude .next --exclude logs \
   --exclude .env --exclude .worktrees --exclude .playwright-mcp --exclude /reports \
-  ./ "$TARGET:/opt/qupon/src/"
+  ./ "$TARGET:$QDIR/src/"
 
 echo "== secrets (server-side only)"
 kp() { tr -d ' \n' < "$1"; }
@@ -70,14 +78,14 @@ kp() { tr -d ' \n' < "$1"; }
     echo "QUPON_SANDBOX_INVESTOR${n}_KEYPAIR_JSON=$(kp "$p")"
   fi
   done
-} | "${SSH[@]}" 'umask 077; cat > /opt/qupon/registrar.env'
-"${SSH[@]}" 'umask 077; : > /opt/qupon/web.env' # nothing secret for the web yet; kept for compose's env_file
+} | "${SSH[@]}" "umask 077; cat > $QDIR/registrar.env"
+"${SSH[@]}" "umask 077; : > $QDIR/web.env" # nothing secret for the web yet; kept for compose's env_file
 
 echo "== build (one image at a time: 1 vCPU) and start"
 # Hidden series now live in series_settings (imported once by the registrar at startup, task 600);
 # admins manage them from /admin/series. QUPON_HOST persists next to compose.yml (excluded from
 # rsync --delete), so a manual `docker compose up` keeps routing.
-"${SSH[@]}" "cd /opt/qupon/src/deploy/vps && printf \"QUPON_HOST=%s\\n\" $HOST > .env && docker compose build registrar && docker compose build web && docker compose up -d --remove-orphans"
+"${SSH[@]}" "cd $QDIR/src/deploy/vps && printf \"QUPON_HOST=%s\\nQUPON_DIR=%s\\n\" $HOST $QDIR > .env && $DC build $REG && $DC build $WEB && $DC up -d --remove-orphans"
 
 echo "== health"
 for _ in $(seq 1 30); do
@@ -86,6 +94,6 @@ for _ in $(seq 1 30); do
 done
 # Final check fails the deploy (the loop above only waits): both the API and the console must answer.
 curl -fsS -m 10 "https://api.$HOST/healthz" && curl -fsS -m 20 -o /dev/null "https://qupon.$HOST/" \
-  || { echo "health check failed — ssh $TARGET 'cd /opt/qupon/src/deploy/vps && docker compose ps && docker compose logs --tail 50'" >&2; exit 1; }
+  || { echo "health check failed — ssh $TARGET 'cd $QDIR/src/deploy/vps && $DC ps && $DC logs --tail 50'" >&2; exit 1; }
 echo
 echo "console: https://qupon.$HOST   API: https://api.$HOST"

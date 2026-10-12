@@ -1,0 +1,35 @@
+# Qupon next to another project on the same box (ops/deploy-vps.sh with EDGE=shared): no Caddy and no host ports of
+# our own — the box's existing Caddy container joins the `qupon_edge` network and proxies our two hosts. Service names
+# are prefixed so they never collide with the other project's DNS names (e.g. its `web`).
+# Secrets live only on the server in $QUPON_DIR/*.env (written by the deploy script, mode 600).
+name: qupon
+services:
+  qupon-registrar:
+    build: { context: ../.., dockerfile: services/registrar/Dockerfile }
+    env_file: ${QUPON_DIR}/registrar.env
+    environment:
+      PROGRAM_ID: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd
+      QUPON_CONFIG: /app/config/devnet.json
+    volumes:
+      - registrar_data:/data
+    networks: [edge]
+    restart: unless-stopped
+  qupon-web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://api.${QUPON_HOST}"
+        NEXT_PUBLIC_SITE_URL: "https://qupon.${QUPON_HOST}"
+        NEXT_PUBLIC_HIDE_SERIES: "${QUPON_HIDE_SERIES:-}"
+    env_file: ${QUPON_DIR}/web.env
+    environment:
+      API_INTERNAL_URL: http://qupon-registrar:8080
+    networks: [edge]
+    restart: unless-stopped
+networks:
+  edge:
+    name: qupon_edge
+    external: true # created by the one-time edge step, which also connects the other project's Caddy to it
+volumes:
+  registrar_data:
