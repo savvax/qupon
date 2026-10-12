@@ -12,21 +12,21 @@
 
 ## Try it — the judge path
 
-- **Sandbox — “Try it in 3 minutes”**: [/sandbox/new](https://qupon.185-216-25-91.sslip.io/sandbox/new) issues the visitor **their own bond on devnet** on a compressed demo clock (a bond day passes in seconds, a whole coupon cycle in minutes). Watch the autopilot run record date → snapshot → fund → pay, view it as issuer / registrar / investor, skip the funding to see the default declared and then cured, and claim a payout with your own wallet (`?wallet=<address>` adds you as a holder). No sign-in needed.
+- **Sandbox — “Try it in 3 minutes”**: [/sandbox/new](https://qupon.fun/sandbox/new) issues the visitor **their own bond on devnet** on a compressed demo clock (a bond day passes in seconds, a whole coupon cycle in minutes). Watch the autopilot run record date → snapshot → fund → pay, view it as issuer / registrar / investor, skip the funding to see the default declared and then cured, and claim a payout with your own wallet (`?wallet=<address>` adds you as a holder). No sign-in needed.
 - **Curated showcase with autopilot**: the public bond board features four seeded series (`make seed-showcase`) that the registrar's autopilot loop services end to end on its own schedule — announce, record date, snapshot, pay, complete — [`reports/showcase.md`](reports/showcase.md).
-- **/proof — in-browser verification**: every series has a public certificate page that rereads devnet over RPC and recomputes every check **in your browser** (snapshot fingerprint, per-holder math, escrow money in/out), with an explorer link per transaction; `pnpm build:proof` exports the same pages as static HTML ([picker](https://qupon.185-216-25-91.sslip.io/proof)).
+- **/proof — in-browser verification**: every series has a public certificate page that rereads devnet over RPC and recomputes every check **in your browser** (snapshot fingerprint, per-holder math, escrow money in/out), with an explorer link per transaction; `pnpm build:proof` exports the same pages as static HTML ([picker](https://qupon.fun/proof)).
 - **Plan-15 servicing instructions**, all live on devnet ([`reports/demo-plan15.md`](reports/demo-plan15.md)): holder-signed payout routes (`set_payout_route`; bank-routed payouts go to the paying agent, which confirms with `confirm_bank_payout` — transfer SIMULATED), default and cure (`declare_default` one series day after a missed payment, late funding cures it and the record-date holders are paid), the seev.031 disclosure hash anchored on-chain (`attach_disclosure`), DvP trades that carry accrued interest (`TradeAccrued`), and redemptions that pay and burn in one instruction.
 - The UI speaks **English, Russian and Kazakh**.
 
 ## Product tour — every role in the browser
 
-The whole engine is driven from the web app at **https://qupon.185-216-25-91.sslip.io**, in English, Russian or Kazakh, on a laptop or a phone. Open [/login](https://qupon.185-216-25-91.sslip.io/login) and sign in with one click — **demo issuer**, **demo registrar** or **demo investor** (the demo investor is a server-signed custodial wallet, labelled as such on every screen; connect your own wallet instead if you prefer).
+The whole engine is driven from the web app at **https://qupon.fun**, in English, Russian or Kazakh, on a laptop or a phone. Open [/login](https://qupon.fun/login) and sign in with one click — **demo issuer**, **demo registrar** or **demo investor** (the demo investor is a server-signed custodial wallet, labelled as such on every screen; connect your own wallet instead if you prefer).
 
 | Role | Cabinet | What you can do |
 | --- | --- | --- |
-| Issuer | [`/issuer`](https://qupon.185-216-25-91.sslip.io/issuer) | create a bond series in a 3-step wizard (terms → schedule preview → issue on-chain), announce a coupon / redemption / early call, call a bondholder meeting, fund the escrow |
-| Registrar | [`/registrar`](https://qupon.185-216-25-91.sslip.io/registrar) | onboard an investor (SAS KYC attestation, SIMULATED provider, + on-chain registration), run record date → snapshot → pay → complete step by step, reconcile, download ISO 20022 and the KASE notice, browse the audit trail, create and settle secondary trades on the Solana DvP program (`/registrar/trades`) |
-| Investor | [`/investor`](https://qupon.185-216-25-91.sslip.io/investor) | portfolio with a tx link per payment, subscribe at par, fund your leg of a secondary trade, vote in meetings, seev.036 statements |
+| Issuer | [`/issuer`](https://qupon.fun/issuer) | create a bond series in a 3-step wizard (terms → schedule preview → issue on-chain), announce a coupon / redemption / early call, call a bondholder meeting, fund the escrow |
+| Registrar | [`/registrar`](https://qupon.fun/registrar) | onboard an investor (SAS KYC attestation, SIMULATED provider, + on-chain registration), run record date → snapshot → pay → complete step by step, reconcile, download ISO 20022 and the KASE notice, browse the audit trail, create and settle secondary trades on the Solana DvP program (`/registrar/trades`) |
+| Investor | [`/investor`](https://qupon.fun/investor) | portfolio with a tx link per payment, subscribe at par, fund your leg of a secondary trade, vote in meetings, seev.036 statements |
 
 Every action step confirms with a toast carrying its explorer link. The screenshots below are real devnet runs driven through this UI (local registrar + the deployed program; log: [`reports/live-check-local.md`](reports/live-check-local.md)):
 
@@ -40,7 +40,7 @@ Every action step confirms with a toast carrying its explorer link. The screensh
 
 The deployed site is checked the same way — live e2e 4/4 and a full coupon through the cabinets on production: [`reports/live-deploy.md`](reports/live-deploy.md), screenshots in [`reports/ui/live/`](reports/ui/live).
 
-Every page × EN/RU/KK × 1440/390 px is swept by `apps/web/e2e/sweep.spec.ts` (no console errors — that is where missing translations surface — and no horizontal scroll at 390 px); the 323 shots live in [`reports/ui/sweep/`](reports/ui/sweep). Public pages need no sign-in: [landing](https://qupon.185-216-25-91.sslip.io/) · [bond board](https://qupon.185-216-25-91.sslip.io/bonds).
+Every page × EN/RU/KK × 1440/390 px is swept by `apps/web/e2e/sweep.spec.ts` (no console errors — that is where missing translations surface — and no horizontal scroll at 390 px); the 323 shots live in [`reports/ui/sweep/`](reports/ui/sweep). Public pages need no sign-in: [landing](https://qupon.fun/) · [bond board](https://qupon.fun/bonds).
 
 ## Platform v2 — accounts, KYC, KASE data, cash assets, admin
 
@@ -136,6 +136,11 @@ The brief's example — face 1,000, 10% annual, semi-annual, 10 bonds → **500*
 
 `fund_action` (issuer or paying agent) moves cash into an escrow ATA owned by the **action PDA**; the action becomes `Funded` only when the escrow covers net + tax + principal. `pay_batch` (crank, ≤ 5/tx on-chain, 4/tx from the CLI) pays each holder's **registered** cash account and the tax vault, marking entitlements `Paid` (re-sent batches are no-ops). `complete_action` reconciles — every holder paid and `total_paid == total_net + total_principal` — then resumes the register: coupons advance the schedule (computed from the issue date, never by stepping, so end-of-month dates do not drift); a partial call (PCAL) pays `factor × face` per unit and keeps every unit: the outstanding face shrinks by what was repaid, so later coupons and the final redemption accrue on the remainder; full redemptions move to `retire_batch` (burn via the permanent delegate, thawing suspended holders first) and `close_series` (supply 0 → metadata `REDEEMED`, mint closed). `fund_action` never takes more than the shortfall, and `sweep_escrow` returns anything left in a finished action's escrow to the issuer and closes it (the registrar runs it after every completion). The Go reconciler recomputes entitlements and the snapshot hash from chain data: `GET /actions/{pda}/reconcile`.
 
+## Scale — what is designed and what is measured
+
+- **Designed:** no holder cap in the program — every holder has its own PDAs (`Investor`, `Entitlement`, `Checkpoint`) and the series/action counters are `u32`. Snapshot runs in batches of 8 holders per transaction and payment in batches of 4 (CLI), so an action over **N holders takes ⌈N/8⌉ + ⌈N/4⌉ transactions** — about 375 for 1,000 holders. Every crank step is permissionless and the snapshot hash is order-independent, so batches can be sent in parallel by anyone.
+- **Measured:** program tests and devnet runs use up to 5 holders per series. **We have not run 1,000 holders** — the figure above is arithmetic, not a measurement. The web pages that list holders (bond page, registrar register, `/proof`) and the registrar's event ingest are untested at that size.
+
 ## Solana components
 
 - **Token-2022 bond mint** (decimals 0, 1 token = 1 bond): `MetadataPointer` + `TokenMetadata` (registrar is update authority), `DefaultAccountState = Frozen`, `PermanentDelegate`, `Pausable`, `MintCloseAuthority`, mint and freeze authority = series PDA. `init_series` rejects any other extension or authority (`docs/SECURITY_NOTES.md`).
@@ -197,9 +202,9 @@ pnpm e2e                                # mock-mode Playwright suite (starts its
 
 | What | URL |
 | --- | --- |
-| Site (landing, bond board) | https://qupon.185-216-25-91.sslip.io |
-| Sign in — one-click demo issuer, registrar or investor | https://qupon.185-216-25-91.sslip.io/login |
-| Registrar API                                               | https://api.185-216-25-91.sslip.io/healthz (OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
+| Site (landing, bond board) | https://qupon.fun |
+| Sign in — one-click demo issuer, registrar or investor | https://qupon.fun/login |
+| Registrar API                                               | https://api.qupon.fun/healthz (OpenAPI: [`services/registrar/openapi.yaml`](services/registrar/openapi.yaml)) |
 
 One VPS, Docker Compose: registrar API (Go + the `qupon` CLI as executor) and web app (Next.js), behind HTTPS (the box's shared
 reverse proxy; `sslip.io` resolves the hostnames to the server IP). The web app reads devnet state; wallet actions are signed in the

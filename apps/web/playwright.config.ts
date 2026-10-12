@@ -5,7 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
  * (src/mocks/api.ts) — `pnpm e2e` starts/stops the dev server itself, so no Go
  * service or devnet is needed.
  *
- * Live mode: set E2E_BASE_URL (e.g. https://qupon.185-216-25-91.sslip.io) — the
+ * Live mode: set E2E_BASE_URL (e.g. https://qupon.fun) — the
  * tests run against that deployment (no local server), the e2e/live/*.spec.ts
  * specs tagged @live stop skipping, and a run summary is written to
  * reports/e2e-live.md.

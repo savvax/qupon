@@ -90,7 +90,7 @@ All code in the repository was written during the hackathon, between 2026-10-05 
 | Project name | Qupon |
 | Description | the Colosseum description above |
 | GitHub | `https://github.com/savvax/qupon` |
-| Website | `https://qupon.185-216-25-91.sslip.io` — public landing and bond board; all three roles in the browser via one-click demo sign-in at `/login` (issuer, registrar, investor — no wallet needed) |
+| Website | `https://qupon.fun` — public landing and bond board; all three roles in the browser via one-click demo sign-in at `/login` (issuer, registrar, investor — no wallet needed) |
 | X link | `<<FILL: the project's X (Twitter) link>>` |
 | Pitch / demo video | `<<FILL: links>>` |
 | Official hackathon submission confirmation | Yes · `<<FILL: Colosseum project link>>` · `<<FILL: Colosseum profile link>>` |
@@ -100,8 +100,8 @@ All code in the repository was written during the hackathon, between 2026-10-05 
 Technical overview (architecture, record-date logic, entitlement calculations, settlement flow, Solana components): https://github.com/savvax/qupon/blob/main/docs/TECHNICAL_OVERVIEW.md
 Full devnet run with an explorer link for every transaction (coupon, redemption, bondholder meeting → terms change, early redemption): https://github.com/savvax/qupon/blob/main/reports/demo-full.md
 Secondary trade settled through the Solana Foundation's DvP program, record date protected (explorer link per transaction): https://github.com/savvax/qupon/blob/main/reports/demo-trade.md
-Judge sandbox — "Try it in 3 minutes": a visitor's own devnet bond whose whole coupon cycle passes in minutes, default and cure included, no sign-in: https://qupon.185-216-25-91.sslip.io/sandbox/new
-Public proof pages that re-verify every action in the browser (plus a static HTML export): https://qupon.185-216-25-91.sslip.io/proof
+Judge sandbox — "Try it in 3 minutes": a visitor's own devnet bond whose whole coupon cycle passes in minutes, default and cure included, no sign-in: https://qupon.fun/sandbox/new
+Public proof pages that re-verify every action in the browser (plus a static HTML export): https://qupon.fun/proof
 Plan-15 instructions on devnet, one report (holder-signed payout routes, default + cure, disclosure hash on-chain, DvP trades with accrued interest, pay + burn in one instruction): https://github.com/savvax/qupon/blob/main/reports/demo-plan15.md
 Curated showcase series serviced end to end by the autopilot: https://github.com/savvax/qupon/blob/main/reports/showcase.md
 Program: QPN1zdVm6PgMdJo4YxemtDxxbUczqaAk9sDsJQsJ2qd (devnet, verifiable build).

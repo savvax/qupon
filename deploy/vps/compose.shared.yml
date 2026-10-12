@@ -19,8 +19,8 @@ services:
       context: ../..
       dockerfile: apps/web/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: "https://api.${QUPON_HOST}"
-        NEXT_PUBLIC_SITE_URL: "https://qupon.${QUPON_HOST}"
+        NEXT_PUBLIC_API_URL: "https://${QUPON_API_HOST}"
+        NEXT_PUBLIC_SITE_URL: "https://${QUPON_WEB_HOST}"
         NEXT_PUBLIC_HIDE_SERIES: "${QUPON_HIDE_SERIES:-}"
     env_file: ${QUPON_DIR}/web.env
     environment:

@@ -12,10 +12,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$ROOT"
 TARGET="${1:-${VPS_TARGET:-user@185.216.25.91}}"
 IP="${TARGET#*@}"
 HOST="${QUPON_HOST:-${IP//./-}.sslip.io}"
+WEB_HOST="${QUPON_WEB_HOST:-qupon.$HOST}" API_HOST="${QUPON_API_HOST:-api.$HOST}"
 # Primary-box defaults: shared compose (no Caddy of our own) under /home/user/qupon. Any other box takes
 # /opt/qupon + compose.yml unless both variables are set (see the header).
 if [ "$IP" = 185.216.25.91 ]; then
   : "${COMPOSE:=compose.shared.yml}" "${QUPON_DIR:=/home/user/qupon}"
+  # public domain (Cloudflare-proxied; the box's Caddy routes both names, deploy/vps/edge-attach.sh)
+  WEB_HOST="${QUPON_WEB_HOST:-qupon.fun}" API_HOST="${QUPON_API_HOST:-api.qupon.fun}"
 fi
 [ -f .env ] && set -a && source .env && set +a
 # DEPLOY_RPC_URL overrides .env's RPC_URL for the server only (e.g. https://api.devnet.solana.com when the key's quota is spent)
@@ -34,7 +37,7 @@ fi
 if [ "${REINDEX:-}" = 1 ]; then
   # New series created outside the app (make demo-seed): the registrar indexes every Series account at startup.
   "${SSH[@]}" "cd $QDIR/src/deploy/vps && $DC restart $REG"
-  curl -fsS -m 30 --retry 10 --retry-delay 3 --retry-all-errors "https://api.$HOST/healthz" >/dev/null && echo "registrar re-indexed"
+  curl -fsS -m 30 --retry 10 --retry-delay 3 --retry-all-errors "https://$API_HOST/healthz" >/dev/null && echo "registrar re-indexed"
   exit 0
 fi
 
@@ -67,7 +70,7 @@ kp() { tr -d ' \n' < "$1"; }
   # Sandbox non_kyc_transfer refusal target: a public address with no investor record (no key needed).
   echo "QUPON_SANDBOX_OUTSIDER=$(jq -r '.. | objects | .outsider? // empty' config/devnet.json | head -1)"
   # absolute links the API hands out: admin password-reset links, organisation invites (platform v2)
-  echo "PUBLIC_URL=https://qupon.$HOST"
+  echo "PUBLIC_URL=https://$WEB_HOST"
   [ -z "${QUPON_USERS:-}" ] || echo "QUPON_USERS=$QUPON_USERS"
   # Term-sheet import (task 042): without the key the API uses the SIMULATED regex fallback.
   [ -z "${ZAI_API_KEY:-}" ] || echo "TERMSHEET_LLM_KEY=$ZAI_API_KEY"
@@ -98,15 +101,15 @@ echo "== build (one image at a time: 1 vCPU) and start"
 # Hidden series now live in series_settings (imported once by the registrar at startup, task 600);
 # admins manage them from /admin/series. QUPON_HOST persists next to compose.yml (excluded from
 # rsync --delete), so a manual `docker compose up` keeps routing.
-"${SSH[@]}" "cd $QDIR/src/deploy/vps && printf \"QUPON_HOST=%s\\nQUPON_DIR=%s\\n\" $HOST $QDIR > .env && $DC build $REG && $DC build $WEB && $DC up -d --remove-orphans"
+"${SSH[@]}" "cd $QDIR/src/deploy/vps && printf \"QUPON_HOST=%s\\nQUPON_WEB_HOST=%s\\nQUPON_API_HOST=%s\\nQUPON_DIR=%s\\n\" $HOST $WEB_HOST $API_HOST $QDIR > .env && $DC build $REG && $DC build $WEB && $DC up -d --remove-orphans"
 
 echo "== health"
 for _ in $(seq 1 30); do
-  curl -fsS -m 10 "https://api.$HOST/healthz" >/dev/null 2>&1 && curl -fsS -m 20 -o /dev/null "https://qupon.$HOST/" && break
+  curl -fsS -m 10 "https://$API_HOST/healthz" >/dev/null 2>&1 && curl -fsS -m 20 -o /dev/null "https://$WEB_HOST/" && break
   sleep 10
 done
 # Final check fails the deploy (the loop above only waits): both the API and the console must answer.
-curl -fsS -m 10 "https://api.$HOST/healthz" && curl -fsS -m 20 -o /dev/null "https://qupon.$HOST/" \
+curl -fsS -m 10 "https://$API_HOST/healthz" && curl -fsS -m 20 -o /dev/null "https://$WEB_HOST/" \
   || { echo "health check failed — ssh $TARGET 'cd $QDIR/src/deploy/vps && $DC ps && $DC logs --tail 50'" >&2; exit 1; }
 echo
-echo "console: https://qupon.$HOST   API: https://api.$HOST"
+echo "console: https://$WEB_HOST   API: https://$API_HOST"
