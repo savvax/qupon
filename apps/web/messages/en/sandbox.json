@@ -264,7 +264,8 @@
       }
     },
     "failedTitle": "The sandbox did not start",
-    "failed": "The registrar answered: {reason}",
+    "failed": "Devnet is busy right now — try again in a minute.",
+    "technical": "Technical details",
     "throttledTitle": "Sandbox limit reached",
     "throttled": "Three sandboxes per visitor per hour keep devnet fees in check. Try again in a few minutes, or read how a bond lives on Qupon meanwhile.",
     "retry": "Try again",

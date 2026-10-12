@@ -144,6 +144,17 @@ export type Sandbox = {
 export const createSandbox = (req: SandboxCreateRequest) =>
   boPost<SandboxCreated>("demo/sandbox", req);
 
+/** The /sandbox/new failure card (A91580-2): throttling keeps its own sentence, every other refusal
+ * (executor CLI error, an upstream 429 buried in the message, network) reads "devnet busy"; the raw
+ * message is never the headline — it goes under the collapsed technical details. */
+export function sandboxFailureKind(e: {
+  status: number;
+  code: string;
+  message?: string;
+}): "throttled" | "busy" {
+  return e.status === 429 || e.code === "demo_throttled" ? "throttled" : "busy";
+}
+
 export const runScenario = (id: string, kind: ScenarioKind) =>
   boPost<SandboxScenario>(`demo/sandbox/${id}/scenario`, { kind });
 

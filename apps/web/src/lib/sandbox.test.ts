@@ -6,6 +6,7 @@ import {
   isSchedulerStep,
   schedulerStep,
 } from "./sandbox";
+import { sandboxFailureKind } from "./sandbox";
 
 // The dossier's "as of" date for a demo-clock series (task 1535 review): the yield block must
 // use the bond's own calendar, not the real one — a showcase bond (daySecs 4) ages 10 civil
@@ -59,5 +60,28 @@ describe("feed rows (task 91564)", () => {
     expect(isSchedulerStep("EntitlementPaid")).toBe(false);
     expect(schedulerStep("scheduler:pay_batch")).toBe("pay batch");
     expect(schedulerStep("scheduler:snapshot_batch")).toBe("snapshot batch");
+  });
+});
+
+describe("sandboxFailureKind (A91580-2)", () => {
+  it("maps a raw executor refusal to the busy sentence and keeps the raw text for details", () => {
+    const raw =
+      "executor_failed: cli series:create refused: qupon: HTTP error (429): Too Many Requests";
+    const e = { status: 502, code: "executor_failed", message: raw };
+    expect(sandboxFailureKind(e)).toBe("busy"); // the friendly sentence, never the raw message
+    expect(e.message).toBe(raw); // the collapsed technical details keep it verbatim
+  });
+
+  it("maps throttling to its own sentence", () => {
+    expect(
+      sandboxFailureKind({
+        status: 429,
+        code: "demo_throttled",
+        message: "3/h",
+      }),
+    ).toBe("throttled");
+    expect(
+      sandboxFailureKind({ status: 0, code: "demo_throttled", message: "" }),
+    ).toBe("throttled");
   });
 });

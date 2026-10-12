@@ -59,7 +59,11 @@ async function get<T>(path: string): Promise<T> {
     }
     return mockGet(path) as Promise<T>;
   }
-  const res = await fetch(`${API_BASE_URL}${path}`);
+  // A91580-3: a hung chain read on the registrar side must fail fast — the abort throws and the
+  // route's error boundary renders the localized "registrar service is unavailable" state.
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    signal: AbortSignal.timeout(8_000),
+  });
   if (!res.ok) {
     let code = `http_${res.status}`;
     let message = res.statusText;
